@@ -78,6 +78,11 @@ dependencies {
     // Optional viewer integrations: compile against the API, never make the viewer a hard dependency.
     compileOnly "mezz.jei:jei-${jei_minecraft_version}-common-api:${jei_version}"
     compileOnly "mezz.jei:jei-${jei_minecraft_version}-neoforge-api:${jei_version}"
+    // EMI: compiled against for the viewer adapter only; `-Pemi` adds it to the dev run.
+    compileOnly "maven.modrinth:emi:${emi_version}"
+    if (project.hasProperty('emi')) {
+        runtimeOnly "maven.modrinth:emi:${emi_version}"
+    }
 
     // A small real pack for the dev runs: overlapping copper/tin/zinc/aluminum providers are what
     // discovery and resolution exist for. runtimeOnly, never compiled against or shipped.
