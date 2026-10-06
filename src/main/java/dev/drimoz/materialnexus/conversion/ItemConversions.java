@@ -27,6 +27,11 @@ public final class ItemConversions {
         active = Collections.unmodifiableMap(items);
     }
 
+    /** The alternatives currently converted, for recipe viewers on the client. */
+    public static java.util.List<ResourceLocation> alternatives() {
+        return active.keySet().stream().map(BuiltInRegistries.ITEM::getKey).sorted().toList();
+    }
+
     public static boolean isEmpty() {
         return active.isEmpty();
     }

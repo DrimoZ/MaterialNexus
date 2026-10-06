@@ -45,7 +45,7 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 
 ## Phase 4 — Integrations
 
-- [ ] JEI
+- [x] JEI (applied alternatives hidden; shown again on revert)
 - [ ] EMI
 - [x] Create (processing recipe outputs and inputs; sequenced assembly unsupported)
 - [x] Mekanism (item outputs and inputs of machine recipes; chemicals untouched)

@@ -23,6 +23,7 @@ public final class MnxNetwork {
         registrar.playToClient(MaterialListPayload.TYPE, MaterialListPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onMaterialList(p));
         registrar.playToClient(MaterialDetailPayload.TYPE, MaterialDetailPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onMaterialDetail(p));
         registrar.playToClient(PreviewPayload.TYPE, PreviewPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onPreview(p));
+        registrar.playToClient(UnifiedItemsPayload.TYPE, UnifiedItemsPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onUnifiedItems(p));
         registrar.playToClient(SuggestionsPayload.TYPE, SuggestionsPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onSuggestions(p));
 
         registrar.playToServer(MaterialListRequest.TYPE, MaterialListRequest.STREAM_CODEC, (req, ctx) -> {

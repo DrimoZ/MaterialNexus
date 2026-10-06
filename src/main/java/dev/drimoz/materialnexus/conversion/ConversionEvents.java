@@ -27,6 +27,16 @@ import java.util.Set;
 public final class ConversionEvents {
     private ConversionEvents() { }
 
+    /**
+     * Tells clients which items are unified away, once per data sync (login, reload), so recipe viewers can
+     * hide them. High priority: another mod's listener failing on this event must not prevent it.
+     */
+    @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.HIGH)
+    public static void onDatapackSync(net.neoforged.neoforge.event.OnDatapackSyncEvent event) {
+        var payload = new dev.drimoz.materialnexus.network.UnifiedItemsPayload(ItemConversions.alternatives());
+        event.getRelevantPlayers().forEach(player -> net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload));
+    }
+
     @SubscribeEvent
     public static void onEntityJoin(EntityJoinLevelEvent event) {
         if (event.getLevel().isClientSide() || ItemConversions.isEmpty() || !(event.getEntity() instanceof ItemEntity item)) return;
