@@ -72,4 +72,34 @@ class RecipeRewritesTest {
         assertEquals(List.of(new PackContent.Effect(RecipeRewrites.DISABLE, id("ie_to_nuggets"), miNugget)), plan.effects());
         assertEquals(1, plan.files().size());
     }
+
+    /** MNX-015/016: Create and Mekanism formats as shipped (Create 6.0.10, Mekanism 10.7.19). */
+    @Test
+    void createAndMekanismOutputsAndInputsAreRewritten() {
+        ResourceLocation createSheet = ResourceLocation.fromNamespaceAndPath("create", "copper_sheet");
+        ResourceLocation iePlate = ResourceLocation.fromNamespaceAndPath("immersiveengineering", "plate_copper");
+        ResourceLocation mekDust = ResourceLocation.fromNamespaceAndPath("mekanism", "dust_copper");
+        ResourceLocation miDust = ResourceLocation.fromNamespaceAndPath("modern_industrialization", "copper_dust");
+        var conversions = Map.of(createSheet, iePlate, mekDust, miDust);
+        var sources = List.of(
+                new Source(id("create_pressing"), json("{\"type\":\"create:pressing\",\"ingredients\":[{\"tag\":\"c:ingots/copper\"}],"
+                        + "\"results\":[{\"id\":\"create:copper_sheet\"},{\"chance\":0.5,\"id\":\"minecraft:copper_nugget\"}]}"), createSheet),
+                new Source(id("mek_enriching"), json("{\"type\":\"mekanism:enriching\",\"input\":{\"count\":1,\"item\":\"mekanism:dust_copper\"},"
+                        + "\"output\":{\"count\":1,\"id\":\"minecraft:copper_ingot\"}}"), ResourceLocation.withDefaultNamespace("copper_ingot")),
+                new Source(id("mek_sawing"), json("{\"type\":\"mekanism:sawing\",\"input\":{\"count\":1,\"tag\":\"c:ores/copper\"},"
+                        + "\"main_output\":{\"count\":2,\"id\":\"mekanism:dust_copper\"},\"secondary_output\":{\"chance\":0.1,\"id\":\"create:copper_sheet\"}}"), mekDust),
+                // Chemical output: its id is never an item to convert, so the recipe is untouched.
+                new Source(id("mek_dissolution"), json("{\"type\":\"mekanism:dissolution\",\"output\":{\"amount\":1000,\"id\":\"mekanism:copper\"}}"),
+                        id("mek_dissolution")));
+
+        PackContent.Content plan = RecipeRewrites.plan(sources, conversions);
+        String pressing = plan.files().get("data/test/recipe/create_pressing.json").toString();
+        String enriching = plan.files().get("data/test/recipe/mek_enriching.json").toString();
+        String sawing = plan.files().get("data/test/recipe/mek_sawing.json").toString();
+
+        assertTrue(pressing.contains("\"id\":\"immersiveengineering:plate_copper\"") && pressing.contains("\"chance\":0.5"), pressing);
+        assertTrue(enriching.contains("\"item\":\"modern_industrialization:copper_dust\"") && enriching.contains("\"count\":1"), enriching);
+        assertTrue(sawing.contains("\"id\":\"modern_industrialization:copper_dust\"") && sawing.contains("\"id\":\"immersiveengineering:plate_copper\""), sawing);
+        assertFalse(plan.files().containsKey("data/test/recipe/mek_dissolution.json"));
+    }
 }

@@ -31,6 +31,23 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 public final class MaterialNexusGameTests {
     private MaterialNexusGameTests() { }
 
+    /** MNX-015/016: real Create and Mekanism recipes are recognized and rewritten (skipped when the mods are absent). */
+    @GameTest(template = "empty")
+    public static void createAndMekanismRecipesAreRewritten(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("create") || !ModList.get().isLoaded("mekanism")) {
+            helper.succeed();
+            return;
+        }
+        var conversions = java.util.Map.of(
+                ResourceLocation.fromNamespaceAndPath("create", "copper_sheet"), ResourceLocation.fromNamespaceAndPath("immersiveengineering", "plate_copper"),
+                ResourceLocation.fromNamespaceAndPath("mekanism", "dust_copper"), ResourceLocation.fromNamespaceAndPath("modern_industrialization", "copper_dust"));
+        var plan = RecipeRewrites.plan(RecipeSources.collect(helper.getLevel().getServer(), conversions, java.util.List.of()), conversions);
+        var rewritten = plan.effects().stream().filter(e -> e.kind().equals(RecipeRewrites.REWRITE)).map(e -> e.target().getNamespace()).toList();
+        helper.assertTrue(rewritten.contains("create"), "a Create recipe producing the copper sheet should be rewritten, got " + plan.effects());
+        helper.assertTrue(rewritten.contains("mekanism"), "a Mekanism recipe producing or consuming copper dust should be rewritten, got " + plan.effects());
+        helper.succeed();
+    }
+
     /** MNX-025: real recipes are read with their JSON from the resource stack and vanilla outputs are rewritten. */
     @GameTest(template = "empty")
     public static void vanillaRecipesProducingAnAlternativeAreRewritten(GameTestHelper helper) {

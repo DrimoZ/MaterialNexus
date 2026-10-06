@@ -3,6 +3,7 @@ package dev.drimoz.materialnexus.datapack;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import dev.drimoz.materialnexus.integration.RecipeFormats;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -23,51 +24,57 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Server adapter for {@link RecipeRewrites}: the recipes producing items of interest, with their JSON as
- * it was before Material Nexus (ADR-010). Called on preview / apply only, never per tick.
+ * Server adapter for {@link RecipeRewrites}: recipes touching unified items, with their JSON as it was
+ * before Material Nexus (ADR-010). Called on preview / apply only, never per tick.
  */
 public final class RecipeSources {
-    /** Vanilla recipe types whose JSON result is a known item stack; anything else is unsupported for now. */
-    public static final Set<ResourceLocation> VANILLA_TYPES = Set.of(
-            "crafting_shaped", "crafting_shapeless", "smelting", "blasting", "smoking",
-            "campfire_cooking", "stonecutting", "smithing_transform").stream()
-            .map(ResourceLocation::withDefaultNamespace).collect(java.util.stream.Collectors.toUnmodifiableSet());
-
     private RecipeSources() { }
 
     /**
-     * Recipes producing an alternative or a canonical item (outputs, duplicates), plus vanilla recipes that
-     * consume an alternative (inputs). {@code conversions} maps alternative to canonical.
+     * Known-format recipes producing or literally consuming an alternative or canonical item, read from
+     * their JSON (Mekanism does not expose its outputs through vanilla APIs); unknown-format recipes
+     * producing an alternative, to be listed as unsupported. {@code conversions} maps alternative to canonical.
      */
     public static List<RecipeRewrites.Source> collect(MinecraftServer server, Map<ResourceLocation, ResourceLocation> conversions,
                                                       Collection<ResourceLocation> overridden) {
         ResourceManager resources = server.getResourceManager();
         Set<ResourceLocation> ours = new HashSet<>(overridden);
-        Set<ResourceLocation> results = new HashSet<>(conversions.keySet());
-        results.addAll(conversions.values());
-        List<ItemStack> alternatives = conversions.keySet().stream()
-                .flatMap(id -> BuiltInRegistries.ITEM.getOptional(id).stream()).map(ItemStack::new).toList();
+        Set<ResourceLocation> items = new HashSet<>(conversions.keySet());
+        items.addAll(conversions.values());
+        List<String> alternativeIds = conversions.keySet().stream().map(id -> "\"" + id + "\"").toList();
         List<RecipeRewrites.Source> sources = new ArrayList<>();
 
+        // ponytail: reads the JSON of every known-format recipe on each preview (a few thousand small files,
+        // explicit player action only). Index by output on reload if this ever shows up in a profile.
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
             if (ours.contains(holder.id())) continue;
-            ItemStack out = holder.value().getResultItem(server.registryAccess());
-            if (out.isEmpty()) continue;
-            ResourceLocation result = BuiltInRegistries.ITEM.getKey(out.getItem());
-            boolean vanilla = VANILLA_TYPES.contains(BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer()));
-            boolean consumesAlternative = vanilla && holder.value().getIngredients().stream()
-                    .anyMatch(ingredient -> alternatives.stream().anyMatch(ingredient));
-            if (!results.contains(result) && !consumesAlternative) continue;
-            Optional<JsonObject> json = vanilla ? originalJson(resources, holder.id()) : Optional.empty();
-            sources.add(new RecipeRewrites.Source(holder.id(), json, result));
+            ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
+            if (type != null && RecipeFormats.forType(type).isPresent()) {
+                originalJson(resources, holder.id()).ifPresent(json -> {
+                    List<ResourceLocation> outputs = RecipeRewrites.outputIds(json);
+                    String text = json.toString();
+                    boolean touches = outputs.stream().anyMatch(items::contains) || alternativeIds.stream().anyMatch(text::contains);
+                    if (touches) sources.add(new RecipeRewrites.Source(holder.id(), Optional.of(json), firstOrSelf(outputs, holder.id())));
+                });
+            } else {
+                ItemStack out = holder.value().getResultItem(server.registryAccess());
+                ResourceLocation result = out.isEmpty() ? null : BuiltInRegistries.ITEM.getKey(out.getItem());
+                if (result != null && conversions.containsKey(result)) {
+                    sources.add(new RecipeRewrites.Source(holder.id(), Optional.empty(), result));
+                }
+            }
         }
         // Recipes we rewrote or disabled are judged by their original JSON, not by what we made of them.
         for (ResourceLocation id : ours) {
-            originalJson(resources, id).ifPresent(json -> RecipeRewrites.resultId(json)
-                    .ifPresent(result -> sources.add(new RecipeRewrites.Source(id, Optional.of(json), result))));
+            originalJson(resources, id).ifPresent(json ->
+                    sources.add(new RecipeRewrites.Source(id, Optional.of(json), firstOrSelf(RecipeRewrites.outputIds(json), id))));
         }
         sources.sort(Comparator.comparing(RecipeRewrites.Source::id));
         return sources;
+    }
+
+    private static ResourceLocation firstOrSelf(List<ResourceLocation> outputs, ResourceLocation recipe) {
+        return outputs.isEmpty() ? recipe : outputs.getFirst();
     }
 
     /** The highest-priority definition of a recipe, skipping the Material Nexus generated pack. */
