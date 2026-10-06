@@ -79,6 +79,16 @@ dependencies {
     compileOnly "mezz.jei:jei-${jei_minecraft_version}-common-api:${jei_version}"
     compileOnly "mezz.jei:jei-${jei_minecraft_version}-neoforge-api:${jei_version}"
 
+    // A small real pack for the dev runs: overlapping copper/tin/zinc/aluminum providers are what
+    // discovery and resolution exist for. runtimeOnly, never compiled against or shipped.
+    if (!project.hasProperty('vanilla')) {
+        runtimeOnly "mezz.jei:jei-${jei_minecraft_version}-neoforge:${jei_version}"
+        runtimeOnly "maven.modrinth:jade:${jade_version}"
+        runtimeOnly "maven.modrinth:mekanism:${mekanism_version}"
+        runtimeOnly "maven.modrinth:create:${create_version}"
+        runtimeOnly "maven.modrinth:immersiveengineering:${immersiveengineering_version}"
+    }
+
     testImplementation platform("org.junit:junit-bom:5.10.2")
     testImplementation "org.junit.jupiter:junit-jupiter"
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
