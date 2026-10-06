@@ -1,5 +1,6 @@
 {
   "item.materialnexus.nexus_terminal": "Nexus Terminal",
+  "materialnexus.pack.generated": "Material Nexus generated data (do not edit)",
   "screen.materialnexus.title": "Material Nexus",
   "screen.materialnexus.materials": "%s materials resolved",
   "screen.materialnexus.read_only": "Read-only: editing is available in singleplayer or LAN",

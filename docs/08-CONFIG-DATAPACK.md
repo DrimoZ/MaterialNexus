@@ -33,14 +33,26 @@ Material definitions shipped by mods or datapacks may also live under `data/<nam
 
 ## Example policy
 
+`policies/global.json`:
+
+```json
+{ "mod_priority": ["minecraft", "create"] }
+```
+
+`policies/materials/copper.json` (file name is free; `material` is the key, defined once):
+
 ```json
 {
   "material": "copper",
+  "mod_priority": ["mekanism"],
   "forms": {
-    "plate": { "preferred_provider": "create:copper_sheet", "rewrite_outputs": true }
+    "plate": { "preferred_provider": "create:copper_sheet" },
+    "wire": { "mod_priority": ["immersiveengineering"] }
   }
 }
 ```
+
+Levels map to ADR-006: `global.mod_priority` < material `mod_priority` < form `mod_priority` < form `preferred_provider`. Policy is re-read on every `/reload`; an invalid file fails the analysis with the file named and leaves the previous snapshot active. Action fields (`rewrite_outputs`, tag modes) arrive with their tickets.
 
 ## Global policy: Almost Unified arbitration
 

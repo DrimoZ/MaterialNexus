@@ -26,8 +26,8 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 ## Phase 2 — Unification and Apply
 
 - [x] canonical provider resolution (pure resolver; policy loading comes with MNX-022)
-- [ ] policy files in `config/materialnexus/policies/`
-- [ ] generated global datapack + `manifest.json`
+- [x] policy files in `config/materialnexus/policies/` (read on every reload)
+- [x] generated global datapack + `manifest.json` (writer + injection; content arrives with tag/recipe actions)
 - [ ] tag policy (NeoForge `remove` entries)
 - [ ] preview screen → Apply → `/reload`
 - [ ] revert last apply

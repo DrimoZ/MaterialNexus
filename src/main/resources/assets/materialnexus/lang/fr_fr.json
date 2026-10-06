@@ -1,5 +1,6 @@
 {
   "item.materialnexus.nexus_terminal": "Terminal Nexus",
+  "materialnexus.pack.generated": "Données générées par Material Nexus (ne pas modifier)",
   "screen.materialnexus.title": "Material Nexus",
   "screen.materialnexus.materials": "%s matériaux résolus",
   "screen.materialnexus.read_only": "Lecture seule : l’édition se fait en solo ou en LAN",

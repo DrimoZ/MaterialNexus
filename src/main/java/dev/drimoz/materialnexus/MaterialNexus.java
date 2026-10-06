@@ -1,5 +1,6 @@
 package dev.drimoz.materialnexus;
 
+import dev.drimoz.materialnexus.datapack.GeneratedPack;
 import dev.drimoz.materialnexus.network.MnxNetwork;
 import dev.drimoz.materialnexus.registry.MnxItems;
 import net.neoforged.bus.api.IEventBus;
@@ -14,5 +15,6 @@ public final class MaterialNexus {
     public MaterialNexus(IEventBus modBus, ModContainer modContainer) {
         MnxItems.register(modBus);
         modBus.addListener(MnxNetwork::register);
+        modBus.addListener(GeneratedPack::onAddPackFinders);
     }
 }

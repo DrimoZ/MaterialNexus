@@ -6,6 +6,8 @@ import dev.drimoz.materialnexus.core.discovery.DiscoveredMaterials;
 import dev.drimoz.materialnexus.core.domain.FormId;
 import dev.drimoz.materialnexus.core.domain.MaterialId;
 import dev.drimoz.materialnexus.core.resolution.SnapshotManager;
+import dev.drimoz.materialnexus.datapack.GeneratedPack;
+import dev.drimoz.materialnexus.datapack.MnxPaths;
 import dev.drimoz.materialnexus.registry.MnxItems;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -23,6 +25,15 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 @PrefixGameTestTemplate(false)
 public final class MaterialNexusGameTests {
     private MaterialNexusGameTests() { }
+
+    /** MNX-022: the global generated pack exists on disk and is active in this world, above other packs. */
+    @GameTest(template = "empty")
+    public static void generatedPackIsInjectedIntoTheWorld(GameTestHelper helper) {
+        var selected = helper.getLevel().getServer().getPackRepository().getSelectedIds();
+        helper.assertTrue(selected.contains(GeneratedPack.PACK_ID), "generated pack is not enabled: " + selected);
+        helper.assertTrue(java.nio.file.Files.exists(MnxPaths.generated().resolve(GeneratedPack.MARKER)), "generated pack marker missing");
+        helper.succeed();
+    }
 
     @GameTest(template = "empty")
     public static void modLoadsWithSnapshot(GameTestHelper helper) {

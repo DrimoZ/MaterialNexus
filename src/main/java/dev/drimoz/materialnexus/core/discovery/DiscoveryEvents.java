@@ -6,6 +6,8 @@ import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
 import dev.drimoz.materialnexus.core.resolution.CanonicalResolver;
 import dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot;
 import dev.drimoz.materialnexus.core.resolution.SnapshotManager;
+import dev.drimoz.materialnexus.datapack.MnxPaths;
+import dev.drimoz.materialnexus.datapack.PolicyFiles;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -14,6 +16,7 @@ import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.TagsUpdatedEvent;
 import org.slf4j.Logger;
 
+import java.io.IOException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.List;
@@ -39,12 +42,13 @@ public final class DiscoveryEvents {
                             .toList()));
 
             DiscoveredMaterials discovered = TagDiscovery.discover(tagMembers);
+            ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies());
             ResolvedSnapshot previous = SnapshotManager.current();
             SnapshotManager.swap(new ResolvedSnapshot(previous.generation() + 1, Instant.now(), discovered,
-                    CanonicalResolver.resolve(discovered, ResolutionPolicy.NONE)));
+                    CanonicalResolver.resolve(discovered, policy)));
             LOGGER.info("Material Nexus discovered {} materials ({} providers) in {} ms",
                     discovered.materials().size(), discovered.providerCount(), (System.nanoTime() - start) / 1_000_000);
-        } catch (RuntimeException e) {
+        } catch (IOException | RuntimeException e) {
             // ADR-002: a failed analysis reports and changes nothing.
             LOGGER.error("Material Nexus discovery failed; snapshot left unchanged", e);
         }
