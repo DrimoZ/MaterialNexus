@@ -13,8 +13,8 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 
 ## Phase 1 — Discovery and read-only GUI
 
-- [ ] item/block discovery
-- [ ] common material tags
+- [x] item/block discovery (via item tags; block items carry mirrored tags)
+- [x] common material tags (`c:<folder>/<material>`)
 - [ ] explicit material definitions
 - [ ] confidence/evidence model
 - [ ] read-only snapshot index
