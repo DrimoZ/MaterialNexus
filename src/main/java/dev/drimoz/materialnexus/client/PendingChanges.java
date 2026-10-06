@@ -18,10 +18,13 @@ final class PendingChanges {
         return Optional.ofNullable(CHANGES.get(key(material, form))).map(CanonicalChange::provider);
     }
 
-    /** Choosing the current canonical again simply cancels the pending change. */
-    static void set(String material, String form, ResourceLocation provider, Optional<ResourceLocation> current) {
-        if (current.isPresent() && provider.equals(current.get())) CHANGES.remove(key(material, form));
-        else CHANGES.put(key(material, form), new CanonicalChange(material, form, provider));
+    /** A pending choice; accepting a suggestion is a choice too, so the provider may equal the shown canonical. */
+    static void set(String material, String form, ResourceLocation provider) {
+        CHANGES.put(key(material, form), new CanonicalChange(material, form, provider));
+    }
+
+    static void clear(String material, String form) {
+        CHANGES.remove(key(material, form));
     }
 
     static List<CanonicalChange> all() { return List.copyOf(CHANGES.values()); }

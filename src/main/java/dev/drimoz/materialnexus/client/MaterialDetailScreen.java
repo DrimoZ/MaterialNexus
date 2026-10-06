@@ -1,5 +1,6 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.core.policy.PolicyPrecedence;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
 import dev.drimoz.materialnexus.network.MaterialDetailPayload;
 import net.minecraft.client.Minecraft;
@@ -38,7 +39,12 @@ public final class MaterialDetailScreen extends Screen {
     @Override
     protected void init() {
         FormList list = addRenderableWidget(new FormList(minecraft, width, height - 76, 28));
-        detail.forms().forEach(view -> list.add(new Row(view)));
+        List<Row> rows = detail.forms().stream().map(Row::new).toList();
+        rows.forEach(list::add);
+        if (!parent.readOnly()) {
+            addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.unify_material"), b -> rows.forEach(Row::acceptSuggestion))
+                    .bounds(width / 2 - 154, height - 28, 100, 20).build());
+        }
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
                 .bounds(width / 2 - 50, height - 28, 100, 20).build());
     }
@@ -117,6 +123,21 @@ public final class MaterialDetailScreen extends Screen {
             return PendingChanges.get(detail.material(), form).or(resolved::canonical);
         }
 
+        /** A canonical from the "Default" level is only a suggestion: nothing is unified until the player accepts it. */
+        private boolean decided() {
+            return resolved.source() != PolicyPrecedence.DEFAULT;
+        }
+
+        private boolean isSuggestion() {
+            return !decided() && resolved.canonical().isPresent() && !resolved.alternatives().isEmpty();
+        }
+
+        void acceptSuggestion() {
+            if (isSuggestion() && PendingChanges.get(detail.material(), form).isEmpty()) {
+                PendingChanges.set(detail.material(), form, resolved.canonical().get());
+            }
+        }
+
         @Override
         public void render(GuiGraphics graphics, int index, int top, int left, int width, int height,
                            int mouseX, int mouseY, boolean hovering, float partialTick) {
@@ -131,19 +152,30 @@ public final class MaterialDetailScreen extends Screen {
             line(graphics, why, x, top + 13, textWidth, 0xAAAAAA);
             line(graphics, alternatives, x, top + 24, textWidth, 0x888888);
             if (notUnified != null) line(graphics, notUnified, x, top + 35, textWidth, 0x6688AA);
-            if (!shown.equals(resolved.canonical())) {
-                line(graphics, Component.translatable("screen.materialnexus.pending", shown.map(ResourceLocation::toString).orElse("")), x, top + 46, textWidth, 0x55FF55);
+            Optional<ResourceLocation> pending = PendingChanges.get(detail.material(), form);
+            if (pending.isPresent()) {
+                line(graphics, Component.translatable("screen.materialnexus.pending", pending.get().toString()), x, top + 46, textWidth, 0x55FF55);
             } else if (ignored != null) {
                 line(graphics, ignored, x, top + 46, textWidth, 0xFFAA00);
+            } else if (isSuggestion()) {
+                line(graphics, Component.translatable("screen.materialnexus.suggestion_only"), x, top + 46, textWidth, 0xFFFF55);
             }
         }
 
+        /**
+         * Cycles: nothing pending, then each provider, then back to nothing pending. For a suggestion the
+         * first click accepts it as shown; for a decided form the current canonical is skipped.
+         */
         @Override
         public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            if (parent.readOnly() || providers.isEmpty()) return false;
-            int current = shown().map(providers::indexOf).orElse(-1);
-            ResourceLocation next = providers.get((current + 1) % providers.size());
-            PendingChanges.set(detail.material(), form, next, resolved.canonical());
+            if (parent.readOnly()) return false;
+            List<ResourceLocation> cycle = providers.stream()
+                    .filter(p -> !decided() || resolved.canonical().map(c -> !c.equals(p)).orElse(true))
+                    .toList();
+            if (cycle.isEmpty()) return false;
+            int index = PendingChanges.get(detail.material(), form).map(cycle::indexOf).orElse(-1);
+            if (index + 1 >= cycle.size()) PendingChanges.clear(detail.material(), form);
+            else PendingChanges.set(detail.material(), form, cycle.get(index + 1));
             return true;
         }
 
