@@ -25,7 +25,7 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 
 ## Phase 2 — Unification and Apply
 
-- [ ] canonical provider resolution
+- [x] canonical provider resolution (pure resolver; policy loading comes with MNX-022)
 - [ ] policy files in `config/materialnexus/policies/`
 - [ ] generated global datapack + `manifest.json`
 - [ ] tag policy (NeoForge `remove` entries)

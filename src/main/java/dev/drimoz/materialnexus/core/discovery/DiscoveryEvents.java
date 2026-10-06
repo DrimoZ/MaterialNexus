@@ -2,6 +2,8 @@ package dev.drimoz.materialnexus.core.discovery;
 
 import com.mojang.logging.LogUtils;
 import dev.drimoz.materialnexus.MaterialNexus;
+import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
+import dev.drimoz.materialnexus.core.resolution.CanonicalResolver;
 import dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot;
 import dev.drimoz.materialnexus.core.resolution.SnapshotManager;
 import net.minecraft.core.registries.Registries;
@@ -38,7 +40,8 @@ public final class DiscoveryEvents {
 
             DiscoveredMaterials discovered = TagDiscovery.discover(tagMembers);
             ResolvedSnapshot previous = SnapshotManager.current();
-            SnapshotManager.swap(new ResolvedSnapshot(previous.generation() + 1, Instant.now(), discovered, Map.of()));
+            SnapshotManager.swap(new ResolvedSnapshot(previous.generation() + 1, Instant.now(), discovered,
+                    CanonicalResolver.resolve(discovered, ResolutionPolicy.NONE)));
             LOGGER.info("Material Nexus discovered {} materials ({} providers) in {} ms",
                     discovered.materials().size(), discovered.providerCount(), (System.nanoTime() - start) / 1_000_000);
         } catch (RuntimeException e) {
