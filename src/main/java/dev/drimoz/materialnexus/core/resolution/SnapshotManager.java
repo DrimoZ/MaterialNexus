@@ -9,7 +9,6 @@ public final class SnapshotManager {
 
     private SnapshotManager() {}
 
-    public static void initialize() { }
 
     public static ResolvedSnapshot current() {
         return ACTIVE.get();

@@ -1,4 +1,7 @@
 {
-  "itemGroup.materialnexus.main": "Material Nexus",
-  "command.materialnexus.open": "Ouvrir Material Nexus"
+  "item.materialnexus.nexus_terminal": "Terminal Nexus",
+  "screen.materialnexus.title": "Material Nexus",
+  "screen.materialnexus.materials": "%s matériaux résolus",
+  "screen.materialnexus.read_only": "Lecture seule : l’édition se fait en solo ou en LAN",
+  "message.materialnexus.no_permission": "Material Nexus nécessite les droits opérateur (niveau 2)."
 }

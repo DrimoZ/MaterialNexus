@@ -1,4 +1,7 @@
 {
-  "itemGroup.materialnexus.main": "Material Nexus",
-  "command.materialnexus.open": "Open Material Nexus"
+  "item.materialnexus.nexus_terminal": "Nexus Terminal",
+  "screen.materialnexus.title": "Material Nexus",
+  "screen.materialnexus.materials": "%s materials resolved",
+  "screen.materialnexus.read_only": "Read-only: editing is available in singleplayer or LAN",
+  "message.materialnexus.no_permission": "Material Nexus requires operator permission (level 2)."
 }

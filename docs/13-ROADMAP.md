@@ -8,7 +8,7 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [x] architecture contract
 - [x] Gradle/NeoForge 1.21.1 bootstrap
 - [x] main mod entry point
-- [ ] `/materials` command + creative "Nexus Terminal" item (permission 2, server-checked)
+- [x] `/materials` command + creative "Nexus Terminal" item (permission 2, server-checked; placeholder screen)
 - [x] baseline tests (JUnit + GameTest)
 
 ## Phase 1 — Discovery and read-only GUI

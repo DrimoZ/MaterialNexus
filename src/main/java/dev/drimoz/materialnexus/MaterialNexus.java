@@ -1,7 +1,7 @@
 package dev.drimoz.materialnexus;
 
-import dev.drimoz.materialnexus.command.MaterialsCommand;
-import dev.drimoz.materialnexus.core.resolution.SnapshotManager;
+import dev.drimoz.materialnexus.network.OpenNexusPayload;
+import dev.drimoz.materialnexus.registry.MnxItems;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
 import net.neoforged.fml.common.Mod;
@@ -12,7 +12,7 @@ public final class MaterialNexus {
     public static final String MOD_ID = "materialnexus";
 
     public MaterialNexus(IEventBus modBus, ModContainer modContainer) {
-        SnapshotManager.initialize();
-        MaterialsCommand.initialize();
+        MnxItems.register(modBus);
+        modBus.addListener(OpenNexusPayload::register);
     }
 }

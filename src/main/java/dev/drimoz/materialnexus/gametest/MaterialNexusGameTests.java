@@ -1,22 +1,27 @@
 package dev.drimoz.materialnexus.gametest;
 
 import dev.drimoz.materialnexus.MaterialNexus;
+import dev.drimoz.materialnexus.command.MaterialsCommand;
 import dev.drimoz.materialnexus.core.discovery.DiscoveredMaterials;
 import dev.drimoz.materialnexus.core.domain.FormId;
 import dev.drimoz.materialnexus.core.domain.MaterialId;
 import dev.drimoz.materialnexus.core.resolution.SnapshotManager;
-import net.minecraft.resources.ResourceLocation;
+import dev.drimoz.materialnexus.registry.MnxItems;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.level.ServerPlayer;
+import net.minecraft.world.InteractionHand;
+import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
-/** MNX-001: the mod boots on a dedicated server with no optional mods installed. */
+/** Runtime acceptance tests; one per critical behavior. */
 @GameTestHolder(MaterialNexus.MOD_ID)
 @PrefixGameTestTemplate(false)
-public final class BootstrapGameTests {
-    private BootstrapGameTests() { }
+public final class MaterialNexusGameTests {
+    private MaterialNexusGameTests() { }
 
     @GameTest(template = "empty")
     public static void modLoadsWithSnapshot(GameTestHelper helper) {
@@ -39,6 +44,17 @@ public final class BootstrapGameTests {
                 "c:storage_blocks/raw_copper should map to copper/raw_block");
         helper.assertFalse(discovered.materials().containsKey(new MaterialId("raw_copper")),
                 "raw_copper must not be discovered as its own material");
+        helper.succeed();
+    }
+
+    /** MNX-006: a non-operator holding a /give'd Nexus Terminal still cannot open the screen. */
+    @GameTest(template = "empty")
+    @SuppressWarnings("removal") // fine on the pinned 1.21.1; revisit when porting
+    public static void nonOperatorIsRefusedServerSide(GameTestHelper helper) {
+        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(MnxItems.NEXUS_TERMINAL.get()));
+        helper.assertFalse(player.hasPermissions(MaterialsCommand.PERMISSION_LEVEL), "mock player should not be an operator");
+        helper.assertFalse(MaterialsCommand.tryOpen(player), "non-operator must be refused");
         helper.succeed();
     }
 }
