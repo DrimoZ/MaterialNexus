@@ -32,7 +32,12 @@ public final class MnxNetwork {
         });
         registrar.playToServer(MaterialDetailRequest.TYPE, MaterialDetailRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
-            if (player != null) NexusQueries.detail(SnapshotManager.current(), req.material()).ifPresent(d -> PacketDistributor.sendToPlayer(player, d));
+            if (player != null) {
+                var snapshot = SnapshotManager.current();
+                NexusQueries.detail(snapshot, req.material()).ifPresent(d -> PacketDistributor.sendToPlayer(player,
+                        d.withMissing(dev.drimoz.materialnexus.datapack.RecipeEdges.missing(player.server, snapshot.discovered(),
+                                new dev.drimoz.materialnexus.core.domain.MaterialId(d.material())))));
+            }
         });
         registrar.playToServer(PreviewRequest.TYPE, PreviewRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);

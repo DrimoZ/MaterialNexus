@@ -55,6 +55,15 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /** MNX-010: iron has every standard conversion in a real pack, so no proposal may appear (no false positives). */
+    @GameTest(template = "empty")
+    public static void ironHasNoMissingRecipeProposals(GameTestHelper helper) {
+        var missing = dev.drimoz.materialnexus.datapack.RecipeEdges.missing(helper.getLevel().getServer(),
+                SnapshotManager.current().discovered(), new MaterialId("iron"));
+        helper.assertTrue(missing.isEmpty(), "iron should have no missing conversion, got " + missing);
+        helper.succeed();
+    }
+
     /** MNX-025: real recipes are read with their JSON from the resource stack and vanilla outputs are rewritten. */
     @GameTest(template = "empty")
     public static void vanillaRecipesProducingAnAlternativeAreRewritten(GameTestHelper helper) {

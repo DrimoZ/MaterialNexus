@@ -38,7 +38,7 @@ public final class MaterialDetailScreen extends Screen {
 
     @Override
     protected void init() {
-        FormList list = addRenderableWidget(new FormList(minecraft, width, height - 76, 28));
+        FormList list = addRenderableWidget(new FormList(minecraft, width, height - 80, 32));
         List<Row> rows = detail.forms().stream().map(Row::new).toList();
         rows.forEach(list::add);
         if (!parent.readOnly()) {
@@ -58,6 +58,17 @@ public final class MaterialDetailScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(font, title, width / 2, 10, 0xFFFFFF);
+        if (!detail.missing().isEmpty()) {
+            // ADR-003: proposals only. Material Nexus never creates these recipes by itself.
+            MutableComponent relations = Component.empty();
+            for (int i = 0; i < detail.missing().size(); i++) {
+                var r = detail.missing().get(i);
+                if (i > 0) relations.append(", ");
+                relations.append(Component.translatable("screen.materialnexus.relation", Names.form(r.from().name()), Names.form(r.to().name())));
+            }
+            Component line = Component.translatable("screen.materialnexus.missing", relations);
+            graphics.drawCenteredString(font, font.plainSubstrByWidth(line.getString(), width - 20), width / 2, 20, 0xFFFF55);
+        }
         if (!parent.readOnly()) {
             graphics.drawCenteredString(font, Component.translatable("screen.materialnexus.click_to_change"), width / 2, height - 42, 0xAAAAAA);
         }

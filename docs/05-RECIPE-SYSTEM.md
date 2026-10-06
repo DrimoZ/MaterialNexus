@@ -70,3 +70,7 @@ A recipe definition contains:
 - use-material-tag flag.
 
 All edits produce a preview change plan before application.
+
+### Implemented (MNX-010)
+
+For each material, the expected conversions between the forms it has (nugget↔ingot, ingot↔block, raw↔raw block, raw→ingot, dust→ingot) are checked against every loaded recipe: a conversion is present if any recipe makes an item of the target form from an ingredient accepting an item of the source form (any provider, any recipe type exposing its result). Missing ones are listed at the top of the material detail as proposals. Computed when the detail is opened; nothing is ever generated from them (ADR-003). Recipes that do not expose their result through vanilla APIs (e.g. Mekanism) do not count as evidence, so a proposal can be conservative.

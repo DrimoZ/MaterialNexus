@@ -2,6 +2,8 @@ package dev.drimoz.materialnexus.network;
 
 import dev.drimoz.materialnexus.MaterialNexus;
 import dev.drimoz.materialnexus.core.discovery.DiscoveryEvidence.Confidence;
+import dev.drimoz.materialnexus.core.domain.FormId;
+import dev.drimoz.materialnexus.core.recipe.FamilyRelations;
 import dev.drimoz.materialnexus.core.policy.PolicyPrecedence;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
 import net.minecraft.network.FriendlyByteBuf;
@@ -12,7 +14,8 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.List;
 
 /** Server to client: every resolved form of one material, in response to {@link MaterialDetailRequest}. */
-public record MaterialDetailPayload(String material, List<FormView> forms) implements CustomPacketPayload {
+public record MaterialDetailPayload(String material, List<FormView> forms, List<FamilyRelations.Relation> missing)
+        implements CustomPacketPayload {
     public static final Type<MaterialDetailPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "material_detail"));
     public static final StreamCodec<FriendlyByteBuf, MaterialDetailPayload> STREAM_CODEC =
@@ -22,6 +25,12 @@ public record MaterialDetailPayload(String material, List<FormView> forms) imple
 
     public MaterialDetailPayload {
         forms = List.copyOf(forms);
+        missing = List.copyOf(missing);
+    }
+
+    /** The same detail with the missing-recipe proposals computed on the server (MNX-010). */
+    public MaterialDetailPayload withMissing(List<FamilyRelations.Relation> relations) {
+        return new MaterialDetailPayload(material, forms, relations);
     }
 
     @Override public Type<MaterialDetailPayload> type() { return TYPE; }
@@ -44,6 +53,10 @@ public record MaterialDetailPayload(String material, List<FormView> forms) imple
             b.writeCollection(f.reasonArgs(), FriendlyByteBuf::writeUtf);
             b.writeOptional(f.ignoredOverride(), FriendlyByteBuf::writeResourceLocation);
         });
+        buf.writeCollection(p.missing(), (b, r) -> {
+            b.writeUtf(r.from().name());
+            b.writeUtf(r.to().name());
+        });
     }
 
     private static MaterialDetailPayload read(FriendlyByteBuf buf) {
@@ -55,6 +68,7 @@ public record MaterialDetailPayload(String material, List<FormView> forms) imple
                 b.readEnum(Confidence.class),
                 b.readUtf(),
                 b.readList(FriendlyByteBuf::readUtf),
-                b.readOptional(FriendlyByteBuf::readResourceLocation)))));
+                b.readOptional(FriendlyByteBuf::readResourceLocation)))),
+                buf.readList(b -> new FamilyRelations.Relation(new FormId(b.readUtf()), new FormId(b.readUtf()))));
     }
 }

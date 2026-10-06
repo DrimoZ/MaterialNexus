@@ -33,7 +33,7 @@ public final class NexusQueries {
                 .map(id -> snapshot.materials().get(id))
                 .map(m -> new MaterialDetailPayload(m.material().name(), m.forms().entrySet().stream()
                         .map(e -> new MaterialDetailPayload.FormView(e.getKey().name(), e.getValue()))
-                        .toList()));
+                        .toList(), java.util.List.of()));
     }
 
     private static MaterialListPayload.Summary summarize(ResolvedMaterial m) {

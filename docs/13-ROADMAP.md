@@ -41,7 +41,7 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [x] duplicate classification (exact duplicates after rewrite)
 - [x] recipe disabling (exact duplicates after rewrite; modded types untouched)
 - [x] output rewriting (vanilla types; pre-MNX JSON from the resource stack)
-- [ ] missing recipe proposals
+- [x] missing recipe proposals (standard form conversions with no recipe; shown, never created)
 
 ## Phase 4 — Integrations
 
