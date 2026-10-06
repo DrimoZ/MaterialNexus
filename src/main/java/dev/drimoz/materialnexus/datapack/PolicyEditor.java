@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 
 /** Turns GUI choices into a validated diff, then into policy file edits (ADR-008/009). */
 public final class PolicyEditor {
-    public static final int MAX_CHANGES = 256;
+    public static final int MAX_CHANGES = 4096;
 
     /** One line of the preview. {@code from} is empty when the form had no canonical yet. */
     public record Entry(String material, String form, Optional<ResourceLocation> from, ResourceLocation to, boolean valid) { }

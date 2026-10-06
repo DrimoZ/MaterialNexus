@@ -109,13 +109,17 @@ final class PolicyHandler {
 
         server.reloadResources(server.getPackRepository().getSelectedIds()).whenComplete((ignored, error) -> server.execute(() -> {
             BUSY.set(false);
+            // The policy and pack are already written. A failure here comes from another mod's reload listener
+            // after the data was swapped (e.g. IE arc recycling on live metal tag changes): report it, do not pretend
+            // nothing happened, and still treat the changes as applied.
             if (error != null) {
-                LOGGER.error("Material Nexus reload failed", error);
-                player.sendSystemMessage(Component.translatable("message.materialnexus.apply_failed", error.getMessage()));
-                return;
+                LOGGER.error("A reload listener failed after Material Nexus applied its changes", error);
+                Throwable cause = error.getCause() != null ? error.getCause() : error;
+                player.sendSystemMessage(Component.translatable("message.materialnexus.reload_failed", cause.toString()));
+            } else {
+                player.sendSystemMessage(success);
             }
-            player.sendSystemMessage(success);
-            PacketDistributor.sendToPlayer(player, OpenNexusPayload.forPlayer(player));
+            PacketDistributor.sendToPlayer(player, OpenNexusPayload.forPlayer(player, true));
         }));
     }
 }

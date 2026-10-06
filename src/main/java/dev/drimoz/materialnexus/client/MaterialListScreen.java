@@ -6,6 +6,7 @@ import dev.drimoz.materialnexus.network.MaterialListRequest;
 import dev.drimoz.materialnexus.network.NexusQueries;
 import dev.drimoz.materialnexus.network.PreviewRequest;
 import dev.drimoz.materialnexus.network.RevertRequest;
+import dev.drimoz.materialnexus.network.SuggestionsRequest;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -36,6 +37,9 @@ public final class MaterialListScreen extends Screen {
 
     boolean readOnly() { return readOnly; }
 
+    /** Rebuilds the widgets, e.g. so the Preview button shows a new pending count. */
+    void refresh() { rebuildWidgets(); }
+
     @Override
     protected void init() {
         EditBox search = new EditBox(font, width / 2 - 100, 22, 200, 18, Component.translatable("screen.materialnexus.search"));
@@ -64,6 +68,10 @@ public final class MaterialListScreen extends Screen {
                 minecraft.setScreen(null);
             }).bounds(width - 108, 22, 100, 18).build());
             revert.active = canRevert;
+            // Accepts every current suggestion as a pending choice; still reviewed in Preview before anything is written.
+            addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.unify_all"),
+                            b -> PacketDistributor.sendToServer(SuggestionsRequest.INSTANCE))
+                    .bounds(8, 22, 120, 18).build());
         }
 
         if (page == null) {

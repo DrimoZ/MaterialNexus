@@ -28,3 +28,9 @@ If analysis fails, show diagnostics and generate nothing. Gameplay state is what
 ## Network
 
 The client requests targeted views: material list, material detail, recipe family, diagnostics. Every request is permission-checked server-side. Do not synchronize the entire recipe graph every tick or permanently mirror it to every player.
+
+## Other mods failing during a live apply
+
+Apply reloads data while the world runs. Some mods cache state across reloads and fail in their own reload listener when unified tags change live. Known case: Immersive Engineering 12.4.2 arc recycling throws `ArrayIndexOutOfBoundsException` in `OnDatapackSyncEvent` when metal tags lose members (reproduced: tags-only transition fails, same pack present at startup reloads fine).
+
+The policy and pack are already written and the data swapped when that happens, so Material Nexus reports it as "applied, another mod failed while reloading", keeps the GUI open on the new state and clears pending choices. Restarting the world gives a clean state. Pending choices are only dropped once the server confirms the apply.

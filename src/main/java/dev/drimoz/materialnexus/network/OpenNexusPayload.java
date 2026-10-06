@@ -10,19 +10,27 @@ import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
-/** Server to client, sent once when an authorized player opens Material Nexus. Not a state stream. */
-public record OpenNexusPayload(boolean readOnly, boolean canRevert) implements CustomPacketPayload {
+/**
+ * Server to client, sent once when an authorized player opens Material Nexus, or after an apply /
+ * revert was written ({@code applied}: the client may then drop its pending changes). Not a state stream.
+ */
+public record OpenNexusPayload(boolean readOnly, boolean canRevert, boolean applied) implements CustomPacketPayload {
     public static final Type<OpenNexusPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "open_nexus"));
     public static final StreamCodec<ByteBuf, OpenNexusPayload> STREAM_CODEC = StreamCodec.composite(
             ByteBufCodecs.BOOL, OpenNexusPayload::readOnly,
             ByteBufCodecs.BOOL, OpenNexusPayload::canRevert,
+            ByteBufCodecs.BOOL, OpenNexusPayload::applied,
             OpenNexusPayload::new);
 
-    /** Editing is a singleplayer/LAN activity; dedicated servers only get read-only diagnostics (ADR-013). */
     public static OpenNexusPayload forPlayer(ServerPlayer player) {
+        return forPlayer(player, false);
+    }
+
+    /** Editing is a singleplayer/LAN activity; dedicated servers only get read-only diagnostics (ADR-013). */
+    public static OpenNexusPayload forPlayer(ServerPlayer player, boolean applied) {
         boolean readOnly = player.server.isDedicatedServer();
-        return new OpenNexusPayload(readOnly, !readOnly && PolicyEditor.canRevert(MnxPaths.policies()));
+        return new OpenNexusPayload(readOnly, !readOnly && PolicyEditor.canRevert(MnxPaths.policies()), applied);
     }
 
     @Override public Type<OpenNexusPayload> type() { return TYPE; }
