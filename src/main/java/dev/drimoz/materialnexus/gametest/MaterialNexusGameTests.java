@@ -56,6 +56,12 @@ public final class MaterialNexusGameTests {
                 "c:storage_blocks/raw_copper should map to copper/raw_block");
         helper.assertFalse(discovered.materials().containsKey(new MaterialId("raw_copper")),
                 "raw_copper must not be discovered as its own material");
+        // MNX-027: host-rock variants are separate forms, never duplicates of each other.
+        ResourceLocation deepslateOre = ResourceLocation.withDefaultNamespace("deepslate_copper_ore");
+        helper.assertTrue(discovered.providers(copper, new FormId("deepslate_ore")).stream().anyMatch(p -> p.resource().equals(deepslateOre)),
+                "deepslate copper ore should be copper/deepslate_ore");
+        helper.assertFalse(discovered.providers(copper, new FormId("ore")).stream().anyMatch(p -> p.resource().equals(deepslateOre)),
+                "deepslate copper ore must not be in copper/ore");
         helper.succeed();
     }
 

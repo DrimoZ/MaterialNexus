@@ -40,7 +40,7 @@ public final class NexusQueries {
         int providers = 0;
         int duplicates = 0;
         for (var form : m.forms().values()) {
-            providers += 1 + form.alternatives().size();
+            providers += (form.canonical().isPresent() ? 1 : 0) + form.alternatives().size() + form.notUnified().size();
             if (!form.alternatives().isEmpty()) duplicates++;
         }
         return new MaterialListPayload.Summary(m.material().name(), m.forms().size(), providers, duplicates);

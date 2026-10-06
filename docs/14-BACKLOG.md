@@ -19,6 +19,7 @@
 | MNX-009 | P1 | Recipe families | Plate/ingot/etc. variants grouped and shown |
 | MNX-025 | P1 | Output rewriting | Vanilla types only; off by default; previewed |
 | MNX-026 | P1 | Almost Unified arbitration | Per-domain ownership; overlaps reported |
+| MNX-027 | P0 | False duplicates | Rock variants, same-mod variants, umbrella tags and exclusions are listed but never unified (ADR-014) |
 | MNX-010 | P1 | Recipe proposals | Missing families produce reviewable proposals |
 | MNX-013 | P2 | JEI | Disabled/generated recipes represented correctly |
 | MNX-014 | P2 | EMI | Same behavior through separate adapter |

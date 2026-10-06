@@ -9,18 +9,28 @@ import java.util.Optional;
 
 /**
  * Canonical choice for one material/form, with everything the GUI needs to answer "Why?".
- * The reason is a translation key plus arguments: every user-visible string lives in the lang files.
+ * {@code alternatives} are interchangeable duplicates; {@code notUnified} are providers that are
+ * listed but deliberately left alone (variants, other materials, exclusions), each with its reason.
+ * Reasons are translation keys plus arguments: every user-visible string lives in the lang files.
  */
 public record ResolvedForm(
-        ResourceLocation canonical,
+        Optional<ResourceLocation> canonical,
         List<ResourceLocation> alternatives,
+        List<NotUnified> notUnified,
         PolicyPrecedence source,
         Confidence confidence,
         String reasonKey,
         List<String> reasonArgs,
         Optional<ResourceLocation> ignoredOverride) {
+    public record NotUnified(ResourceLocation item, String reasonKey, List<String> reasonArgs) {
+        public NotUnified {
+            reasonArgs = List.copyOf(reasonArgs);
+        }
+    }
+
     public ResolvedForm {
         alternatives = List.copyOf(alternatives);
+        notUnified = List.copyOf(notUnified);
         reasonArgs = List.copyOf(reasonArgs);
     }
 }

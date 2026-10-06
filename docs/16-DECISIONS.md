@@ -82,3 +82,16 @@
 ## ADR-013 — Authoring is a singleplayer/LAN activity
 
 **Decision:** the editing GUI requires permission level 2 and targets singleplayer (cheats on) or LAN. On dedicated servers, OPs get read-only diagnostics. The GUI opens from `/materials` or a creative-only "Nexus Terminal" item; the server re-checks permission on open, so `/give` cannot bypass it.
+
+## ADR-014 - A tag means "usable as", not "the same item"
+
+**Decision:** before unifying a material/form, every provider is sorted out; only interchangeable candidates are unified, the rest are listed with their reason and left untouched.
+
+- ores are split by host rock (`ore`, `deepslate_ore`, `nether_ore`, `end_ore`, from `c:ores_in_ground/*`, else the item name): rock variants never unify with each other, the same rock from two mods does;
+- an item also tagged as a more specific material of the same form (fewest members) belongs there: `stick_treated` is a treated_wood rod, not a duplicate of the vanilla stick; umbrella tags like `c:rods/all_metal` end up with nothing to unify;
+- several items of one mod in one form are variants (AE2 certus / charged certus), never duplicates;
+- `exclude` in `global.json` (`"steel"` or `"steel/rod"`) leaves a material or form alone.
+
+Nothing is ever removed from a tag or a material by these rules: removing anything is the player's decision, which is why an explicit choice may still pick any discovered provider.
+
+**Rejected:** treating every tag member as a duplicate (deepslate vs stone ores, treated vs vanilla sticks); hiding the ore form entirely (cross-mod ores of the same rock are real duplicates).

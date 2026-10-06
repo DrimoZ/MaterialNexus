@@ -50,7 +50,7 @@ public final class PolicyEditor {
             boolean valid = material.isPresent() && form.isPresent() && snapshot.discovered()
                     .providers(material.get(), form.get()).stream()
                     .anyMatch(p -> p.resource().equals(change.provider()));
-            entries.add(new Entry(change.material(), change.form(), current.map(ResolvedForm::canonical), change.provider(), valid));
+            entries.add(new Entry(change.material(), change.form(), current.flatMap(ResolvedForm::canonical), change.provider(), valid));
         }
         entries.sort(Comparator.comparing(Entry::material).thenComparing(Entry::form));
         return entries;

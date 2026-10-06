@@ -17,9 +17,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.stream.Stream;
 
@@ -48,9 +50,12 @@ public final class PolicyFiles {
     }
 
     /** Unknown fields are ignored so later sections (e.g. almost_unified) do not break older readers. */
-    private static final Codec<List<String>> GLOBAL_CODEC = RecordCodecBuilder.create(i -> i.group(
-            Codec.STRING.listOf().optionalFieldOf("mod_priority", List.of()).forGetter(l -> l)
-    ).apply(i, l -> l));
+    private record GlobalPolicy(List<String> modPriority, List<String> exclude) {
+        static final Codec<GlobalPolicy> CODEC = RecordCodecBuilder.create(i -> i.group(
+                Codec.STRING.listOf().optionalFieldOf("mod_priority", List.of()).forGetter(GlobalPolicy::modPriority),
+                Codec.STRING.listOf().optionalFieldOf("exclude", List.of()).forGetter(GlobalPolicy::exclude)
+        ).apply(i, GlobalPolicy::new));
+    }
 
     private PolicyFiles() { }
 
@@ -73,7 +78,20 @@ public final class PolicyFiles {
 
     /** Pure part of {@link #load}: file name to JSON in, policy out. */
     public static ResolutionPolicy parse(JsonElement global, Map<String, JsonElement> materialsByFile) {
-        List<String> globalPriority = decode(GLOBAL_CODEC, global, GLOBAL_FILE);
+        GlobalPolicy globalPolicy = decode(GlobalPolicy.CODEC, global, GLOBAL_FILE);
+        Set<MaterialId> excludedMaterials = new HashSet<>();
+        Set<MaterialForm> excludedForms = new HashSet<>();
+        for (String entry : globalPolicy.exclude()) {
+            // "steel" excludes a whole material, "steel/rod" one of its forms.
+            String[] parts = entry.split("/", -1);
+            var material = MaterialId.read(parts[0]).result();
+            var form = parts.length == 2 ? FormId.read(parts[1]).result() : Optional.<FormId>empty();
+            if (material.isEmpty() || parts.length > 2 || (parts.length == 2 && form.isEmpty())) {
+                throw new IllegalArgumentException("Invalid policy file " + GLOBAL_FILE + ": bad exclude entry '" + entry + "'");
+            }
+            if (form.isPresent()) excludedForms.add(new MaterialForm(material.get(), form.get()));
+            else excludedMaterials.add(material.get());
+        }
         Map<MaterialId, String> seen = new HashMap<>();
         Map<MaterialId, List<String>> materialPriority = new HashMap<>();
         Map<MaterialForm, List<String>> formPriority = new HashMap<>();
@@ -92,7 +110,7 @@ public final class PolicyFiles {
                 f.preferredProvider().ifPresent(item -> explicit.put(key, item));
             });
         });
-        return new ResolutionPolicy(globalPriority, materialPriority, formPriority, explicit);
+        return new ResolutionPolicy(globalPolicy.modPriority(), materialPriority, formPriority, explicit, excludedMaterials, excludedForms);
     }
 
     private static <T> T decode(Codec<T> codec, JsonElement json, String file) {

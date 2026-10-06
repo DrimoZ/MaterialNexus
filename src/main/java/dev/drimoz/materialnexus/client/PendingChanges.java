@@ -19,8 +19,8 @@ final class PendingChanges {
     }
 
     /** Choosing the current canonical again simply cancels the pending change. */
-    static void set(String material, String form, ResourceLocation provider, ResourceLocation current) {
-        if (provider.equals(current)) CHANGES.remove(key(material, form));
+    static void set(String material, String form, ResourceLocation provider, Optional<ResourceLocation> current) {
+        if (current.isPresent() && provider.equals(current.get())) CHANGES.remove(key(material, form));
         else CHANGES.put(key(material, form), new CanonicalChange(material, form, provider));
     }
 

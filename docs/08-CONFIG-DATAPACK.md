@@ -36,7 +36,7 @@ Material definitions shipped by mods or datapacks may also live under `data/<nam
 `policies/global.json`:
 
 ```json
-{ "mod_priority": ["minecraft", "create"] }
+{ "mod_priority": ["minecraft", "create"], "exclude": ["wood", "steel/rod"] }
 ```
 
 `policies/materials/copper.json` (file name is free; `material` is the key, defined once):

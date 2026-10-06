@@ -31,8 +31,13 @@ public record MaterialDetailPayload(String material, List<FormView> forms) imple
         buf.writeCollection(p.forms(), (b, view) -> {
             ResolvedForm f = view.resolved();
             b.writeUtf(view.form());
-            b.writeResourceLocation(f.canonical());
+            b.writeOptional(f.canonical(), FriendlyByteBuf::writeResourceLocation);
             b.writeCollection(f.alternatives(), FriendlyByteBuf::writeResourceLocation);
+            b.writeCollection(f.notUnified(), (bb, n) -> {
+                bb.writeResourceLocation(n.item());
+                bb.writeUtf(n.reasonKey());
+                bb.writeCollection(n.reasonArgs(), FriendlyByteBuf::writeUtf);
+            });
             b.writeEnum(f.source());
             b.writeEnum(f.confidence());
             b.writeUtf(f.reasonKey());
@@ -43,8 +48,9 @@ public record MaterialDetailPayload(String material, List<FormView> forms) imple
 
     private static MaterialDetailPayload read(FriendlyByteBuf buf) {
         return new MaterialDetailPayload(buf.readUtf(), buf.readList(b -> new FormView(b.readUtf(), new ResolvedForm(
-                b.readResourceLocation(),
+                b.readOptional(FriendlyByteBuf::readResourceLocation),
                 b.readList(FriendlyByteBuf::readResourceLocation),
+                b.readList(bb -> new ResolvedForm.NotUnified(bb.readResourceLocation(), bb.readUtf(), bb.readList(FriendlyByteBuf::readUtf))),
                 b.readEnum(PolicyPrecedence.class),
                 b.readEnum(Confidence.class),
                 b.readUtf(),
