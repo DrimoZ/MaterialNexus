@@ -22,9 +22,12 @@ public final class MnxItems {
         modBus.addListener(MnxItems::addToCreativeTab);
     }
 
-    /** Only in the vanilla "Operator Utilities" tab, which the game shows to operators only. */
+    /**
+     * In "Tools and Utilities", but only for players with operator permissions. Not the vanilla
+     * Operator tab: that one stays hidden unless the "Operator Items Tab" option is turned on.
+     */
     private static void addToCreativeTab(BuildCreativeModeTabContentsEvent event) {
-        if (event.getTabKey() == CreativeModeTabs.OP_BLOCKS && event.hasPermissions()) {
+        if (event.getTabKey() == CreativeModeTabs.TOOLS_AND_UTILITIES && event.hasPermissions()) {
             event.accept(NEXUS_TERMINAL.get());
         }
     }

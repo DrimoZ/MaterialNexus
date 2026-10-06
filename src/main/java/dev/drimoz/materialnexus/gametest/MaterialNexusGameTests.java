@@ -14,6 +14,7 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.neoforged.fml.ModList;
+import net.neoforged.neoforge.common.util.FakePlayerFactory;
 import net.neoforged.neoforge.gametest.GameTestHolder;
 import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
@@ -49,11 +50,11 @@ public final class MaterialNexusGameTests {
 
     /** MNX-006: a non-operator holding a /give'd Nexus Terminal still cannot open the screen. */
     @GameTest(template = "empty")
-    @SuppressWarnings("removal") // fine on the pinned 1.21.1; revisit when porting
     public static void nonOperatorIsRefusedServerSide(GameTestHelper helper) {
-        ServerPlayer player = helper.makeMockServerPlayerInLevel();
+        // A fake player, not a mock: a mock "logs in", and installed mods (Jade, Mekanism) then try to sync to it.
+        ServerPlayer player = FakePlayerFactory.getMinecraft(helper.getLevel());
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(MnxItems.NEXUS_TERMINAL.get()));
-        helper.assertFalse(player.hasPermissions(MaterialsCommand.PERMISSION_LEVEL), "mock player should not be an operator");
+        helper.assertFalse(player.hasPermissions(MaterialsCommand.PERMISSION_LEVEL), "fake player should not be an operator");
         helper.assertFalse(MaterialsCommand.tryOpen(player), "non-operator must be refused");
         helper.succeed();
     }
