@@ -16,6 +16,7 @@ import java.util.Map;
  */
 public final class ItemConversions {
     private static volatile Map<Item, Item> active = Map.of();
+    private static volatile boolean viewerHiding = true;
 
     private ItemConversions() { }
 
@@ -27,8 +28,14 @@ public final class ItemConversions {
         active = Collections.unmodifiableMap(items);
     }
 
+    /** Whether recipe viewers should hide alternatives: off when Almost Unified owns viewer hiding (ADR-012). */
+    public static void setViewerHiding(boolean enabled) {
+        viewerHiding = enabled;
+    }
+
     /** The alternatives currently converted, for recipe viewers on the client. */
     public static java.util.List<ResourceLocation> alternatives() {
+        if (!viewerHiding) return java.util.List.of();
         return active.keySet().stream().map(BuiltInRegistries.ITEM::getKey).sorted().toList();
     }
 

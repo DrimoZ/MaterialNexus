@@ -74,11 +74,12 @@ final class PolicyHandler {
 
     /** The whole generated pack for a policy: tags and conversions, then the recipes they imply. */
     private static PackContent.Content packContent(MinecraftServer server, ResolutionPolicy policy, List<PackContent.Effect> applied) {
-        return PackContent.full(CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy), policy,
-                (items, conversions) -> {
+        boolean auPresent = net.neoforged.fml.ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID);
+        return PackContent.full(CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy), policy, auPresent,
+                (conversions, ownership) -> {
                     RecipeFormats formats = RecipeFormats.load(server.getResourceManager());
                     return RecipeRewrites.plan(
-                            RecipeSources.collect(server, conversions, formats, RecipeRewrites.overridden(applied)), conversions, formats);
+                            RecipeSources.collect(server, conversions, formats, RecipeRewrites.overridden(applied)), conversions, formats, ownership);
                 });
     }
 

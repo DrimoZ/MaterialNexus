@@ -88,6 +88,8 @@ public final class PreviewScreen extends Screen {
             case RecipeRewrites.REWRITE -> Component.translatable("screen.materialnexus.effect.recipe_rewrite", e.target().toString(), e.item().toString());
             case RecipeRewrites.DISABLE -> Component.translatable("screen.materialnexus.effect.recipe_disable", e.target().toString());
             case RecipeRewrites.UNSUPPORTED -> Component.translatable("screen.materialnexus.effect.recipe_unsupported", e.target().toString(), e.item().toString());
+            case PackContent.ALMOST_UNIFIED -> Component.translatable("screen.materialnexus.effect.almost_unified",
+                    Component.translatable("materialnexus.au_domain." + e.target().getPath()));
             default -> Component.translatable("screen.materialnexus.effect.conversion", e.item().toString(), e.target().toString());
         };
         return new Line(Component.translatable(prefixKey, effect), color);

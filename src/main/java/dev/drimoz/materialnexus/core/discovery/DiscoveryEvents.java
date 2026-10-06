@@ -56,6 +56,8 @@ public final class DiscoveryEvents {
                     CanonicalResolver.resolve(discovered, policy)));
             // In-world conversion follows the applied pack, not the policy files (ADR-015).
             ItemConversions.install(PackContent.itemConversions(applied));
+            ItemConversions.setViewerHiding(policy.almostUnified().mnxOwns(dev.drimoz.materialnexus.core.policy.AlmostUnified.Domain.VIEWER_HIDING,
+                    net.neoforged.fml.ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID)));
             LOGGER.info("Material Nexus discovered {} materials ({} providers) in {} ms",
                     discovered.materials().size(), discovered.providerCount(), (System.nanoTime() - start) / 1_000_000);
         } catch (IOException | RuntimeException e) {

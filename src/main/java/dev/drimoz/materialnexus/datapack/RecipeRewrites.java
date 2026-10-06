@@ -3,6 +3,7 @@ package dev.drimoz.materialnexus.datapack;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
+import dev.drimoz.materialnexus.core.policy.AlmostUnified;
 import dev.drimoz.materialnexus.integration.RecipeFormats;
 import net.minecraft.resources.ResourceLocation;
 
@@ -35,6 +36,13 @@ public final class RecipeRewrites {
     private RecipeRewrites() { }
 
     public static PackContent.Content plan(List<Source> sources, Map<ResourceLocation, ResourceLocation> conversions, RecipeFormats formats) {
+        return plan(sources, conversions, formats, AlmostUnified.Ownership.ALL);
+    }
+
+    /** With Almost Unified owning recipe rewriting, nothing is planned; owning only disabling, duplicates are rewritten, not disabled. */
+    public static PackContent.Content plan(List<Source> sources, Map<ResourceLocation, ResourceLocation> conversions, RecipeFormats formats,
+                                           AlmostUnified.Ownership ownership) {
+        if (!ownership.outputRewrite()) return new PackContent.Content(Map.of(), List.of());
         Map<String, JsonElement> files = new TreeMap<>();
         List<PackContent.Effect> effects = new ArrayList<>();
         Map<ResourceLocation, JsonObject> rewritten = new TreeMap<>();
@@ -62,7 +70,7 @@ public final class RecipeRewrites {
         sources.forEach(s -> resultOf.put(s.id(), conversions.getOrDefault(s.result(), s.result())));
         rewritten.forEach((id, json) -> {
             ResourceLocation result = resultOf.get(id);
-            if (keeper.putIfAbsent(normalized(json), id) != null) {
+            if (keeper.putIfAbsent(normalized(json), id) != null && ownership.recipeDisable()) {
                 files.put(path(id), disabled());
                 effects.add(new PackContent.Effect(DISABLE, id, result));
             } else {

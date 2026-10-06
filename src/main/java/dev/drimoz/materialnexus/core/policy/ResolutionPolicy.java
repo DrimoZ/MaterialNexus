@@ -12,8 +12,8 @@ import java.util.Set;
 
 /**
  * Pack-author intent: canonical selection, one field per precedence level (ADR-006), exclusions
- * (ADR-014), and the forms for which unification also generates 1:1 conversion recipes.
- * Mod priorities are namespaces, strongest first.
+ * (ADR-014), the forms for which unification also generates 1:1 conversion recipes, and the
+ * arbitration with Almost Unified (ADR-012). Mod priorities are namespaces, strongest first.
  */
 public record ResolutionPolicy(
         List<String> globalModPriority,
@@ -22,7 +22,8 @@ public record ResolutionPolicy(
         Map<MaterialForm, ResourceLocation> explicitProviders,
         Set<MaterialId> excludedMaterials,
         Set<MaterialForm> excludedForms,
-        Set<FormId> conversionRecipeForms) {
+        Set<FormId> conversionRecipeForms,
+        AlmostUnified almostUnified) {
     public static final ResolutionPolicy NONE = new ResolutionPolicy(List.of(), Map.of(), Map.of(), Map.of());
 
     public ResolutionPolicy {
@@ -33,6 +34,13 @@ public record ResolutionPolicy(
         excludedMaterials = Set.copyOf(excludedMaterials);
         excludedForms = Set.copyOf(excludedForms);
         conversionRecipeForms = Set.copyOf(conversionRecipeForms);
+    }
+
+    public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
+                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, ResourceLocation> explicitProviders,
+                            Set<MaterialId> excludedMaterials, Set<MaterialForm> excludedForms, Set<FormId> conversionRecipeForms) {
+        this(globalModPriority, materialModPriority, formModPriority, explicitProviders, excludedMaterials, excludedForms,
+                conversionRecipeForms, AlmostUnified.NONE);
     }
 
     public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
@@ -55,6 +63,6 @@ public record ResolutionPolicy(
         Map<MaterialForm, ResourceLocation> merged = new HashMap<>(explicitProviders);
         merged.putAll(extra);
         return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, merged,
-                excludedMaterials, excludedForms, conversionRecipeForms);
+                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified);
     }
 }

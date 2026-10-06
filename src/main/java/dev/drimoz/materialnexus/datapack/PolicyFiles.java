@@ -9,6 +9,7 @@ import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.drimoz.materialnexus.core.domain.FormId;
 import dev.drimoz.materialnexus.core.domain.MaterialForm;
 import dev.drimoz.materialnexus.core.domain.MaterialId;
+import dev.drimoz.materialnexus.core.policy.AlmostUnified;
 import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
 import net.minecraft.resources.ResourceLocation;
 
@@ -16,6 +17,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.EnumMap;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -50,12 +53,30 @@ public final class PolicyFiles {
     }
 
     /** Unknown fields are ignored so later sections (e.g. almost_unified) do not break older readers. */
-    private record GlobalPolicy(List<String> modPriority, List<String> exclude, List<String> conversionRecipes) {
+    private record GlobalPolicy(List<String> modPriority, List<String> exclude, List<String> conversionRecipes,
+                                Map<String, String> almostUnified) {
         static final Codec<GlobalPolicy> CODEC = RecordCodecBuilder.create(i -> i.group(
                 Codec.STRING.listOf().optionalFieldOf("mod_priority", List.of()).forGetter(GlobalPolicy::modPriority),
                 Codec.STRING.listOf().optionalFieldOf("exclude", List.of()).forGetter(GlobalPolicy::exclude),
-                Codec.STRING.listOf().optionalFieldOf("conversion_recipes", List.of()).forGetter(GlobalPolicy::conversionRecipes)
+                Codec.STRING.listOf().optionalFieldOf("conversion_recipes", List.of()).forGetter(GlobalPolicy::conversionRecipes),
+                Codec.unboundedMap(Codec.STRING, Codec.STRING).optionalFieldOf("almost_unified", Map.of()).forGetter(GlobalPolicy::almostUnified)
         ).apply(i, GlobalPolicy::new));
+    }
+
+    /** {@code "almost_unified": {"tags": "mnx", "output_rewrite": "au", ...}}; unknown domains or owners fail loudly. */
+    private static AlmostUnified almostUnified(Map<String, String> raw) {
+        Map<AlmostUnified.Domain, AlmostUnified.Owner> owners = new EnumMap<>(AlmostUnified.Domain.class);
+        raw.forEach((domain, owner) -> {
+            AlmostUnified.Domain d = Arrays.stream(AlmostUnified.Domain.values()).filter(x -> x.key.equals(domain)).findFirst()
+                    .orElseThrow(() -> new IllegalArgumentException("Invalid policy file " + GLOBAL_FILE + ": unknown almost_unified domain '" + domain + "'"));
+            AlmostUnified.Owner o = switch (owner) {
+                case "mnx" -> AlmostUnified.Owner.MNX;
+                case "au" -> AlmostUnified.Owner.AU;
+                default -> throw new IllegalArgumentException("Invalid policy file " + GLOBAL_FILE + ": almost_unified." + domain + " must be \"mnx\" or \"au\"");
+            };
+            owners.put(d, o);
+        });
+        return new AlmostUnified(owners);
     }
 
     private PolicyFiles() { }
@@ -116,7 +137,8 @@ public final class PolicyFiles {
             conversionForms.add(FormId.read(form).result().orElseThrow(() -> new IllegalArgumentException(
                     "Invalid policy file " + GLOBAL_FILE + ": bad conversion_recipes entry '" + form + "'")));
         }
-        return new ResolutionPolicy(globalPolicy.modPriority(), materialPriority, formPriority, explicit, excludedMaterials, excludedForms, conversionForms);
+        return new ResolutionPolicy(globalPolicy.modPriority(), materialPriority, formPriority, explicit, excludedMaterials, excludedForms,
+                conversionForms, almostUnified(globalPolicy.almostUnified()));
     }
 
     private static <T> T decode(Codec<T> codec, JsonElement json, String file) {

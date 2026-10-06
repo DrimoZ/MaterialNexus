@@ -16,8 +16,8 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [x] item/block discovery (via item tags; block items carry mirrored tags)
 - [x] common material tags (`c:<folder>/<material>`)
 - [ ] explicit material definitions
-- [ ] confidence/evidence model
-- [ ] read-only snapshot index
+- [x] confidence/evidence model
+- [x] read-only snapshot index
 - [x] targeted network queries (list page + material detail, permission re-checked per request)
 - [x] material list screen (search + pagination)
 - [x] material detail screen (forms, providers, `Why?`; read-only until MNX-022)
@@ -31,14 +31,14 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [x] tag policy (NeoForge `remove` entries for unified alternatives; optional conversion recipes)
 - [x] preview screen → Apply → `/reload` (canonical choices; backup in policies.bak)
 - [x] revert last apply (swap with policies.bak; a second revert redoes)
-- [ ] pre-MNX analysis via resource stack
-- [ ] Almost Unified detection and per-domain arbitration
+- [x] pre-MNX analysis via resource stack (tags via manifest, recipes via resource stack)
+- [x] Almost Unified detection and per-domain arbitration (unarbitrated domains left to AU)
 
 ## Phase 3 — Recipe intelligence
 
 - [x] vanilla recipe adapters (result rewrite for the 8 vanilla types)
 - [ ] recipe families screen
-- [ ] duplicate classification
+- [x] duplicate classification (exact duplicates after rewrite)
 - [x] recipe disabling (exact duplicates after rewrite; modded types untouched)
 - [x] output rewriting (vanilla types; pre-MNX JSON from the resource stack)
 - [ ] missing recipe proposals

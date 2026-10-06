@@ -6,6 +6,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import dev.drimoz.materialnexus.core.discovery.TagDiscovery;
 import dev.drimoz.materialnexus.core.domain.MaterialId;
+import dev.drimoz.materialnexus.core.policy.AlmostUnified;
 import dev.drimoz.materialnexus.core.policy.PolicyPrecedence;
 import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
@@ -35,6 +36,9 @@ public final class PackContent {
     public static final String CONVERSION = "conversion_recipe";
     /** Alternatives the server swaps for the canonical item when the game touches them (MNX-028). */
     public static final String ITEM_CONVERSION = "item_conversion";
+    /** Informational: a domain left to Almost Unified ({@code target} = materialnexus:&lt;domain&gt;). Generates no file. */
+    public static final String ALMOST_UNIFIED = "almost_unified";
+    private static final ResourceLocation AU_ID = ResourceLocation.fromNamespaceAndPath(AlmostUnified.MOD_ID, "owner");
 
     /** One generated change; for both conversions, {@code target} is the canonical item. */
     public record Effect(String kind, ResourceLocation target, ResourceLocation item) { }
@@ -53,19 +57,31 @@ public final class PackContent {
         return conversions;
     }
 
-    /** Tag/item content plus the recipe content it implies; the generated pack is exactly this. */
-    public static Content full(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy,
-                               java.util.function.BiFunction<java.util.Set<ResourceLocation>, Map<ResourceLocation, ResourceLocation>, Content> recipes) {
-        Content base = generate(resolved, policy);
-        Map<ResourceLocation, ResourceLocation> conversions = itemConversions(base.effects());
-        if (conversions.isEmpty()) return base;
-        java.util.Set<ResourceLocation> items = new java.util.HashSet<>(conversions.keySet());
-        items.addAll(conversions.values());
-        Content recipe = recipes.apply(items, conversions);
-        Map<String, JsonElement> files = new TreeMap<>(base.files());
-        files.putAll(recipe.files());
+    /** Recipe side of {@link #full}: given the conversions and what Material Nexus may do, the recipe content. */
+    public interface RecipePlanner {
+        Content plan(Map<ResourceLocation, ResourceLocation> conversions, AlmostUnified.Ownership ownership);
+    }
+
+    /**
+     * Tag/item content plus the recipe content it implies; the generated pack is exactly this. With Almost
+     * Unified installed, domains left to it generate nothing and are noted (ADR-012).
+     */
+    public static Content full(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy, boolean auPresent, RecipePlanner recipes) {
+        AlmostUnified.Ownership ownership = policy.almostUnified().ownership(auPresent);
+        Content base = generate(resolved, policy, ownership);
         List<Effect> effects = new ArrayList<>(base.effects());
-        effects.addAll(recipe.effects());
+        Map<String, JsonElement> files = new TreeMap<>(base.files());
+        if (auPresent) {
+            for (AlmostUnified.Domain d : AlmostUnified.Domain.values()) {
+                if (!policy.almostUnified().mnxOwns(d, true)) effects.add(new Effect(ALMOST_UNIFIED, ResourceLocation.fromNamespaceAndPath("materialnexus", d.key), AU_ID));
+            }
+        }
+        Map<ResourceLocation, ResourceLocation> conversions = itemConversions(base.effects());
+        if (!conversions.isEmpty()) {
+            Content recipe = recipes.plan(conversions, ownership);
+            files.putAll(recipe.files());
+            effects.addAll(recipe.effects());
+        }
         effects.sort(ORDER);
         return new Content(files, List.copyOf(effects));
     }
@@ -75,6 +91,10 @@ public final class PackContent {
     }
 
     public static Content generate(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy) {
+        return generate(resolved, policy, AlmostUnified.Ownership.ALL);
+    }
+
+    public static Content generate(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy, AlmostUnified.Ownership ownership) {
         SortedMap<ResourceLocation, TreeSet<ResourceLocation>> removals = new TreeMap<>();
         Map<String, JsonElement> files = new TreeMap<>();
         List<Effect> effects = new ArrayList<>();
@@ -82,8 +102,10 @@ public final class PackContent {
             if (!isUnified(f)) return;
             ResourceLocation canonical = f.canonical().orElseThrow();
             for (ResourceLocation alt : f.alternatives()) effects.add(new Effect(ITEM_CONVERSION, canonical, alt));
-            TagDiscovery.conventionTag(material, form)
-                    .ifPresent(tag -> removals.computeIfAbsent(tag, t -> new TreeSet<>()).addAll(f.alternatives()));
+            if (ownership.tags()) {
+                TagDiscovery.conventionTag(material, form)
+                        .ifPresent(tag -> removals.computeIfAbsent(tag, t -> new TreeSet<>()).addAll(f.alternatives()));
+            }
             if (policy.conversionRecipeForms().contains(form)) {
                 for (ResourceLocation alt : f.alternatives()) {
                     String id = "convert/" + material.name() + "/" + form.name() + "/" + alt.getNamespace() + "_" + alt.getPath().replace('/', '_');
