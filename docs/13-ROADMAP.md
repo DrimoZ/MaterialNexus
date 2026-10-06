@@ -15,7 +15,7 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 
 - [x] item/block discovery (via item tags; block items carry mirrored tags)
 - [x] common material tags (`c:<folder>/<material>`)
-- [ ] explicit material definitions
+- [x] explicit material definitions (aliases merge spellings; shipped: aluminium -> aluminum)
 - [x] confidence/evidence model
 - [x] read-only snapshot index
 - [x] targeted network queries (list page + material detail, permission re-checked per request)

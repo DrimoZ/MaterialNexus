@@ -107,3 +107,13 @@ To let Material Nexus rewrite another mod's recipes, add a file to any datapack 
 ```
 
 `outputs` are the top-level keys holding the produced items. To change a shipped format, put a file with the same id (e.g. `data/materialnexus/material_nexus/recipe_formats/create.json`) in a higher-priority pack. Types not covered by any format are listed in Preview as "not handled yet" and left untouched.
+
+## Material definitions and aliases (MNX-033)
+
+`data/<namespace>/material_nexus/materials/<name>.json`, from any datapack:
+
+```json
+{ "id": "aluminum", "aliases": ["aluminium"] }
+```
+
+Tags named after an alias (`c:ingots/aluminium`, `c:storage_blocks/raw_aluminium`...) are discovered as the declaring material, with the evidence "alias of aluminum" (explicit-definition confidence). Aliases are never guessed from names. An alias claimed by two materials keeps the first claim by file id and is reported in the log. Material Nexus ships `aluminium -> aluminum`. `forms` is parsed but not used yet.

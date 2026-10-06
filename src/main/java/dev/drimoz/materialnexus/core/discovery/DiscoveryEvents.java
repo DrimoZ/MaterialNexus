@@ -7,6 +7,7 @@ import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
 import dev.drimoz.materialnexus.core.resolution.CanonicalResolver;
 import dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot;
 import dev.drimoz.materialnexus.core.resolution.SnapshotManager;
+import dev.drimoz.materialnexus.datapack.MaterialDefinitions;
 import dev.drimoz.materialnexus.datapack.MnxPaths;
 import dev.drimoz.materialnexus.datapack.PackContent;
 import dev.drimoz.materialnexus.datapack.PolicyFiles;
@@ -49,7 +50,7 @@ public final class DiscoveryEvents {
                     .filter(e -> BuiltInRegistries.ITEM.containsKey(e.item())).toList();
             PackContent.restoreRemovedMembers(tagMembers, applied);
 
-            DiscoveredMaterials discovered = TagDiscovery.discover(tagMembers);
+            DiscoveredMaterials discovered = TagDiscovery.discover(tagMembers, MaterialDefinitions.aliases());
             ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies());
             ResolvedSnapshot previous = SnapshotManager.current();
             SnapshotManager.swap(new ResolvedSnapshot(previous.generation() + 1, Instant.now(), discovered,

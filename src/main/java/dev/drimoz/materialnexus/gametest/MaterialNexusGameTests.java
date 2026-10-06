@@ -55,6 +55,14 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /** MNX-033: shipped material definitions are loaded by the data reload, before discovery uses them. */
+    @GameTest(template = "empty")
+    public static void shippedMaterialDefinitionsAreLoaded(GameTestHelper helper) {
+        helper.assertTrue(new MaterialId("aluminum").equals(dev.drimoz.materialnexus.datapack.MaterialDefinitions.aliases().get("aluminium")),
+                "the shipped aluminium alias should be loaded, got " + dev.drimoz.materialnexus.datapack.MaterialDefinitions.aliases());
+        helper.succeed();
+    }
+
     /** MNX-032: /materials report runs from the server console and writes the analysis. */
     @GameTest(template = "empty")
     public static void reportCommandWritesTheAnalysis(GameTestHelper helper) {

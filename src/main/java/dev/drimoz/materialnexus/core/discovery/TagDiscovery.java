@@ -48,6 +48,15 @@ public final class TagDiscovery {
     private TagDiscovery() { }
 
     public static DiscoveredMaterials discover(Map<ResourceLocation, ? extends Collection<ResourceLocation>> tagMembers) {
+        return discover(tagMembers, Map.of());
+    }
+
+    /**
+     * With explicit aliases (MNX-033): a material named by an alias (aluminium) is merged into the material that
+     * declares it (aluminum). Aliases are pack-author data, never guessed from names.
+     */
+    public static DiscoveredMaterials discover(Map<ResourceLocation, ? extends Collection<ResourceLocation>> tagMembers,
+                                               Map<String, MaterialId> aliases) {
         Map<ResourceLocation, String> groundOf = groundsByItem(tagMembers);
         SortedMap<MaterialId, SortedMap<FormId, SortedMap<ResourceLocation, List<DiscoveryEvidence>>>> found = new TreeMap<>();
 
@@ -64,13 +73,14 @@ public final class TagDiscovery {
                 tagForm = RAW_BLOCK;
                 name = name.substring(RAW_PREFIX.length());
             }
-            var material = MaterialId.read(name).result();
+            MaterialId aliasOf = aliases.get(name);
+            var material = aliasOf != null ? java.util.Optional.of(aliasOf) : MaterialId.read(name).result();
             if (material.isEmpty()) return;
 
             var byForm = found.computeIfAbsent(material.get(), m -> new TreeMap<>());
             for (ResourceLocation item : members) {
                 FormId form = tagForm;
-                String explanation = "#" + tag;
+                String explanation = "#" + tag + (aliasOf != null ? " (alias of " + aliasOf + ")" : "");
                 if (tagForm.equals(ORE)) {
                     String ground = groundOf.get(item);
                     form = ground != null ? oreForm(ground) : oreFormByName(item);
@@ -78,7 +88,7 @@ public final class TagDiscovery {
                 }
                 byForm.computeIfAbsent(form, f -> new TreeMap<>())
                         .computeIfAbsent(item, i -> new ArrayList<>())
-                        .add(new DiscoveryEvidence(Confidence.MATERIAL_TAG, explanation));
+                        .add(new DiscoveryEvidence(aliasOf != null ? Confidence.EXPLICIT_DEFINITION : Confidence.MATERIAL_TAG, explanation));
             }
         });
 
