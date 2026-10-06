@@ -22,6 +22,8 @@
   "screen.materialnexus.no_changes": "No change",
   "screen.materialnexus.apply": "Apply",
   "screen.materialnexus.discard": "Discard changes",
+  "screen.materialnexus.revert": "Revert last apply",
+  "message.materialnexus.reverted": "Material Nexus: previous policy restored and data reloaded.",
   "message.materialnexus.applied": "Material Nexus: %s change(s) applied and data reloaded.",
   "message.materialnexus.apply_failed": "Material Nexus: apply failed (%s). Nothing was reloaded.",
   "message.materialnexus.read_only_apply": "Material Nexus: editing is not available on a dedicated server.",

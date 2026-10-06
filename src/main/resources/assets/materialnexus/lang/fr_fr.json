@@ -22,6 +22,8 @@
   "screen.materialnexus.no_changes": "Aucun changement",
   "screen.materialnexus.apply": "Appliquer",
   "screen.materialnexus.discard": "Annuler les changements",
+  "screen.materialnexus.revert": "Annuler le dernier Apply",
+  "message.materialnexus.reverted": "Material Nexus : policy précédente restaurée, données rechargées.",
   "message.materialnexus.applied": "Material Nexus : %s changement(s) appliqué(s), données rechargées.",
   "message.materialnexus.apply_failed": "Material Nexus : échec de l’application (%s). Rien n’a été rechargé.",
   "message.materialnexus.read_only_apply": "Material Nexus : l’édition n’est pas disponible sur un serveur dédié.",

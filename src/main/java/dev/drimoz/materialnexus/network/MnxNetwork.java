@@ -34,7 +34,11 @@ public final class MnxNetwork {
         });
         registrar.playToServer(PreviewRequest.TYPE, PreviewRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
-            if (player != null) PreviewHandler.handle(player, req);
+            if (player != null) PolicyHandler.preview(player, req);
+        });
+        registrar.playToServer(RevertRequest.TYPE, RevertRequest.STREAM_CODEC, (req, ctx) -> {
+            ServerPlayer player = authorized(ctx);
+            if (player != null) PolicyHandler.revert(player);
         });
     }
 

@@ -30,7 +30,7 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [x] generated global datapack + `manifest.json` (writer + injection; content arrives with tag/recipe actions)
 - [ ] tag policy (NeoForge `remove` entries)
 - [x] preview screen → Apply → `/reload` (canonical choices; backup in policies.bak)
-- [ ] revert last apply
+- [x] revert last apply (swap with policies.bak; a second revert redoes)
 - [ ] pre-MNX analysis via resource stack
 - [ ] Almost Unified detection and per-domain arbitration
 

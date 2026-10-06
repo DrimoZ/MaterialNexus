@@ -5,6 +5,7 @@ import dev.drimoz.materialnexus.network.MaterialListPayload;
 import dev.drimoz.materialnexus.network.MaterialListRequest;
 import dev.drimoz.materialnexus.network.NexusQueries;
 import dev.drimoz.materialnexus.network.PreviewRequest;
+import dev.drimoz.materialnexus.network.RevertRequest;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -20,15 +21,17 @@ import java.util.Locale;
 /** Material browser: server-side filter and pagination, one request per change. */
 public final class MaterialListScreen extends Screen {
     private final boolean readOnly;
+    private final boolean canRevert;
     private String query = "";
     private MaterialListPayload page;
     private MaterialList list;
     private Button previous;
     private Button next;
 
-    public MaterialListScreen(boolean readOnly) {
+    public MaterialListScreen(boolean readOnly, boolean canRevert) {
         super(Component.translatable("screen.materialnexus.title"));
         this.readOnly = readOnly;
+        this.canRevert = canRevert;
     }
 
     boolean readOnly() { return readOnly; }
@@ -55,6 +58,12 @@ public final class MaterialListScreen extends Screen {
                             b -> PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), false)))
                     .bounds(width - 108, height - 26, 100, 20).build());
             preview.active = PendingChanges.size() > 0;
+            Button revert = addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.revert"), b -> {
+                PacketDistributor.sendToServer(RevertRequest.INSTANCE);
+                // The server reopens Material Nexus once the reload has finished.
+                minecraft.setScreen(null);
+            }).bounds(width - 108, 22, 100, 18).build());
+            revert.active = canRevert;
         }
 
         if (page == null) {

@@ -84,6 +84,25 @@ public final class PolicyEditor {
         return policiesDir.resolveSibling(policiesDir.getFileName() + ".bak");
     }
 
+    public static boolean canRevert(Path policiesDir) {
+        return Files.isDirectory(backupDir(policiesDir));
+    }
+
+    /**
+     * "Revert last apply" (ADR-009): swaps the policy with its backup, so the current policy becomes
+     * the new backup and a second revert redoes the apply. One level, no history (ADR-005).
+     */
+    public static void revert(Path policiesDir) throws IOException {
+        Path bak = backupDir(policiesDir);
+        if (!Files.isDirectory(bak)) throw new IOException("No previous policy to revert to");
+        Path swap = policiesDir.resolveSibling(policiesDir.getFileName() + ".swap");
+        deleteRecursively(swap);
+        if (Files.exists(policiesDir)) Files.move(policiesDir, swap);
+        Files.move(bak, policiesDir);
+        if (Files.exists(swap)) Files.move(swap, bak);
+        else Files.createDirectories(bak);
+    }
+
     private static void backup(Path policiesDir) throws IOException {
         Path bak = backupDir(policiesDir);
         deleteRecursively(bak);

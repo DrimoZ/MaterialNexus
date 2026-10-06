@@ -57,5 +57,11 @@ class PolicyEditorTest {
         MaterialForm tinIngot = new MaterialForm(new MaterialId("tin"), new FormId("ingot"));
         assertEquals(MEK, reloaded.explicitProviders().get(tinIngot));
         assertEquals(MEK, CanonicalResolver.resolve(discovered, reloaded).get(new MaterialId("tin")).forms().get(new FormId("ingot")).canonical());
+
+        // MNX-023: revert restores the exact previous file; reverting again redoes the apply.
+        PolicyEditor.revert(policies);
+        assertEquals("{\"material\":\"tin\",\"mod_priority\":[\"thermal\"],\"note\":\"keep me\"}", Files.readString(existing));
+        PolicyEditor.revert(policies);
+        assertEquals(MEK, PolicyFiles.load(policies).explicitProviders().get(tinIngot));
     }
 }

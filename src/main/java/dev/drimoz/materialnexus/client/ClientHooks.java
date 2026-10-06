@@ -11,7 +11,7 @@ public final class ClientHooks {
     private ClientHooks() { }
 
     public static void openNexus(OpenNexusPayload payload) {
-        Minecraft.getInstance().setScreen(new MaterialListScreen(payload.readOnly()));
+        Minecraft.getInstance().setScreen(new MaterialListScreen(payload.readOnly(), payload.canRevert()));
     }
 
     public static void onMaterialList(MaterialListPayload payload) {

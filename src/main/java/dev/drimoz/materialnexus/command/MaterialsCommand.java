@@ -30,9 +30,7 @@ public final class MaterialsCommand {
             player.sendSystemMessage(Component.translatable("message.materialnexus.no_permission"));
             return false;
         }
-        // Editing is a singleplayer/LAN activity; dedicated servers only get read-only diagnostics.
-        boolean readOnly = player.server.isDedicatedServer();
-        PacketDistributor.sendToPlayer(player, new OpenNexusPayload(readOnly));
+        PacketDistributor.sendToPlayer(player, OpenNexusPayload.forPlayer(player));
         return true;
     }
 }
