@@ -36,7 +36,7 @@ public final class MaterialNexusGameTests {
     public static void vanillaRecipesProducingAnAlternativeAreRewritten(GameTestHelper helper) {
         ResourceLocation copper = ResourceLocation.withDefaultNamespace("copper_ingot");
         ResourceLocation iron = ResourceLocation.withDefaultNamespace("iron_ingot");
-        var sources = RecipeSources.collect(helper.getLevel().getServer(), java.util.Set.of(copper, iron), java.util.List.of());
+        var sources = RecipeSources.collect(helper.getLevel().getServer(), java.util.Map.of(copper, iron), java.util.List.of());
         var plan = RecipeRewrites.plan(sources, java.util.Map.of(copper, iron));
         var fromBlock = new PackContent.Effect(RecipeRewrites.REWRITE, ResourceLocation.withDefaultNamespace("copper_ingot"), iron);
         helper.assertTrue(plan.effects().contains(fromBlock), "minecraft:copper_ingot should be rewritten, got " + plan.effects());

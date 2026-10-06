@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
@@ -34,9 +35,18 @@ public final class RecipeSources {
 
     private RecipeSources() { }
 
-    public static List<RecipeRewrites.Source> collect(MinecraftServer server, Set<ResourceLocation> results, Collection<ResourceLocation> overridden) {
+    /**
+     * Recipes producing an alternative or a canonical item (outputs, duplicates), plus vanilla recipes that
+     * consume an alternative (inputs). {@code conversions} maps alternative to canonical.
+     */
+    public static List<RecipeRewrites.Source> collect(MinecraftServer server, Map<ResourceLocation, ResourceLocation> conversions,
+                                                      Collection<ResourceLocation> overridden) {
         ResourceManager resources = server.getResourceManager();
         Set<ResourceLocation> ours = new HashSet<>(overridden);
+        Set<ResourceLocation> results = new HashSet<>(conversions.keySet());
+        results.addAll(conversions.values());
+        List<ItemStack> alternatives = conversions.keySet().stream()
+                .flatMap(id -> BuiltInRegistries.ITEM.getOptional(id).stream()).map(ItemStack::new).toList();
         List<RecipeRewrites.Source> sources = new ArrayList<>();
 
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
@@ -44,14 +54,16 @@ public final class RecipeSources {
             ItemStack out = holder.value().getResultItem(server.registryAccess());
             if (out.isEmpty()) continue;
             ResourceLocation result = BuiltInRegistries.ITEM.getKey(out.getItem());
-            if (!results.contains(result)) continue;
-            ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
-            Optional<JsonObject> json = VANILLA_TYPES.contains(type) ? originalJson(resources, holder.id()) : Optional.empty();
+            boolean vanilla = VANILLA_TYPES.contains(BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer()));
+            boolean consumesAlternative = vanilla && holder.value().getIngredients().stream()
+                    .anyMatch(ingredient -> alternatives.stream().anyMatch(ingredient));
+            if (!results.contains(result) && !consumesAlternative) continue;
+            Optional<JsonObject> json = vanilla ? originalJson(resources, holder.id()) : Optional.empty();
             sources.add(new RecipeRewrites.Source(holder.id(), json, result));
         }
         // Recipes we rewrote or disabled are judged by their original JSON, not by what we made of them.
         for (ResourceLocation id : ours) {
-            originalJson(resources, id).ifPresent(json -> RecipeRewrites.resultId(json).filter(results::contains)
+            originalJson(resources, id).ifPresent(json -> RecipeRewrites.resultId(json)
                     .ifPresent(result -> sources.add(new RecipeRewrites.Source(id, Optional.of(json), result))));
         }
         sources.sort(Comparator.comparing(RecipeRewrites.Source::id));

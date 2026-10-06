@@ -39,18 +39,20 @@ public final class RecipeRewrites {
 
         for (Source s : sources) {
             ResourceLocation canonical = conversions.get(s.result());
-            if (canonical == null) continue;
             if (s.json().isEmpty()) {
-                effects.add(new PackContent.Effect(UNSUPPORTED, s.id(), s.result()));
+                if (canonical != null) effects.add(new PackContent.Effect(UNSUPPORTED, s.id(), s.result()));
                 continue;
             }
-            rewritten.put(s.id(), withResult(s.json().get(), canonical));
+            // Inputs too: an alternative named as a literal item would otherwise be asked for after it was converted away.
+            JsonObject json = withInputs(s.json().get(), conversions);
+            if (canonical != null) json = withResult(json, canonical);
+            if (!json.equals(s.json().get())) rewritten.put(s.id(), json);
         }
 
         // Exact duplicates after rewrite: an untouched recipe, or a rewritten one with a smaller id, wins.
         Map<JsonElement, ResourceLocation> keeper = new HashMap<>();
         sources.stream()
-                .filter(s -> s.json().isPresent() && !rewritten.containsKey(s.id()) && conversions.containsValue(s.result()))
+                .filter(s -> s.json().isPresent() && !rewritten.containsKey(s.id()))
                 .sorted(Comparator.comparing(Source::id))
                 .forEach(s -> keeper.putIfAbsent(normalized(s.json().get()), s.id()));
 
@@ -65,6 +67,30 @@ public final class RecipeRewrites {
             }
         });
         return new PackContent.Content(files, effects);
+    }
+
+    /** Replaces every literal {@code "item": <alternative>} outside the result; tag ingredients are left as they are. */
+    static JsonObject withInputs(JsonObject recipe, Map<ResourceLocation, ResourceLocation> conversions) {
+        JsonObject copy = recipe.deepCopy();
+        for (String key : copy.keySet()) {
+            if (!key.equals("result")) replaceItems(copy.get(key), conversions);
+        }
+        return copy;
+    }
+
+    private static void replaceItems(JsonElement element, Map<ResourceLocation, ResourceLocation> conversions) {
+        if (element.isJsonArray()) {
+            element.getAsJsonArray().forEach(e -> replaceItems(e, conversions));
+        } else if (element.isJsonObject()) {
+            JsonObject o = element.getAsJsonObject();
+            JsonElement item = o.get("item");
+            if (item != null && item.isJsonPrimitive()) {
+                ResourceLocation id = ResourceLocation.tryParse(item.getAsString());
+                ResourceLocation canonical = id == null ? null : conversions.get(id);
+                if (canonical != null) o.addProperty("item", canonical.toString());
+            }
+            o.entrySet().forEach(e -> replaceItems(e.getValue(), conversions));
+        }
     }
 
     /** Recipe ids this pack overrides; their pre-MNX JSON must be read beneath it (ADR-010). */

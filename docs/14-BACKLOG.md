@@ -29,4 +29,5 @@
 | MNX-018 | P2 | Thermal | Plate/gear/etc. recognized |
 | MNX-019 | P3 | Presets | Five initial presets |
 | MNX-028 | P1 | In-world conversion | Applied alternatives become canonical when dropped, on login and when a vanilla container opens (ADR-015) |
+| MNX-030 | P1 | Recipe inputs | Literal alternative inputs of vanilla recipes become the canonical item; collapsed duplicates are disabled |
 | MNX-020 | P3 | KubeJS bridge | Optional scripting API, no dependency |

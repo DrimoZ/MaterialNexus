@@ -75,7 +75,7 @@ final class PolicyHandler {
     private static PackContent.Content packContent(MinecraftServer server, ResolutionPolicy policy, List<PackContent.Effect> applied) {
         return PackContent.full(CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy), policy,
                 (items, conversions) -> RecipeRewrites.plan(
-                        RecipeSources.collect(server, items, RecipeRewrites.overridden(applied)), conversions));
+                        RecipeSources.collect(server, conversions, RecipeRewrites.overridden(applied)), conversions));
     }
 
     private static Map<MaterialForm, ResourceLocation> explicitChoices(List<PolicyEditor.Entry> entries) {
