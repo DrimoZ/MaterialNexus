@@ -10,14 +10,15 @@ public final class ClientHooks {
     private ClientHooks() { }
 
     public static void openNexus(OpenNexusPayload payload) {
-        Minecraft.getInstance().setScreen(new NexusScreen(payload.readOnly()));
+        Minecraft.getInstance().setScreen(new MaterialListScreen(payload.readOnly()));
     }
 
     public static void onMaterialList(MaterialListPayload payload) {
-        if (Minecraft.getInstance().screen instanceof NexusScreen screen) screen.onMaterialList(payload);
+        if (Minecraft.getInstance().screen instanceof MaterialListScreen screen) screen.accept(payload);
     }
 
     public static void onMaterialDetail(MaterialDetailPayload payload) {
-        if (Minecraft.getInstance().screen instanceof NexusScreen screen) screen.onMaterialDetail(payload);
+        Minecraft mc = Minecraft.getInstance();
+        if (mc.screen instanceof MaterialListScreen list) mc.setScreen(new MaterialDetailScreen(list, payload));
     }
 }

@@ -19,8 +19,8 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [ ] confidence/evidence model
 - [ ] read-only snapshot index
 - [x] targeted network queries (list page + material detail, permission re-checked per request)
-- [ ] material list screen
-- [ ] material detail screen (forms, providers, `Why?`)
+- [x] material list screen (search + pagination)
+- [x] material detail screen (forms, providers, `Why?`; read-only until MNX-022)
 - [ ] read-only diagnostics on dedicated servers
 
 ## Phase 2 — Unification and Apply
