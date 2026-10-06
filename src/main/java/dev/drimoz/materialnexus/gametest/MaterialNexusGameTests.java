@@ -9,6 +9,9 @@ import dev.drimoz.materialnexus.core.domain.MaterialId;
 import dev.drimoz.materialnexus.core.resolution.SnapshotManager;
 import dev.drimoz.materialnexus.datapack.GeneratedPack;
 import dev.drimoz.materialnexus.datapack.MnxPaths;
+import dev.drimoz.materialnexus.datapack.PackContent;
+import dev.drimoz.materialnexus.datapack.RecipeRewrites;
+import dev.drimoz.materialnexus.datapack.RecipeSources;
 import dev.drimoz.materialnexus.registry.MnxItems;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -27,6 +30,20 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 @PrefixGameTestTemplate(false)
 public final class MaterialNexusGameTests {
     private MaterialNexusGameTests() { }
+
+    /** MNX-025: real recipes are read with their JSON from the resource stack and vanilla outputs are rewritten. */
+    @GameTest(template = "empty")
+    public static void vanillaRecipesProducingAnAlternativeAreRewritten(GameTestHelper helper) {
+        ResourceLocation copper = ResourceLocation.withDefaultNamespace("copper_ingot");
+        ResourceLocation iron = ResourceLocation.withDefaultNamespace("iron_ingot");
+        var sources = RecipeSources.collect(helper.getLevel().getServer(), java.util.Set.of(copper, iron), java.util.List.of());
+        var plan = RecipeRewrites.plan(sources, java.util.Map.of(copper, iron));
+        var fromBlock = new PackContent.Effect(RecipeRewrites.REWRITE, ResourceLocation.withDefaultNamespace("copper_ingot"), iron);
+        helper.assertTrue(plan.effects().contains(fromBlock), "minecraft:copper_ingot should be rewritten, got " + plan.effects());
+        helper.assertTrue(plan.files().get("data/minecraft/recipe/copper_ingot.json").toString().contains("\"id\":\"minecraft:iron_ingot\""),
+                "rewritten JSON must produce the canonical item");
+        helper.succeed();
+    }
 
     /** MNX-028: an applied alternative becomes the canonical item when it enters the world or a container is converted. */
     @GameTest(template = "empty")

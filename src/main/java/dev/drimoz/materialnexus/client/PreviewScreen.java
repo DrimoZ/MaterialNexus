@@ -2,6 +2,7 @@ package dev.drimoz.materialnexus.client;
 
 import dev.drimoz.materialnexus.datapack.PackContent;
 import dev.drimoz.materialnexus.datapack.PolicyEditor;
+import dev.drimoz.materialnexus.datapack.RecipeRewrites;
 import dev.drimoz.materialnexus.network.PreviewPayload;
 import dev.drimoz.materialnexus.network.PreviewRequest;
 import net.minecraft.client.Minecraft;
@@ -85,6 +86,9 @@ public final class PreviewScreen extends Screen {
         Component effect = switch (e.kind()) {
             case PackContent.TAG_REMOVE -> Component.translatable("screen.materialnexus.effect.tag_remove", e.target().toString(), e.item().toString());
             case PackContent.ITEM_CONVERSION -> Component.translatable("screen.materialnexus.effect.item_conversion", e.item().toString(), e.target().toString());
+            case RecipeRewrites.REWRITE -> Component.translatable("screen.materialnexus.effect.recipe_rewrite", e.target().toString(), e.item().toString());
+            case RecipeRewrites.DISABLE -> Component.translatable("screen.materialnexus.effect.recipe_disable", e.target().toString());
+            case RecipeRewrites.UNSUPPORTED -> Component.translatable("screen.materialnexus.effect.recipe_unsupported", e.target().toString(), e.item().toString());
             default -> Component.translatable("screen.materialnexus.effect.conversion", e.item().toString(), e.target().toString());
         };
         return new Line(Component.translatable(prefixKey, effect), color);

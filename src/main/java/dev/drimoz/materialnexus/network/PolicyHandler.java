@@ -12,6 +12,8 @@ import dev.drimoz.materialnexus.datapack.MnxPaths;
 import dev.drimoz.materialnexus.datapack.PackContent;
 import dev.drimoz.materialnexus.datapack.PolicyEditor;
 import dev.drimoz.materialnexus.datapack.PolicyFiles;
+import dev.drimoz.materialnexus.datapack.RecipeRewrites;
+import dev.drimoz.materialnexus.datapack.RecipeSources;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -42,8 +44,8 @@ final class PolicyHandler {
         List<PackContent.Effect> current;
         try {
             ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies()).withExplicit(explicitChoices(entries));
-            proposed = PackContent.generate(CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy), policy).effects();
             current = PackContent.readManifest(MnxPaths.generated());
+            proposed = packContent(player.server, policy, current).effects();
         } catch (IOException | RuntimeException e) {
             LOGGER.error("Material Nexus preview failed", e);
             player.sendSystemMessage(Component.translatable("message.materialnexus.apply_failed", e.getMessage()));
@@ -69,6 +71,13 @@ final class PolicyHandler {
                 Component.translatable("message.materialnexus.reverted"));
     }
 
+    /** The whole generated pack for a policy: tags and conversions, then the recipes they imply. */
+    private static PackContent.Content packContent(MinecraftServer server, ResolutionPolicy policy, List<PackContent.Effect> applied) {
+        return PackContent.full(CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy), policy,
+                (items, conversions) -> RecipeRewrites.plan(
+                        RecipeSources.collect(server, items, RecipeRewrites.overridden(applied)), conversions));
+    }
+
     private static Map<MaterialForm, ResourceLocation> explicitChoices(List<PolicyEditor.Entry> entries) {
         Map<MaterialForm, ResourceLocation> explicit = new HashMap<>();
         for (PolicyEditor.Entry e : entries) {
@@ -87,9 +96,9 @@ final class PolicyHandler {
         if (!BUSY.compareAndSet(false, true)) return;
 
         try {
+            List<PackContent.Effect> previous = PackContent.readManifest(MnxPaths.generated());
             write.run();
-            ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies());
-            var content = PackContent.generate(CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy), policy);
+            var content = packContent(server, PolicyFiles.load(MnxPaths.policies()), previous);
             GeneratedPack.write(MnxPaths.generated(), content.files(), PackContent.toJson(content.effects()));
         } catch (IOException | RuntimeException e) {
             BUSY.set(false);

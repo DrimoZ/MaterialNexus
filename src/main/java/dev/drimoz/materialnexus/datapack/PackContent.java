@@ -53,6 +53,23 @@ public final class PackContent {
         return conversions;
     }
 
+    /** Tag/item content plus the recipe content it implies; the generated pack is exactly this. */
+    public static Content full(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy,
+                               java.util.function.BiFunction<java.util.Set<ResourceLocation>, Map<ResourceLocation, ResourceLocation>, Content> recipes) {
+        Content base = generate(resolved, policy);
+        Map<ResourceLocation, ResourceLocation> conversions = itemConversions(base.effects());
+        if (conversions.isEmpty()) return base;
+        java.util.Set<ResourceLocation> items = new java.util.HashSet<>(conversions.keySet());
+        items.addAll(conversions.values());
+        Content recipe = recipes.apply(items, conversions);
+        Map<String, JsonElement> files = new TreeMap<>(base.files());
+        files.putAll(recipe.files());
+        List<Effect> effects = new ArrayList<>(base.effects());
+        effects.addAll(recipe.effects());
+        effects.sort(ORDER);
+        return new Content(files, List.copyOf(effects));
+    }
+
     public static boolean isUnified(ResolvedForm form) {
         return form.canonical().isPresent() && form.source() != PolicyPrecedence.DEFAULT && !form.alternatives().isEmpty();
     }

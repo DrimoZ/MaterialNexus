@@ -36,11 +36,11 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 
 ## Phase 3 — Recipe intelligence
 
-- [ ] vanilla recipe adapters
+- [x] vanilla recipe adapters (result rewrite for the 8 vanilla types)
 - [ ] recipe families screen
 - [ ] duplicate classification
-- [ ] recipe disabling (any type)
-- [ ] output rewriting (vanilla types)
+- [x] recipe disabling (exact duplicates after rewrite; modded types untouched)
+- [x] output rewriting (vanilla types; pre-MNX JSON from the resource stack)
 - [ ] missing recipe proposals
 
 ## Phase 4 — Integrations
