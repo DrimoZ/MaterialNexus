@@ -23,6 +23,7 @@
   "screen.materialnexus.preview_removed": "Undone: %s",
   "screen.materialnexus.effect.tag_remove": "tag #%1$s: remove %2$s",
   "screen.materialnexus.effect.conversion": "conversion recipe: %1$s → %2$s",
+  "screen.materialnexus.effect.item_conversion": "in-world conversion: %1$s → %2$s",
   "screen.materialnexus.no_changes": "No change",
   "screen.materialnexus.apply": "Apply",
   "screen.materialnexus.discard": "Discard changes",

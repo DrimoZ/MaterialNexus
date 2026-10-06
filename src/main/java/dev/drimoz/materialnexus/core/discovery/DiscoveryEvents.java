@@ -2,6 +2,7 @@ package dev.drimoz.materialnexus.core.discovery;
 
 import com.mojang.logging.LogUtils;
 import dev.drimoz.materialnexus.MaterialNexus;
+import dev.drimoz.materialnexus.conversion.ItemConversions;
 import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
 import dev.drimoz.materialnexus.core.resolution.CanonicalResolver;
 import dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot;
@@ -44,16 +45,17 @@ public final class DiscoveryEvents {
                             .toList()));
 
             // ADR-010: see the tags as they were before our own removals, or the next apply would undo them.
-
-            PackContent.restoreRemovedMembers(tagMembers, PackContent.readManifest(MnxPaths.generated()).stream()
-
-                    .filter(e -> BuiltInRegistries.ITEM.containsKey(e.item())).toList());
+            List<PackContent.Effect> applied = PackContent.readManifest(MnxPaths.generated()).stream()
+                    .filter(e -> BuiltInRegistries.ITEM.containsKey(e.item())).toList();
+            PackContent.restoreRemovedMembers(tagMembers, applied);
 
             DiscoveredMaterials discovered = TagDiscovery.discover(tagMembers);
             ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies());
             ResolvedSnapshot previous = SnapshotManager.current();
             SnapshotManager.swap(new ResolvedSnapshot(previous.generation() + 1, Instant.now(), discovered,
                     CanonicalResolver.resolve(discovered, policy)));
+            // In-world conversion follows the applied pack, not the policy files (ADR-015).
+            ItemConversions.install(PackContent.itemConversions(applied));
             LOGGER.info("Material Nexus discovered {} materials ({} providers) in {} ms",
                     discovered.materials().size(), discovered.providerCount(), (System.nanoTime() - start) / 1_000_000);
         } catch (IOException | RuntimeException e) {

@@ -82,9 +82,11 @@ public final class PreviewScreen extends Screen {
     }
 
     private Line effectLine(PackContent.Effect e, String prefixKey, int color) {
-        Component effect = e.kind().equals(PackContent.TAG_REMOVE)
-                ? Component.translatable("screen.materialnexus.effect.tag_remove", e.target().toString(), e.item().toString())
-                : Component.translatable("screen.materialnexus.effect.conversion", e.item().toString(), e.target().toString());
+        Component effect = switch (e.kind()) {
+            case PackContent.TAG_REMOVE -> Component.translatable("screen.materialnexus.effect.tag_remove", e.target().toString(), e.item().toString());
+            case PackContent.ITEM_CONVERSION -> Component.translatable("screen.materialnexus.effect.item_conversion", e.item().toString(), e.target().toString());
+            default -> Component.translatable("screen.materialnexus.effect.conversion", e.item().toString(), e.target().toString());
+        };
         return new Line(Component.translatable(prefixKey, effect), color);
     }
 

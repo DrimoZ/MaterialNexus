@@ -2,6 +2,7 @@ package dev.drimoz.materialnexus.gametest;
 
 import dev.drimoz.materialnexus.MaterialNexus;
 import dev.drimoz.materialnexus.command.MaterialsCommand;
+import dev.drimoz.materialnexus.conversion.ItemConversions;
 import dev.drimoz.materialnexus.core.discovery.DiscoveredMaterials;
 import dev.drimoz.materialnexus.core.domain.FormId;
 import dev.drimoz.materialnexus.core.domain.MaterialId;
@@ -15,6 +16,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.Items;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.util.FakePlayerFactory;
 import net.neoforged.neoforge.gametest.GameTestHolder;
@@ -25,6 +27,25 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 @PrefixGameTestTemplate(false)
 public final class MaterialNexusGameTests {
     private MaterialNexusGameTests() { }
+
+    /** MNX-028: an applied alternative becomes the canonical item when it enters the world or a container is converted. */
+    @GameTest(template = "empty")
+    public static void unifiedItemsAreConvertedWhenTouched(GameTestHelper helper) {
+        ItemConversions.install(java.util.Map.of(ResourceLocation.withDefaultNamespace("copper_ingot"), ResourceLocation.withDefaultNamespace("iron_ingot")));
+        try {
+            var stack = new ItemStack(Items.COPPER_INGOT, 7);
+            var dropped = helper.spawnItem(Items.COPPER_INGOT, new net.minecraft.core.BlockPos(0, 1, 0));
+            helper.assertTrue(dropped.getItem().is(Items.IRON_INGOT), "dropped alternative should become canonical, got " + dropped.getItem());
+
+            var chest = new net.minecraft.world.SimpleContainer(stack, new ItemStack(Items.GOLD_INGOT, 3));
+            helper.assertTrue(ItemConversions.convert(chest) == 1, "only the alternative slot should change");
+            helper.assertTrue(chest.getItem(0).is(Items.IRON_INGOT) && chest.getItem(0).getCount() == 7, "count must be kept");
+            helper.assertTrue(chest.getItem(1).is(Items.GOLD_INGOT), "unrelated items are untouched");
+        } finally {
+            ItemConversions.install(java.util.Map.of());
+        }
+        helper.succeed();
+    }
 
     /** MNX-022: the global generated pack exists on disk and is active in this world, above other packs. */
     @GameTest(template = "empty")

@@ -41,6 +41,7 @@ class PackContentTest {
         // MI has two items here (same-mod variants): they are not alternatives, so never removed nor converted.
         assertEquals(List.of(
                 new PackContent.Effect(PackContent.CONVERSION, MEK, IE),
+                new PackContent.Effect(PackContent.ITEM_CONVERSION, MEK, IE),
                 new PackContent.Effect(PackContent.TAG_REMOVE, INGOTS_TIN, IE)), content.effects());
         assertTrue(content.files().containsKey("data/c/tags/item/ingots/tin.json"));
         assertTrue(content.files().get("data/c/tags/item/ingots/tin.json").toString().contains("\"remove\":[\"immersiveengineering:ingot_tin\"]"));

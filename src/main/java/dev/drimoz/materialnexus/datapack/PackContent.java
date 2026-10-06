@@ -33,8 +33,10 @@ import java.util.TreeSet;
 public final class PackContent {
     public static final String TAG_REMOVE = "tag_remove";
     public static final String CONVERSION = "conversion_recipe";
+    /** Alternatives the server swaps for the canonical item when the game touches them (MNX-028). */
+    public static final String ITEM_CONVERSION = "item_conversion";
 
-    /** One generated change; for a conversion, {@code target} is the canonical item it produces. */
+    /** One generated change; for both conversions, {@code target} is the canonical item. */
     public record Effect(String kind, ResourceLocation target, ResourceLocation item) { }
 
     public record Content(Map<String, JsonElement> files, List<Effect> effects) { }
@@ -43,6 +45,13 @@ public final class PackContent {
             .thenComparing(Effect::target).thenComparing(Effect::item);
 
     private PackContent() { }
+
+    /** Alternative to canonical item, from the applied pack only: nothing converts before an apply. */
+    public static Map<ResourceLocation, ResourceLocation> itemConversions(List<Effect> effects) {
+        Map<ResourceLocation, ResourceLocation> conversions = new TreeMap<>();
+        for (Effect e : effects) if (e.kind().equals(ITEM_CONVERSION)) conversions.put(e.item(), e.target());
+        return conversions;
+    }
 
     public static boolean isUnified(ResolvedForm form) {
         return form.canonical().isPresent() && form.source() != PolicyPrecedence.DEFAULT && !form.alternatives().isEmpty();
@@ -55,6 +64,7 @@ public final class PackContent {
         resolved.forEach((material, rm) -> rm.forms().forEach((form, f) -> {
             if (!isUnified(f)) return;
             ResourceLocation canonical = f.canonical().orElseThrow();
+            for (ResourceLocation alt : f.alternatives()) effects.add(new Effect(ITEM_CONVERSION, canonical, alt));
             TagDiscovery.conventionTag(material, form)
                     .ifPresent(tag -> removals.computeIfAbsent(tag, t -> new TreeSet<>()).addAll(f.alternatives()));
             if (policy.conversionRecipeForms().contains(form)) {

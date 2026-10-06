@@ -17,7 +17,8 @@ Mod Minecraft **NeoForge 1.21.1**, Java 21. Toolchain and documentation conventi
 
 - Common/server code never imports `net.minecraft.client`.
 - Discovery and recipe analysis happen at controlled lifecycle points, never every tick.
-- No persistent inventory scanning, item history, telemetry or world-wide container indexing.
+- No persistent inventory scanning, item history, telemetry or world-wide container indexing. Applied unification converts alternatives only when the game touches them (item entering the world, player login, vanilla container opened), never by walking the world (ADR-015).
+- Nothing is unified at load: only a player decision (GUI choice or policy file) followed by Apply changes the pack.
 - Registry/data mutations must be deterministic and explainable.
 - Destructive recipe removal and balance-affecting generation require an explicit policy decision.
 - Missing recipes are proposals, not automatic balance changes.

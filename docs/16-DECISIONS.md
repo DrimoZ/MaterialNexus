@@ -28,7 +28,7 @@
 
 ## ADR-005 — No persistent history
 
-**Decision:** no item movement history, telemetry, inventory indexing or server memory. The single-level policy backup used by "Revert last apply" (ADR-009) is not history. A full apply history may be reconsidered if a real need appears.
+**Decision:** no item movement history, telemetry, inventory indexing or server memory. Converting applied alternatives at the moment the game touches an item (ADR-015) is not indexing: nothing is walked, stored or remembered. The single-level policy backup used by "Revert last apply" (ADR-009) is not history. A full apply history may be reconsidered if a real need appears.
 
 **Why:** it adds cost and complexity without serving the core pack-author problem.
 
@@ -95,3 +95,11 @@
 Nothing is ever removed from a tag or a material by these rules: removing anything is the player's decision, which is why an explicit choice may still pick any discovered provider.
 
 **Rejected:** treating every tag member as a duplicate (deepslate vs stone ores, treated vs vanilla sticks); hiding the ore form entirely (cross-mod ores of the same rock are real duplicates).
+
+## ADR-015 - Applied alternatives are converted when the game touches them
+
+**Decision:** once a unification is applied, every alternative item is swapped for the canonical one (count and components kept) at the moments the server already handles that item: an item entity entering a level, a player logging in (inventory, ender chest), a vanilla-backed container being opened (block entity containers, double chests). The table comes from the applied pack manifest, so nothing converts before an apply. One identity lookup per touched stack.
+
+Modded internal storage (machines, AE2 cells, drawers) is not converted: it is not ours to rewrite. The opt-in `conversion_recipes` cover it.
+
+**Rejected:** scanning loaded chunks or all containers (forbidden by ADR-005, costly); converting from the policy files directly (a hand edit would act before any preview).
