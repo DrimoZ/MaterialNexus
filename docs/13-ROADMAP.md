@@ -18,7 +18,7 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [ ] explicit material definitions
 - [ ] confidence/evidence model
 - [ ] read-only snapshot index
-- [ ] targeted network queries
+- [x] targeted network queries (list page + material detail, permission re-checked per request)
 - [ ] material list screen
 - [ ] material detail screen (forms, providers, `Why?`)
 - [ ] read-only diagnostics on dedicated servers

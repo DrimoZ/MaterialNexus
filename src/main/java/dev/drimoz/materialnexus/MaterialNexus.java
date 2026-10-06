@@ -1,6 +1,6 @@
 package dev.drimoz.materialnexus;
 
-import dev.drimoz.materialnexus.network.OpenNexusPayload;
+import dev.drimoz.materialnexus.network.MnxNetwork;
 import dev.drimoz.materialnexus.registry.MnxItems;
 import net.neoforged.bus.api.IEventBus;
 import net.neoforged.fml.ModContainer;
@@ -13,6 +13,6 @@ public final class MaterialNexus {
 
     public MaterialNexus(IEventBus modBus, ModContainer modContainer) {
         MnxItems.register(modBus);
-        modBus.addListener(OpenNexusPayload::register);
+        modBus.addListener(MnxNetwork::register);
     }
 }

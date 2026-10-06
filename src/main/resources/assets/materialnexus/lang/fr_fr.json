@@ -3,5 +3,22 @@
   "screen.materialnexus.title": "Material Nexus",
   "screen.materialnexus.materials": "%s matériaux résolus",
   "screen.materialnexus.read_only": "Lecture seule : l’édition se fait en solo ou en LAN",
-  "message.materialnexus.no_permission": "Material Nexus nécessite les droits opérateur (niveau 2)."
+  "message.materialnexus.no_permission": "Material Nexus nécessite les droits opérateur (niveau 2).",
+  "materialnexus.why.explicit": "Override explicite pour %s",
+  "materialnexus.why.form_priority": "%1$s est prioritaire pour %2$s",
+  "materialnexus.why.material_priority": "%1$s est prioritaire pour %2$s",
+  "materialnexus.why.global_priority": "%s est prioritaire dans la priorité globale des mods",
+  "materialnexus.why.only_provider": "Seul fournisseur",
+  "materialnexus.why.vanilla_default": "Item vanilla préféré par défaut",
+  "materialnexus.why.fallback": "Aucune policy : preuve la plus forte, puis id alphabétique",
+  "materialnexus.why.override_ignored": "L’override explicite %s n’est pas un fournisseur découvert et a été ignoré",
+  "materialnexus.source.default": "Défaut",
+  "materialnexus.source.global": "Policy globale",
+  "materialnexus.source.material": "Policy du matériau",
+  "materialnexus.source.form": "Policy de la forme",
+  "materialnexus.source.explicit_resource_override": "Override explicite",
+  "materialnexus.confidence.explicit_definition": "Définition explicite",
+  "materialnexus.confidence.material_tag": "Tag de matériau",
+  "materialnexus.confidence.integration": "Intégration de mod",
+  "materialnexus.confidence.conservative_heuristic": "Heuristique de nom"
 }

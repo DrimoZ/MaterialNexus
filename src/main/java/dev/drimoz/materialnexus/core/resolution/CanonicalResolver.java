@@ -12,6 +12,7 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+import java.util.Optional;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -21,6 +22,7 @@ import java.util.TreeMap;
  */
 public final class CanonicalResolver {
     private static final String VANILLA = "minecraft";
+    private static final String WHY = "materialnexus.why.";
     private static final Comparator<Provider> TIE_BREAK = Comparator
             .comparing(Provider::confidence)
             .thenComparing(Provider::resource);
@@ -44,42 +46,43 @@ public final class CanonicalResolver {
         if (explicit != null) {
             for (Provider p : providers) {
                 if (p.resource().equals(explicit)) {
-                    return result(p, providers, PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE, "explicit override for " + key);
+                    return result(p, providers, PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE, Optional.empty(), "explicit", key.toString());
                 }
             }
         }
-        String missing = explicit == null ? "" : " (explicit override " + explicit + " is not a discovered provider, ignored)";
+        // An override naming an undiscovered item is reported, never turned into a provider.
+        Optional<ResourceLocation> ignored = Optional.ofNullable(explicit);
 
-        ResolvedForm byPriority = firstByModPriority(key, providers, policy.formModPriority().get(key), PolicyPrecedence.FORM, "form priority for " + key, missing);
-        if (byPriority == null) byPriority = firstByModPriority(key, providers, policy.materialModPriority().get(key.material()), PolicyPrecedence.MATERIAL, "material priority for " + key.material(), missing);
-        if (byPriority == null) byPriority = firstByModPriority(key, providers, policy.globalModPriority(), PolicyPrecedence.GLOBAL, "global mod priority", missing);
+        ResolvedForm byPriority = firstByModPriority(providers, policy.formModPriority().get(key), PolicyPrecedence.FORM, "form_priority", key.toString(), ignored);
+        if (byPriority == null) byPriority = firstByModPriority(providers, policy.materialModPriority().get(key.material()), PolicyPrecedence.MATERIAL, "material_priority", key.material().toString(), ignored);
+        if (byPriority == null) byPriority = firstByModPriority(providers, policy.globalModPriority(), PolicyPrecedence.GLOBAL, "global_priority", "", ignored);
         if (byPriority != null) return byPriority;
 
-        if (providers.size() == 1) return result(providers.getFirst(), providers, PolicyPrecedence.DEFAULT, "only provider" + missing);
+        if (providers.size() == 1) return result(providers.getFirst(), providers, PolicyPrecedence.DEFAULT, ignored, "only_provider");
         List<Provider> vanilla = providers.stream().filter(p -> p.sourceMod().equals(VANILLA)).toList();
         if (!vanilla.isEmpty()) {
-            return result(vanilla.stream().min(TIE_BREAK).orElseThrow(), providers, PolicyPrecedence.DEFAULT, "vanilla item preferred by default" + missing);
+            return result(vanilla.stream().min(TIE_BREAK).orElseThrow(), providers, PolicyPrecedence.DEFAULT, ignored, "vanilla_default");
         }
-        return result(providers.stream().min(TIE_BREAK).orElseThrow(), providers, PolicyPrecedence.DEFAULT,
-                "no policy: strongest evidence, then alphabetical id" + missing);
+        return result(providers.stream().min(TIE_BREAK).orElseThrow(), providers, PolicyPrecedence.DEFAULT, ignored, "fallback");
     }
 
-    private static ResolvedForm firstByModPriority(MaterialForm key, List<Provider> providers, List<String> priority,
-                                                   PolicyPrecedence source, String label, String missing) {
+    private static ResolvedForm firstByModPriority(List<Provider> providers, List<String> priority, PolicyPrecedence source,
+                                                   String reason, String scope, Optional<ResourceLocation> ignored) {
         if (priority == null) return null;
         for (String mod : priority) {
             var match = providers.stream().filter(p -> p.sourceMod().equals(mod)).min(TIE_BREAK);
-            if (match.isPresent()) return result(match.get(), providers, source, mod + " first in " + label + missing);
+            if (match.isPresent()) return result(match.get(), providers, source, ignored, reason, mod, scope);
         }
         return null;
     }
 
-    private static ResolvedForm result(Provider canonical, List<Provider> providers, PolicyPrecedence source, String reason) {
+    private static ResolvedForm result(Provider canonical, List<Provider> providers, PolicyPrecedence source,
+                                       Optional<ResourceLocation> ignored, String reason, String... args) {
         List<ResourceLocation> alternatives = providers.stream()
                 .map(Provider::resource)
                 .filter(r -> !r.equals(canonical.resource()))
                 .sorted()
                 .toList();
-        return new ResolvedForm(canonical.resource(), alternatives, source, canonical.confidence(), reason);
+        return new ResolvedForm(canonical.resource(), alternatives, source, canonical.confidence(), WHY + reason, List.of(args), ignored);
     }
 }

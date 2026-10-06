@@ -54,7 +54,7 @@ class CanonicalResolverTest {
                 Map.of(COPPER_PLATE, ResourceLocation.fromNamespaceAndPath("ghost", "plate")));
         ResolvedForm fallback = resolve(members, unknown);
         assertResolved(C, PolicyPrecedence.FORM, fallback);
-        assertTrue(fallback.reason().contains("ignored"), fallback.reason());
+        assertEquals(ResourceLocation.fromNamespaceAndPath("ghost", "plate"), fallback.ignoredOverride().orElseThrow());
     }
 
     @Test
@@ -64,7 +64,7 @@ class CanonicalResolverTest {
     }
 
     private static void assertResolved(ResourceLocation expected, PolicyPrecedence source, ResolvedForm actual) {
-        assertEquals(expected, actual.canonical(), actual.reason());
-        assertEquals(source, actual.source(), actual.reason());
+        assertEquals(expected, actual.canonical(), actual.reasonKey());
+        assertEquals(source, actual.source(), actual.reasonKey());
     }
 }

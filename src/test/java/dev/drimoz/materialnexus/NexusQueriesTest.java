@@ -1,0 +1,42 @@
+package dev.drimoz.materialnexus;
+
+import dev.drimoz.materialnexus.core.discovery.TagDiscovery;
+import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
+import dev.drimoz.materialnexus.core.resolution.CanonicalResolver;
+import dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot;
+import dev.drimoz.materialnexus.network.MaterialListPayload;
+import dev.drimoz.materialnexus.network.NexusQueries;
+import net.minecraft.resources.ResourceLocation;
+import org.junit.jupiter.api.Test;
+
+import java.time.Instant;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
+import static org.junit.jupiter.api.Assertions.*;
+
+/** Client requests are untrusted input: out-of-range pages and bogus names must never throw or leak. */
+class NexusQueriesTest {
+    @Test
+    void untrustedRequestsAreClampedOrIgnored() {
+        Map<ResourceLocation, List<ResourceLocation>> tags = new HashMap<>();
+        for (int i = 0; i < NexusQueries.PAGE_SIZE + 5; i++) {
+            tags.put(ResourceLocation.fromNamespaceAndPath("c", "ingots/metal" + i),
+                    List.of(ResourceLocation.fromNamespaceAndPath("moda", "metal" + i), ResourceLocation.fromNamespaceAndPath("modb", "metal" + i)));
+        }
+        var discovered = TagDiscovery.discover(tags);
+        var snapshot = new ResolvedSnapshot(1, Instant.EPOCH, discovered, CanonicalResolver.resolve(discovered, ResolutionPolicy.NONE));
+
+        MaterialListPayload last = NexusQueries.listPage(snapshot, Integer.MAX_VALUE, "");
+        assertEquals(1, last.page());
+        assertEquals(5, last.entries().size());
+        assertEquals(0, NexusQueries.listPage(snapshot, -7, "").page());
+        assertEquals(1, last.entries().getFirst().duplicateForms());
+
+        assertEquals(1, NexusQueries.listPage(snapshot, 0, "  METAL7 ").totalMatches());
+        assertTrue(NexusQueries.detail(snapshot, "../etc").isEmpty());
+        assertTrue(NexusQueries.detail(snapshot, "unknown").isEmpty());
+        assertEquals(1, NexusQueries.detail(snapshot, "metal3").orElseThrow().forms().size());
+    }
+}

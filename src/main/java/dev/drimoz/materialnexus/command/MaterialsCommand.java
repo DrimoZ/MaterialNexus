@@ -1,7 +1,6 @@
 package dev.drimoz.materialnexus.command;
 
 import dev.drimoz.materialnexus.MaterialNexus;
-import dev.drimoz.materialnexus.core.resolution.SnapshotManager;
 import dev.drimoz.materialnexus.network.OpenNexusPayload;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
@@ -33,7 +32,7 @@ public final class MaterialsCommand {
         }
         // Editing is a singleplayer/LAN activity; dedicated servers only get read-only diagnostics.
         boolean readOnly = player.server.isDedicatedServer();
-        PacketDistributor.sendToPlayer(player, new OpenNexusPayload(readOnly, SnapshotManager.current().materials().size()));
+        PacketDistributor.sendToPlayer(player, new OpenNexusPayload(readOnly));
         return true;
     }
 }
