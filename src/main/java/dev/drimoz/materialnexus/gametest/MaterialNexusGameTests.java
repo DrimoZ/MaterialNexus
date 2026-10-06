@@ -12,6 +12,7 @@ import dev.drimoz.materialnexus.datapack.MnxPaths;
 import dev.drimoz.materialnexus.datapack.PackContent;
 import dev.drimoz.materialnexus.datapack.RecipeRewrites;
 import dev.drimoz.materialnexus.datapack.RecipeSources;
+import dev.drimoz.materialnexus.integration.RecipeFormats;
 import dev.drimoz.materialnexus.registry.MnxItems;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
@@ -31,20 +32,26 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 public final class MaterialNexusGameTests {
     private MaterialNexusGameTests() { }
 
-    /** MNX-015/016: real Create and Mekanism recipes are recognized and rewritten (skipped when the mods are absent). */
+    /** MNX-015..018: real Create, Mekanism, IE and MI recipes are recognized and rewritten (skipped when the mods are absent). */
     @GameTest(template = "empty")
     public static void createAndMekanismRecipesAreRewritten(GameTestHelper helper) {
-        if (!ModList.get().isLoaded("create") || !ModList.get().isLoaded("mekanism")) {
+        if (!ModList.get().isLoaded("create") || !ModList.get().isLoaded("mekanism")
+                || !ModList.get().isLoaded("immersiveengineering") || !ModList.get().isLoaded("modern_industrialization")) {
             helper.succeed();
             return;
         }
         var conversions = java.util.Map.of(
                 ResourceLocation.fromNamespaceAndPath("create", "copper_sheet"), ResourceLocation.fromNamespaceAndPath("immersiveengineering", "plate_copper"),
-                ResourceLocation.fromNamespaceAndPath("mekanism", "dust_copper"), ResourceLocation.fromNamespaceAndPath("modern_industrialization", "copper_dust"));
-        var plan = RecipeRewrites.plan(RecipeSources.collect(helper.getLevel().getServer(), conversions, java.util.List.of()), conversions);
+                ResourceLocation.fromNamespaceAndPath("mekanism", "dust_copper"), ResourceLocation.fromNamespaceAndPath("modern_industrialization", "copper_dust"),
+                ResourceLocation.fromNamespaceAndPath("immersiveengineering", "dust_copper"), ResourceLocation.fromNamespaceAndPath("modern_industrialization", "copper_dust"),
+                ResourceLocation.fromNamespaceAndPath("modern_industrialization", "copper_plate"), ResourceLocation.fromNamespaceAndPath("immersiveengineering", "plate_copper"));
+        var formats = RecipeFormats.load(helper.getLevel().getServer().getResourceManager());
+        var plan = RecipeRewrites.plan(RecipeSources.collect(helper.getLevel().getServer(), conversions, formats, java.util.List.of()), conversions, formats);
         var rewritten = plan.effects().stream().filter(e -> e.kind().equals(RecipeRewrites.REWRITE)).map(e -> e.target().getNamespace()).toList();
         helper.assertTrue(rewritten.contains("create"), "a Create recipe producing the copper sheet should be rewritten, got " + plan.effects());
         helper.assertTrue(rewritten.contains("mekanism"), "a Mekanism recipe producing or consuming copper dust should be rewritten, got " + plan.effects());
+        helper.assertTrue(rewritten.contains("immersiveengineering"), "an IE recipe producing copper dust should be rewritten, got " + plan.effects());
+        helper.assertTrue(rewritten.contains("modern_industrialization"), "an MI recipe producing the copper plate should be rewritten, got " + plan.effects());
         helper.succeed();
     }
 
@@ -53,8 +60,9 @@ public final class MaterialNexusGameTests {
     public static void vanillaRecipesProducingAnAlternativeAreRewritten(GameTestHelper helper) {
         ResourceLocation copper = ResourceLocation.withDefaultNamespace("copper_ingot");
         ResourceLocation iron = ResourceLocation.withDefaultNamespace("iron_ingot");
-        var sources = RecipeSources.collect(helper.getLevel().getServer(), java.util.Map.of(copper, iron), java.util.List.of());
-        var plan = RecipeRewrites.plan(sources, java.util.Map.of(copper, iron));
+        var formats = RecipeFormats.load(helper.getLevel().getServer().getResourceManager());
+        var sources = RecipeSources.collect(helper.getLevel().getServer(), java.util.Map.of(copper, iron), formats, java.util.List.of());
+        var plan = RecipeRewrites.plan(sources, java.util.Map.of(copper, iron), formats);
         var fromBlock = new PackContent.Effect(RecipeRewrites.REWRITE, ResourceLocation.withDefaultNamespace("copper_ingot"), iron);
         helper.assertTrue(plan.effects().contains(fromBlock), "minecraft:copper_ingot should be rewritten, got " + plan.effects());
         helper.assertTrue(plan.files().get("data/minecraft/recipe/copper_ingot.json").toString().contains("\"id\":\"minecraft:iron_ingot\""),

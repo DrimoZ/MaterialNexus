@@ -14,6 +14,7 @@ import dev.drimoz.materialnexus.datapack.PolicyEditor;
 import dev.drimoz.materialnexus.datapack.PolicyFiles;
 import dev.drimoz.materialnexus.datapack.RecipeRewrites;
 import dev.drimoz.materialnexus.datapack.RecipeSources;
+import dev.drimoz.materialnexus.integration.RecipeFormats;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -74,8 +75,11 @@ final class PolicyHandler {
     /** The whole generated pack for a policy: tags and conversions, then the recipes they imply. */
     private static PackContent.Content packContent(MinecraftServer server, ResolutionPolicy policy, List<PackContent.Effect> applied) {
         return PackContent.full(CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy), policy,
-                (items, conversions) -> RecipeRewrites.plan(
-                        RecipeSources.collect(server, conversions, RecipeRewrites.overridden(applied)), conversions));
+                (items, conversions) -> {
+                    RecipeFormats formats = RecipeFormats.load(server.getResourceManager());
+                    return RecipeRewrites.plan(
+                            RecipeSources.collect(server, conversions, formats, RecipeRewrites.overridden(applied)), conversions, formats);
+                });
     }
 
     private static Map<MaterialForm, ResourceLocation> explicitChoices(List<PolicyEditor.Entry> entries) {

@@ -1,0 +1,6 @@
+{
+  "types": ["create:crushing", "create:milling", "create:pressing", "create:mixing", "create:compacting", "create:splashing",
+            "create:haunting", "create:deploying", "create:filling", "create:emptying", "create:cutting",
+            "create:item_application", "create:sandpaper_polishing", "create:mechanical_crafting"],
+  "outputs": ["results", "result"]
+}

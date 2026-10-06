@@ -5,6 +5,7 @@ import com.google.gson.JsonParser;
 import dev.drimoz.materialnexus.datapack.PackContent;
 import dev.drimoz.materialnexus.datapack.RecipeRewrites;
 import dev.drimoz.materialnexus.datapack.RecipeRewrites.Source;
+import dev.drimoz.materialnexus.integration.RecipeFormats;
 import net.minecraft.resources.ResourceLocation;
 import org.junit.jupiter.api.Test;
 
@@ -18,6 +19,23 @@ import static org.junit.jupiter.api.Assertions.*;
 class RecipeRewritesTest {
     private static final ResourceLocation MEK = ResourceLocation.fromNamespaceAndPath("mekanism", "ingot_tin");
     private static final ResourceLocation IE = ResourceLocation.fromNamespaceAndPath("immersiveengineering", "ingot_tin");
+
+    /** The formats Material Nexus ships, read from the same files the game loads. */
+    private static final RecipeFormats SHIPPED = shipped();
+
+    private static RecipeFormats shipped() {
+        Map<ResourceLocation, com.google.gson.JsonElement> files = new java.util.HashMap<>();
+        for (String name : List.of("vanilla", "create", "mekanism", "immersiveengineering", "modern_industrialization")) {
+            try (var in = RecipeRewritesTest.class.getResourceAsStream("/data/materialnexus/material_nexus/recipe_formats/" + name + ".json")) {
+                assertNotNull(in, name);
+                files.put(ResourceLocation.fromNamespaceAndPath("materialnexus", name),
+                        JsonParser.parseReader(new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8)));
+            } catch (java.io.IOException e) {
+                throw new java.io.UncheckedIOException(e);
+            }
+        }
+        return RecipeFormats.parse(files);
+    }
 
     private static Optional<JsonObject> json(String text) {
         return Optional.of(JsonParser.parseString(text).getAsJsonObject());
@@ -40,7 +58,7 @@ class RecipeRewritesTest {
                 // Modded type: no JSON we understand, listed and left alone.
                 new Source(id("ie_crusher"), Optional.empty(), IE));
 
-        PackContent.Content plan = RecipeRewrites.plan(sources, Map.of(IE, MEK));
+        PackContent.Content plan = RecipeRewrites.plan(sources, Map.of(IE, MEK), SHIPPED);
 
         assertEquals(List.of(
                 new PackContent.Effect(RecipeRewrites.UNSUPPORTED, id("ie_crusher"), IE),
@@ -67,7 +85,7 @@ class RecipeRewritesTest {
                 // Only consumes an alternative through a tag: nothing literal to rewrite, left untouched.
                 new Source(id("tag_to_nuggets"), json(fromTag.formatted(miNugget)), miNugget));
 
-        PackContent.Content plan = RecipeRewrites.plan(sources, Map.of(ieIngot, miIngot, ieNugget, miNugget));
+        PackContent.Content plan = RecipeRewrites.plan(sources, Map.of(ieIngot, miIngot, ieNugget, miNugget), SHIPPED);
 
         assertEquals(List.of(new PackContent.Effect(RecipeRewrites.DISABLE, id("ie_to_nuggets"), miNugget)), plan.effects());
         assertEquals(1, plan.files().size());
@@ -92,7 +110,7 @@ class RecipeRewritesTest {
                 new Source(id("mek_dissolution"), json("{\"type\":\"mekanism:dissolution\",\"output\":{\"amount\":1000,\"id\":\"mekanism:copper\"}}"),
                         id("mek_dissolution")));
 
-        PackContent.Content plan = RecipeRewrites.plan(sources, conversions);
+        PackContent.Content plan = RecipeRewrites.plan(sources, conversions, SHIPPED);
         String pressing = plan.files().get("data/test/recipe/create_pressing.json").toString();
         String enriching = plan.files().get("data/test/recipe/mek_enriching.json").toString();
         String sawing = plan.files().get("data/test/recipe/mek_sawing.json").toString();
@@ -101,5 +119,33 @@ class RecipeRewritesTest {
         assertTrue(enriching.contains("\"item\":\"modern_industrialization:copper_dust\"") && enriching.contains("\"count\":1"), enriching);
         assertTrue(sawing.contains("\"id\":\"modern_industrialization:copper_dust\"") && sawing.contains("\"id\":\"immersiveengineering:plate_copper\""), sawing);
         assertFalse(plan.files().containsKey("data/test/recipe/mek_dissolution.json"));
+    }
+
+    /** MNX-017/018: IE nested secondaries and MI item_outputs, plus a pack-author format overriding a shipped one. */
+    @Test
+    void ieAndMiFormatsAndAuthorOverrides() {
+        ResourceLocation mekDust = ResourceLocation.fromNamespaceAndPath("mekanism", "dust_copper");
+        ResourceLocation miDust = ResourceLocation.fromNamespaceAndPath("modern_industrialization", "copper_dust");
+        var conversions = Map.of(mekDust, miDust);
+        var sources = List.of(
+                new Source(id("ie_crusher"), json("{\"type\":\"immersiveengineering:crusher\",\"input\":{\"tag\":\"c:ores/copper\"},"
+                        + "\"result\":{\"id\":\"minecraft:raw_copper\"},\"secondaries\":[{\"chance\":0.1,\"output\":{\"id\":\"mekanism:dust_copper\"}}]}"),
+                        ResourceLocation.withDefaultNamespace("raw_copper")),
+                new Source(id("mi_macerator"), json("{\"type\":\"modern_industrialization:macerator\",\"item_inputs\":[{\"amount\":1,\"item\":\"mekanism:dust_copper\"}],"
+                        + "\"item_outputs\":[{\"amount\":2,\"item\":\"mekanism:dust_copper\"}]}"), mekDust));
+
+        PackContent.Content plan = RecipeRewrites.plan(sources, conversions, SHIPPED);
+        assertTrue(plan.files().get("data/test/recipe/ie_crusher.json").toString().contains("\"id\":\"modern_industrialization:copper_dust\""));
+        assertFalse(plan.files().get("data/test/recipe/mi_macerator.json").toString().contains("mekanism:dust_copper"));
+
+        // A pack author describes another mod's recipe type in their own datapack; it is then rewritten too.
+        var withAuthor = new java.util.HashMap<ResourceLocation, com.google.gson.JsonElement>();
+        withAuthor.put(ResourceLocation.fromNamespaceAndPath("mypack", "othermod"),
+                JsonParser.parseString("{\"types\":[\"othermod:grinder\"],\"outputs\":[\"product\"]}"));
+        var custom = new Source(id("other_grinder"), json("{\"type\":\"othermod:grinder\",\"product\":{\"id\":\"mekanism:dust_copper\"}}"), mekDust);
+        assertEquals(List.of(new PackContent.Effect(RecipeRewrites.UNSUPPORTED, id("other_grinder"), mekDust)),
+                RecipeRewrites.plan(List.of(custom), conversions, SHIPPED).effects());
+        assertEquals(List.of(new PackContent.Effect(RecipeRewrites.REWRITE, id("other_grinder"), miDust)),
+                RecipeRewrites.plan(List.of(custom), conversions, RecipeFormats.parse(withAuthor)).effects());
     }
 }

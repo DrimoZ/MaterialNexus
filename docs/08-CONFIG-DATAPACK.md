@@ -95,3 +95,15 @@ Only forms unified by a player decision (any policy level; never the "Default" s
 - variants and "not unified" providers are never touched.
 
 The manifest lists every effect. On reload, discovery puts back the tag members Material Nexus removed (ADR-010), so the next apply regenerates the same content instead of undoing it. With nothing pending, Preview shows the difference between the policy files and the current pack, which is how hand edits are applied.
+
+## Recipe formats (ADR-016)
+
+To let Material Nexus rewrite another mod's recipes, add a file to any datapack (or KubeJS data):
+
+`data/mypack/material_nexus/recipe_formats/othermod.json`
+
+```json
+{ "types": ["othermod:grinder", "othermod:press"], "outputs": ["product", "byproducts"] }
+```
+
+`outputs` are the top-level keys holding the produced items. To change a shipped format, put a file with the same id (e.g. `data/materialnexus/material_nexus/recipe_formats/create.json`) in a higher-priority pack. Types not covered by any format are listed in Preview as "not handled yet" and left untouched.

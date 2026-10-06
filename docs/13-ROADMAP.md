@@ -49,7 +49,7 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [ ] EMI
 - [x] Create (processing recipe outputs and inputs; sequenced assembly unsupported)
 - [x] Mekanism (item outputs and inputs of machine recipes; chemicals untouched)
-- [ ] Immersive Engineering
+- [x] Immersive Engineering (machine recipes incl. nested secondaries)
 - [ ] Thermal
 
 ## Phase 5 — V2 / pack author polish

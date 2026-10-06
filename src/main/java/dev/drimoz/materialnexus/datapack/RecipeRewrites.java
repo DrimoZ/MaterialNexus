@@ -16,10 +16,10 @@ import java.util.TreeMap;
 
 /**
  * Recipe side of an applied unification (ADR-011): recipes whose type has a known format
- * ({@link RecipeFormats}: vanilla, Create, Mekanism) get canonical outputs and inputs. Other types
- * producing an alternative are listed as unsupported and left untouched until their adapter exists.
- * A rewrite that becomes an exact duplicate of another recipe is disabled instead. Pure: the server
- * adapter supplies the sources.
+ * ({@link RecipeFormats}, data-driven) get canonical outputs and inputs. Other types producing an
+ * alternative are listed as unsupported and left untouched until a format describes them. A rewrite
+ * that becomes an exact duplicate of another recipe is disabled instead. Pure: the server adapter
+ * supplies the sources and the loaded formats.
  */
 public final class RecipeRewrites {
     public static final String REWRITE = "recipe_rewrite";
@@ -34,13 +34,13 @@ public final class RecipeRewrites {
 
     private RecipeRewrites() { }
 
-    public static PackContent.Content plan(List<Source> sources, Map<ResourceLocation, ResourceLocation> conversions) {
+    public static PackContent.Content plan(List<Source> sources, Map<ResourceLocation, ResourceLocation> conversions, RecipeFormats formats) {
         Map<String, JsonElement> files = new TreeMap<>();
         List<PackContent.Effect> effects = new ArrayList<>();
         Map<ResourceLocation, JsonObject> rewritten = new TreeMap<>();
 
         for (Source s : sources) {
-            Optional<RecipeFormats.Format> format = s.json().flatMap(RecipeRewrites::format);
+            Optional<RecipeFormats.Format> format = s.json().flatMap(json -> format(json, formats));
             if (format.isEmpty()) {
                 if (conversions.containsKey(s.result())) effects.add(new PackContent.Effect(UNSUPPORTED, s.id(), s.result()));
                 continue;
@@ -78,20 +78,21 @@ public final class RecipeRewrites {
         return manifest.stream().filter(e -> e.kind().equals(REWRITE) || e.kind().equals(DISABLE)).map(PackContent.Effect::target).toList();
     }
 
-    public static Optional<RecipeFormats.Format> format(JsonObject recipe) {
+    public static Optional<RecipeFormats.Format> format(JsonObject recipe, RecipeFormats formats) {
         JsonElement type = recipe.get("type");
         if (type == null || !type.isJsonPrimitive()) return Optional.empty();
         ResourceLocation id = ResourceLocation.tryParse(type.getAsString());
-        return id == null ? Optional.empty() : RecipeFormats.forType(id);
+        return id == null ? Optional.empty() : formats.forType(id);
     }
 
     /** Every item a recipe produces, in output-key order. Empty when its format is unknown. */
-    public static List<ResourceLocation> outputIds(JsonObject recipe) {
+    public static List<ResourceLocation> outputIds(JsonObject recipe, RecipeFormats formats) {
         List<ResourceLocation> ids = new ArrayList<>();
-        format(recipe).ifPresent(f -> f.outputKeys().forEach(key -> collectIds(recipe.get(key), ids)));
+        format(recipe, formats).ifPresent(f -> f.outputKeys().forEach(key -> collectIds(recipe.get(key), ids)));
         return ids;
     }
 
+    /** Item ids under an output key: a stack ({@code "id"} or {@code "item"}), a bare id, or nested in lists and objects. */
     private static void collectIds(JsonElement output, List<ResourceLocation> ids) {
         if (output == null) return;
         if (output.isJsonArray()) {
@@ -102,10 +103,11 @@ public final class RecipeRewrites {
             JsonObject o = output.getAsJsonObject();
             JsonElement id = o.has("id") ? o.get("id") : o.get("item");
             if (id != null && id.isJsonPrimitive()) Optional.ofNullable(ResourceLocation.tryParse(id.getAsString())).ifPresent(ids::add);
+            else o.entrySet().forEach(e -> { if (!e.getValue().isJsonPrimitive()) collectIds(e.getValue(), ids); });
         }
     }
 
-    /** Replaces alternatives in the output stacks (a single stack, a list, or a bare id). */
+    /** Replaces alternatives in the outputs (a stack, a bare id, or nested in lists and objects such as IE secondaries). */
     static JsonObject withOutputs(JsonObject recipe, List<String> outputKeys, Map<ResourceLocation, ResourceLocation> conversions) {
         JsonObject copy = recipe.deepCopy();
         for (String key : outputKeys) {
@@ -126,11 +128,14 @@ public final class RecipeRewrites {
             output.getAsJsonArray().forEach(e -> replaceStacks(e, conversions));
         } else if (output.isJsonObject()) {
             JsonObject o = output.getAsJsonObject();
-            String field = o.has("id") ? "id" : "item";
-            JsonElement id = o.get(field);
-            if (id == null || !id.isJsonPrimitive()) return;
-            ResourceLocation item = ResourceLocation.tryParse(id.getAsString());
-            if (item != null && conversions.containsKey(item)) o.addProperty(field, conversions.get(item).toString());
+            String field = o.has("id") ? "id" : o.has("item") ? "item" : null;
+            JsonElement id = field == null ? null : o.get(field);
+            if (id != null && id.isJsonPrimitive()) {
+                ResourceLocation item = ResourceLocation.tryParse(id.getAsString());
+                if (item != null && conversions.containsKey(item)) o.addProperty(field, conversions.get(item).toString());
+            } else {
+                o.entrySet().forEach(e -> replaceStacks(e.getValue(), conversions));
+            }
         }
     }
 

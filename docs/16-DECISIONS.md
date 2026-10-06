@@ -103,3 +103,13 @@ Nothing is ever removed from a tag or a material by these rules: removing anythi
 Modded internal storage (machines, AE2 cells, drawers) is not converted: it is not ours to rewrite. The opt-in `conversion_recipes` cover it.
 
 **Rejected:** scanning loaded chunks or all containers (forbidden by ADR-005, costly); converting from the policy files directly (a hand edit would act before any preview).
+
+## ADR-016 - Recipe formats are data, not code
+
+**Decision:** which recipe types Material Nexus can rewrite, and where their item outputs live, is described by JSON files in `data/<namespace>/material_nexus/recipe_formats/` from any datapack: `{"types": [...], "outputs": [...]}`. Material Nexus ships vanilla, Create, Mekanism, Immersive Engineering and Modern Industrialization. A pack author adds another mod, or overrides a shipped file by giving theirs the same id. Files are applied in id order; a later file covering the same type wins.
+
+Everything under an output key is output (stacks with `id` or `item`, lists, nested objects such as IE secondaries); fluid and chemical ids are never items to convert. Inputs need no description: literal `"item"` ingredients outside the output keys are rewritten. Invalid files are skipped with a warning naming them.
+
+**Why:** a pack author must be able to cover the mods of their pack without waiting for a release; no mod class is ever loaded, so absent mods stay safe.
+
+**Rejected:** one Java adapter per mod (closed to pack authors); generic "find every id" rewriting (cannot tell outputs from inputs).

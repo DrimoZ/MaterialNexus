@@ -1,0 +1,5 @@
+{
+  "types": ["minecraft:crafting_shaped", "minecraft:crafting_shapeless", "minecraft:smelting", "minecraft:blasting",
+            "minecraft:smoking", "minecraft:campfire_cooking", "minecraft:stonecutting", "minecraft:smithing_transform"],
+  "outputs": ["result"]
+}

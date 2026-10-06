@@ -35,7 +35,7 @@ public final class RecipeSources {
      * their JSON (Mekanism does not expose its outputs through vanilla APIs); unknown-format recipes
      * producing an alternative, to be listed as unsupported. {@code conversions} maps alternative to canonical.
      */
-    public static List<RecipeRewrites.Source> collect(MinecraftServer server, Map<ResourceLocation, ResourceLocation> conversions,
+    public static List<RecipeRewrites.Source> collect(MinecraftServer server, Map<ResourceLocation, ResourceLocation> conversions, RecipeFormats formats,
                                                       Collection<ResourceLocation> overridden) {
         ResourceManager resources = server.getResourceManager();
         Set<ResourceLocation> ours = new HashSet<>(overridden);
@@ -49,9 +49,9 @@ public final class RecipeSources {
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
             if (ours.contains(holder.id())) continue;
             ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
-            if (type != null && RecipeFormats.forType(type).isPresent()) {
+            if (type != null && formats.forType(type).isPresent()) {
                 originalJson(resources, holder.id()).ifPresent(json -> {
-                    List<ResourceLocation> outputs = RecipeRewrites.outputIds(json);
+                    List<ResourceLocation> outputs = RecipeRewrites.outputIds(json, formats);
                     String text = json.toString();
                     boolean touches = outputs.stream().anyMatch(items::contains) || alternativeIds.stream().anyMatch(text::contains);
                     if (touches) sources.add(new RecipeRewrites.Source(holder.id(), Optional.of(json), firstOrSelf(outputs, holder.id())));
@@ -67,7 +67,7 @@ public final class RecipeSources {
         // Recipes we rewrote or disabled are judged by their original JSON, not by what we made of them.
         for (ResourceLocation id : ours) {
             originalJson(resources, id).ifPresent(json ->
-                    sources.add(new RecipeRewrites.Source(id, Optional.of(json), firstOrSelf(RecipeRewrites.outputIds(json), id))));
+                    sources.add(new RecipeRewrites.Source(id, Optional.of(json), firstOrSelf(RecipeRewrites.outputIds(json, formats), id))));
         }
         sources.sort(Comparator.comparing(RecipeRewrites.Source::id));
         return sources;

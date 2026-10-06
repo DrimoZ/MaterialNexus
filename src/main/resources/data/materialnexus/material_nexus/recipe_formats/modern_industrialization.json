@@ -1,0 +1,10 @@
+{
+  "types": ["modern_industrialization:mixer", "modern_industrialization:assembler", "modern_industrialization:macerator",
+            "modern_industrialization:packer", "modern_industrialization:unpacker", "modern_industrialization:forge_hammer",
+            "modern_industrialization:chemical_reactor", "modern_industrialization:cutting_machine",
+            "modern_industrialization:compressor", "modern_industrialization:blast_furnace", "modern_industrialization:centrifuge",
+            "modern_industrialization:vacuum_freezer", "modern_industrialization:electrolyzer",
+            "modern_industrialization:implosion_compressor", "modern_industrialization:wiremill", "modern_industrialization:polarizer",
+            "modern_industrialization:distillery", "modern_industrialization:heat_exchanger"],
+  "outputs": ["item_outputs", "result"]
+}
