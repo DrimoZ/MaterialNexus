@@ -29,7 +29,7 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [x] policy files in `config/materialnexus/policies/` (read on every reload)
 - [x] generated global datapack + `manifest.json` (writer + injection; content arrives with tag/recipe actions)
 - [ ] tag policy (NeoForge `remove` entries)
-- [ ] preview screen → Apply → `/reload`
+- [x] preview screen → Apply → `/reload` (canonical choices; backup in policies.bak)
 - [ ] revert last apply
 - [ ] pre-MNX analysis via resource stack
 - [ ] Almost Unified detection and per-domain arbitration

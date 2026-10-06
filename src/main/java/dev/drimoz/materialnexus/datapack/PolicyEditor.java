@@ -1,0 +1,132 @@
+package dev.drimoz.materialnexus.datapack;
+
+import com.google.gson.GsonBuilder;
+import com.google.gson.JsonElement;
+import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import dev.drimoz.materialnexus.core.domain.FormId;
+import dev.drimoz.materialnexus.core.domain.MaterialId;
+import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
+import dev.drimoz.materialnexus.core.resolution.ResolvedMaterial;
+import dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot;
+import net.minecraft.resources.ResourceLocation;
+
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.stream.Stream;
+
+/** Turns GUI choices into a validated diff, then into policy file edits (ADR-008/009). */
+public final class PolicyEditor {
+    public static final int MAX_CHANGES = 256;
+
+    /** One line of the preview. {@code from} is empty when the form had no canonical yet. */
+    public record Entry(String material, String form, Optional<ResourceLocation> from, ResourceLocation to, boolean valid) { }
+
+    private PolicyEditor() { }
+
+    /**
+     * Validates every change against what discovery actually found: a provider that is not a
+     * discovered member of that material/form is reported invalid, never written.
+     */
+    public static List<Entry> preview(ResolvedSnapshot snapshot, List<CanonicalChange> changes) {
+        Map<String, CanonicalChange> byKey = new LinkedHashMap<>();
+        for (CanonicalChange change : changes) byKey.put(change.material() + "/" + change.form(), change);
+
+        List<Entry> entries = new ArrayList<>();
+        for (CanonicalChange change : byKey.values()) {
+            Optional<MaterialId> material = MaterialId.read(change.material()).result();
+            Optional<FormId> form = FormId.read(change.form()).result();
+            Optional<ResolvedForm> current = material.map(snapshot.materials()::get).map(ResolvedMaterial::forms)
+                    .flatMap(forms -> form.map(forms::get));
+            boolean valid = material.isPresent() && form.isPresent() && snapshot.discovered()
+                    .providers(material.get(), form.get()).stream()
+                    .anyMatch(p -> p.resource().equals(change.provider()));
+            entries.add(new Entry(change.material(), change.form(), current.map(ResolvedForm::canonical), change.provider(), valid));
+        }
+        entries.sort(Comparator.comparing(Entry::material).thenComparing(Entry::form));
+        return entries;
+    }
+
+    /**
+     * Writes valid entries as {@code preferred_provider} into the file that already declares the
+     * material (or a new one), preserving every other field. The previous policy is copied to
+     * {@code policies.bak} first, for "Revert last apply".
+     */
+    public static void apply(Path policiesDir, List<Entry> entries) throws IOException {
+        backup(policiesDir);
+        Path materialsDir = policiesDir.resolve(PolicyFiles.MATERIALS_DIR);
+        Files.createDirectories(materialsDir);
+        Map<String, Path> fileByMaterial = indexMaterialFiles(materialsDir);
+
+        Map<String, List<Entry>> byMaterial = new LinkedHashMap<>();
+        for (Entry e : entries) if (e.valid()) byMaterial.computeIfAbsent(e.material(), m -> new ArrayList<>()).add(e);
+
+        for (var group : byMaterial.entrySet()) {
+            Path file = fileByMaterial.computeIfAbsent(group.getKey(), m -> freeFileName(materialsDir, m, fileByMaterial));
+            JsonObject root = Files.exists(file) ? JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject() : new JsonObject();
+            root.addProperty("material", group.getKey());
+            JsonObject forms = child(root, "forms");
+            for (Entry e : group.getValue()) child(forms, e.form()).addProperty("preferred_provider", e.to().toString());
+            Files.writeString(file, new GsonBuilder().setPrettyPrinting().create().toJson(root), StandardCharsets.UTF_8);
+        }
+    }
+
+    public static Path backupDir(Path policiesDir) {
+        return policiesDir.resolveSibling(policiesDir.getFileName() + ".bak");
+    }
+
+    private static void backup(Path policiesDir) throws IOException {
+        Path bak = backupDir(policiesDir);
+        deleteRecursively(bak);
+        Files.createDirectories(bak);
+        if (!Files.exists(policiesDir)) return;
+        try (Stream<Path> walk = Files.walk(policiesDir)) {
+            for (Path source : walk.toList()) {
+                Path target = bak.resolve(policiesDir.relativize(source).toString());
+                if (Files.isDirectory(source)) Files.createDirectories(target);
+                else Files.copy(source, target);
+            }
+        }
+    }
+
+    /** Which file declares which material, so an edit never creates a second, conflicting file. */
+    private static Map<String, Path> indexMaterialFiles(Path materialsDir) throws IOException {
+        Map<String, Path> index = new HashMap<>();
+        try (Stream<Path> files = Files.list(materialsDir)) {
+            for (Path file : files.filter(f -> f.toString().endsWith(".json")).sorted().toList()) {
+                JsonElement json = JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8));
+                if (json.isJsonObject() && json.getAsJsonObject().has("material")) {
+                    index.putIfAbsent(json.getAsJsonObject().get("material").getAsString(), file);
+                }
+            }
+        }
+        return index;
+    }
+
+    private static Path freeFileName(Path dir, String material, Map<String, Path> taken) {
+        Path file = dir.resolve(material + ".json");
+        for (int i = 2; Files.exists(file) || taken.containsValue(file); i++) file = dir.resolve(material + "_" + i + ".json");
+        return file;
+    }
+
+    private static JsonObject child(JsonObject parent, String key) {
+        if (!parent.has(key) || !parent.get(key).isJsonObject()) parent.add(key, new JsonObject());
+        return parent.getAsJsonObject(key);
+    }
+
+    private static void deleteRecursively(Path dir) throws IOException {
+        if (!Files.exists(dir)) return;
+        try (Stream<Path> walk = Files.walk(dir)) {
+            for (Path p : walk.sorted(Comparator.reverseOrder()).toList()) Files.delete(p);
+        }
+    }
+}

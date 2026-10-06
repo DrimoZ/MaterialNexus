@@ -4,6 +4,7 @@ import dev.drimoz.materialnexus.network.MaterialDetailRequest;
 import dev.drimoz.materialnexus.network.MaterialListPayload;
 import dev.drimoz.materialnexus.network.MaterialListRequest;
 import dev.drimoz.materialnexus.network.NexusQueries;
+import dev.drimoz.materialnexus.network.PreviewRequest;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.components.Button;
@@ -30,6 +31,8 @@ public final class MaterialListScreen extends Screen {
         this.readOnly = readOnly;
     }
 
+    boolean readOnly() { return readOnly; }
+
     @Override
     protected void init() {
         EditBox search = new EditBox(font, width / 2 - 100, 22, 200, 18, Component.translatable("screen.materialnexus.search"));
@@ -47,6 +50,12 @@ public final class MaterialListScreen extends Screen {
                 .bounds(width / 2 - 100, height - 26, 20, 20).build());
         next = addRenderableWidget(Button.builder(Component.literal(">"), b -> request(page.page() + 1))
                 .bounds(width / 2 + 80, height - 26, 20, 20).build());
+        if (!readOnly) {
+            Button preview = addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.preview_button", PendingChanges.size()),
+                            b -> PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), false)))
+                    .bounds(width - 108, height - 26, 100, 20).build());
+            preview.active = PendingChanges.size() > 0;
+        }
 
         if (page == null) {
             previous.active = false;

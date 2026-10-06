@@ -22,6 +22,7 @@ public final class MnxNetwork {
         registrar.playToClient(OpenNexusPayload.TYPE, OpenNexusPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.openNexus(p));
         registrar.playToClient(MaterialListPayload.TYPE, MaterialListPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onMaterialList(p));
         registrar.playToClient(MaterialDetailPayload.TYPE, MaterialDetailPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onMaterialDetail(p));
+        registrar.playToClient(PreviewPayload.TYPE, PreviewPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onPreview(p));
 
         registrar.playToServer(MaterialListRequest.TYPE, MaterialListRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
@@ -30,6 +31,10 @@ public final class MnxNetwork {
         registrar.playToServer(MaterialDetailRequest.TYPE, MaterialDetailRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player != null) NexusQueries.detail(SnapshotManager.current(), req.material()).ifPresent(d -> PacketDistributor.sendToPlayer(player, d));
+        });
+        registrar.playToServer(PreviewRequest.TYPE, PreviewRequest.STREAM_CODEC, (req, ctx) -> {
+            ServerPlayer player = authorized(ctx);
+            if (player != null) PreviewHandler.handle(player, req);
         });
     }
 

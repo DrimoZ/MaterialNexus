@@ -12,16 +12,21 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.item.ItemStack;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.stream.Collectors;
 
-/** One material: per form, the canonical item, why it was chosen and what else exists. Read-only until policy editing lands. */
+/**
+ * One material: per form, the canonical item, why it was chosen and what else exists. Clicking a
+ * form cycles its providers into a pending change; nothing is written before Preview / Apply.
+ */
 public final class MaterialDetailScreen extends Screen {
     private static final int ROW_HEIGHT = 48;
 
-    private final Screen parent;
+    private final MaterialListScreen parent;
     private final MaterialDetailPayload detail;
 
-    MaterialDetailScreen(Screen parent, MaterialDetailPayload detail) {
+    MaterialDetailScreen(MaterialListScreen parent, MaterialDetailPayload detail) {
         super(Names.material(detail.material()));
         this.parent = parent;
         this.detail = detail;
@@ -29,7 +34,7 @@ public final class MaterialDetailScreen extends Screen {
 
     @Override
     protected void init() {
-        FormList list = addRenderableWidget(new FormList(minecraft, width, height - 64, 28));
+        FormList list = addRenderableWidget(new FormList(minecraft, width, height - 76, 28));
         detail.forms().forEach(view -> list.add(new Row(view)));
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose())
                 .bounds(width / 2 - 50, height - 28, 100, 20).build());
@@ -44,6 +49,9 @@ public final class MaterialDetailScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(font, title, width / 2, 10, 0xFFFFFF);
+        if (!parent.readOnly()) {
+            graphics.drawCenteredString(font, Component.translatable("screen.materialnexus.click_to_change"), width / 2, height - 42, 0xAAAAAA);
+        }
     }
 
     @Override
@@ -61,40 +69,62 @@ public final class MaterialDetailScreen extends Screen {
     }
 
     private final class Row extends ObjectSelectionList.Entry<Row> {
-        private final ItemStack icon;
-        private final Component header;
+        private final String form;
+        private final ResolvedForm resolved;
+        private final List<ResourceLocation> providers = new ArrayList<>();
+        private final Component formName;
         private final Component why;
         private final Component alternatives;
         private final Component ignored;
 
         Row(MaterialDetailPayload.FormView view) {
-            ResolvedForm f = view.resolved();
-            icon = Names.stack(f.canonical());
-            Component item = icon.isEmpty() ? Component.literal(f.canonical().toString()) : icon.getHoverName();
-            header = Component.translatable("screen.materialnexus.form_line", Names.form(view.form()), item);
+            form = view.form();
+            resolved = view.resolved();
+            providers.add(resolved.canonical());
+            providers.addAll(resolved.alternatives());
+            formName = Names.form(form);
             why = Component.translatable("screen.materialnexus.why",
-                    Component.translatable(f.reasonKey(), f.reasonArgs().toArray()),
-                    Component.translatable("materialnexus.source." + Names.lowerName(f.source())),
-                    Component.translatable("materialnexus.confidence." + Names.lowerName(f.confidence())));
-            alternatives = f.alternatives().isEmpty()
+                    Component.translatable(resolved.reasonKey(), resolved.reasonArgs().toArray()),
+                    Component.translatable("materialnexus.source." + Names.lowerName(resolved.source())),
+                    Component.translatable("materialnexus.confidence." + Names.lowerName(resolved.confidence())));
+            alternatives = resolved.alternatives().isEmpty()
                     ? Component.translatable("screen.materialnexus.no_alternatives")
                     : Component.translatable("screen.materialnexus.alternatives",
-                            f.alternatives().stream().map(ResourceLocation::toString).collect(Collectors.joining(", ")));
-            ignored = f.ignoredOverride()
+                            resolved.alternatives().stream().map(ResourceLocation::toString).collect(Collectors.joining(", ")));
+            ignored = resolved.ignoredOverride()
                     .map(id -> (Component) Component.translatable("materialnexus.why.override_ignored", id.toString()))
                     .orElse(null);
+        }
+
+        private ResourceLocation shown() {
+            return PendingChanges.get(detail.material(), form).orElse(resolved.canonical());
         }
 
         @Override
         public void render(GuiGraphics graphics, int index, int top, int left, int width, int height,
                            int mouseX, int mouseY, boolean hovering, float partialTick) {
+            ResourceLocation shown = shown();
+            ItemStack icon = Names.stack(shown);
+            Component item = icon.isEmpty() ? Component.literal(shown.toString()) : icon.getHoverName();
             graphics.renderItem(icon, left + 2, top + 2);
             int x = left + 24;
             int textWidth = width - 28;
-            line(graphics, header, x, top + 2, textWidth, 0xFFFFFF);
+            line(graphics, Component.translatable("screen.materialnexus.form_line", formName, item), x, top + 2, textWidth, 0xFFFFFF);
             line(graphics, why, x, top + 13, textWidth, 0xAAAAAA);
             line(graphics, alternatives, x, top + 24, textWidth, 0x888888);
-            if (ignored != null) line(graphics, ignored, x, top + 35, textWidth, 0xFFAA00);
+            if (!shown.equals(resolved.canonical())) {
+                line(graphics, Component.translatable("screen.materialnexus.pending", shown.toString()), x, top + 35, textWidth, 0x55FF55);
+            } else if (ignored != null) {
+                line(graphics, ignored, x, top + 35, textWidth, 0xFFAA00);
+            }
+        }
+
+        @Override
+        public boolean mouseClicked(double mouseX, double mouseY, int button) {
+            if (parent.readOnly() || providers.size() < 2) return false;
+            ResourceLocation next = providers.get((providers.indexOf(shown()) + 1) % providers.size());
+            PendingChanges.set(detail.material(), form, next, resolved.canonical());
+            return true;
         }
 
         /** Long ids are cut to the row width rather than overflowing into the next column. */
@@ -103,6 +133,6 @@ public final class MaterialDetailScreen extends Screen {
         }
 
         @Override
-        public Component getNarration() { return header; }
+        public Component getNarration() { return formName; }
     }
 }
