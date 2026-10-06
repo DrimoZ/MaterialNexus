@@ -21,7 +21,7 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [x] targeted network queries (list page + material detail, permission re-checked per request)
 - [x] material list screen (search + pagination)
 - [x] material detail screen (forms, providers, `Why?`; read-only until MNX-022)
-- [ ] read-only diagnostics on dedicated servers
+- [x] read-only diagnostics on dedicated servers (GUI read-only, report from the console)
 
 ## Phase 2 — Unification and Apply
 
@@ -59,7 +59,7 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [ ] Loot and JEI/EMI tabs
 - [ ] presets
 - [ ] import/export policy
-- [ ] diagnostics report
+- [x] diagnostics report (`/materials report` -> config/materialnexus/report.md)
 - [ ] full apply history (only if a real need appears)
 - [ ] KubeJS optional API
 - [ ] documentation/wiki

@@ -70,6 +70,8 @@
   "materialnexus.form.gear": "Engrenage",
   "materialnexus.form.wire": "Fil",
   "message.materialnexus.no_permission": "Material Nexus nécessite les droits opérateur (niveau 2).",
+  "message.materialnexus.report_written": "Material Nexus : rapport écrit dans %s",
+  "message.materialnexus.report_failed": "Material Nexus : impossible d’écrire le rapport (%s)",
   "materialnexus.why.explicit": "Override explicite pour %s",
   "materialnexus.why.form_priority": "%1$s est prioritaire pour %2$s",
   "materialnexus.why.material_priority": "%1$s est prioritaire pour %2$s",

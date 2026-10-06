@@ -34,5 +34,13 @@ class FamilyRelationsTest {
         // Missing: ingot -> nugget and block -> ingot. No raw/dust forms here, so nothing is asked about them.
         assertEquals(List.of(new Relation(new FormId("ingot"), new FormId("nugget")), new Relation(new FormId("block"), new FormId("ingot"))),
                 FamilyRelations.missing(forms, recipes));
+
+        // Two-step chain through an intermediate that is not a form (MI: dust -> hot ingot -> ingot) counts as present.
+        var withDust = new java.util.HashMap<>(forms);
+        withDust.put(new FormId("dust"), Set.of(rl("tin_dust")));
+        var chain = new java.util.ArrayList<>(recipes);
+        chain.add(new Edge(rl("hot_tin_ingot"), List.of(Set.of(rl("tin_dust")))));
+        chain.add(new Edge(rl("tin_ingot"), List.of(Set.of(rl("hot_tin_ingot")))));
+        assertEquals(false, FamilyRelations.missing(withDust, chain).contains(new Relation(new FormId("dust"), new FormId("ingot"))));
     }
 }

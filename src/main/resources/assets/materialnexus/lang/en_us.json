@@ -70,6 +70,8 @@
   "materialnexus.form.gear": "Gear",
   "materialnexus.form.wire": "Wire",
   "message.materialnexus.no_permission": "Material Nexus requires operator permission (level 2).",
+  "message.materialnexus.report_written": "Material Nexus: report written to %s",
+  "message.materialnexus.report_failed": "Material Nexus: could not write the report (%s)",
   "materialnexus.why.explicit": "Explicit override for %s",
   "materialnexus.why.form_priority": "%1$s comes first in the priority for %2$s",
   "materialnexus.why.material_priority": "%1$s comes first in the priority for %2$s",

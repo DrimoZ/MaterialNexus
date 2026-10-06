@@ -55,6 +55,21 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /** MNX-032: /materials report runs from the server console and writes the analysis. */
+    @GameTest(template = "empty")
+    public static void reportCommandWritesTheAnalysis(GameTestHelper helper) {
+        var server = helper.getLevel().getServer();
+        server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), "materials report");
+        var file = MnxPaths.root().resolve("report.md");
+        try {
+            String report = java.nio.file.Files.readString(file);
+            helper.assertTrue(report.contains("## copper") && report.contains("| ingot |"), "report should describe copper ingots");
+        } catch (java.io.IOException e) {
+            helper.fail("report not written: " + e.getMessage());
+        }
+        helper.succeed();
+    }
+
     /** MNX-010: iron has every standard conversion in a real pack, so no proposal may appear (no false positives). */
     @GameTest(template = "empty")
     public static void ironHasNoMissingRecipeProposals(GameTestHelper helper) {
