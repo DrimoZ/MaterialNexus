@@ -28,7 +28,7 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [x] canonical provider resolution (pure resolver; policy loading comes with MNX-022)
 - [x] policy files in `config/materialnexus/policies/` (read on every reload)
 - [x] generated global datapack + `manifest.json` (writer + injection; content arrives with tag/recipe actions)
-- [ ] tag policy (NeoForge `remove` entries)
+- [x] tag policy (NeoForge `remove` entries for unified alternatives; optional conversion recipes)
 - [x] preview screen → Apply → `/reload` (canonical choices; backup in policies.bak)
 - [x] revert last apply (swap with policies.bak; a second revert redoes)
 - [ ] pre-MNX analysis via resource stack

@@ -1,16 +1,19 @@
 package dev.drimoz.materialnexus.core.policy;
 
+import dev.drimoz.materialnexus.core.domain.FormId;
 import dev.drimoz.materialnexus.core.domain.MaterialForm;
 import dev.drimoz.materialnexus.core.domain.MaterialId;
 import net.minecraft.resources.ResourceLocation;
 
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 /**
- * Pack-author intent for canonical selection, one field per precedence level (ADR-006).
- * Mod priorities are namespaces, strongest first. Excluded materials/forms are never unified.
+ * Pack-author intent: canonical selection, one field per precedence level (ADR-006), exclusions
+ * (ADR-014), and the forms for which unification also generates 1:1 conversion recipes.
+ * Mod priorities are namespaces, strongest first.
  */
 public record ResolutionPolicy(
         List<String> globalModPriority,
@@ -18,7 +21,8 @@ public record ResolutionPolicy(
         Map<MaterialForm, List<String>> formModPriority,
         Map<MaterialForm, ResourceLocation> explicitProviders,
         Set<MaterialId> excludedMaterials,
-        Set<MaterialForm> excludedForms) {
+        Set<MaterialForm> excludedForms,
+        Set<FormId> conversionRecipeForms) {
     public static final ResolutionPolicy NONE = new ResolutionPolicy(List.of(), Map.of(), Map.of(), Map.of());
 
     public ResolutionPolicy {
@@ -28,6 +32,13 @@ public record ResolutionPolicy(
         explicitProviders = Map.copyOf(explicitProviders);
         excludedMaterials = Set.copyOf(excludedMaterials);
         excludedForms = Set.copyOf(excludedForms);
+        conversionRecipeForms = Set.copyOf(conversionRecipeForms);
+    }
+
+    public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
+                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, ResourceLocation> explicitProviders,
+                            Set<MaterialId> excludedMaterials, Set<MaterialForm> excludedForms) {
+        this(globalModPriority, materialModPriority, formModPriority, explicitProviders, excludedMaterials, excludedForms, Set.of());
     }
 
     public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
@@ -37,5 +48,13 @@ public record ResolutionPolicy(
 
     public boolean isExcluded(MaterialForm key) {
         return excludedMaterials.contains(key.material()) || excludedForms.contains(key);
+    }
+
+    /** This policy plus extra explicit choices, used to preview pending GUI changes before they are written. */
+    public ResolutionPolicy withExplicit(Map<MaterialForm, ResourceLocation> extra) {
+        Map<MaterialForm, ResourceLocation> merged = new HashMap<>(explicitProviders);
+        merged.putAll(extra);
+        return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, merged,
+                excludedMaterials, excludedForms, conversionRecipeForms);
     }
 }

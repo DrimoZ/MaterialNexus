@@ -7,7 +7,9 @@ import dev.drimoz.materialnexus.core.resolution.CanonicalResolver;
 import dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot;
 import dev.drimoz.materialnexus.core.resolution.SnapshotManager;
 import dev.drimoz.materialnexus.datapack.MnxPaths;
+import dev.drimoz.materialnexus.datapack.PackContent;
 import dev.drimoz.materialnexus.datapack.PolicyFiles;
+import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
@@ -40,6 +42,12 @@ public final class DiscoveryEvents {
                             .flatMap(holder -> holder.unwrapKey().stream())
                             .map(ResourceKey::location)
                             .toList()));
+
+            // ADR-010: see the tags as they were before our own removals, or the next apply would undo them.
+
+            PackContent.restoreRemovedMembers(tagMembers, PackContent.readManifest(MnxPaths.generated()).stream()
+
+                    .filter(e -> BuiltInRegistries.ITEM.containsKey(e.item())).toList());
 
             DiscoveredMaterials discovered = TagDiscovery.discover(tagMembers);
             ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies());

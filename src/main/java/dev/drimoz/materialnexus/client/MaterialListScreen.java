@@ -54,10 +54,10 @@ public final class MaterialListScreen extends Screen {
         next = addRenderableWidget(Button.builder(Component.literal(">"), b -> request(page.page() + 1))
                 .bounds(width / 2 + 80, height - 26, 20, 20).build());
         if (!readOnly) {
-            Button preview = addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.preview_button", PendingChanges.size()),
+            addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.preview_button", PendingChanges.size()),
                             b -> PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), false)))
                     .bounds(width - 108, height - 26, 100, 20).build());
-            preview.active = PendingChanges.size() > 0;
+            // Always available while editing: with nothing pending it previews regenerating the pack from the policy files.
             Button revert = addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.revert"), b -> {
                 PacketDistributor.sendToServer(RevertRequest.INSTANCE);
                 // The server reopens Material Nexus once the reload has finished.

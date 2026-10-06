@@ -117,4 +117,12 @@ public final class TagDiscovery {
         if (path.startsWith("end_") || path.contains("end_stone")) return oreForm("end_stone");
         return ORE;
     }
+
+    /** The convention tag a material/form was discovered from, e.g. c:ingots/tin or c:storage_blocks/raw_tin. */
+    public static java.util.Optional<ResourceLocation> conventionTag(MaterialId material, FormId form) {
+        if (form.equals(RAW_BLOCK)) return java.util.Optional.of(ResourceLocation.fromNamespaceAndPath(CONVENTION_NAMESPACE, "storage_blocks/" + RAW_PREFIX + material.name()));
+        if (form.equals(ORE) || form.name().endsWith("_ore")) return java.util.Optional.of(ResourceLocation.fromNamespaceAndPath(CONVENTION_NAMESPACE, "ores/" + material.name()));
+        return FOLDERS.entrySet().stream().filter(e -> e.getValue().equals(form)).map(Map.Entry::getKey).findFirst()
+                .map(folder -> ResourceLocation.fromNamespaceAndPath(CONVENTION_NAMESPACE, folder + "/" + material.name()));
+    }
 }

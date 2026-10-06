@@ -36,7 +36,7 @@ Material definitions shipped by mods or datapacks may also live under `data/<nam
 `policies/global.json`:
 
 ```json
-{ "mod_priority": ["minecraft", "create"], "exclude": ["wood", "steel/rod"] }
+{ "mod_priority": ["minecraft", "create"], "exclude": ["wood", "steel/rod"], "conversion_recipes": ["ingot", "block"] }
 ```
 
 `policies/materials/copper.json` (file name is free; `material` is the key, defined once):
@@ -85,3 +85,13 @@ The exact codecs are deliberately versioned with the implementation; the domain 
 - `tech_pack`
 - `maximum_unification`
 - `minimal_changes`
+
+## What Apply generates (MNX-007)
+
+Only forms unified by a player decision (any policy level; never the "Default" suggestion) generate content:
+
+- each alternative is removed from the material convention tag (`c:ingots/tin`) through a NeoForge `remove` entry; it keeps every other tag;
+- for forms listed in `conversion_recipes`, a shapeless 1:1 recipe turns each alternative into the canonical item (`materialnexus:convert/<material>/<form>/...`), so existing stock is never stranded;
+- variants and "not unified" providers are never touched.
+
+The manifest lists every effect. On reload, discovery puts back the tag members Material Nexus removed (ADR-010), so the next apply regenerates the same content instead of undoing it. With nothing pending, Preview shows the difference between the policy files and the current pack, which is how hand edits are applied.

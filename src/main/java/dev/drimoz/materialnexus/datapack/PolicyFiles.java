@@ -50,10 +50,11 @@ public final class PolicyFiles {
     }
 
     /** Unknown fields are ignored so later sections (e.g. almost_unified) do not break older readers. */
-    private record GlobalPolicy(List<String> modPriority, List<String> exclude) {
+    private record GlobalPolicy(List<String> modPriority, List<String> exclude, List<String> conversionRecipes) {
         static final Codec<GlobalPolicy> CODEC = RecordCodecBuilder.create(i -> i.group(
                 Codec.STRING.listOf().optionalFieldOf("mod_priority", List.of()).forGetter(GlobalPolicy::modPriority),
-                Codec.STRING.listOf().optionalFieldOf("exclude", List.of()).forGetter(GlobalPolicy::exclude)
+                Codec.STRING.listOf().optionalFieldOf("exclude", List.of()).forGetter(GlobalPolicy::exclude),
+                Codec.STRING.listOf().optionalFieldOf("conversion_recipes", List.of()).forGetter(GlobalPolicy::conversionRecipes)
         ).apply(i, GlobalPolicy::new));
     }
 
@@ -110,7 +111,12 @@ public final class PolicyFiles {
                 f.preferredProvider().ifPresent(item -> explicit.put(key, item));
             });
         });
-        return new ResolutionPolicy(globalPolicy.modPriority(), materialPriority, formPriority, explicit, excludedMaterials, excludedForms);
+        Set<FormId> conversionForms = new HashSet<>();
+        for (String form : globalPolicy.conversionRecipes()) {
+            conversionForms.add(FormId.read(form).result().orElseThrow(() -> new IllegalArgumentException(
+                    "Invalid policy file " + GLOBAL_FILE + ": bad conversion_recipes entry '" + form + "'")));
+        }
+        return new ResolutionPolicy(globalPolicy.modPriority(), materialPriority, formPriority, explicit, excludedMaterials, excludedForms, conversionForms);
     }
 
     private static <T> T decode(Codec<T> codec, JsonElement json, String file) {
