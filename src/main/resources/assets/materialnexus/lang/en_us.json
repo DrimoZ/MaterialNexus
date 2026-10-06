@@ -38,7 +38,7 @@
   "message.materialnexus.applied": "Material Nexus: %s change(s) applied and data reloaded.",
   "message.materialnexus.apply_failed": "Material Nexus: apply failed (%s). Nothing was reloaded.",
   "message.materialnexus.read_only_apply": "Material Nexus: editing is not available on a dedicated server.",
-  "message.materialnexus.reload_failed": "Material Nexus: changes were written and reloaded, but another mod failed while reloading (%s). Restart the world if something looks off.",
+  "message.materialnexus.reload_failed": "Material Nexus: changes applied, but another mod failed while reloading (%s). Restart the world to finish applying them.",
   "materialnexus.form.ore": "Ore",
   "materialnexus.form.deepslate_ore": "Deepslate ore",
   "materialnexus.form.nether_ore": "Nether ore",

@@ -38,7 +38,7 @@
   "message.materialnexus.applied": "Material Nexus : %s changement(s) appliqué(s), données rechargées.",
   "message.materialnexus.apply_failed": "Material Nexus : échec de l’application (%s). Rien n’a été rechargé.",
   "message.materialnexus.read_only_apply": "Material Nexus : l’édition n’est pas disponible sur un serveur dédié.",
-  "message.materialnexus.reload_failed": "Material Nexus : changements écrits et rechargés, mais un autre mod a planté pendant le rechargement (%s). Relancez le monde si quelque chose semble incohérent.",
+  "message.materialnexus.reload_failed": "Material Nexus : changements appliqués, mais un autre mod a planté pendant le rechargement (%s). Redémarrez le monde pour finir de les appliquer.",
   "materialnexus.form.ore": "Minerai",
   "materialnexus.form.deepslate_ore": "Minerai de deepslate",
   "materialnexus.form.nether_ore": "Minerai du Nether",
