@@ -4,6 +4,8 @@
 
 A semantic resource such as `copper`, `tin`, `steel`, `brass` or `electrum`.
 
+`MaterialId` and `FormId` are namespace-free names (`[a-z0-9_]+`): every mod's copper is the same material, matching the `c:ingots/copper` tag convention. Concrete items keep their `ResourceLocation`.
+
 ```text
 MaterialId
 MaterialDefinition
@@ -64,5 +66,7 @@ Within a candidate set, explicit policy beats provider priority; provider priori
 2. standard material tags/conventions
 3. known mod integration metadata
 4. conservative naming heuristics
+
+Confidence is this ordered rank (`DiscoveryEvidence.Confidence`), not a numeric score. A provider's confidence is its strongest evidence.
 
 Heuristics can propose a match but never silently mutate the pack.
