@@ -113,3 +113,14 @@ Everything under an output key is output (stacks with `id` or `item`, lists, nes
 **Why:** a pack author must be able to cover the mods of their pack without waiting for a release; no mod class is ever loaded, so absent mods stay safe.
 
 **Rejected:** one Java adapter per mod (closed to pack authors); generic "find every id" rewriting (cannot tell outputs from inputs).
+
+## ADR-017 - Scripts (KubeJS) have the last word
+
+**Order of application:** datapacks (Material Nexus generated pack included, at the top) are parsed first; KubeJS recipe and tag events then edit the result in memory. So for the same recipe or tag, **KubeJS wins**: a script that removes, replaces or re-adds something applies on top of what Material Nexus generated. This is intended: a script is an explicit author decision, more specific than a unification policy.
+
+Consequences, made visible rather than hidden:
+- Material Nexus analyzes the final game state (tags after scripts, recipes after scripts) for discovery and for detecting which recipes touch an alternative, so its view matches what players get.
+- It only rewrites recipes that exist as files; a recipe created by a script has no file to override and is listed in Preview as "not handled yet" (fix it in the script, or let in-world conversion handle the items).
+- A script matching an alternative by item id (`replaceOutput('ie:ingot_tin', ...)`) stops matching once that recipe was rewritten to the canonical item; scripts matching by tag are unaffected. Prefer tags in scripts, or unify after scripting.
+
+**Rejected:** fighting scripts (re-applying after KubeJS, mixins into its events): two tools silently overriding each other is the failure mode this project exists to remove.

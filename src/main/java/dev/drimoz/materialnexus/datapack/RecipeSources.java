@@ -49,13 +49,15 @@ public final class RecipeSources {
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
             if (ours.contains(holder.id())) continue;
             ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
-            if (type != null && formats.forType(type).isPresent()) {
-                originalJson(resources, holder.id()).ifPresent(json -> {
-                    List<ResourceLocation> outputs = RecipeRewrites.outputIds(json, formats);
-                    String text = json.toString();
-                    boolean touches = outputs.stream().anyMatch(items::contains) || alternativeIds.stream().anyMatch(text::contains);
-                    if (touches) sources.add(new RecipeRewrites.Source(holder.id(), Optional.of(json), firstOrSelf(outputs, holder.id())));
-                });
+            // A recipe with no file (added in memory by a script, e.g. KubeJS) has no JSON we may rewrite: it is
+            // reported like an unknown type rather than silently skipped.
+            Optional<JsonObject> file = type != null && formats.forType(type).isPresent() ? originalJson(resources, holder.id()) : Optional.empty();
+            if (file.isPresent()) {
+                JsonObject json = file.get();
+                List<ResourceLocation> outputs = RecipeRewrites.outputIds(json, formats);
+                String text = json.toString();
+                boolean touches = outputs.stream().anyMatch(items::contains) || alternativeIds.stream().anyMatch(text::contains);
+                if (touches) sources.add(new RecipeRewrites.Source(holder.id(), Optional.of(json), firstOrSelf(outputs, holder.id())));
             } else {
                 ItemStack out = holder.value().getResultItem(server.registryAccess());
                 ResourceLocation result = out.isEmpty() ? null : BuiltInRegistries.ITEM.getKey(out.getItem());
