@@ -24,6 +24,7 @@ public final class MnxNetwork {
         registrar.playToClient(MaterialDetailPayload.TYPE, MaterialDetailPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onMaterialDetail(p));
         registrar.playToClient(PreviewPayload.TYPE, PreviewPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onPreview(p));
         registrar.playToClient(UnifiedItemsPayload.TYPE, UnifiedItemsPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onUnifiedItems(p));
+        registrar.playToClient(RecipeFamilyPayload.TYPE, RecipeFamilyPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onRecipeFamily(p));
         registrar.playToClient(SuggestionsPayload.TYPE, SuggestionsPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onSuggestions(p));
 
         registrar.playToServer(MaterialListRequest.TYPE, MaterialListRequest.STREAM_CODEC, (req, ctx) -> {
@@ -46,6 +47,17 @@ public final class MnxNetwork {
         registrar.playToServer(RevertRequest.TYPE, RevertRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player != null) PolicyHandler.revert(player);
+        });
+        registrar.playToServer(RecipeFamilyRequest.TYPE, RecipeFamilyRequest.STREAM_CODEC, (req, ctx) -> {
+            ServerPlayer player = authorized(ctx);
+            if (player == null) return;
+            var material = dev.drimoz.materialnexus.core.domain.MaterialId.read(req.material()).result();
+            var form = dev.drimoz.materialnexus.core.domain.FormId.read(req.form()).result();
+            if (material.isEmpty() || form.isEmpty()) return;
+            var resolved = SnapshotManager.current().materials().get(material.get());
+            var f = resolved == null ? null : resolved.forms().get(form.get());
+            if (f != null) PacketDistributor.sendToPlayer(player, new RecipeFamilyPayload(req.material(), req.form(),
+                    dev.drimoz.materialnexus.datapack.RecipeFamilies.family(player.server, f)));
         });
         registrar.playToServer(SuggestionsRequest.TYPE, SuggestionsRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);

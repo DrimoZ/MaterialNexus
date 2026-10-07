@@ -17,7 +17,7 @@ public record MaterialListPayload(int page, int pageCount, int totalMatches, Str
             StreamCodec.of(MaterialListPayload::write, MaterialListPayload::read);
 
     /** One row: how many forms, items, and forms with more than one provider. */
-    public record Summary(String material, int forms, int providers, int duplicateForms) { }
+    public record Summary(String material, int forms, int providers, int duplicateForms, int unifiedForms) { }
 
     public MaterialListPayload {
         entries = List.copyOf(entries);
@@ -35,11 +35,12 @@ public record MaterialListPayload(int page, int pageCount, int totalMatches, Str
             b.writeVarInt(e.forms());
             b.writeVarInt(e.providers());
             b.writeVarInt(e.duplicateForms());
+            b.writeVarInt(e.unifiedForms());
         });
     }
 
     private static MaterialListPayload read(FriendlyByteBuf buf) {
         return new MaterialListPayload(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readUtf(NexusQueries.MAX_QUERY),
-                buf.readList(b -> new Summary(b.readUtf(), b.readVarInt(), b.readVarInt(), b.readVarInt())));
+                buf.readList(b -> new Summary(b.readUtf(), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readVarInt())));
     }
 }

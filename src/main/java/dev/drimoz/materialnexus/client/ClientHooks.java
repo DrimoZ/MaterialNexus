@@ -5,6 +5,7 @@ import dev.drimoz.materialnexus.network.MaterialDetailPayload;
 import dev.drimoz.materialnexus.network.MaterialListPayload;
 import dev.drimoz.materialnexus.network.OpenNexusPayload;
 import dev.drimoz.materialnexus.network.PreviewPayload;
+import dev.drimoz.materialnexus.network.RecipeFamilyPayload;
 import dev.drimoz.materialnexus.network.SuggestionsPayload;
 import dev.drimoz.materialnexus.network.UnifiedItemsPayload;
 import net.minecraft.client.Minecraft;
@@ -16,21 +17,24 @@ public final class ClientHooks {
     public static void openNexus(OpenNexusPayload payload) {
         // Pending choices survive a failed apply; they are only dropped once the server confirms it wrote them.
         if (payload.applied()) PendingChanges.clear();
-        Minecraft.getInstance().setScreen(new MaterialListScreen(payload.readOnly(), payload.canRevert()));
+        Minecraft.getInstance().setScreen(new NexusScreen(payload.readOnly(), payload.canRevert()));
     }
 
     public static void onMaterialList(MaterialListPayload payload) {
-        if (Minecraft.getInstance().screen instanceof MaterialListScreen screen) screen.accept(payload);
+        if (Minecraft.getInstance().screen instanceof NexusScreen screen) screen.acceptList(payload);
     }
 
     public static void onMaterialDetail(MaterialDetailPayload payload) {
-        Minecraft mc = Minecraft.getInstance();
-        if (mc.screen instanceof MaterialListScreen list) mc.setScreen(new MaterialDetailScreen(list, payload));
+        if (Minecraft.getInstance().screen instanceof NexusScreen screen) screen.acceptDetail(payload);
+    }
+
+    public static void onRecipeFamily(RecipeFamilyPayload payload) {
+        if (Minecraft.getInstance().screen instanceof NexusScreen screen) screen.acceptFamily(payload);
     }
 
     public static void onPreview(PreviewPayload payload) {
         Minecraft mc = Minecraft.getInstance();
-        if (mc.screen instanceof MaterialListScreen list) mc.setScreen(new PreviewScreen(list, payload));
+        if (mc.screen instanceof NexusScreen screen) mc.setScreen(new PreviewScreen(screen, payload));
     }
 
     public static void onUnifiedItems(UnifiedItemsPayload payload) {
@@ -42,6 +46,6 @@ public final class ClientHooks {
         for (CanonicalChange c : payload.changes()) {
             if (PendingChanges.get(c.material(), c.form()).isEmpty()) PendingChanges.set(c.material(), c.form(), c.provider());
         }
-        if (Minecraft.getInstance().screen instanceof MaterialListScreen list) list.refresh();
+        if (Minecraft.getInstance().screen instanceof NexusScreen screen) screen.refresh();
     }
 }

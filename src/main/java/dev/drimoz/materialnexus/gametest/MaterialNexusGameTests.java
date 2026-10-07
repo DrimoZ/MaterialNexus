@@ -55,6 +55,16 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /** MNX-009: the recipe family of copper ingots lists real recipes producing the canonical item. */
+    @GameTest(template = "empty")
+    public static void copperIngotRecipeFamilyIsListed(GameTestHelper helper) {
+        var form = SnapshotManager.current().materials().get(new MaterialId("copper")).forms().get(new FormId("ingot"));
+        var rows = dev.drimoz.materialnexus.datapack.RecipeFamilies.family(helper.getLevel().getServer(), form);
+        helper.assertTrue(rows.stream().anyMatch(r -> r.status() == dev.drimoz.materialnexus.datapack.RecipeFamilies.Status.CANONICAL),
+                "copper ingot family should contain recipes making the canonical item, got " + rows.size() + " rows");
+        helper.succeed();
+    }
+
     /** MNX-033: shipped material definitions are loaded by the data reload, before discovery uses them. */
     @GameTest(template = "empty")
     public static void shippedMaterialDefinitionsAreLoaded(GameTestHelper helper) {

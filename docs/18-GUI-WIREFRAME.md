@@ -1,37 +1,22 @@
-# 18 — GUI wireframe
+# 18 — GUI layout (implemented, MNX-009 redesign)
 
 ```text
-┌──────────────────────────────────────────────────────────────────┐
-│ MATERIAL NEXUS                                      Reload  ⚙     │
-├───────────────┬──────────────────────────────────────────────────┤
-│ Dashboard     │ Materials                                         │
-│ Materials     │  Search: [ copper________________ ]              │
-│ Recipes       │                                                  │
-│ Diagnostics   │  Copper   ✓ Unified    12 forms   4 mods         │
-│ Presets       │  Tin      ! Partial     8 forms   3 mods         │
-│               │  Steel    ! Conflict    7 forms   4 mods         │
-│               │                                                  │
-│               │  [Open Copper]                                    │
-└───────────────┴──────────────────────────────────────────────────┘
-
-Copper
-┌───────────┬──────────┬──────────┬───────────┐
-│ Overview  │ Items    │ Tags     │ Recipes   │ ...
-└───────────┴──────────┴──────────┴───────────┘
-
-PLATE
-Canonical: create:copper_sheet     [Change]
-Why? Create priority + explicit form policy
-
-Providers
-✓ create:copper_sheet       canonical
-○ mod_a:copper_plate        alternative
-○ mod_b:copper_plate        duplicate
-
-Recipe families
-✓ Pressing       Create
-○ Crafting       Vanilla
-! Rolling        Mod B      conflict
-
-[Preview changes] [Apply policy]
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ Material Nexus  94 materials      [Unify all suggestions] [Revert] [Preview (N)] │
+├──────────────────┬──────────────────────────────────────────────────────────┤
+│ [search…]        │ Aluminum                                                 │
+│ ● Aluminum       │ [Forms] [Recipes] [Missing]              [Unify material]│
+│   12 forms · 5   │ ┌──────────────────────────────────────────────────────┐ │
+│ ● Copper         │ │ Ingot  Suggestion: click an item…        Recipes ›   │ │
+│ ○ Coal           │ │ No policy: strongest evidence, then alphabetical id  │ │
+│ …                │ │ [MI][IE] [variant…]                                  │ │
+│                  │ └──────────────────────────────────────────────────────┘ │
+│ [<] Page 1/2 [>] │                                                          │
+└──────────────────┴──────────────────────────────────────────────────────────┘
 ```
+
+- **Sidebar**: server-side search and pages; dot = green (every duplicated form decided), amber (duplicates only suggested), grey (nothing to unify).
+- **Forms**: one card per form; every provider is an icon. Gold border = current canonical, green = pending choice, grey = alternative, dark red = not unified. Clicking an icon makes it the pending canonical (again to cancel). Tooltips give the item, id, role and, for the canonical, Why / source / confidence. "Recipes ›" opens the form's recipe family.
+- **Recipes**: form chips; every loaded recipe producing the form with type and status (canonical, alternative, variant, rewritten, disabled by MNX, not handled yet).
+- **Missing**: missing standard conversions (proposals only, ADR-003).
+- **Top bar**: unify all suggestions, revert last apply, preview with pending count. Read-only sessions (dedicated server) hide editing.
