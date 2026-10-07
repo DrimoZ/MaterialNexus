@@ -43,31 +43,22 @@ public final class GeneratedPack {
         Path items = MnxPaths.root().resolve("created_items");
         if (event.getPackType() == PackType.CLIENT_RESOURCES) {
             // MNX-039: the created items' models live in the same pack, so the client loads it as a resource pack too.
-            try {
-                if (!isOurs(items)) return;
-                write(items, createdItemFiles(), new JsonArray());
-            } catch (IOException e) {
-                LOGGER.error("Could not prepare the Material Nexus created items pack", e);
-                return;
-            }
-            add(event, ITEMS_PACK_ID, items, PackType.CLIENT_RESOURCES);
+            if (prepareItems(items)) add(event, ITEMS_PACK_ID, items, PackType.CLIENT_RESOURCES);
             return;
         }
         if (event.getPackType() != PackType.SERVER_DATA) return;
         Path dir = MnxPaths.generated();
         try {
-            if (!isOurs(dir) || !isOurs(items)) {
-                LOGGER.warn("{} or {} exists but was not created by Material Nexus; it is left untouched and not loaded", dir, items);
-                return;
+            if (!isOurs(dir)) {
+                LOGGER.warn("{} exists but was not created by Material Nexus; it is left untouched and not loaded", dir);
+            } else {
+                if (!Files.exists(dir.resolve(MARKER))) write(dir, Map.of(), new JsonArray());
+                add(event, PACK_ID, dir);
             }
-            if (!Files.exists(dir.resolve(MARKER))) write(dir, Map.of(), new JsonArray());
-            write(items, createdItemFiles(), new JsonArray());
         } catch (IOException e) {
             LOGGER.error("Could not prepare the Material Nexus generated pack", e);
-            return;
         }
-        add(event, PACK_ID, dir);
-        add(event, ITEMS_PACK_ID, items);
+        if (prepareItems(items)) add(event, ITEMS_PACK_ID, items);
         // MNX-046: in-game edits of Material Nexus data, a plain user-owned datapack under policies/.
         try {
             EditableData.ensurePack(EditableData.userPack());
@@ -98,6 +89,44 @@ public final class GeneratedPack {
             }).getAsJsonArray("values").add(item.getId().toString());
         }
         return Map.copyOf(files);
+    }
+
+    /**
+     * The created items pack, rewritten only when its content changed: rewriting replaces the folder, which Windows
+     * refuses while anything holds a file in it (seen as AccessDeniedException on the rename). If writing fails, the
+     * pack already on disk is still used. True when there is a pack to load.
+     */
+    private static boolean prepareItems(Path items) {
+        try {
+            if (!isOurs(items)) {
+                LOGGER.warn("{} exists but was not created by Material Nexus; it is left untouched and not loaded", items);
+                return false;
+            }
+            Map<String, JsonElement> files = createdItemFiles();
+            if (!sameContent(items, files)) write(items, files, new JsonArray());
+        } catch (IOException e) {
+            LOGGER.error("Could not update the Material Nexus created items pack; using the one on disk", e);
+        }
+        return Files.exists(items.resolve(MARKER));
+    }
+
+    /** True when {@code dir} holds exactly these data/assets files with this content. */
+    private static boolean sameContent(Path dir, Map<String, JsonElement> files) throws IOException {
+        if (!Files.exists(dir.resolve(MARKER))) return false;
+        var gson = new GsonBuilder().setPrettyPrinting().create();
+        for (var e : files.entrySet()) {
+            Path file = dir.resolve(e.getKey());
+            if (!Files.isRegularFile(file) || !Files.readString(file, StandardCharsets.UTF_8).equals(gson.toJson(e.getValue()))) return false;
+        }
+        long onDisk = 0;
+        for (String root : new String[] {"data", "assets"}) {
+            Path r = dir.resolve(root);
+            if (!Files.isDirectory(r)) continue;
+            try (Stream<Path> walk = Files.walk(r)) {
+                onDisk += walk.filter(Files::isRegularFile).count();
+            }
+        }
+        return onDisk == files.size();
     }
 
     private static void add(AddPackFindersEvent event, String id, Path dir) {
