@@ -9,8 +9,8 @@ carries its own versions.
 
 Images are generated, not committed: `./gradlew runUiShots -Pstore` takes the captures by itself (the
 dev world as a fresh pack sees it), then `java tools/Banners.java run-ui/screenshots run-ui/store-art`
-makes the images. The paths below are local until the first upload: upload each image (850 px wide
-at most) through the description editor and replace its path with the `media.forgecdn.net` URL.
+makes the images. The URLs below are the 0.1.0 uploads; after regenerating, upload the new images
+(850 px wide at most) through the description editor and replace the URLs that changed.
 
 
 ## Summary
@@ -32,7 +32,7 @@ artwork with redistribution granted.
 
 <!-- Everything below this line is pasted into the site's Markdown editor as-is. -->
 
-![Material Nexus](run-ui/store-art/banner.png)
+![Material Nexus](https://media.forgecdn.net/attachments/2023/202/banner-png.png)
 
 ### One copper ingot, not five.
 
@@ -41,11 +41,11 @@ plates, a dozen recipes that disagree about them. Material Nexus finds every one
 decide which item is kept, then cleans the tags, rewrites the recipes and converts the items for
 you. Nothing changes until you have seen the preview and pressed Apply.
 
-![Home](run-ui/store-art/screen_home.png)
+![Home](https://media.forgecdn.net/attachments/2023/211/screen_home-png.png)
 
-![Finds the duplicates](run-ui/store-art/header_find.png)
+![Finds the duplicates](https://media.forgecdn.net/attachments/2023/206/header_find-png.png)
 
-![Every material and form](run-ui/store-art/screen_matrix.png)
+![Every material and form](https://media.forgecdn.net/attachments/2023/213/screen_matrix-png.png)
 
 - **Every form of every material**, read from the convention tags (`c:ingots/copper`,
   `c:plates/tin`...) and from item names for the forms mods leave untagged: double ingots, wires,
@@ -55,9 +55,9 @@ you. Nothing changes until you have seen the preview and pressed Apply.
   it away.
 - **The whole pack as a grid**: materials against forms, what is to decide, unified or single.
 
-![You choose](run-ui/store-art/header_choose.png)
+![You choose](https://media.forgecdn.net/attachments/2023/203/header_choose-png.png)
 
-![One material](run-ui/store-art/screen_material.png)
+![One material](https://media.forgecdn.net/attachments/2023/212/screen_material-png.png)
 
 - **Click the item to keep.** Each suggestion says why it was made, and each item which mod it
   comes from and how many recipes make and use it.
@@ -65,13 +65,13 @@ you. Nothing changes until you have seen the preview and pressed Apply.
   the same item".
 - **Or rank the mods once**: the first mod in the list wins every duplicate you have not decided.
 
-![Triage](run-ui/store-art/screen_triage.png)
+![Triage](https://media.forgecdn.net/attachments/2023/219/screen_triage-png.png)
 
-![Mod priority](run-ui/store-art/screen_priority.png)
+![Mod priority](https://media.forgecdn.net/attachments/2023/217/screen_priority-png.png)
 
-![Preview, then apply](run-ui/store-art/header_preview.png)
+![Preview, then apply](https://media.forgecdn.net/attachments/2023/207/header_preview-png.png)
 
-![Preview](run-ui/store-art/screen_preview.png)
+![Preview](https://media.forgecdn.net/attachments/2023/216/screen_preview-png.png)
 
 - **Every change listed first**: tags cleaned, items converted, recipes rewritten or disabled,
   recipes not handled yet.
@@ -83,9 +83,9 @@ you. Nothing changes until you have seen the preview and pressed Apply.
 - **Recipes of many mods** are rewritten from data: Create and its addons, Mekanism, Immersive
   Engineering, Modern Industrialization, Oritech, Occultism, Silent Gear and more.
 
-![Fills the gaps](run-ui/store-art/header_process.png)
+![Fills the gaps](https://media.forgecdn.net/attachments/2023/208/header_process-png.png)
 
-![Process rules](run-ui/store-art/screen_process.png)
+![Process rules](https://media.forgecdn.net/attachments/2023/218/screen_process-png.png)
 
 - **Process rules** say how a form is made for every material: an ingot gives two rods in the
   metal press, nine ingots make a block. Missing machine recipes are written by copying one the
@@ -93,22 +93,22 @@ you. Nothing changes until you have seen the preview and pressed Apply.
 - **Missing forms can be created**: a netherite rod, a tin gear. The new item takes the
   material's colour.
 
-![Items it can create](run-ui/store-art/items_created.png)
+![Items it can create](https://media.forgecdn.net/attachments/2023/209/items_created-png.png)
 
-![Always reversible](run-ui/store-art/header_control.png)
+![Always reversible](https://media.forgecdn.net/attachments/2023/204/header_control-png.png)
 
-![Pending changes](run-ui/store-art/screen_pending.png)
+![Pending changes](https://media.forgecdn.net/attachments/2023/214/screen_pending-png.png)
 
 - **Discard** any pending change, a whole material, or everything.
 - **Back to default**: one saved choice, a material, or the whole pack.
 - **Revert the last apply**, or restore any of the last 20 applied states from the history.
 - **Presets** for the usual setups (vanilla first, tech pack...), shown next to your settings.
 
-![Presets](run-ui/store-art/screen_presets.png)
+![Presets](https://media.forgecdn.net/attachments/2023/215/screen_presets-png.png)
 
-![For pack makers](run-ui/store-art/header_data.png)
+![For pack makers](https://media.forgecdn.net/attachments/2023/205/header_data-png.png)
 
-![Data](run-ui/store-art/screen_data.png)
+![Data](https://media.forgecdn.net/attachments/2023/210/screen_data-png.png)
 
 Everything is files in `config/materialnexus/`, made to ship with the pack; the
 [wiki](https://github.com/DrimoZ/MaterialNexus/wiki) documents every field. The rules themselves
@@ -176,7 +176,7 @@ not lift them into another project.
 - [ ] `main` green: `./gradlew test`, `./gradlew runGameTestServer`, `./gradlew runGameTestServer -Pvanilla`
       (and `-Pau`, `-Pkubejs` when those parts changed).
 - [ ] Project avatar: `src/main/resources/logo.png` (from `java tools/GenerateLogo.java`).
-- [ ] Generate the art (see the top of this file), upload every image and put the URLs in place.
+- [x] Generate the art (see the top of this file), upload every image and put the URLs in place.
 - [ ] Gallery: `screen_home.png`, `screen_material.png`, `screen_matrix.png`, `screen_triage.png`,
       `screen_preview.png`, `screen_process.png`.
 - [ ] Paste the summary and the description.
