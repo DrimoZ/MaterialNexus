@@ -45,7 +45,7 @@ settings as resolved at the last reload.
 
 ```js
 ServerEvents.recipes(event => {
-  event.shapeless(MaterialNexus.kept('thermal:tin_ingot'), ['9x #c:nuggets/tin'])
+  event.shapeless(MaterialNexus.kept('thermal:tin_ingot'), ['9x #forge:nuggets/tin'])
 })
 ```
 
@@ -77,4 +77,4 @@ unified through tags and in the world in the meantime.
 - Modern Industrialization's untagged forms (double ingots, large and curved plates, bolts, rings,
   blades, rotors, drill heads, wires, fine wires), Oritech's small dusts and Realistic Minerals' ores
   are found by shipped name patterns.
-- Coal and charcoal are tagged as gems (`c:gems/coal`, `c:gems/charcoal`), as vanilla leaves them untagged.
+- Coal and charcoal are tagged as gems (`forge:gems/coal`, `forge:gems/charcoal`), as vanilla leaves them untagged.

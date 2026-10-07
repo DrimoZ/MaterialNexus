@@ -32,7 +32,7 @@ Your edits are decoded before being written, and the history keeps them.
 }
 ```
 
-- `folders`: a convention tag folder and the form it holds (`c:ore_chunks/<material>`). Adds to the
+- `folders`: a convention tag folder and the form it holds (`forge:ore_chunks/<material>`). Adds to the
   built-in ones or remaps one.
 - `patterns`: item ids of a form mods leave untagged; `{material}` stands for a material some tag
   already knows. A match counts as evidence for that form; nothing is added to the game's tags.
@@ -109,5 +109,5 @@ Its name and description come from the lang keys `materialnexus.preset.<id>` and
 { "id": "aluminum", "aliases": ["aluminium"] }
 ```
 
-Tags named after an alias (`c:ingots/aluminium`) are discovered as the declaring material. Aliases
+Tags named after an alias (`forge:ingots/aluminium`) are discovered as the declaring material. Aliases
 are never guessed from names. Shipped: aluminium as aluminum.

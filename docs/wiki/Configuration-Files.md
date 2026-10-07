@@ -79,7 +79,7 @@ See [Created Items](Created-Items#in-the-files).
 ## The generated datapack
 
 `generated/` holds tag files (`remove` entries for alternatives), rewritten and generated recipes,
-disabled recipes (same id, with a `neoforge:false` condition), and `manifest.json`, listing every
+disabled recipes (same id, with a `forge:false` condition), and `manifest.json`, listing every
 effect and why. It carries a `_GENERATED_DO_NOT_EDIT` marker: Material Nexus refuses to overwrite a
 folder without it. It is rebuilt from `policies/` on every Apply; hand changes there are lost. Put
 your own recipe changes in your own datapack or in KubeJS.

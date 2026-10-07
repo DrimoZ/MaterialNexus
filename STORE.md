@@ -47,8 +47,8 @@ you. Nothing changes until you have seen the preview and pressed Apply.
 
 ![Every material and form](https://media.forgecdn.net/attachments/2023/213/screen_matrix-png.png)
 
-- **Every form of every material**, read from the convention tags (`c:ingots/copper`,
-  `c:plates/tin`...) and from item names for the forms mods leave untagged: double ingots, wires,
+- **Every form of every material**, read from the convention tags (`forge:ingots/copper`,
+  `forge:plates/tin`...) and from item names for the forms mods leave untagged: double ingots, wires,
   large plates.
 - **Variants are set aside, not merged**: an item that only shares a tag (a yellow amethyst, a
   plastic plate tagged as plates) is recognised by its name and left alone, with the word that gave
@@ -120,7 +120,7 @@ analysis. KubeJS scripts get a read-only `MaterialNexus` binding to ask which it
 
 | | |
 |---|---|
-| Loader | NeoForge |
+| Loader | Forge |
 | [JEI](https://www.curseforge.com/minecraft/mc-mods/jei) *(optional)* | alternatives hidden once unified |
 | [EMI](https://www.curseforge.com/minecraft/mc-mods/emi) *(optional)* | alternatives hidden once unified |
 | [Almost Unified](https://www.curseforge.com/minecraft/mc-mods/almost-unified) *(optional)* | each job (tags, recipes, hiding) left to it unless you give it to Material Nexus: never done twice |
@@ -181,7 +181,7 @@ not lift them into another project.
       `screen_preview.png`, `screen_process.png`.
 - [ ] Paste the summary and the description.
 - [ ] Upload the jar from `gradlew build` (`build/libs`), release type **Beta**,
-      loader NeoForge, with the `## 0.1.0` section of `CHANGELOG.md`.
+      loader Forge, with the `## 0.1.0` section of `CHANGELOG.md`.
 - [ ] Optional dependencies: JEI, EMI, Almost Unified, KubeJS.
 - [ ] Tag `v0.1.0`, and add the CurseForge link to the README and to the links above.
 - [ ] Report upstream: `docs/upstream/immersiveengineering-silentgear-reload.md`.

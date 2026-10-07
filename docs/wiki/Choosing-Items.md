@@ -4,11 +4,11 @@
 
 A **material** is copper, tin, diamond, steel. A **form** is what it is shaped as: ingot, nugget,
 dust, plate, rod, gear, wire, block, ore, raw... Material Nexus reads them from the convention tags:
-`c:ingots/copper` says "these items are copper ingots". Forms mods leave untagged (Modern
+`forge:ingots/copper` says "these items are copper ingots". Forms mods leave untagged (Modern
 Industrialization's double ingots and wires) are found by item name patterns, which are data
 ([Datapack Guide](Datapack-Guide#forms)).
 
-A gem is the ingot of non-metals (diamond, quartz, coal): `c:gems/<material>`.
+A gem is the ingot of non-metals (diamond, quartz, coal): `forge:gems/<material>`.
 
 ## Duplicates, variants and other materials
 
@@ -18,7 +18,7 @@ A tag means "usable as", not "the same item". So within a form, Material Nexus s
   Engineering). One is kept, the others are **alternatives**.
 - **Set aside**, never unified unless you pick one:
   - several items **from the same mod** (it made them different on purpose);
-  - an item that **belongs to a more specific material** (`c:ingots/steel` and `c:ingots/hot_steel`);
+  - an item that **belongs to a more specific material** (`forge:ingots/steel` and `forge:ingots/hot_steel`);
   - an item **named as a variant**: its id has a word left once the material and the form words are
     removed (`remin:yellow_amethyst` tagged as amethyst, `immersiveengineering:plate_duroplast`
     tagged as plastic plates, `create:crushed_raw_iron` tagged as raw iron);

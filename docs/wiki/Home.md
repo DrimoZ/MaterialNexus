@@ -7,15 +7,15 @@ recipes that each want a different one. Material Nexus finds every one of them, 
 which item each material keeps, and then makes the pack agree: tags, recipes, the items already in
 the world, and the recipe viewer. Nothing changes until you have read the preview and pressed Apply.
 
-**NeoForge** · MIT · for modpack makers
+**Forge** · MIT · for modpack makers
 
 [GitHub](https://github.com/DrimoZ/MaterialNexus) ·
 [Report a bug](https://github.com/DrimoZ/MaterialNexus/issues)
 
 ## What it does
 
-- **Finds every material form** in the pack: from the convention tags (`c:ingots/copper`,
-  `c:plates/tin`...) and from item names for the forms mods leave untagged.
+- **Finds every material form** in the pack: from the convention tags (`forge:ingots/copper`,
+  `forge:plates/tin`...) and from item names for the forms mods leave untagged.
 - **Tells duplicates from variants**: two copper ingots from two mods are duplicates; a yellow
   amethyst tagged as amethyst is a variant, set aside and left alone.
 - **Lets you choose** the item each material keeps, form by form, by triage, or by ranking mods.

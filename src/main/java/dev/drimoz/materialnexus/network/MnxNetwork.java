@@ -11,6 +11,12 @@ import net.minecraftforge.network.NetworkEvent;
 import net.minecraftforge.network.NetworkRegistry;
 import net.minecraftforge.network.simple.SimpleChannel;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
@@ -24,6 +30,54 @@ public final class MnxNetwork {
     static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
             ResourceLocation.fromNamespaceAndPath(dev.drimoz.materialnexus.MaterialNexus.MOD_ID, "main"), () -> VERSION, VERSION::equals, VERSION::equals);
     private static int nextId;
+
+    /**
+     * Forge 1.20.1: vanilla refuses a custom payload over 32767 bytes to the server (even in singleplayer) and over 1 MiB to
+     * the client, and Forge does not split channel messages as NeoForge does on main. A larger message travels as ordered
+     * {@link Part}s, decoded once whole.
+     */
+    private static final int TO_SERVER_PART = 32_000;
+    private static final int TO_CLIENT_PART = 1_000_000;
+    /** Bound of one reassembled message to the server: 64 edits of 64 Ki characters (3 bytes each) and the changes. */
+    private static final int MAX_TO_SERVER = 16 * 1024 * 1024;
+    private static final int MAX_TO_CLIENT = 64 * 1024 * 1024;
+
+    private record Registered<T>(Class<T> type, StreamCodec<? super FriendlyByteBuf, T> codec,
+                                 BiConsumer<T, NetworkEvent.Context> handler, boolean toServer) { }
+
+    private static final List<Registered<?>> REGISTERED = new ArrayList<>();
+    private static final Map<Class<?>, Integer> INDEX = new HashMap<>();
+
+    /** One slice of a large message: {@code message} is its index in {@link #REGISTERED}. */
+    private record Part(int message, int index, int count, byte[] bytes) {
+        void write(FriendlyByteBuf buf) {
+            buf.writeVarInt(message);
+            buf.writeVarInt(index);
+            buf.writeVarInt(count);
+            buf.writeByteArray(bytes);
+        }
+
+        static Part read(FriendlyByteBuf buf) {
+            return new Part(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readByteArray(TO_CLIENT_PART));
+        }
+    }
+
+    private static final class Assembly {
+        final int message;
+        final int count;
+        int next;
+        final java.io.ByteArrayOutputStream bytes = new java.io.ByteArrayOutputStream();
+
+        Assembly(int message, int count) {
+            this.message = message;
+            this.count = count;
+        }
+    }
+
+    /** Server thread only: one message being received per player. */
+    private static final Map<UUID, Assembly> FROM_PLAYERS = new HashMap<>();
+    /** Client thread only. */
+    private static Assembly fromServer;
 
     private MnxNetwork() { }
 
@@ -122,20 +176,103 @@ public final class MnxNetwork {
             if (player != null) PacketDistributor.sendToPlayer(player, req.saved() ? SuggestionsPayload.saved(PolicyHandler.savedChoices())
                     : SuggestionsPayload.of(SnapshotManager.current()));
         });
+        registerParts();
     }
 
     private static <T extends CustomPacketPayload> void toClient(Class<T> type, StreamCodec<? super FriendlyByteBuf, T> codec, Consumer<T> handler) {
-        CHANNEL.messageBuilder(type, nextId++, NetworkDirection.PLAY_TO_CLIENT)
-                .encoder((msg, buf) -> codec.encode(buf, msg)).decoder(codec::decode)
-                .consumerMainThread((msg, ctx) -> handler.accept(msg)).add();
+        add(new Registered<>(type, codec, (msg, ctx) -> handler.accept(msg), false), NetworkDirection.PLAY_TO_CLIENT);
     }
 
     /** Server-bound handlers run on the server thread, like the NeoForge payload handlers on main. */
     private static <T extends CustomPacketPayload> void toServer(Class<T> type, StreamCodec<? super FriendlyByteBuf, T> codec,
                                                                  BiConsumer<T, NetworkEvent.Context> handler) {
-        CHANNEL.messageBuilder(type, nextId++, NetworkDirection.PLAY_TO_SERVER)
-                .encoder((msg, buf) -> codec.encode(buf, msg)).decoder(codec::decode)
-                .consumerMainThread((msg, ctx) -> handler.accept(msg, ctx.get())).add();
+        add(new Registered<>(type, codec, handler, true), NetworkDirection.PLAY_TO_SERVER);
+    }
+
+    private static <T> void add(Registered<T> registered, NetworkDirection direction) {
+        INDEX.put(registered.type(), REGISTERED.size());
+        REGISTERED.add(registered);
+        CHANNEL.messageBuilder(registered.type(), nextId++, direction)
+                .encoder((msg, buf) -> registered.codec().encode(buf, msg)).decoder(registered.codec()::decode)
+                .consumerMainThread((msg, ctx) -> registered.handler().accept(msg, ctx.get())).add();
+    }
+
+    /** Registered last, in both directions. */
+    private static void registerParts() {
+        CHANNEL.messageBuilder(Part.class, nextId++).encoder(Part::write).decoder(Part::read)
+                .consumerMainThread((part, ctx) -> receive(part, ctx.get())).add();
+    }
+
+    static void sendToPlayer(ServerPlayer player, CustomPacketPayload payload) {
+        send(payload, TO_CLIENT_PART, msg -> CHANNEL.send(net.minecraftforge.network.PacketDistributor.PLAYER.with(() -> player), msg));
+    }
+
+    static void sendToServer(CustomPacketPayload payload) {
+        send(payload, TO_SERVER_PART, CHANNEL::sendToServer);
+    }
+
+    // ponytail: encodes every message once to measure it, then the channel encodes it again; split only when needed.
+    private static void send(CustomPacketPayload payload, int limit, Consumer<Object> out) {
+        int message = INDEX.get(payload.getClass());
+        FriendlyByteBuf buf = new FriendlyByteBuf(io.netty.buffer.Unpooled.buffer());
+        try {
+            encode(REGISTERED.get(message), payload, buf);
+            if (buf.readableBytes() <= limit) {
+                out.accept(payload);
+                return;
+            }
+            byte[] all = new byte[buf.readableBytes()];
+            buf.readBytes(all);
+            int count = (all.length + limit - 1) / limit;
+            for (int i = 0; i < count; i++) {
+                out.accept(new Part(message, i, count, Arrays.copyOfRange(all, i * limit, Math.min(all.length, (i + 1) * limit))));
+            }
+        } finally {
+            buf.release();
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private static <T> void encode(Registered<T> registered, Object payload, FriendlyByteBuf buf) {
+        registered.codec().encode(buf, (T) payload);
+    }
+
+    /** Untrusted on the server: a part out of order, for an unknown or client-bound message, or past the bound drops it all. */
+    private static void receive(Part part, NetworkEvent.Context ctx) {
+        boolean server = ctx.getDirection().getReceptionSide().isServer();
+        ServerPlayer sender = ctx.getSender();
+        UUID key = sender == null ? null : sender.getUUID();
+        Registered<?> registered = part.message() >= 0 && part.message() < REGISTERED.size() ? REGISTERED.get(part.message()) : null;
+        int max = server ? MAX_TO_SERVER : MAX_TO_CLIENT;
+        int partSize = server ? TO_SERVER_PART : TO_CLIENT_PART;
+        Assembly assembly = server ? FROM_PLAYERS.remove(key) : fromServer;
+        if (!server) fromServer = null;
+        if (registered == null || registered.toServer() != server || (server && key == null) || part.count() < 2
+                || part.count() > max / partSize + 1 || part.bytes().length > partSize) return;
+        if (part.index() == 0) {
+            // Nothing is buffered for a player who may not use Material Nexus.
+            if (server && authorized(ctx) == null) return;
+            assembly = new Assembly(part.message(), part.count());
+        } else if (assembly == null || assembly.message != part.message() || assembly.count != part.count() || assembly.next != part.index()) {
+            return;
+        }
+        assembly.bytes.writeBytes(part.bytes());
+        assembly.next++;
+        if (assembly.next < assembly.count) {
+            if (server) FROM_PLAYERS.put(key, assembly);
+            else fromServer = assembly;
+            return;
+        }
+        FriendlyByteBuf buf = new FriendlyByteBuf(io.netty.buffer.Unpooled.wrappedBuffer(assembly.bytes.toByteArray()));
+        try {
+            dispatch(registered, buf, ctx);
+        } catch (RuntimeException e) {
+            com.mojang.logging.LogUtils.getLogger().warn("Dropped an invalid Material Nexus message ({})", registered.type().getSimpleName(), e);
+        }
+    }
+
+    private static <T> void dispatch(Registered<T> registered, FriendlyByteBuf buf, NetworkEvent.Context ctx) {
+        registered.handler().accept(registered.codec().decode(buf), ctx);
     }
 
     /** Permission is re-checked on every request; opening the screen once grants nothing. */

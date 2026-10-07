@@ -1,38 +1,54 @@
 # Port to Forge 1.20.1
 
-Branch `forge-1.20.1` (worktree `../MaterialNexus-forge-1.20.1`), from `main` at MNX-074. `main` stays NeoForge 1.21.1.
+Branch `forge-1.20.1`, from `main` at MNX-074. `main` stays NeoForge 1.21.1; this branch is the same mod for
+Forge 1.20.1. Behaviour is unchanged: what differs is the game's and the loader's API and data layout.
 
 ## Target
 
 | | main | this branch |
 |---|---|---|
 | Minecraft | 1.21.1 | 1.20.1 |
-| Loader | NeoForge 21.1.248 | Forge 47.4.26 |
+| Loader | NeoForge 21.1.248 | Forge 47.4.26 (minimum 47.3.30: `ResourceLocation` 1.21 factories are backported there) |
 | Java | 21 | 17 |
-| Gradle plugin | ModDevGradle `moddev` | ModDevGradle `legacyforge` (same DSL, reobf to SRG) |
-| Convention tags | `c:ingots/tin` | `forge:ingots/tin` |
-| Datapack folders | `recipe/`, `tags/item/` | `recipes/`, `tags/items/` |
-| Recipe result stack | `{"id": ...}` | `{"item": ...}` |
-| Load conditions | `neoforge:conditions` | `forge:conditions` |
-| pack_format | 48 | 15 |
+| Gradle plugin | ModDevGradle `moddev` | ModDevGradle `legacyforge` (same DSL, jar reobfuscated to SRG) |
+| Metadata | `neoforge.mods.toml`, `type = "required"` | `mods.toml`, `mandatory = true`, `pack.mcmeta` (format 15) |
+| Convention tags | `c:ingots/tin` | `forge:ingots/tin` (`TagDiscovery.CONVENTION_NAMESPACE`) |
+| Datapack folders | `recipe/`, `tags/item/`, `structure/` | `recipes/`, `tags/items/`, `structures/` |
+| Item stack in a recipe | `{"id": ..., "count": n}` | `{"item": ..., "count": n}`; cooking results are a bare id |
+| Load conditions | `neoforge:conditions`, `neoforge:false` | `conditions`, `forge:false` |
+| Recipe validation | `Recipe.CODEC` | `RecipeManager.fromJson` (`RecipeSources.decodeError`) |
+| Optional codec fields | `optionalFieldOf` (strict) | `OptionalFields.strict` (1.20.1 DFU `optionalFieldOf` is lenient) |
+| Network | payload registrar, NeoForge splits large payloads | one `SimpleChannel`; local `CustomPacketPayload` / `StreamCodec` / `PacketDistributor` keep every payload as on main; messages over 32000 bytes to the server (1 MB to the client) travel as bounded, ordered parts |
+| KubeJS | 2101 `KubeJSPlugin` / `BindingRegistry` | 2001 `KubeJSPlugin` class / `BindingsEvent` |
 
-## Steps
+## Mod formats (shipped process templates and recipe formats)
 
-1. **Build**: `legacyforge` plugin, Forge 47.4.26, Parchment 1.20.1, Java 17, `mods.toml`; 1.20.1 dev pack
-   (JEI 15, Jade 11, Mekanism 10.4, Create 6 for 1.20.1, IE 10.2, AE2 15). Modern Industrialization has no
-   Forge 1.20.1 build: it leaves the dev pack, and its recipe format file stays as harmless data.
-2. **Mechanical API**: `ResourceLocation.fromNamespaceAndPath/parse/withDefaultNamespace` to constructors,
-   NeoForge packages to Forge (`net.minecraftforge.*`), `@EventBusSubscriber` to `@Mod.EventBusSubscriber`,
-   `DeferredItem` to `RegistryObject`, Java 21 collection methods to Java 17.
-3. **Network**: local `CustomPacketPayload` / `StreamCodec` shims keep every payload unchanged; `MnxNetwork` registers
-   them on one `SimpleChannel` (main-thread handlers, server-side permission check unchanged).
-4. **Recipes**: `RecipeHolder` to `Recipe#getId`, `getResultItem(RegistryAccess)`.
-5. **Data layout**: folder names, result keys, condition keys, pack metadata, `forge:` convention namespace,
-   shipped resources (`data/c/tags/item` to `data/forge/tags/items`, recipe format files).
-6. **Client**: `mouseScrolled(x, y, delta)`, `renderBackground(GuiGraphics)`, `TickEvent.ClientTickEvent`,
-   color handlers, tooltip event.
-7. **Integrations**: JEI 15 and EMI 1.20.1 APIs, KubeJS 2001 plugin API.
-8. **Verify**: `./gradlew build` (compile + JUnit), `runGameTestServer`, then a client run when possible.
-9. **Docs**: README/wiki note the 1.20.1 differences (tag namespace, folders).
+Checked against the recipes inside the 1.20.1 jars, and by the `shippedProcessTemplatesDecode` GameTest with the mods loaded.
 
-Each step ends compiling; commits use the `MNX-PORT:` prefix.
+| Mod (1.20.1) | Sized input | Output |
+|---|---|---|
+| Create 6.0.8 | `ingredients: [...]`, `processingTime` | `results: [{"item", "count"}]` |
+| Mekanism 10.4.16 | `input: {"amount": n, "ingredient": ...}` | `output: {"item", "count"}`; keys `mainOutput`, `secondaryOutput`, `itemOutput` |
+| Immersive Engineering 10.2 | `input: {"base_ingredient": ..., "count": n}` | `result: {"item", "count"}` |
+| Create Crafts & Additions 1.3.3 | `input: ...` | `result: {"item", "count"}` |
+| Create Metallurgy 1.0.1 | as Create | as Create |
+| Vanilla | `ingredient` | crafting `{"item", "count"}`; smelting/blasting a bare id (one item); stonecutting id + top-level `count` |
+
+Modern Industrialization and Oritech have no Forge 1.20.1 build: their process templates are not shipped here.
+Their recipe format files stay (they only name recipe types, harmless when absent).
+
+## Status
+
+- `./gradlew build`: compiles, 26 JUnit tests green; `build/libs/materialnexus-0.1.0+1.20.1.jar` is reobfuscated to SRG.
+- `./gradlew runGameTestServer`: 18/18 GameTests green with the dev pack (JEI, Jade, Mekanism, Create, IE, AE2,
+  GuideME, Create Crafts & Additions, Create Metallurgy).
+- `./gradlew runClient`: boots to the title screen with the dev pack.
+- Not verified at runtime: a message large enough to be split (an apply with many in-game data edits); the Material Nexus screens themselves (no dev world on this branch yet), EMI
+  (`-Pemi`), KubeJS (`-Pkubejs`), Almost Unified (`-Pau`).
+
+## Carrying a main ticket over
+
+Most code is identical. Watch for: tag namespace and folder names in new data, 1.21-only API (`Math.clamp`,
+`List.getFirst`, `Component.withColor`, `DataResult.getOrThrow()`, `JsonObject.isEmpty()`, item components), new
+payload codecs (`ByteBufCodecs` has no 1.20.1 equivalent: write `StreamCodec.of`), and screen widgets
+(`mouseScrolled` has one delta, `ObjectSelectionList` takes `y0, y1`).

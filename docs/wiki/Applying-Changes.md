@@ -10,7 +10,7 @@ they would do; Apply writes it.
 | Group | Meaning |
 |---|---|
 | Your choices | choices, back-to-defaults, process rules and settings you made |
-| Tags cleaned | an alternative removed from the material's convention tag (`c:ingots/tin`); it keeps its other tags |
+| Tags cleaned | an alternative removed from the material's convention tag (`forge:ingots/tin`); it keeps its other tags |
 | Items converted in the world | alternatives that become the kept item when the game touches them |
 | Conversion recipes | a 1:1 crafting recipe from an alternative to the kept item, for the forms in `conversion_recipes` |
 | Recipes rewritten | a recipe that made or used an alternative now makes or uses the kept item, at the same id |

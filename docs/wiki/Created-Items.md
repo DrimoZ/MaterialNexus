@@ -16,7 +16,7 @@ The new item:
 - has the id `materialnexus:<material>_<form>` (`materialnexus:netherite_rod`);
 - is named from the material and the form ("Netherite Rod");
 - is drawn from the form's template, tinted with the material's colour;
-- is put in its convention tag (`c:rods/netherite`), so Material Nexus and every other mod see it as
+- is put in its convention tag (`forge:rods/netherite`), so Material Nexus and every other mod see it as
   that material's form;
 - appears in the creative *Ingredients* tab.
 

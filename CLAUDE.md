@@ -1,6 +1,6 @@
 # Material Nexus — operational contract
 
-Mod Minecraft **NeoForge 1.21.1**, Java 21. Toolchain and documentation conventions intentionally follow the recent DrimoZ NeoForge projects.
+Mod Minecraft **Forge 1.20.1** (branch `forge-1.20.1`, port of the NeoForge 1.21.1 `main`), Java 17. Port differences and mappings: `docs/PORT-FORGE-1.20.1.md`. Toolchain and documentation conventions intentionally follow the recent DrimoZ NeoForge projects.
 
 ## Commands
 

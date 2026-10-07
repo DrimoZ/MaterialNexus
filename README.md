@@ -12,8 +12,8 @@ you have read the preview and pressed Apply.
 
 ## What it does
 
-- **Finds every material form** in the pack, from the convention tags (`c:ingots/copper`,
-  `c:plates/tin`) and from item names for the forms mods leave untagged (double ingots, wires, large
+- **Finds every material form** in the pack, from the convention tags (`forge:ingots/copper`,
+  `forge:plates/tin`) and from item names for the forms mods leave untagged (double ingots, wires, large
   plates).
 - **Tells duplicates from variants.** Two copper ingots from two mods are duplicates. An item that
   only shares a tag (a yellow amethyst tagged as amethyst, a plastic plate tagged as plates, several
