@@ -29,6 +29,18 @@ public final class FamilyRelations {
             // Gems are the ingots of non-metals.
             relation("gem", "block"), relation("block", "gem"));
 
+    private static volatile List<Relation> expected = EXPECTED;
+
+    /** Relations checked for missing recipes: the built-in ones, plus and minus data (MNX-045, material_nexus/forms). */
+    public static List<Relation> expected() { return expected; }
+
+    public static void setData(List<Relation> added, List<Relation> removed) {
+        List<Relation> merged = new ArrayList<>(EXPECTED);
+        added.stream().filter(r -> !merged.contains(r)).forEach(merged::add);
+        merged.removeAll(removed);
+        expected = List.copyOf(merged);
+    }
+
     /** Longest chain of recipes still counted as a conversion (dust, hot ingot, ingot is two). */
     public static final int MAX_STEPS = 3;
 
@@ -42,7 +54,7 @@ public final class FamilyRelations {
     public static List<Relation> missing(Map<FormId, Set<ResourceLocation>> providersByForm, List<Edge> recipes) {
         List<Relation> missing = new ArrayList<>();
         Map<ResourceLocation, Set<ResourceLocation>> graph = graph(recipes);
-        for (Relation r : EXPECTED) {
+        for (Relation r : expected) {
             Set<ResourceLocation> from = providersByForm.get(r.from());
             Set<ResourceLocation> to = providersByForm.get(r.to());
             if (from == null || to == null || from.isEmpty() || to.isEmpty()) continue;

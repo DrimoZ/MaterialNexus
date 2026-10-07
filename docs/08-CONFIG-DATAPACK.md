@@ -130,6 +130,10 @@ Forms are data too, in `data/<namespace>/material_nexus/forms/*.json`: `folders`
 }
 ```
 
+`"relations": [{"from": "tiny_dust", "to": "dust"}]` and `"remove_relations": [...]` add or remove the conversions checked for missing recipes (built-in: nugget/ingot, ingot/block, raw/raw_block, raw→ingot, dust→ingot, gem/block).
+
+Still built in, on purpose: the forms that can be created (they need shipped textures and are registered at startup, before any datapack loads), the "no ingot or wire for a gem material" creation rule (the client applies it too), and ore host rocks (an unknown ground already becomes `<ground>_ore`).
+
 `/materials report` ends with "Possibly untagged forms": undiscovered items named after a known material, grouped by name shape, to review and declare.
 
 Pattern forms: double_ingot, large_plate, curved_plate, bolt, ring, blade, rotor, drill_head, fine_wire (Modern Industrialization shipped, plus its untagged wires); Remin ores and Oritech small dusts are shipped too. An item matches only if `{material}` names a material some convention tag already knows; the match is shown as "item name pattern" evidence and never added to the game's tags.
