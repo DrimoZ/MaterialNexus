@@ -151,6 +151,9 @@ tasks.matching { it.name == 'runGameTestServer' }.configureEach {
 
 tasks.named('test', Test) {
     useJUnitPlatform()
+    // The game logging config writes logs/ in the working directory: keep it out of the project root.
+    workingDir = layout.buildDirectory.dir("test-run").get().asFile
+    doFirst { workingDir.mkdirs() }
 }
 
 var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {

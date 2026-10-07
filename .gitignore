@@ -9,3 +9,4 @@ repo/
 *.iml
 .DS_Store
 run-ui/
+logs/
