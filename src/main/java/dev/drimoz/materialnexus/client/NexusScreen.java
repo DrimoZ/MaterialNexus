@@ -376,7 +376,7 @@ public final class NexusScreen extends Screen {
         int px = 14 + font.width(title);
         if (totals != null) {
             px += 4 + Ui.pill(g, font, Component.translatable("screen.materialnexus.totals.todo", totals.toDecide()), px, 7, Ui.WARNING);
-            px += 4 + Ui.pill(g, font, Component.translatable("screen.materialnexus.totals.unified", totals.unified()), px, 7, Ui.SUCCESS);
+            px += 4 + Ui.pill(g, font, Component.translatable("screen.materialnexus.totals.unified", totals.unified(), totals.unified() - totals.byPriority(), totals.byPriority()), px, 7, Ui.SUCCESS);
             px += 4 + Ui.pill(g, font, Component.translatable("screen.materialnexus.totals.aside", totals.setAside()), px, 7, Ui.NEUTRAL);
         }
         if (readOnly) Ui.pill(g, font, Component.translatable("screen.materialnexus.read_only"), px + 6, 7, Ui.DANGER);
@@ -449,9 +449,13 @@ public final class NexusScreen extends Screen {
         int y = contentY + 10;
         g.drawString(font, Component.translatable("screen.materialnexus.home.title"), x, y, Ui.TEXT, false);
         if (totals != null) {
-            int cw = 110;
+            int cw = 124;
             card(g, x, y + 16, cw, Component.translatable("screen.materialnexus.home.todo"), totals.toDecide(), Ui.WARNING);
             card(g, x + cw + 6, y + 16, cw, Component.translatable("screen.materialnexus.home.unified"), totals.unified(), Ui.SUCCESS);
+            // MNX-062: unified by the player's choices, or only by the mod priority (which "Reset everything" keeps).
+            int sx = x + cw + 6 + 8 + 2 * font.width(String.valueOf(totals.unified())) + 6;
+            g.drawString(font, Component.translatable("screen.materialnexus.home.unified.chosen", totals.unified() - totals.byPriority()), sx, y + 37, Ui.MUTED, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.home.unified.priority", totals.byPriority()), sx, y + 47, Ui.MUTED, false);
             card(g, x + 2 * (cw + 6), y + 16, cw, Component.translatable("screen.materialnexus.home.aside"), totals.setAside(), Ui.NEUTRAL);
         }
         int ty = contentY + 164;
@@ -465,7 +469,7 @@ public final class NexusScreen extends Screen {
             ty += 3;
         }
         ty = renderHistory(g, x, ty + 8, tipWidth, wide ? 12 : 4);
-        renderModPriority(g, mx, my, wide ? contentX + 400 : x, wide ? contentY + 10 : ty + 12, wide ? Math.min(340, contentW - 410) : 300);
+        renderModPriority(g, mx, my, wide ? contentX + 420 : x, wide ? contentY + 10 : ty + 12, wide ? Math.min(340, contentW - 430) : 300);
     }
 
     /**

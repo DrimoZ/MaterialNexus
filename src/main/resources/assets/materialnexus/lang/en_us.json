@@ -167,7 +167,7 @@
   "screen.materialnexus.nav.data": "Data",
   "screen.materialnexus.nav.presets": "Presets",
   "screen.materialnexus.totals.todo": "%s to decide",
-  "screen.materialnexus.totals.unified": "%s unified",
+  "screen.materialnexus.totals.unified": "%1$s unified (%2$s chosen, %3$s by priority)",
   "screen.materialnexus.totals.aside": "%s set aside",
   "screen.materialnexus.search_everywhere": "Search materials",
   "screen.materialnexus.filter.all": "All",
@@ -302,5 +302,7 @@
   "screen.materialnexus.data.kind.materials": "Materials",
   "screen.materialnexus.data.kind.materials.desc": "Other names a material goes by in some mods (aluminium = aluminum), merged into one material.",
   "screen.materialnexus.priority.reset": "↺ Reset",
-  "screen.materialnexus.priority.reset.tooltip": "Empties the mod priority (pending until Preview and apply)"
+  "screen.materialnexus.priority.reset.tooltip": "Empties the mod priority (pending until Preview and apply)",
+  "screen.materialnexus.home.unified.chosen": "%s chosen",
+  "screen.materialnexus.home.unified.priority": "%s by priority"
 }
