@@ -254,5 +254,7 @@
   "screen.materialnexus.priority.title": "Priorité des mods",
   "screen.materialnexus.priority.hint": "Le premier mod de la liste gagne chaque doublon qu'il fournit.",
   "screen.materialnexus.priority.unranked": "Non classés (+ pour ajouter) :",
-  "screen.materialnexus.preview_priority": "Priorité des mods : %s"
+  "screen.materialnexus.preview_priority": "Priorité des mods : %s",
+  "screen.materialnexus.usage": "%1$s · produit par %2$s recettes · utilisé dans %3$s",
+  "screen.materialnexus.usage.mod": "%s"
 }

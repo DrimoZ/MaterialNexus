@@ -62,7 +62,7 @@ public final class NexusQueries {
         return Optional.of(new MaterialDetailPayload(name, byForm, group.entrySet().stream()
                 .map(e -> byForm ? new MaterialDetailPayload.FormView(e.getKey(), name, e.getValue())
                         : new MaterialDetailPayload.FormView(name, e.getKey(), e.getValue()))
-                .toList(), List.of()));
+                .toList(), List.of(), Map.of()));
     }
 
     /**

@@ -39,9 +39,20 @@ public final class MnxNetwork {
             ServerPlayer player = authorized(ctx);
             if (player != null) {
                 var snapshot = SnapshotManager.current();
-                NexusQueries.detail(snapshot, req.material(), req.byForm()).ifPresent(d -> PacketDistributor.sendToPlayer(player,
-                        d.byForm() ? d : d.withMissing(dev.drimoz.materialnexus.datapack.RecipeEdges.missing(player.server, snapshot.discovered(),
-                                new dev.drimoz.materialnexus.core.domain.MaterialId(d.material())))));
+                NexusQueries.detail(snapshot, req.material(), req.byForm()).ifPresent(d -> {
+                    // One pass over the recipes serves both the missing conversions and the per-item counts (MNX-052).
+                    var edges = dev.drimoz.materialnexus.datapack.RecipeEdges.edges(player.server);
+                    java.util.Set<net.minecraft.resources.ResourceLocation> items = new java.util.HashSet<>();
+                    d.forms().forEach(v -> {
+                        v.resolved().canonical().ifPresent(items::add);
+                        items.addAll(v.resolved().alternatives());
+                        v.resolved().notUnified().forEach(n -> items.add(n.item()));
+                    });
+                    var withUsage = d.withUsage(dev.drimoz.materialnexus.datapack.RecipeEdges.usage(edges, items));
+                    PacketDistributor.sendToPlayer(player, d.byForm() ? withUsage : withUsage.withMissing(
+                            dev.drimoz.materialnexus.datapack.RecipeEdges.missing(edges, snapshot.discovered(),
+                                    new dev.drimoz.materialnexus.core.domain.MaterialId(d.material()))));
+                });
             }
         });
         registrar.playToServer(PreviewRequest.TYPE, PreviewRequest.STREAM_CODEC, (req, ctx) -> {

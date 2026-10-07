@@ -103,6 +103,10 @@ public final class MaterialNexusGameTests {
         var missing = dev.drimoz.materialnexus.datapack.RecipeEdges.missing(helper.getLevel().getServer(),
                 SnapshotManager.current().discovered(), new MaterialId("iron"));
         helper.assertTrue(missing.isEmpty(), "iron should have no missing conversion, got " + missing);
+        // MNX-052: the per-item counts shown when choosing come from the same recipe pass.
+        var ingot = ResourceLocation.withDefaultNamespace("iron_ingot");
+        var usage = dev.drimoz.materialnexus.datapack.RecipeEdges.usage(dev.drimoz.materialnexus.datapack.RecipeEdges.edges(helper.getLevel().getServer()), java.util.Set.of(ingot)).get(ingot);
+        helper.assertTrue(usage.produced() > 0 && usage.used() > 0, "iron ingot should be made and used by recipes, got " + usage);
         helper.succeed();
     }
 

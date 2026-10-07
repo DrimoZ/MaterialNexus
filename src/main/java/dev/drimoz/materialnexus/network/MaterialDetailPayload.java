@@ -17,7 +17,8 @@ import java.util.List;
  * Server to client, in response to {@link MaterialDetailRequest}: every resolved form of one material, or with
  * {@code byForm} one form across every material (MNX-035). {@code material} is the name of whichever was asked.
  */
-public record MaterialDetailPayload(String material, boolean byForm, List<FormView> forms, List<FamilyRelations.Relation> missing)
+public record MaterialDetailPayload(String material, boolean byForm, List<FormView> forms, List<FamilyRelations.Relation> missing,
+                                    java.util.Map<ResourceLocation, dev.drimoz.materialnexus.datapack.RecipeEdges.Usage> usage)
         implements CustomPacketPayload {
     public static final Type<MaterialDetailPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "material_detail"));
@@ -29,11 +30,17 @@ public record MaterialDetailPayload(String material, boolean byForm, List<FormVi
     public MaterialDetailPayload {
         forms = List.copyOf(forms);
         missing = List.copyOf(missing);
+        usage = java.util.Map.copyOf(usage);
     }
 
     /** The same detail with the missing-recipe proposals computed on the server (MNX-010). */
     public MaterialDetailPayload withMissing(List<FamilyRelations.Relation> relations) {
-        return new MaterialDetailPayload(material, byForm, forms, relations);
+        return new MaterialDetailPayload(material, byForm, forms, relations, usage);
+    }
+
+    /** The same detail with each item's recipe counts (MNX-052). */
+    public MaterialDetailPayload withUsage(java.util.Map<ResourceLocation, dev.drimoz.materialnexus.datapack.RecipeEdges.Usage> counts) {
+        return new MaterialDetailPayload(material, byForm, forms, missing, counts);
     }
 
     @Override public Type<MaterialDetailPayload> type() { return TYPE; }
@@ -62,6 +69,10 @@ public record MaterialDetailPayload(String material, boolean byForm, List<FormVi
             b.writeUtf(r.from().name());
             b.writeUtf(r.to().name());
         });
+        buf.writeMap(p.usage(), FriendlyByteBuf::writeResourceLocation, (b, u) -> {
+            b.writeVarInt(u.produced());
+            b.writeVarInt(u.used());
+        });
     }
 
     private static MaterialDetailPayload read(FriendlyByteBuf buf) {
@@ -74,6 +85,7 @@ public record MaterialDetailPayload(String material, boolean byForm, List<FormVi
                 b.readUtf(),
                 b.readList(FriendlyByteBuf::readUtf),
                 b.readOptional(FriendlyByteBuf::readResourceLocation)))),
-                buf.readList(b -> new FamilyRelations.Relation(new FormId(b.readUtf()), new FormId(b.readUtf()))));
+                buf.readList(b -> new FamilyRelations.Relation(new FormId(b.readUtf()), new FormId(b.readUtf()))),
+                buf.readMap(FriendlyByteBuf::readResourceLocation, b -> new dev.drimoz.materialnexus.datapack.RecipeEdges.Usage(b.readVarInt(), b.readVarInt())));
     }
 }

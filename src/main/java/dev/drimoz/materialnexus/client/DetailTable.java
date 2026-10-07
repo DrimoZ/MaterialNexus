@@ -190,8 +190,13 @@ final class DetailTable {
     }
 
     private List<Component> withHint(List<Component> tip, ResourceLocation item) {
-        if (readOnly) return tip;
         List<Component> out = new ArrayList<>(tip);
+        // MNX-052: what helps choose: its mod, and how central it is in the pack's recipes.
+        var usage = detail.usage().get(item);
+        String mod = net.neoforged.fml.ModList.get().getModContainerById(item.getNamespace()).map(c -> c.getModInfo().getDisplayName()).orElse(item.getNamespace());
+        out.add(usage == null ? Component.translatable("screen.materialnexus.usage.mod", mod).withColor(0x88AACC)
+                : Component.translatable("screen.materialnexus.usage", mod, usage.produced(), usage.used()).withColor(0x88AACC));
+        if (readOnly) return out;
         out.add(Component.translatable(PendingChanges.notSame(item) ? "screen.materialnexus.not_same.unmark" : "screen.materialnexus.not_same.mark").withColor(0x777788));
         return out;
     }

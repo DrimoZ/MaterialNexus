@@ -254,5 +254,7 @@
   "screen.materialnexus.priority.title": "Mod priority",
   "screen.materialnexus.priority.hint": "The first mod in the list wins every duplicate it provides.",
   "screen.materialnexus.priority.unranked": "Not ranked (+ to add):",
-  "screen.materialnexus.preview_priority": "Mod priority: %s"
+  "screen.materialnexus.preview_priority": "Mod priority: %s",
+  "screen.materialnexus.usage": "%1$s · made by %2$s recipes · used in %3$s",
+  "screen.materialnexus.usage.mod": "%s"
 }

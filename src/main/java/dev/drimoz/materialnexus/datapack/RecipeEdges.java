@@ -44,6 +44,37 @@ public final class RecipeEdges {
     }
 
     public static List<FamilyRelations.Relation> missing(MinecraftServer server, DiscoveredMaterials discovered, MaterialId material) {
+        return missing(edges(server, Set.of()), discovered, material);
+    }
+
+    /** How many recipes make an item, and how many accept it as an input (MNX-052: what to keep). */
+    public record Usage(int produced, int used) { }
+
+    public static Map<ResourceLocation, Usage> usage(List<FamilyRelations.Edge> edges, Set<ResourceLocation> items) {
+        Map<ResourceLocation, int[]> counts = new HashMap<>();
+        for (ResourceLocation item : items) counts.put(item, new int[2]);
+        for (FamilyRelations.Edge edge : edges) {
+            int[] made = counts.get(edge.result());
+            if (made != null) made[0]++;
+            Set<ResourceLocation> seen = new HashSet<>();
+            for (Set<ResourceLocation> ingredient : edge.ingredients()) {
+                for (ResourceLocation item : ingredient) {
+                    int[] used = counts.get(item);
+                    if (used != null && seen.add(item)) used[1]++;
+                }
+            }
+        }
+        Map<ResourceLocation, Usage> result = new HashMap<>();
+        counts.forEach((item, c) -> result.put(item, new Usage(c[0], c[1])));
+        return result;
+    }
+
+    /** Every recipe as an edge, read once for a GUI request. */
+    public static List<FamilyRelations.Edge> edges(MinecraftServer server) {
+        return edges(server, Set.of());
+    }
+
+    public static List<FamilyRelations.Relation> missing(List<FamilyRelations.Edge> edges, DiscoveredMaterials discovered, MaterialId material) {
         var forms = discovered.materials().get(material);
         if (forms == null) return List.of();
         Map<FormId, Set<ResourceLocation>> providers = new HashMap<>();
@@ -54,7 +85,7 @@ public final class RecipeEdges {
             all.addAll(ids);
         });
 
-        return FamilyRelations.missing(providers, edges(server, all));
+        return FamilyRelations.missing(providers, edges);
     }
 
     private static List<FamilyRelations.Edge> edges(MinecraftServer server, Set<ResourceLocation> all) {
