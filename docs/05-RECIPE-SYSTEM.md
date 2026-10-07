@@ -34,7 +34,7 @@ Create, Mekanism, Immersive Engineering and Thermal are separate adapters. Core 
 |---|---|---|
 | disable | vanilla types, only a rewrite that became an exact duplicate | override with `neoforge:false` condition |
 | rewrite output and inputs | every type described by a recipe format (ADR-016; shipped: vanilla, Create, Mekanism, IE, MI) | full recipe JSON at the same ID; literal `"item"` alternatives in inputs become the canonical item, tag inputs untouched |
-| rewrite output | types without a format (e.g. Create sequenced assembly) | `UNSUPPORTED` until a format describes them |
+| rewrite output | types without a format | `UNSUPPORTED` until a format describes them |
 
 Output rewriting happens for forms unified by a player decision and is always previewed. Vanilla types are rewritten from their pre-MNX JSON (read beneath the generated pack, ADR-010); modded types producing an alternative are listed as "not handled yet" and left untouched until their adapter exists. No generic JSON rewriting.
 

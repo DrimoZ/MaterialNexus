@@ -30,4 +30,6 @@
 | MNX-019 | P3 | Presets | Five initial presets |
 | MNX-028 | P1 | In-world conversion | Applied alternatives become canonical when dropped, on login and when a vanilla container opens (ADR-015) |
 | MNX-030 | P1 | Recipe inputs | Literal alternative inputs of vanilla recipes become the canonical item; collapsed duplicates are disabled |
+| MNX-035 | P2 | Form views | Cross-material views per form (all ingots, all rods...) to decide form by form; same pending/preview flow |
+| MNX-036 | P2 | Process rules | "All rods are made in machine A (ratio x), machine B (ratio y)": per-form, per-machine generation rules written through recipe formats; balance-affecting, so explicit policy + Preview only (ADR-003) |
 | MNX-020 | P3 | KubeJS bridge | Optional scripting API, no dependency |
