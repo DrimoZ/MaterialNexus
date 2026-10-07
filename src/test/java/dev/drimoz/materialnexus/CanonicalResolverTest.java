@@ -136,6 +136,16 @@ class CanonicalResolverTest {
         assertEquals(1, form.apply("osmium", "raw_block").alternatives().size());
     }
 
+    /** MNX-050: an item the author marked "not the same" is never an alternative, whatever its tags and name say. */
+    @Test
+    void notSameItemsAreSetAside() {
+        var policy = dev.drimoz.materialnexus.datapack.PolicyFiles.parse(
+                com.google.gson.JsonParser.parseString("{\"not_same\": [\"modb:copper_plate\"]}"), Map.of());
+        ResolvedForm plate = resolve(List.of(A, B, C), policy);
+        assertFalse(plate.alternatives().contains(B));
+        assertTrue(plate.notUnified().stream().anyMatch(n -> n.item().equals(B) && n.reasonKey().equals("materialnexus.not_unified.not_same")));
+    }
+
     private static void assertResolved(ResourceLocation expected, PolicyPrecedence source, ResolvedForm actual) {
         assertEquals(expected, actual.canonical().orElseThrow(), actual.reasonKey());
         assertEquals(source, actual.source(), actual.reasonKey());

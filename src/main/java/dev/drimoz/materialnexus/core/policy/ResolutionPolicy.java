@@ -24,7 +24,8 @@ public record ResolutionPolicy(
         Set<MaterialForm> excludedForms,
         Set<FormId> conversionRecipeForms,
         AlmostUnified almostUnified,
-        ProcessRules processes) {
+        ProcessRules processes,
+        Set<ResourceLocation> notSame) {
     public static final ResolutionPolicy NONE = new ResolutionPolicy(List.of(), Map.of(), Map.of(), Map.of());
 
     public ResolutionPolicy {
@@ -35,6 +36,16 @@ public record ResolutionPolicy(
         excludedMaterials = Set.copyOf(excludedMaterials);
         excludedForms = Set.copyOf(excludedForms);
         conversionRecipeForms = Set.copyOf(conversionRecipeForms);
+        notSame = Set.copyOf(notSame);
+    }
+
+    /** Without items marked "not the same" (MNX-050). */
+    public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
+                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, ResourceLocation> explicitProviders,
+                            Set<MaterialId> excludedMaterials, Set<MaterialForm> excludedForms, Set<FormId> conversionRecipeForms,
+                            AlmostUnified almostUnified, ProcessRules processes) {
+        this(globalModPriority, materialModPriority, formModPriority, explicitProviders, excludedMaterials, excludedForms,
+                conversionRecipeForms, almostUnified, processes, Set.of());
     }
 
     public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
@@ -70,7 +81,7 @@ public record ResolutionPolicy(
     /** This policy with pending process rule edits (MNX-036). */
     public ResolutionPolicy withProcesses(Map<FormId, ProcessRules.Rule> edits) {
         return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, explicitProviders,
-                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes.withForms(edits));
+                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes.withForms(edits), notSame);
     }
 
     /** This policy plus extra explicit choices, used to preview pending GUI changes before they are written. */
@@ -78,6 +89,6 @@ public record ResolutionPolicy(
         Map<MaterialForm, ResourceLocation> merged = new HashMap<>(explicitProviders);
         merged.putAll(extra);
         return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, merged,
-                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes);
+                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes, notSame);
     }
 }

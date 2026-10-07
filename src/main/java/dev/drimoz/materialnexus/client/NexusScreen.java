@@ -134,8 +134,7 @@ public final class NexusScreen extends Screen {
     }
 
     private void preview() {
-        PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), false, Optional.empty(),
-                PendingChanges.processes(), PendingChanges.creations(), PendingChanges.data()));
+        PacketDistributor.sendToServer(PendingChanges.request(false, Optional.empty()));
     }
 
     /** Dev screenshots only ({@link UiShots}): drive the screen like a player would. */
@@ -193,8 +192,7 @@ public final class NexusScreen extends Screen {
 
     void showPreview(PreviewPayload payload) {
         drawer = new PreviewDrawer(payload, () -> {
-            PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), true, payload.preset(),
-                    PendingChanges.processes(), PendingChanges.creations(), PendingChanges.data()));
+            PacketDistributor.sendToServer(PendingChanges.request(true, payload.preset()));
             // The server reopens Material Nexus once the reload has finished; pending choices are kept until then.
             minecraft.setScreen(null);
         }, () -> drawer = null);

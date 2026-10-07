@@ -67,8 +67,7 @@ public final class DataScreen extends Screen {
             rebuildWidgets();
         }).bounds(100, 3, 120, 18).build()).active = !untaggedMode;
         addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.preview_button", PendingChanges.size()),
-                b -> PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), false, Optional.empty(),
-                        PendingChanges.processes(), PendingChanges.creations(), PendingChanges.data())))
+                b -> PacketDistributor.sendToServer(PendingChanges.request(false, Optional.empty())))
                 .bounds(width - 212, 3, 102, 18).build());
         addRenderableWidget(Button.builder(CommonComponents.GUI_BACK, b -> onClose()).bounds(width - 106, 3, 100, 18).build());
         if (list == null) return;

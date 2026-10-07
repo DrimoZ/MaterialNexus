@@ -54,6 +54,10 @@ Material definitions shipped by mods or datapacks may also live under `data/<nam
 
 Levels map to ADR-006: `global.mod_priority` < material `mod_priority` < form `mod_priority` < form `preferred_provider`. Policy is re-read on every `/reload`; an invalid file fails the analysis with the file named and leaves the previous snapshot active. Action fields (`rewrite_outputs`, tag modes) arrive with their tickets.
 
+## Not the same item (MNX-050)
+
+`"not_same": ["remin:yellow_amethyst"]` in `global.json`: items never unified with the others of their tags, listed as "marked as not the same". Right click an item in the GUI to (un)mark it; Preview lists the change. An explicit choice of such an item still wins.
+
 ## Global policy: Almost Unified arbitration
 
 ```json

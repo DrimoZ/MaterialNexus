@@ -244,5 +244,11 @@
   "screen.materialnexus.group.recipe_invalid": "Recettes illisibles par le jeu (%s)",
   "screen.materialnexus.group.data_invalid": "Données invalides (%s)",
   "screen.materialnexus.group.almost_unified": "Laissé à Almost Unified (%s)",
-  "screen.materialnexus.group.removed": "Annulé par rapport au pack actuel (%s)"
+  "screen.materialnexus.group.removed": "Annulé par rapport au pack actuel (%s)",
+  "screen.materialnexus.not_same.mark": "Clic droit : ce n'est pas le même item (jamais unifié)",
+  "screen.materialnexus.not_same.unmark": "Clic droit : c'est bien le même item",
+  "materialnexus.not_unified.not_same": "marqué « pas le même »",
+  "screen.materialnexus.preview_not_same": "Pas le même item : %s",
+  "screen.materialnexus.preview_same_again": "De nouveau le même item : %s",
+  "screen.materialnexus.preview_global": "global.json : %s modifié"
 }

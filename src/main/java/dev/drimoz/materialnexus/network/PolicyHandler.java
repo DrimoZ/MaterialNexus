@@ -42,7 +42,8 @@ final class PolicyHandler {
 
     static void preview(ServerPlayer player, PreviewRequest request) {
         // An unknown preset id (removed datapack, forged packet) is simply ignored.
-        java.util.Optional<com.google.gson.JsonObject> preset = request.preset().flatMap(dev.drimoz.materialnexus.datapack.Presets::get);
+        java.util.Optional<com.google.gson.JsonObject> preset = overlay(player, request);
+        if (preset == null) return;
         List<PolicyEditor.Entry> entries = PolicyEditor.preview(SnapshotManager.current(), request.changes());
         List<PackContent.Effect> proposed;
         List<PackContent.Effect> current;
@@ -65,7 +66,7 @@ final class PolicyHandler {
 
         var data = dataEdits(player, request, added, !request.apply());
         if (!request.apply()) {
-            PacketDistributor.sendToPlayer(player, new PreviewPayload(entries, added, removed, request.preset().filter(id -> preset.isPresent())));
+            PacketDistributor.sendToPlayer(player, new PreviewPayload(entries, added, removed, request.preset().filter(id -> preset.isPresent() && request.globalPatch().isEmpty())));
             return;
         }
         if (!valid && preset.isEmpty() && request.processes().isEmpty() && creations.isEmpty() && data.isEmpty() && added.isEmpty() && removed.isEmpty()) return;
@@ -173,6 +174,22 @@ final class PolicyHandler {
         }
         var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
         return PackContent.withValidRecipes(content, json -> net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, json).isSuccess());
+    }
+
+    /**
+     * The preset (if any) with the client's global.json patch on top (MNX-050): both replace whole fields of global.json.
+     * {@code null} when the patch is not a JSON object; the player is told.
+     */
+    private static java.util.Optional<com.google.gson.JsonObject> overlay(ServerPlayer player, PreviewRequest request) {
+        java.util.Optional<com.google.gson.JsonObject> preset = request.preset().flatMap(dev.drimoz.materialnexus.datapack.Presets::get);
+        if (request.globalPatch().isEmpty()) return preset;
+        try {
+            com.google.gson.JsonObject patch = com.google.gson.JsonParser.parseString(request.globalPatch().get()).getAsJsonObject();
+            return java.util.Optional.of(dev.drimoz.materialnexus.datapack.Presets.overlay(preset.orElseGet(com.google.gson.JsonObject::new), patch));
+        } catch (RuntimeException e) {
+            player.sendSystemMessage(Component.translatable("message.materialnexus.apply_failed", e.getMessage()));
+            return null;
+        }
     }
 
     /** Form names were validated when the packet was decoded. */

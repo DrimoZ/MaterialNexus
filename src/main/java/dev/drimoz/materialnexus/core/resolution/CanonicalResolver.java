@@ -80,6 +80,9 @@ public final class CanonicalResolver {
             Optional<MaterialId> elsewhere = elsewhereOf.get(p.resource());
             if (excluded) {
                 notUnified.put(p.resource(), new NotUnified(p.resource(), NOT_UNIFIED + "policy", List.of()));
+            } else if (policy.notSame().contains(p.resource())) {
+                // MNX-050: the pack author said so; stronger than any guess.
+                notUnified.put(p.resource(), new NotUnified(p.resource(), NOT_UNIFIED + "not_same", List.of()));
             } else if (elsewhere.isPresent()) {
                 // Checked first: "belongs to steel" explains an umbrella tag better than "several items of one mod".
                 notUnified.put(p.resource(), new NotUnified(p.resource(), NOT_UNIFIED + "more_specific", List.of(elsewhere.get().name())));

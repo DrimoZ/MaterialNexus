@@ -51,7 +51,7 @@ public final class PreviewScreen extends Screen {
     }
 
     private void apply() {
-        PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), true, preview.preset(), PendingChanges.processes(), PendingChanges.creations(), PendingChanges.data()));
+        PacketDistributor.sendToServer(PendingChanges.request(true, preview.preset()));
         // The server reopens Material Nexus once the reload has finished; pending choices are kept until then.
         minecraft.setScreen(null);
     }

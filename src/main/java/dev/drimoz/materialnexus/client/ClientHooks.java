@@ -17,6 +17,7 @@ public final class ClientHooks {
     public static void openNexus(OpenNexusPayload payload) {
         // Pending choices survive a failed apply; they are only dropped once the server confirms it wrote them.
         if (payload.applied()) PendingChanges.clear();
+        PendingChanges.baseGlobal(payload.global());
         Minecraft.getInstance().setScreen(new NexusScreen(payload.readOnly(), payload.canRevert(), payload.presets()));
     }
 

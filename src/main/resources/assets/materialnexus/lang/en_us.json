@@ -244,5 +244,11 @@
   "screen.materialnexus.group.recipe_invalid": "Recipes the game cannot read (%s)",
   "screen.materialnexus.group.data_invalid": "Invalid data (%s)",
   "screen.materialnexus.group.almost_unified": "Left to Almost Unified (%s)",
-  "screen.materialnexus.group.removed": "Undone from the current pack (%s)"
+  "screen.materialnexus.group.removed": "Undone from the current pack (%s)",
+  "screen.materialnexus.not_same.mark": "Right click: not the same item (never unified)",
+  "screen.materialnexus.not_same.unmark": "Right click: it is the same item after all",
+  "materialnexus.not_unified.not_same": "marked as not the same",
+  "screen.materialnexus.preview_not_same": "Not the same item: %s",
+  "screen.materialnexus.preview_same_again": "Same item again: %s",
+  "screen.materialnexus.preview_global": "global.json: %s changed"
 }

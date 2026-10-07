@@ -118,7 +118,8 @@ final class DetailTable {
                     Component.translatable("materialnexus.source." + Names.lowerName(f.source())),
                     Component.translatable("materialnexus.confidence." + Names.lowerName(f.confidence()))).withColor(0xAAAAAA));
             ResourceLocation k = kept.get();
-            hits.add(sx - 1, top + 3, 20, 20, () -> choose(material, view.form(), k, f, decided), null, tip);
+            notSameMark(g, k, sx, top + 4);
+            hits.add(sx - 1, top + 3, 20, 20, () -> choose(material, view.form(), k, f, decided), notSame(k), withHint(tip, k));
         }
 
         int ix = sx + 26;
@@ -129,8 +130,9 @@ final class DetailTable {
         for (ResourceLocation item : others) {
             if (ix + 20 > right) break;
             Ui.slot(g, item, ix, top + 4, Ui.NEUTRAL, false);
-            hits.add(ix - 1, top + 3, 20, 20, () -> choose(material, view.form(), item, f, decided), null,
-                    itemTip(item, Component.translatable("screen.materialnexus.role.alternative")));
+            notSameMark(g, item, ix, top + 4);
+            hits.add(ix - 1, top + 3, 20, 20, () -> choose(material, view.form(), item, f, decided), notSame(item),
+                    withHint(itemTip(item, Component.translatable("screen.materialnexus.role.alternative")), item));
             ix += 21;
         }
         if (!f.notUnified().isEmpty() && ix + 30 < right) {
@@ -142,7 +144,8 @@ final class DetailTable {
             Ui.slot(g, n.item(), ix, top + 4, 0, true);
             List<Component> tip = itemTip(n.item(), Component.translatable("screen.materialnexus.role.not_unified",
                     Component.translatable(n.reasonKey(), n.reasonArgs().toArray())).withColor(0xCC8888));
-            hits.add(ix - 1, top + 3, 20, 20, () -> choose(material, view.form(), n.item(), f, decided), null, tip);
+            notSameMark(g, n.item(), ix, top + 4);
+            hits.add(ix - 1, top + 3, 20, 20, () -> choose(material, view.form(), n.item(), f, decided), notSame(n.item()), withHint(tip, n.item()));
             ix += 21;
         }
 
@@ -171,6 +174,26 @@ final class DetailTable {
         g.drawString(font, label, bx + 5, top + 9, pending ? 0x55FF55 : 0xAAAAFF, false);
         hits.add(bx, top + 6, bw, 14, () -> PendingChanges.toggleCreation(material, form), null,
                 List.of(Component.translatable("screen.materialnexus.create.tooltip", "materialnexus:" + material + "_" + form)));
+    }
+
+    /** MNX-050: right click marks an item as "not the same" (or unmarks it); a pending mark is a red cross. */
+    private Runnable notSame(ResourceLocation item) {
+        return readOnly ? null : () -> PendingChanges.toggleNotSame(item);
+    }
+
+    private static void notSameMark(GuiGraphics g, ResourceLocation item, int x, int y) {
+        if (!PendingChanges.globalChanged("not_same") || !PendingChanges.notSame(item)) return;
+        for (int i = 0; i < 18; i++) {
+            g.fill(x + i, y + i, x + i + 1, y + i + 1, Ui.DANGER);
+            g.fill(x + 17 - i, y + i, x + 18 - i, y + i + 1, Ui.DANGER);
+        }
+    }
+
+    private List<Component> withHint(List<Component> tip, ResourceLocation item) {
+        if (readOnly) return tip;
+        List<Component> out = new ArrayList<>(tip);
+        out.add(Component.translatable(PendingChanges.notSame(item) ? "screen.materialnexus.not_same.unmark" : "screen.materialnexus.not_same.mark").withColor(0x777788));
+        return out;
     }
 
     private static List<Component> itemTip(ResourceLocation item, Component role) {

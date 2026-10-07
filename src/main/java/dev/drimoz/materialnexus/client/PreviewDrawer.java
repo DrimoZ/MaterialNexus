@@ -41,6 +41,7 @@ final class PreviewDrawer {
         List<Component> choices = new ArrayList<>(preview.entries().stream().map(PreviewScreen::describe).toList());
         PendingChanges.processes().keySet().stream().sorted()
                 .forEach(form -> choices.add(Component.translatable("screen.materialnexus.preview_process", Names.form(form))));
+        choices.addAll(PendingChanges.globalLines());
         if (!choices.isEmpty()) groups.add(new Group("choices", Ui.ACCENT, choices));
         Map<String, List<Component>> byKind = new LinkedHashMap<>();
         for (PackContent.Effect e : preview.added()) byKind.computeIfAbsent(e.kind(), k -> new ArrayList<>()).add(PreviewScreen.describe(e));
@@ -58,7 +59,7 @@ final class PreviewDrawer {
 
     boolean hasChanges() {
         return preview.entries().stream().anyMatch(PolicyEditor.Entry::valid) || !preview.added().isEmpty() || !preview.removed().isEmpty()
-                || !PendingChanges.processes().isEmpty() || !PendingChanges.creations().isEmpty() || !PendingChanges.data().isEmpty();
+                || PendingChanges.size() > 0;
     }
 
     void layout(int x, int y, int width, int height) {
