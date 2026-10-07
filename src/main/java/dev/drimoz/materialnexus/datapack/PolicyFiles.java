@@ -10,6 +10,7 @@ import dev.drimoz.materialnexus.core.domain.FormId;
 import dev.drimoz.materialnexus.core.domain.MaterialForm;
 import dev.drimoz.materialnexus.core.domain.MaterialId;
 import dev.drimoz.materialnexus.core.policy.AlmostUnified;
+import dev.drimoz.materialnexus.core.policy.ProcessRules;
 import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
 import net.minecraft.resources.ResourceLocation;
 
@@ -37,10 +38,25 @@ public final class PolicyFiles {
     public static final String GLOBAL_FILE = "global.json";
     public static final String MATERIALS_DIR = "materials";
 
-    private record FormPolicy(Optional<ResourceLocation> preferredProvider, List<String> modPriority) {
+    private static final Codec<ProcessRules.Route> ROUTE = RecordCodecBuilder.create(i -> i.group(
+            ResourceLocation.CODEC.fieldOf("machine").forGetter(ProcessRules.Route::machine),
+            FormId.CODEC.fieldOf("input").forGetter(ProcessRules.Route::input),
+            Codec.intRange(1, 64).fieldOf("in").forGetter(ProcessRules.Route::in),
+            Codec.intRange(1, 64).fieldOf("out").forGetter(ProcessRules.Route::out)
+    ).apply(i, ProcessRules.Route::new));
+
+    /** {@code {"routes": [...], "exclusive": false, "enforce_ratio": false}}; MNX-036. */
+    static final Codec<ProcessRules.Rule> PROCESS = RecordCodecBuilder.create(i -> i.group(
+            ROUTE.listOf().optionalFieldOf("routes", List.of()).forGetter(ProcessRules.Rule::routes),
+            Codec.BOOL.optionalFieldOf("exclusive", false).forGetter(ProcessRules.Rule::exclusive),
+            Codec.BOOL.optionalFieldOf("enforce_ratio", false).forGetter(ProcessRules.Rule::enforceRatio)
+    ).apply(i, ProcessRules.Rule::new));
+
+    private record FormPolicy(Optional<ResourceLocation> preferredProvider, List<String> modPriority, Optional<ProcessRules.Rule> process) {
         static final Codec<FormPolicy> CODEC = RecordCodecBuilder.create(i -> i.group(
                 ResourceLocation.CODEC.optionalFieldOf("preferred_provider").forGetter(FormPolicy::preferredProvider),
-                Codec.STRING.listOf().optionalFieldOf("mod_priority", List.of()).forGetter(FormPolicy::modPriority)
+                Codec.STRING.listOf().optionalFieldOf("mod_priority", List.of()).forGetter(FormPolicy::modPriority),
+                PROCESS.optionalFieldOf("process").forGetter(FormPolicy::process)
         ).apply(i, FormPolicy::new));
     }
 
@@ -54,12 +70,13 @@ public final class PolicyFiles {
 
     /** Unknown fields are ignored so later sections (e.g. almost_unified) do not break older readers. */
     private record GlobalPolicy(List<String> modPriority, List<String> exclude, List<String> conversionRecipes,
-                                Map<String, String> almostUnified) {
+                                Map<String, String> almostUnified, Map<FormId, ProcessRules.Rule> processes) {
         static final Codec<GlobalPolicy> CODEC = RecordCodecBuilder.create(i -> i.group(
                 Codec.STRING.listOf().optionalFieldOf("mod_priority", List.of()).forGetter(GlobalPolicy::modPriority),
                 Codec.STRING.listOf().optionalFieldOf("exclude", List.of()).forGetter(GlobalPolicy::exclude),
                 Codec.STRING.listOf().optionalFieldOf("conversion_recipes", List.of()).forGetter(GlobalPolicy::conversionRecipes),
-                Codec.unboundedMap(Codec.STRING, Codec.STRING).optionalFieldOf("almost_unified", Map.of()).forGetter(GlobalPolicy::almostUnified)
+                Codec.unboundedMap(Codec.STRING, Codec.STRING).optionalFieldOf("almost_unified", Map.of()).forGetter(GlobalPolicy::almostUnified),
+                Codec.unboundedMap(FormId.CODEC, PROCESS).optionalFieldOf("processes", Map.of()).forGetter(GlobalPolicy::processes)
         ).apply(i, GlobalPolicy::new));
     }
 
@@ -124,6 +141,7 @@ public final class PolicyFiles {
         Map<MaterialId, List<String>> materialPriority = new HashMap<>();
         Map<MaterialForm, List<String>> formPriority = new HashMap<>();
         Map<MaterialForm, ResourceLocation> explicit = new HashMap<>();
+        Map<MaterialForm, ProcessRules.Rule> processOverrides = new HashMap<>();
 
         materialsByFile.forEach((file, json) -> {
             MaterialPolicy m = decode(MaterialPolicy.CODEC, json, file);
@@ -136,6 +154,7 @@ public final class PolicyFiles {
                 MaterialForm key = new MaterialForm(m.material(), form);
                 if (!f.modPriority().isEmpty()) formPriority.put(key, f.modPriority());
                 f.preferredProvider().ifPresent(item -> explicit.put(key, item));
+                f.process().ifPresent(rule -> processOverrides.put(key, rule));
             });
         });
         Set<FormId> conversionForms = new HashSet<>();
@@ -144,7 +163,7 @@ public final class PolicyFiles {
                     "Invalid policy file " + GLOBAL_FILE + ": bad conversion_recipes entry '" + form + "'")));
         }
         return new ResolutionPolicy(globalPolicy.modPriority(), materialPriority, formPriority, explicit, excludedMaterials, excludedForms,
-                conversionForms, almostUnified(globalPolicy.almostUnified()));
+                conversionForms, almostUnified(globalPolicy.almostUnified()), new ProcessRules(globalPolicy.processes(), processOverrides));
     }
 
     private static <T> T decode(Codec<T> codec, JsonElement json, String file) {

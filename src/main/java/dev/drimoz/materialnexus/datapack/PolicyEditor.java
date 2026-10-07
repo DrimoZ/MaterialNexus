@@ -65,14 +65,31 @@ public final class PolicyEditor {
         apply(policiesDir, entries, Optional.empty());
     }
 
-    /** Choices and optionally a preset (written into global.json), behind a single backup for "Revert last apply". */
     public static void apply(Path policiesDir, List<Entry> entries, Optional<JsonObject> preset) throws IOException {
+        apply(policiesDir, entries, preset, Map.of());
+    }
+
+    /**
+     * Choices, optionally a preset, and process rule edits (all written into global.json, MNX-036), behind a single
+     * backup for "Revert last apply". An empty rule removes the form's entry.
+     */
+    public static void apply(Path policiesDir, List<Entry> entries, Optional<JsonObject> preset,
+                             Map<FormId, dev.drimoz.materialnexus.core.policy.ProcessRules.Rule> processes) throws IOException {
         backup(policiesDir);
-        if (preset.isPresent()) {
+        if (preset.isPresent() || !processes.isEmpty()) {
             Files.createDirectories(policiesDir);
             Path global = policiesDir.resolve(PolicyFiles.GLOBAL_FILE);
             JsonObject current = Files.exists(global) ? JsonParser.parseString(Files.readString(global, StandardCharsets.UTF_8)).getAsJsonObject() : new JsonObject();
-            Files.writeString(global, new GsonBuilder().setPrettyPrinting().create().toJson(Presets.overlay(current, preset.get())), StandardCharsets.UTF_8);
+            if (preset.isPresent()) current = Presets.overlay(current, preset.get());
+            if (!processes.isEmpty()) {
+                JsonObject rules = child(current, "processes");
+                processes.forEach((form, rule) -> {
+                    if (rule.routes().isEmpty() && !rule.exclusive() && !rule.enforceRatio()) rules.remove(form.name());
+                    else rules.add(form.name(), PolicyFiles.PROCESS.encodeStart(com.mojang.serialization.JsonOps.INSTANCE, rule).getOrThrow());
+                });
+                if (rules.isEmpty()) current.remove("processes");
+            }
+            Files.writeString(global, new GsonBuilder().setPrettyPrinting().create().toJson(current), StandardCharsets.UTF_8);
         }
 
         Path materialsDir = policiesDir.resolve(PolicyFiles.MATERIALS_DIR);

@@ -75,6 +75,22 @@ public final class RecipeSources {
         return sources;
     }
 
+    /** Every known-format recipe with its pre-MNX JSON, for process rules (MNX-036). Preview / apply only. */
+    public static List<RecipeRewrites.Source> known(MinecraftServer server, RecipeFormats formats, Collection<ResourceLocation> overridden) {
+        ResourceManager resources = server.getResourceManager();
+        Set<ResourceLocation> ids = new java.util.TreeSet<>(overridden);
+        for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
+            ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
+            if (type != null && formats.forType(type).isPresent()) ids.add(holder.id());
+        }
+        List<RecipeRewrites.Source> sources = new ArrayList<>();
+        // Our own generated recipes have no file beneath the generated pack, so they are never read back here.
+        for (ResourceLocation id : ids) {
+            originalJson(resources, id).ifPresent(json -> sources.add(new RecipeRewrites.Source(id, Optional.of(json), id)));
+        }
+        return sources;
+    }
+
     private static ResourceLocation firstOrSelf(List<ResourceLocation> outputs, ResourceLocation recipe) {
         return outputs.isEmpty() ? recipe : outputs.getFirst();
     }

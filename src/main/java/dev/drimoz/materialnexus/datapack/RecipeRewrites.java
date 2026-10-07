@@ -83,7 +83,8 @@ public final class RecipeRewrites {
 
     /** Recipe ids this pack overrides; their pre-MNX JSON must be read beneath it (ADR-010). */
     public static List<ResourceLocation> overridden(List<PackContent.Effect> manifest) {
-        return manifest.stream().filter(e -> e.kind().equals(REWRITE) || e.kind().equals(DISABLE)).map(PackContent.Effect::target).toList();
+        return manifest.stream().filter(e -> e.kind().equals(REWRITE) || e.kind().equals(DISABLE) || e.kind().equals(ProcessPlanner.DISABLE))
+                .map(PackContent.Effect::target).toList();
     }
 
     public static Optional<RecipeFormats.Format> format(JsonObject recipe, RecipeFormats formats) {
@@ -180,7 +181,7 @@ public final class RecipeRewrites {
         return copy;
     }
 
-    private static JsonObject disabled() {
+    static JsonObject disabled() {
         JsonObject condition = new JsonObject();
         condition.addProperty("type", "neoforge:false");
         JsonArray conditions = new JsonArray();

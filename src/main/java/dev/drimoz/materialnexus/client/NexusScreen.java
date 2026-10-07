@@ -27,12 +27,13 @@ import java.util.Locale;
  * pending on the client until Preview / Apply.
  */
 public final class NexusScreen extends Screen {
-    private enum Tab { FORMS, RECIPES, MISSING }
+    private enum Tab { FORMS, RECIPES, MISSING, PROCESS }
 
     private final boolean readOnly;
     private final boolean canRevert;
     private final FormsPanel forms;
     private final RecipesPanel recipes;
+    private final ProcessPanel process;
     private String query = "";
     private MaterialListPayload page;
     private MaterialDetailPayload detail;
@@ -53,6 +54,7 @@ public final class NexusScreen extends Screen {
         this.canRevert = canRevert;
         this.forms = new FormsPanel(readOnly, this::openRecipes);
         this.recipes = new RecipesPanel(form -> PacketDistributor.sendToServer(new RecipeFamilyRequest(selected, form)));
+        this.process = new ProcessPanel(readOnly, this::rebuildWidgets);
     }
 
     boolean readOnly() { return readOnly; }
@@ -73,6 +75,7 @@ public final class NexusScreen extends Screen {
 
     private void setMode(boolean forms, String filter, String select) {
         byForm = forms;
+        if (!forms && tab == Tab.PROCESS) tab = Tab.FORMS;
         query = filter;
         page = null;
         detail = null;
@@ -95,7 +98,7 @@ public final class NexusScreen extends Screen {
             }).bounds(width - 216, 3, 104, 18).build());
             revert.active = canRevert;
             preview = addRenderableWidget(Button.builder(Component.empty(),
-                    b -> PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), false))).bounds(width - 108, 3, 102, 18).build());
+                    b -> PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), false, java.util.Optional.empty(), PendingChanges.processes()))).bounds(width - 108, 3, 102, 18).build());
         }
 
         int half = (sideW - 14) / 2;
@@ -121,13 +124,13 @@ public final class NexusScreen extends Screen {
         panelW = width - panelX - 8;
         int tabY = 46;
         int tx = panelX;
-        for (Tab t : byForm ? new Tab[] {Tab.FORMS} : Tab.values()) {
+        for (Tab t : byForm ? new Tab[] {Tab.FORMS, Tab.PROCESS} : new Tab[] {Tab.FORMS, Tab.RECIPES, Tab.MISSING}) {
             Button b = addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.tab." + t.name().toLowerCase(Locale.ROOT)),
-                    x -> { tab = t; rebuildWidgets(); }).bounds(tx, tabY, 76, 18).build());
+                    x -> { tab = t; requestProcess(); rebuildWidgets(); }).bounds(tx, tabY, 76, 18).build());
             b.active = tab != t && detail != null;
             tx += 80;
         }
-        if (!readOnly && detail != null) {
+        if (!readOnly && detail != null && tab != Tab.PROCESS) {
             addRenderableWidget(Button.builder(Component.translatable(byForm ? "screen.materialnexus.unify_form" : "screen.materialnexus.unify_material"),
                     b -> acceptMaterialSuggestions()).bounds(panelX + panelW - 110, tabY, 110, 18).build());
         }
@@ -135,6 +138,8 @@ public final class NexusScreen extends Screen {
         panelH = height - panelY - 6;
         forms.layout(panelX, panelY, panelW, panelH);
         recipes.layout(panelX, panelY, panelW, panelH);
+        process.layout(panelX, panelY, panelW, panelH);
+        if (tab == Tab.PROCESS && detail != null && process.shows(selected)) process.init(this::addRenderableWidget);
 
         if (page == null) requestPage(0);
         else sidebar.show(page.entries(), selected, byForm);
@@ -147,6 +152,20 @@ public final class NexusScreen extends Screen {
     private void select(String material) {
         selected = material;
         PacketDistributor.sendToServer(new MaterialDetailRequest(material, byForm));
+        requestProcess();
+    }
+
+    /** The process tab reads its rule and examples on demand (a recipe scan, so only when shown). */
+    private void requestProcess() {
+        if (byForm && tab == Tab.PROCESS && selected != null && !process.shows(selected)) {
+            PacketDistributor.sendToServer(new dev.drimoz.materialnexus.network.ProcessRequest(selected));
+        }
+    }
+
+    void acceptProcess(dev.drimoz.materialnexus.network.ProcessPayload payload) {
+        if (!byForm || !payload.form().equals(selected)) return;
+        process.accept(payload);
+        rebuildWidgets();
     }
 
     /** Responses can arrive out of order while typing; only the one matching the current filter is shown. */
@@ -209,6 +228,7 @@ public final class NexusScreen extends Screen {
             case FORMS -> forms.render(g, font, mouseX, mouseY);
             case RECIPES -> recipes.render(g, font, mouseX, mouseY);
             case MISSING -> renderMissing(g);
+            case PROCESS -> process.render(g, font);
         }
     }
 
@@ -233,7 +253,7 @@ public final class NexusScreen extends Screen {
         return switch (tab) {
             case FORMS -> forms.click(mouseX, mouseY);
             case RECIPES -> recipes.click(mouseX, mouseY);
-            case MISSING -> false;
+            case MISSING, PROCESS -> false;
         };
     }
 

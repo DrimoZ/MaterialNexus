@@ -17,6 +17,7 @@
 
 - **Sidebar**: server-side search and pages; dot = green (every duplicated form decided), amber (duplicates only suggested), grey (nothing to unify).
 - **Materials / Forms switch** (MNX-035): the sidebar lists forms instead; the right side then shows one card per material for that form (all ingots, all rods…), with the same pending choices, "Unify form" and Preview. "Recipes" on a card jumps back to that material.
+- **Process** (form view, MNX-036): the form's process rule. Routes with in/out ratio buttons and remove; "Only these" (exclusive) and "Enforce ratios" toggles; the routes already existing in the pack's recipes, each addable with +. Edits are pending changes like canonical choices.
 - **Forms**: one card per form; every provider is an icon. Gold border = current canonical, green = pending choice, grey = alternative, dark red = not unified. Clicking an icon makes it the pending canonical (again to cancel). Tooltips give the item, id, role and, for the canonical, Why / source / confidence. "Recipes ›" opens the form's recipe family.
 - **Recipes**: form chips; every loaded recipe producing the form with type and status (canonical, alternative, variant, rewritten, disabled by MNX, not handled yet).
 - **Missing**: missing standard conversions (proposals only, ADR-003).

@@ -26,13 +26,16 @@ public final class PreviewScreen extends Screen {
     }
 
     private boolean hasChanges() {
-        return preview.entries().stream().anyMatch(PolicyEditor.Entry::valid) || !preview.added().isEmpty() || !preview.removed().isEmpty();
+        return preview.entries().stream().anyMatch(PolicyEditor.Entry::valid) || !preview.added().isEmpty() || !preview.removed().isEmpty()
+                || !PendingChanges.processes().isEmpty();
     }
 
     @Override
     protected void init() {
         Lines lines = addRenderableWidget(new Lines(minecraft, width, height - 64, 28));
         preview.entries().forEach(e -> lines.add(choiceLine(e)));
+        PendingChanges.processes().keySet().stream().sorted().forEach(form -> lines.add(
+                new Line(Component.translatable("screen.materialnexus.preview_process", Names.form(form)), 0x55FF55)));
         preview.added().forEach(e -> lines.add(effectLine(e, "screen.materialnexus.preview_added", 0x55FFFF)));
         preview.removed().forEach(e -> lines.add(effectLine(e, "screen.materialnexus.preview_removed", 0xFFFF55)));
 
@@ -48,7 +51,7 @@ public final class PreviewScreen extends Screen {
     }
 
     private void apply() {
-        PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), true, preview.preset()));
+        PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), true, preview.preset(), PendingChanges.processes()));
         // The server reopens Material Nexus once the reload has finished; pending choices are kept until then.
         minecraft.setScreen(null);
     }
@@ -90,11 +93,22 @@ public final class PreviewScreen extends Screen {
             case RecipeRewrites.REWRITE -> Component.translatable("screen.materialnexus.effect.recipe_rewrite", e.target().toString(), e.item().toString());
             case RecipeRewrites.DISABLE -> Component.translatable("screen.materialnexus.effect.recipe_disable", e.target().toString());
             case RecipeRewrites.UNSUPPORTED -> Component.translatable("screen.materialnexus.effect.recipe_unsupported", e.target().toString(), e.item().toString());
+            case dev.drimoz.materialnexus.datapack.ProcessPlanner.PROCESS -> processLine(e);
+            case dev.drimoz.materialnexus.datapack.ProcessPlanner.DISABLE -> Component.translatable("screen.materialnexus.effect.process_disable", e.target().toString(), e.item().toString());
+            case dev.drimoz.materialnexus.datapack.ProcessPlanner.UNSUPPORTED -> Component.translatable("screen.materialnexus.effect.process_unsupported", e.target().toString(), e.item().toString());
             case PackContent.ALMOST_UNIFIED -> Component.translatable("screen.materialnexus.effect.almost_unified",
                     Component.translatable("materialnexus.au_domain." + e.target().getPath()));
             default -> Component.translatable("screen.materialnexus.effect.conversion", e.item().toString(), e.target().toString());
         };
         return new Line(Component.translatable(prefixKey, effect), color);
+    }
+
+    /** The ratio is in the generated recipe id: process/&lt;form&gt;/&lt;material&gt;/&lt;input&gt;/&lt;in&gt;/&lt;out&gt;/&lt;machine ns&gt;/&lt;machine path&gt;. */
+    private static Component processLine(PackContent.Effect e) {
+        String[] p = e.target().getPath().split("/", 8);
+        if (p.length < 8) return Component.literal(e.target().toString());
+        return Component.translatable("screen.materialnexus.effect.process_recipe", p[6] + ":" + p[7], p[4], Names.form(p[3]),
+                p[5], e.item().toString(), Names.material(p[2]));
     }
 
     private static final class Lines extends ObjectSelectionList<Line> {

@@ -31,7 +31,7 @@ public final class PresetScreen extends Screen {
         for (ResourceLocation id : presets) {
             Component name = Component.translatableWithFallback("materialnexus.preset." + id.getPath(), id.getPath());
             Button b = Button.builder(name, x -> PacketDistributor.sendToServer(
-                    new PreviewRequest(PendingChanges.all(), false, Optional.of(id)))).bounds(width / 2 - 100, y, 200, 20).build();
+                    new PreviewRequest(PendingChanges.all(), false, Optional.of(id), PendingChanges.processes()))).bounds(width / 2 - 100, y, 200, 20).build();
             b.setTooltip(net.minecraft.client.gui.components.Tooltip.create(
                     Component.translatableWithFallback("materialnexus.preset." + id.getPath() + ".desc", id.toString())));
             addRenderableWidget(b);

@@ -21,7 +21,7 @@ class RecipeRewritesTest {
     private static final ResourceLocation IE = ResourceLocation.fromNamespaceAndPath("immersiveengineering", "ingot_tin");
 
     /** The formats Material Nexus ships, read from the same files the game loads. */
-    private static final RecipeFormats SHIPPED = shipped();
+    static final RecipeFormats SHIPPED = shipped();
 
     private static RecipeFormats shipped() {
         Map<ResourceLocation, com.google.gson.JsonElement> files = new java.util.HashMap<>();

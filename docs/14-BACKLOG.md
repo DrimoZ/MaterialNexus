@@ -32,4 +32,5 @@
 | MNX-030 | P1 | Recipe inputs | Literal alternative inputs of vanilla recipes become the canonical item; collapsed duplicates are disabled |
 | MNX-035 | P2 | Form views | Cross-material views per form (all ingots, all rods...) to decide form by form; same pending/preview flow |
 | MNX-036 | P2 | Process rules | "All rods are made in machine A (ratio x), machine B (ratio y)": per-form, per-machine generation rules written through recipe formats; balance-affecting, so explicit policy + Preview only (ADR-003) |
+| MNX-037 | P3 | Process templates | Data templates for machines with no example recipe of a form (ADR-018) |
 | MNX-020 | P3 | KubeJS bridge | Optional scripting API, no dependency |

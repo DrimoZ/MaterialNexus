@@ -1,5 +1,6 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.core.policy.ProcessRules;
 import dev.drimoz.materialnexus.datapack.CanonicalChange;
 import net.minecraft.resources.ResourceLocation;
 
@@ -8,9 +9,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 
-/** Canonical choices made in the GUI but not yet applied. Client-side only; the server stays stateless. */
+/** Canonical choices and process rule edits made in the GUI but not yet applied. Client-side only; the server stays stateless. */
 final class PendingChanges {
     private static final Map<String, CanonicalChange> CHANGES = new LinkedHashMap<>();
+    private static final Map<String, ProcessRules.Rule> PROCESSES = new LinkedHashMap<>();
 
     private PendingChanges() { }
 
@@ -29,9 +31,20 @@ final class PendingChanges {
 
     static List<CanonicalChange> all() { return List.copyOf(CHANGES.values()); }
 
-    static int size() { return CHANGES.size(); }
+    static int size() { return CHANGES.size() + PROCESSES.size(); }
 
-    static void clear() { CHANGES.clear(); }
+    static void clear() {
+        CHANGES.clear();
+        PROCESSES.clear();
+    }
+
+    static Optional<ProcessRules.Rule> process(String form) { return Optional.ofNullable(PROCESSES.get(form)); }
+
+    static void setProcess(String form, ProcessRules.Rule rule) { PROCESSES.put(form, rule); }
+
+    static void clearProcess(String form) { PROCESSES.remove(form); }
+
+    static Map<String, ProcessRules.Rule> processes() { return Map.copyOf(PROCESSES); }
 
     private static String key(String material, String form) { return material + "/" + form; }
 }

@@ -121,6 +121,43 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /**
+     * MNX-036: process rules on the real loaded recipes generate recipes the game itself can decode, with the
+     * requested ratio. Nuggets everywhere; with Immersive Engineering, rods in its metal press too.
+     */
+    @GameTest(template = "empty")
+    public static void processRulesGenerateLoadableRecipes(GameTestHelper helper) {
+        var server = helper.getLevel().getServer();
+        var nugget = new dev.drimoz.materialnexus.core.policy.ProcessRules.Route(
+                ResourceLocation.withDefaultNamespace("crafting_shapeless"), new FormId("ingot"), 1, 8);
+        var rules = new java.util.HashMap<FormId, dev.drimoz.materialnexus.core.policy.ProcessRules.Rule>();
+        rules.put(new FormId("nugget"), new dev.drimoz.materialnexus.core.policy.ProcessRules.Rule(java.util.List.of(nugget), false, true));
+        if (ModList.get().isLoaded("immersiveengineering")) {
+            rules.put(new FormId("rod"), new dev.drimoz.materialnexus.core.policy.ProcessRules.Rule(java.util.List.of(
+                    new dev.drimoz.materialnexus.core.policy.ProcessRules.Route(ResourceLocation.fromNamespaceAndPath("immersiveengineering", "metal_press"),
+                            new FormId("ingot"), 1, 3)), false, true));
+        }
+        var policy = dev.drimoz.materialnexus.core.policy.ResolutionPolicy.NONE.withProcesses(rules);
+        var formats = RecipeFormats.load(server.getResourceManager());
+        var plan = dev.drimoz.materialnexus.datapack.ProcessPlanner.plan(RecipeSources.known(server, formats, java.util.List.of()), formats,
+                dev.drimoz.materialnexus.core.resolution.CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy), policy);
+
+        var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
+        var generated = plan.effects().stream().filter(e -> e.kind().equals(dev.drimoz.materialnexus.datapack.ProcessPlanner.PROCESS)).toList();
+        helper.assertTrue(generated.stream().anyMatch(e -> e.item().equals(ResourceLocation.withDefaultNamespace("iron_nugget"))),
+                "iron nuggets 1 → 8 should be generated, got " + plan.effects());
+        for (var e : generated) {
+            var json = plan.files().get("data/materialnexus/recipe/" + e.target().getPath() + ".json").getAsJsonObject().deepCopy();
+            json.remove("neoforge:conditions");
+            var recipe = net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, json);
+            helper.assertTrue(recipe.isSuccess(), e.target() + " does not decode: " + recipe.error().map(Object::toString).orElse("") + " " + json);
+        }
+        var iron = plan.files().get("data/materialnexus/recipe/" + dev.drimoz.materialnexus.datapack.ProcessPlanner.recipeId(
+                new dev.drimoz.materialnexus.core.domain.MaterialForm(new MaterialId("iron"), new FormId("nugget")), nugget).getPath() + ".json");
+        helper.assertTrue(iron != null && iron.toString().contains("\"count\":8"), "iron nugget recipe must give 8, got " + iron);
+        helper.succeed();
+    }
+
     /** MNX-028: an applied alternative becomes the canonical item when it enters the world or a container is converted. */
     @GameTest(template = "empty")
     public static void unifiedItemsAreConvertedWhenTouched(GameTestHelper helper) {

@@ -32,6 +32,10 @@ public final class ClientHooks {
         if (Minecraft.getInstance().screen instanceof NexusScreen screen) screen.acceptFamily(payload);
     }
 
+    public static void onProcess(dev.drimoz.materialnexus.network.ProcessPayload payload) {
+        if (Minecraft.getInstance().screen instanceof NexusScreen screen) screen.acceptProcess(payload);
+    }
+
     public static void onPreview(PreviewPayload payload) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof NexusScreen screen) mc.setScreen(new PreviewScreen(screen, payload));

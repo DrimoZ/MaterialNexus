@@ -13,7 +13,7 @@ import java.util.Set;
 /**
  * Pack-author intent: canonical selection, one field per precedence level (ADR-006), exclusions
  * (ADR-014), the forms for which unification also generates 1:1 conversion recipes, and the
- * arbitration with Almost Unified (ADR-012). Mod priorities are namespaces, strongest first.
+ * arbitration with Almost Unified (ADR-012), and process rules (MNX-036). Mod priorities are namespaces, strongest first.
  */
 public record ResolutionPolicy(
         List<String> globalModPriority,
@@ -23,7 +23,8 @@ public record ResolutionPolicy(
         Set<MaterialId> excludedMaterials,
         Set<MaterialForm> excludedForms,
         Set<FormId> conversionRecipeForms,
-        AlmostUnified almostUnified) {
+        AlmostUnified almostUnified,
+        ProcessRules processes) {
     public static final ResolutionPolicy NONE = new ResolutionPolicy(List.of(), Map.of(), Map.of(), Map.of());
 
     public ResolutionPolicy {
@@ -34,6 +35,14 @@ public record ResolutionPolicy(
         excludedMaterials = Set.copyOf(excludedMaterials);
         excludedForms = Set.copyOf(excludedForms);
         conversionRecipeForms = Set.copyOf(conversionRecipeForms);
+    }
+
+    public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
+                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, ResourceLocation> explicitProviders,
+                            Set<MaterialId> excludedMaterials, Set<MaterialForm> excludedForms, Set<FormId> conversionRecipeForms,
+                            AlmostUnified almostUnified) {
+        this(globalModPriority, materialModPriority, formModPriority, explicitProviders, excludedMaterials, excludedForms,
+                conversionRecipeForms, almostUnified, ProcessRules.NONE);
     }
 
     public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
@@ -58,11 +67,17 @@ public record ResolutionPolicy(
         return excludedMaterials.contains(key.material()) || excludedForms.contains(key);
     }
 
+    /** This policy with pending process rule edits (MNX-036). */
+    public ResolutionPolicy withProcesses(Map<FormId, ProcessRules.Rule> edits) {
+        return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, explicitProviders,
+                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes.withForms(edits));
+    }
+
     /** This policy plus extra explicit choices, used to preview pending GUI changes before they are written. */
     public ResolutionPolicy withExplicit(Map<MaterialForm, ResourceLocation> extra) {
         Map<MaterialForm, ResourceLocation> merged = new HashMap<>(explicitProviders);
         merged.putAll(extra);
         return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, merged,
-                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified);
+                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes);
     }
 }

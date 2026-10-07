@@ -86,6 +86,23 @@ public final class PackContent {
         return new Content(files, List.copyOf(effects));
     }
 
+    /**
+     * Process recipes (MNX-036) on top of the unification content. A recipe the rules disable is disabled even if
+     * unification rewrote it: the explicit process decision is the more specific one.
+     */
+    public static Content withProcesses(Content base, Content processes) {
+        Map<String, JsonElement> files = new TreeMap<>(base.files());
+        files.putAll(processes.files());
+        java.util.Set<ResourceLocation> disabled = new java.util.HashSet<>();
+        processes.effects().stream().filter(e -> e.kind().equals(ProcessPlanner.DISABLE)).forEach(e -> disabled.add(e.target()));
+        List<Effect> effects = new ArrayList<>(base.effects().stream()
+                .filter(e -> !(disabled.contains(e.target()) && (e.kind().equals(RecipeRewrites.REWRITE) || e.kind().equals(RecipeRewrites.DISABLE))))
+                .toList());
+        effects.addAll(processes.effects());
+        effects.sort(ORDER);
+        return new Content(files, List.copyOf(effects));
+    }
+
     public static boolean isUnified(ResolvedForm form) {
         return form.canonical().isPresent() && form.source() != PolicyPrecedence.DEFAULT && !form.alternatives().isEmpty();
     }

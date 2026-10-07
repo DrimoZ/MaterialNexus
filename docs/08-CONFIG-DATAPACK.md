@@ -92,6 +92,23 @@ Only forms unified by a player decision (any policy level; never the "Default" s
 
 The manifest lists every effect. On reload, discovery puts back the tag members Material Nexus removed (ADR-010), so the next apply regenerates the same content instead of undoing it. With nothing pending, Preview shows the difference between the policy files and the current pack, which is how hand edits are applied.
 
+## Process rules (MNX-036, ADR-018)
+
+```json
+"processes": {
+  "rod": {
+    "routes": [
+      { "machine": "immersiveengineering:metal_press", "input": "ingot", "in": 1, "out": 2 },
+      { "machine": "minecraft:crafting_shaped", "input": "ingot", "in": 2, "out": 4 }
+    ],
+    "exclusive": false,
+    "enforce_ratio": false
+  }
+}
+```
+
+In `global.json`, per form for every material. A material file can override it for one form with `"forms": {"rod": {"process": {...}}}`; `"routes": []` switches the rule off for that material. Ratios are 1..64. Each generated recipe is `materialnexus:process/<form>/<material>/<input>/<in>/<out>/<machine>`. Edited from the GUI in the form view, "Process" tab.
+
 ## Recipe formats (ADR-016)
 
 To let Material Nexus rewrite another mod's recipes, add a file to any datapack (or KubeJS data):

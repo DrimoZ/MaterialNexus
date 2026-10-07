@@ -46,7 +46,8 @@ final class PolicyHandler {
         List<PackContent.Effect> proposed;
         List<PackContent.Effect> current;
         try {
-            ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies(), preset).withExplicit(explicitChoices(entries));
+            ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies(), preset).withExplicit(explicitChoices(entries))
+                    .withProcesses(processes(request));
             current = PackContent.readManifest(MnxPaths.generated());
             proposed = packContent(player.server, policy, current).effects();
         } catch (IOException | RuntimeException e) {
@@ -62,10 +63,32 @@ final class PolicyHandler {
             PacketDistributor.sendToPlayer(player, new PreviewPayload(entries, added, removed, request.preset().filter(id -> preset.isPresent())));
             return;
         }
-        if (!valid && preset.isEmpty() && added.isEmpty() && removed.isEmpty()) return;
+        if (!valid && preset.isEmpty() && request.processes().isEmpty() && added.isEmpty() && removed.isEmpty()) return;
         // With no valid choice, apply only regenerates the pack from the policy as written (e.g. edited by hand).
-        writeAndReload(player, () -> { if (valid || preset.isPresent()) PolicyEditor.apply(MnxPaths.policies(), entries, preset); },
+        writeAndReload(player, () -> {
+                    if (valid || preset.isPresent() || !request.processes().isEmpty()) {
+                        PolicyEditor.apply(MnxPaths.policies(), entries, preset, processes(request));
+                    }
+                },
                 Component.translatable("message.materialnexus.applied", added.size() + removed.size()));
+    }
+
+    /** The form's process rule as written, plus the routes already found in recipes (examples are read on demand). */
+    static void process(ServerPlayer player, String formName) {
+        var form = FormId.read(formName).result();
+        if (form.isEmpty()) return;
+        try {
+            ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies());
+            RecipeFormats formats = RecipeFormats.load(player.server.getResourceManager());
+            var sources = RecipeSources.known(player.server, formats, RecipeRewrites.overridden(PackContent.readManifest(MnxPaths.generated())));
+            var examples = dev.drimoz.materialnexus.datapack.ProcessPlanner.examples(sources, formats,
+                    CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy), form.get());
+            PacketDistributor.sendToPlayer(player, new ProcessPayload(formName, java.util.Optional.ofNullable(policy.processes().forms().get(form.get())),
+                    new dev.drimoz.materialnexus.core.policy.ProcessRules.Rule(examples, false, false)));
+        } catch (IOException | RuntimeException e) {
+            LOGGER.error("Material Nexus process query failed", e);
+            player.sendSystemMessage(Component.translatable("message.materialnexus.apply_failed", e.getMessage()));
+        }
     }
 
     static void revert(ServerPlayer player) {
@@ -77,12 +100,20 @@ final class PolicyHandler {
     /** The whole generated pack for a policy: tags and conversions, then the recipes they imply. */
     private static PackContent.Content packContent(MinecraftServer server, ResolutionPolicy policy, List<PackContent.Effect> applied) {
         boolean auPresent = net.neoforged.fml.ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID);
-        return PackContent.full(CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy), policy, auPresent,
-                (conversions, ownership) -> {
-                    RecipeFormats formats = RecipeFormats.load(server.getResourceManager());
-                    return RecipeRewrites.plan(
-                            RecipeSources.collect(server, conversions, formats, RecipeRewrites.overridden(applied)), conversions, formats, ownership);
-                });
+        var resolved = CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy);
+        RecipeFormats formats = RecipeFormats.load(server.getResourceManager());
+        PackContent.Content content = PackContent.full(resolved, policy, auPresent, (conversions, ownership) -> RecipeRewrites.plan(
+                RecipeSources.collect(server, conversions, formats, RecipeRewrites.overridden(applied)), conversions, formats, ownership));
+        if (policy.processes().isEmpty()) return content;
+        return PackContent.withProcesses(content, dev.drimoz.materialnexus.datapack.ProcessPlanner.plan(
+                RecipeSources.known(server, formats, RecipeRewrites.overridden(applied)), formats, resolved, policy));
+    }
+
+    /** Form names were validated when the packet was decoded. */
+    private static Map<FormId, dev.drimoz.materialnexus.core.policy.ProcessRules.Rule> processes(PreviewRequest request) {
+        Map<FormId, dev.drimoz.materialnexus.core.policy.ProcessRules.Rule> edits = new HashMap<>();
+        request.processes().forEach((form, rule) -> edits.put(new FormId(form), rule));
+        return edits;
     }
 
     private static Map<MaterialForm, ResourceLocation> explicitChoices(List<PolicyEditor.Entry> entries) {
