@@ -33,7 +33,7 @@ public final class ConversionEvents {
      */
     @SubscribeEvent(priority = net.neoforged.bus.api.EventPriority.HIGH)
     public static void onDatapackSync(net.neoforged.neoforge.event.OnDatapackSyncEvent event) {
-        var payload = new dev.drimoz.materialnexus.network.UnifiedItemsPayload(ItemConversions.alternatives());
+        var payload = new dev.drimoz.materialnexus.network.UnifiedItemsPayload(ItemConversions.alternatives(), ItemConversions.mapping());
         event.getRelevantPlayers().forEach(player -> net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player, payload));
     }
 

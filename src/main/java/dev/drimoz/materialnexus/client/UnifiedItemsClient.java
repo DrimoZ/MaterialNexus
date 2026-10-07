@@ -13,6 +13,22 @@ import java.util.function.Consumer;
  */
 public final class UnifiedItemsClient {
     private static volatile Set<ResourceLocation> alternatives = Set.of();
+    private static volatile java.util.Map<ResourceLocation, ResourceLocation> becomes = java.util.Map.of();
+    private static volatile Set<ResourceLocation> kept = Set.of();
+
+    /** MNX-054: what an alternative becomes, for tooltips. */
+    public static java.util.Map<ResourceLocation, ResourceLocation> becomes() {
+        return becomes;
+    }
+
+    public static boolean kept(ResourceLocation item) {
+        return kept.contains(item);
+    }
+
+    public static void conversions(java.util.Map<ResourceLocation, ResourceLocation> latest) {
+        becomes = java.util.Map.copyOf(latest);
+        kept = Set.copyOf(latest.values());
+    }
     private static final List<Consumer<Set<ResourceLocation>>> LISTENERS = new CopyOnWriteArrayList<>();
 
     private UnifiedItemsClient() { }

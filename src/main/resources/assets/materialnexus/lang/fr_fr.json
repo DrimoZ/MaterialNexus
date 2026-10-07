@@ -264,5 +264,7 @@
   "screen.materialnexus.triage.progress": "%1$s / %2$s · %3$s choisies",
   "screen.materialnexus.triage.item": "%1$s · %2$s",
   "screen.materialnexus.triage.not_same": "Pas le même",
-  "screen.materialnexus.triage.usage": "%1$s prod. · %2$s util."
+  "screen.materialnexus.triage.usage": "%1$s prod. · %2$s util.",
+  "tooltip.materialnexus.becomes": "Material Nexus : devient %s",
+  "tooltip.materialnexus.kept": "Material Nexus : item gardé"
 }

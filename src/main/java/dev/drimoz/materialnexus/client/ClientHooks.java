@@ -58,6 +58,7 @@ public final class ClientHooks {
 
     public static void onUnifiedItems(UnifiedItemsPayload payload) {
         UnifiedItemsClient.update(new java.util.HashSet<>(payload.alternatives()));
+        UnifiedItemsClient.conversions(payload.becomes());
     }
 
     /** Adds every suggestion as a pending choice, keeping choices the player already made. */

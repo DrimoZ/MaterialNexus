@@ -39,6 +39,13 @@ public final class ItemConversions {
         return active.keySet().stream().map(BuiltInRegistries.ITEM::getKey).sorted().toList();
     }
 
+    /** Every alternative with the item it becomes (MNX-054: in-game tooltips), whatever owns viewer hiding. */
+    public static Map<ResourceLocation, ResourceLocation> mapping() {
+        Map<ResourceLocation, ResourceLocation> byId = new java.util.TreeMap<>();
+        active.forEach((from, to) -> byId.put(BuiltInRegistries.ITEM.getKey(from), BuiltInRegistries.ITEM.getKey(to)));
+        return byId;
+    }
+
     public static boolean isEmpty() {
         return active.isEmpty();
     }

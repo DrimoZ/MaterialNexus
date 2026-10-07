@@ -13,7 +13,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * Client handler bodies call {@link ClientHooks}, so client classes never load on a dedicated server.
  */
 public final class MnxNetwork {
-    private static final String VERSION = "5";
+    private static final String VERSION = "6";
 
     private MnxNetwork() { }
 
