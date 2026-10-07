@@ -1,0 +1,9 @@
+{
+  "types": [
+    "createaddition:rolling",
+    "createaddition:charging"
+  ],
+  "outputs": [
+    "results"
+  ]
+}

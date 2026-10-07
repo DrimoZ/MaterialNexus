@@ -1,0 +1,13 @@
+{
+  "types": [
+    "exdeorum:hammer",
+    "exdeorum:compressed_hammer",
+    "exdeorum:sieve",
+    "exdeorum:compressed_sieve",
+    "exdeorum:crook",
+    "exdeorum:barrel_mixing"
+  ],
+  "outputs": [
+    "result"
+  ]
+}

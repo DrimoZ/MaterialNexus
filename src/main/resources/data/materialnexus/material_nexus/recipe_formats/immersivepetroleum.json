@@ -1,0 +1,13 @@
+{
+  "types": [
+    "immersivepetroleum:coker",
+    "immersivepetroleum:distillation",
+    "immersivepetroleum:hydrotreater"
+  ],
+  "outputs": [
+    "result",
+    "results",
+    "byproducts",
+    "secondary_result"
+  ]
+}

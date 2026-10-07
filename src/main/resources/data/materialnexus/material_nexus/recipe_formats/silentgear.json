@@ -1,0 +1,10 @@
+{
+  "types": [
+    "silentgear:alloy_making/metal",
+    "silentgear:alloy_making/gem",
+    "silentgear:pressing/material"
+  ],
+  "outputs": [
+    "result"
+  ]
+}

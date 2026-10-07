@@ -182,6 +182,8 @@ public final class NexusScreen extends Screen {
         detail = payload;
         forms.show(payload);
         if (!byForm) recipes.show(payload);
+        else process.undecided((int) payload.forms().stream().filter(v -> v.resolved().source() == dev.drimoz.materialnexus.core.policy.PolicyPrecedence.DEFAULT
+                && !v.resolved().alternatives().isEmpty() && PendingChanges.get(v.material(), v.form()).isEmpty()).count());
         if (first || tab != Tab.FORMS) rebuildWidgets();
         if (recipesOnArrival != null) {
             recipes.select(recipesOnArrival);

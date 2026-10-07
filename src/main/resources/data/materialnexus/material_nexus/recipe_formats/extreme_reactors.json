@@ -1,0 +1,12 @@
+{
+  "types": [
+    "bigreactors:reprocessor",
+    "bigreactors:fluidizersolid",
+    "bigreactors:fluidizersolidmixing",
+    "bigreactors:fluidizerfluidmixing"
+  ],
+  "outputs": [
+    "result",
+    "waste"
+  ]
+}

@@ -26,6 +26,8 @@ final class ProcessPanel {
     private final Runnable refresh;
     private ProcessPayload payload;
     private int x, y, width, height;
+    /** Materials of this form whose duplicates are still only suggested: a rule adds recipes, it does not unify items. */
+    private int undecided;
 
     ProcessPanel(boolean readOnly, Runnable refresh) {
         this.readOnly = readOnly;
@@ -33,6 +35,8 @@ final class ProcessPanel {
     }
 
     void accept(ProcessPayload payload) { this.payload = payload; }
+
+    void undecided(int count) { this.undecided = count; }
 
     boolean shows(String form) { return payload != null && payload.form().equals(form); }
 
@@ -64,7 +68,7 @@ final class ProcessPanel {
         return new ProcessRules.Route(r.machine(), r.input(), Math.clamp(in, 1, 64), Math.clamp(out, 1, 64));
     }
 
-    private int routesTop() { return y + 14; }
+    private int routesTop() { return y + (undecided > 0 ? 26 : 14); }
 
     private int optionsTop() { return routesTop() + Math.max(1, rule().routes().size()) * ROW + 4; }
 
@@ -119,6 +123,10 @@ final class ProcessPanel {
         }
         boolean pending = PendingChanges.process(payload.form()).isPresent();
         g.drawString(font, Component.translatable("screen.materialnexus.process.title", Names.form(payload.form())), x, y, pending ? 0x55FF55 : 0xFFFFFF);
+        if (undecided > 0) {
+            g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.process.undecided", undecided, Names.form(payload.form())).getString(), width),
+                    x, y + 12, 0xFFAA33);
+        }
         ProcessRules.Rule rule = rule();
         int textWidth = width - (readOnly ? 0 : 5 * 16 + 4);
         if (rule.routes().isEmpty()) g.drawString(font, Component.translatable("screen.materialnexus.process.none"), x + 6, routesTop() + 4, 0x888888);

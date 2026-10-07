@@ -173,6 +173,24 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /**
+     * MNX-043: with the addon formats, unifying electrum wire on IE's rewrites Create Crafts &amp; Additions' rolling
+     * recipe instead of listing it as unsupported.
+     */
+    @GameTest(template = "empty")
+    public static void addonRecipesAreRewritten(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("createaddition")) { helper.succeed(); return; }
+        var server = helper.getLevel().getServer();
+        var conversions = java.util.Map.of(ResourceLocation.parse("createaddition:electrum_wire"), ResourceLocation.parse("immersiveengineering:wire_electrum"));
+        var formats = RecipeFormats.load(server.getResourceManager());
+        var plan = RecipeRewrites.plan(RecipeSources.collect(server, conversions, formats, java.util.List.of()), conversions, formats);
+        helper.assertTrue(plan.effects().stream().noneMatch(e -> e.kind().equals(RecipeRewrites.UNSUPPORTED) && e.target().getNamespace().equals("createaddition")),
+                "createaddition recipes should all be handled, got " + plan.effects());
+        helper.assertTrue(plan.effects().stream().anyMatch(e -> e.kind().equals(RecipeRewrites.REWRITE) && e.target().getNamespace().equals("createaddition")),
+                "the createaddition rolling recipe should be rewritten, got " + plan.effects());
+        helper.succeed();
+    }
+
     /** MNX-028: an applied alternative becomes the canonical item when it enters the world or a container is converted. */
     @GameTest(template = "empty")
     public static void unifiedItemsAreConvertedWhenTouched(GameTestHelper helper) {

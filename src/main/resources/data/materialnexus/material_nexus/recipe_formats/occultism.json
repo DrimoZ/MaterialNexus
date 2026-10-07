@@ -1,0 +1,13 @@
+{
+  "types": [
+    "occultism:crushing",
+    "occultism:crystallize",
+    "occultism:miner",
+    "occultism:spirit_fire",
+    "occultism:spirit_trade",
+    "occultism:ritual"
+  ],
+  "outputs": [
+    "result"
+  ]
+}

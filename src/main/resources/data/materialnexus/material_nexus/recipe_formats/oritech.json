@@ -1,0 +1,19 @@
+{
+  "types": [
+    "oritech:assembler",
+    "oritech:atomic_forge",
+    "oritech:centrifuge",
+    "oritech:centrifuge_fluid",
+    "oritech:cooler",
+    "oritech:foundry",
+    "oritech:grinder",
+    "oritech:laser",
+    "oritech:pulverizer",
+    "oritech:refinery",
+    "oritech:particle_collision",
+    "oritech:deep_drill"
+  ],
+  "outputs": [
+    "results"
+  ]
+}

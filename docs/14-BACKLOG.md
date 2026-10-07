@@ -37,4 +37,5 @@
 | MNX-039 | P1 | Created items | Items for missing forms from items.json, tinted templates, tagged, restart to register (ADR-019) |
 | MNX-040 | P1 | More forms | Tiny/dirty dusts, clumps, shards, crystals, sheetmetal; untagged forms through declared name patterns; coal/charcoal as gems; no ingot or wire offered for gem materials |
 | MNX-041 | P1 | Forms as data | Tag folders and name patterns in material_nexus/forms; untagged-form audit in /materials report |
+| MNX-043 | P1 | Addon recipe formats | Create Crafts & Additions, Create Metallurgy, Create New Age, Ex Deorum, Oritech, Occultism, Immersive Petroleum, Silent Gear, Extreme Reactors; Process tab warns about undecided duplicates |
 | MNX-020 | P3 | KubeJS bridge | Optional scripting API, no dependency |

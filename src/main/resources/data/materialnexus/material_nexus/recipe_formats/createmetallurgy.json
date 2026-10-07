@@ -1,0 +1,14 @@
+{
+  "types": [
+    "createmetallurgy:alloying",
+    "createmetallurgy:bulk_melting",
+    "createmetallurgy:melting",
+    "createmetallurgy:grinding",
+    "createmetallurgy:casting_in_basin",
+    "createmetallurgy:casting_in_table"
+  ],
+  "outputs": [
+    "result",
+    "results"
+  ]
+}
