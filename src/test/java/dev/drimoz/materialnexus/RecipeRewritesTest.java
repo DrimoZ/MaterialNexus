@@ -105,7 +105,7 @@ class RecipeRewritesTest {
                 new Source(id("mek_enriching"), json("{\"type\":\"mekanism:enriching\",\"input\":{\"count\":1,\"item\":\"mekanism:dust_copper\"},"
                         + "\"output\":{\"count\":1,\"id\":\"minecraft:copper_ingot\"}}"), ResourceLocation.withDefaultNamespace("copper_ingot")),
                 new Source(id("mek_sawing"), json("{\"type\":\"mekanism:sawing\",\"input\":{\"count\":1,\"tag\":\"forge:ores/copper\"},"
-                        + "\"main_output\":{\"count\":2,\"id\":\"mekanism:dust_copper\"},\"secondary_output\":{\"chance\":0.1,\"id\":\"create:copper_sheet\"}}"), mekDust),
+                        + "\"mainOutput\":{\"count\":2,\"id\":\"mekanism:dust_copper\"},\"secondaryOutput\":{\"chance\":0.1,\"id\":\"create:copper_sheet\"}}"), mekDust),
                 // Chemical output: its id is never an item to convert, so the recipe is untouched.
                 new Source(id("mek_dissolution"), json("{\"type\":\"mekanism:dissolution\",\"output\":{\"amount\":1000,\"id\":\"mekanism:copper\"}}"),
                         id("mek_dissolution")));

@@ -3,12 +3,12 @@
   "recipe": {
     "type": "mekanism:crushing",
     "input": {
-      "count": "${in}",
-      "${input}": ""
+      "amount": "${in}",
+      "ingredient": "${input}"
     },
     "output": {
       "count": "${out}",
-      "id": "${output_item}"
+      "item": "${output_item}"
     }
   }
 }

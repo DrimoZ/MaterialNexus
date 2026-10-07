@@ -4,6 +4,7 @@
     "createaddition:charging"
   ],
   "outputs": [
+    "result",
     "results"
   ]
 }

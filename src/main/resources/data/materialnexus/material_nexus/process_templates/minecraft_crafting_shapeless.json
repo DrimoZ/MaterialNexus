@@ -6,7 +6,7 @@
     "ingredients": "${inputs}",
     "result": {
       "count": "${out}",
-      "id": "${output_item}"
+      "item": "${output_item}"
     }
   }
 }

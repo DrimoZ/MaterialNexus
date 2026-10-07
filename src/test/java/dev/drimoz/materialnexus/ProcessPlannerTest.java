@@ -112,7 +112,7 @@ class ProcessPlannerTest {
         JsonObject press = file(content, new MaterialForm(ALUMINUM, new FormId("gear")), gear);
         assertEquals("immersiveengineering:mold_gear", press.get("mold").getAsString());
         assertEquals(2, press.getAsJsonObject("input").get("count").getAsInt());
-        assertEquals("immersiveengineering:gear_aluminum", press.getAsJsonObject("result").getAsJsonObject("basePredicate").get("item").getAsString());
+        assertEquals("immersiveengineering:gear_aluminum", press.getAsJsonObject("result").get("item").getAsString());
     }
 
     @Test

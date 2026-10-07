@@ -5,11 +5,11 @@
     "ingredients": [
       "${input}"
     ],
-    "processing_time": 100,
+    "processingTime": 100,
     "results": [
       {
         "count": "${out}",
-        "id": "${output_item}"
+        "item": "${output_item}"
       }
     ]
   }

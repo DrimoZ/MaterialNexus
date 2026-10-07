@@ -8,7 +8,7 @@
     "results": [
       {
         "count": "${out}",
-        "id": "${output_item}"
+        "item": "${output_item}"
       }
     ]
   }

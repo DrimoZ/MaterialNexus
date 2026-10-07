@@ -2,5 +2,5 @@
   "types": ["mekanism:crushing", "mekanism:enriching", "mekanism:sawing", "mekanism:injecting", "mekanism:combining",
             "mekanism:metallurgic_infusing", "mekanism:purifying", "mekanism:nucleosynthesizing", "mekanism:crystallizing",
             "mekanism:compressing", "mekanism:reaction"],
-  "outputs": ["output", "main_output", "secondary_output", "item_output"]
+  "outputs": ["output", "mainOutput", "secondaryOutput", "itemOutput"]
 }

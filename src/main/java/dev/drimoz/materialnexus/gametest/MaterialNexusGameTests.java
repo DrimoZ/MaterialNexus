@@ -124,7 +124,7 @@ public final class MaterialNexusGameTests {
         var plan = RecipeRewrites.plan(sources, java.util.Map.of(copper, iron), formats);
         var fromBlock = new PackContent.Effect(RecipeRewrites.REWRITE, ResourceLocation.withDefaultNamespace("copper_ingot"), iron);
         helper.assertTrue(plan.effects().contains(fromBlock), "minecraft:copper_ingot should be rewritten, got " + plan.effects());
-        helper.assertTrue(plan.files().get("data/minecraft/recipe/copper_ingot.json").toString().contains("\"id\":\"minecraft:iron_ingot\""),
+        helper.assertTrue(plan.files().get("data/minecraft/recipes/copper_ingot.json").toString().contains("\"item\":\"minecraft:iron_ingot\""),
                 "rewritten JSON must produce the canonical item");
         helper.succeed();
     }

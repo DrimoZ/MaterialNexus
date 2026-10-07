@@ -5,10 +5,8 @@
     "energy": 3000,
     "input": "${input}",
     "result": {
-      "basePredicate": {
-        "item": "${output_item}"
-      },
-      "count": "${out}"
+      "count": "${out}",
+      "item": "${output_item}"
     },
     "secondaries": []
   }

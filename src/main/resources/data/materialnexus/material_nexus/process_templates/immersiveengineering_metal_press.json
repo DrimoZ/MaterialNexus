@@ -18,15 +18,13 @@
     "type": "immersiveengineering:metal_press",
     "energy": 2400,
     "input": {
-      "basePredicate": "${input}",
+      "base_ingredient": "${input}",
       "count": "${in}"
     },
     "mold": "${mold}",
     "result": {
-      "basePredicate": {
-        "item": "${output_item}"
-      },
-      "count": "${out}"
+      "count": "${out}",
+      "item": "${output_item}"
     }
   }
 }

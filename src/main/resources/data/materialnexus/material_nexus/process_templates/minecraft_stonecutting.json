@@ -3,9 +3,7 @@
   "recipe": {
     "type": "minecraft:stonecutting",
     "ingredient": "${input}",
-    "result": {
-      "count": "${out}",
-      "id": "${output_item}"
-    }
+    "result": "${output_item}",
+    "count": "${out}"
   }
 }
