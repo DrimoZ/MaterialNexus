@@ -92,6 +92,11 @@ dependencies {
         runtimeOnly "maven.modrinth:emi:${emi_version}"
     }
 
+    // Almost Unified: `-Pau` adds it to the dev runs, to check the domain arbitration (ADR-012) against the real mod.
+    if (project.hasProperty("au")) {
+        runtimeOnly "maven.modrinth:almostunified:${almostunified_version}"
+    }
+
     // A small real pack for the dev runs: overlapping copper/tin/zinc/aluminum providers are what
     // discovery and resolution exist for. runtimeOnly, never compiled against or shipped.
     if (!project.hasProperty('vanilla')) {

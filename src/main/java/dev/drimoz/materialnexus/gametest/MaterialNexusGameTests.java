@@ -32,10 +32,14 @@ import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 public final class MaterialNexusGameTests {
     private MaterialNexusGameTests() { }
 
-    /** MNX-015..018: real Create, Mekanism, IE and MI recipes are recognized and rewritten (skipped when the mods are absent). */
+    /**
+     * MNX-015..018: real Create, Mekanism, IE and MI recipes are recognized and rewritten (skipped when the mods are
+     * absent, and with Almost Unified, which has already unified those outputs at load).
+     */
     @GameTest(template = "empty")
     public static void createAndMekanismRecipesAreRewritten(GameTestHelper helper) {
-        if (!ModList.get().isLoaded("create") || !ModList.get().isLoaded("mekanism")
+        if (ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID)
+                || !ModList.get().isLoaded("create") || !ModList.get().isLoaded("mekanism")
                 || !ModList.get().isLoaded("immersiveengineering") || !ModList.get().isLoaded("modern_industrialization")) {
             helper.succeed();
             return;
@@ -229,6 +233,36 @@ public final class MaterialNexusGameTests {
                 explicit.size(), (t1 - t0) / 1_000_000, (t2 - t1) / 1_000_000, content.effects().size(), known.size(), (t3 - t2) / 1_000_000,
                 (t4 - t3) / 1_000_000, processes.effects().size());
         helper.assertTrue((t4 - t0) / 1_000_000 < 5000, "full preview took " + (t4 - t0) / 1_000_000 + " ms");
+        helper.succeed();
+    }
+
+    /**
+     * MNX-066 (ADR-012): with the real Almost Unified loaded (`-Pau`) and no domain given to Material Nexus, a full
+     * preview of every suggestion generates no tag edit, rewrite or disable, and notes each domain left to AU.
+     * Without AU it has nothing to check.
+     */
+    @GameTest(template = "empty")
+    public static void almostUnifiedKeepsTheDomainsItWasNotGiven(GameTestHelper helper) {
+        if (!net.neoforged.fml.ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID)) {
+            helper.succeed();
+            return;
+        }
+        var server = helper.getLevel().getServer();
+        var snapshot = SnapshotManager.current();
+        var explicit = new java.util.HashMap<dev.drimoz.materialnexus.core.domain.MaterialForm, ResourceLocation>();
+        dev.drimoz.materialnexus.network.SuggestionsPayload.of(snapshot).changes().forEach(c -> explicit.put(
+                new dev.drimoz.materialnexus.core.domain.MaterialForm(new MaterialId(c.material()), new FormId(c.form())), c.provider()));
+        var policy = dev.drimoz.materialnexus.core.policy.ResolutionPolicy.NONE.withExplicit(explicit);
+        var resolved = dev.drimoz.materialnexus.core.resolution.CanonicalResolver.resolve(snapshot.discovered(), policy);
+        var formats = RecipeFormats.load(server.getResourceManager());
+        var content = PackContent.full(resolved, policy, true, (conversions, ownership) -> RecipeRewrites.plan(
+                RecipeSources.collect(server, conversions, formats, java.util.List.of()), conversions, formats, ownership));
+        var kinds = content.effects().stream().map(PackContent.Effect::kind).collect(java.util.stream.Collectors.groupingBy(k -> k, java.util.stream.Collectors.counting()));
+        helper.assertTrue(!kinds.containsKey(PackContent.TAG_REMOVE) && !kinds.containsKey(RecipeRewrites.REWRITE) && !kinds.containsKey(RecipeRewrites.DISABLE),
+                "Material Nexus acted in a domain left to Almost Unified: " + kinds);
+        helper.assertTrue(kinds.getOrDefault(PackContent.ALMOST_UNIFIED, 0L) == dev.drimoz.materialnexus.core.policy.AlmostUnified.Domain.values().length,
+                "every domain left to Almost Unified is noted: " + kinds);
+        org.slf4j.LoggerFactory.getLogger("MaterialNexusAU").info("With Almost Unified: {} suggestions, effects {}", explicit.size(), kinds);
         helper.succeed();
     }
 
