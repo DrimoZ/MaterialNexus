@@ -96,6 +96,26 @@ dependencies {
         runtimeOnly "maven.modrinth:ae2:${ae2_version}"
         runtimeOnly "maven.modrinth:modern-industrialization:${modern_industrialization_version}"
         runtimeOnly "maven.modrinth:guideme:${guideme_version}"
+        // Addons and metal-heavy mods: more overlapping providers, recipe types and tag conventions.
+        runtimeOnly "maven.modrinth:mekanism-generators:${mekanism_version}"
+        runtimeOnly "maven.modrinth:mekanism-tools:${mekanism_version}"
+        runtimeOnly "maven.modrinth:immersivepetroleum:${immersivepetroleum_version}"
+        runtimeOnly "maven.modrinth:createaddition:${createaddition_version}"
+        runtimeOnly "maven.modrinth:create-new-age:${create_new_age_version}"
+        runtimeOnly "maven.modrinth:create-metallurgy:${create_metallurgy_version}"
+        runtimeOnly "maven.modrinth:oritech:${oritech_version}"
+        runtimeOnly "maven.modrinth:architectury-api:${architectury_version}"
+        runtimeOnly "maven.modrinth:geckolib:${geckolib_version}"
+        runtimeOnly "maven.modrinth:athena-ctm:${athena_version}"
+        runtimeOnly "maven.modrinth:remin:${remin_version}"
+        runtimeOnly "maven.modrinth:extreme-reactors:${extreme_reactors_version}"
+        runtimeOnly "maven.modrinth:zerocore:${zerocore_version}"
+        runtimeOnly "maven.modrinth:silent-gear:${silent_gear_version}"
+        runtimeOnly "maven.modrinth:silent-lib:${silent_lib_version}"
+        runtimeOnly "maven.modrinth:occultism:${occultism_version}"
+        runtimeOnly "maven.modrinth:smartbrainlib:${smartbrainlib_version}"
+        runtimeOnly "maven.modrinth:curios:${curios_version}"
+        runtimeOnly "maven.modrinth:modonomicon:${modonomicon_version}"
     }
 
     testImplementation platform("org.junit:junit-bom:5.10.2")
