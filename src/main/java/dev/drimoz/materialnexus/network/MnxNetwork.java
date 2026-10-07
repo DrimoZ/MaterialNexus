@@ -13,7 +13,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * Client handler bodies call {@link ClientHooks}, so client classes never load on a dedicated server.
  */
 public final class MnxNetwork {
-    private static final String VERSION = "3";
+    private static final String VERSION = "4";
 
     private MnxNetwork() { }
 
@@ -26,6 +26,8 @@ public final class MnxNetwork {
         registrar.playToClient(UnifiedItemsPayload.TYPE, UnifiedItemsPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onUnifiedItems(p));
         registrar.playToClient(RecipeFamilyPayload.TYPE, RecipeFamilyPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onRecipeFamily(p));
         registrar.playToClient(ProcessPayload.TYPE, ProcessPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onProcess(p));
+        registrar.playToClient(DataListPayload.TYPE, DataListPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onDataList(p));
+        registrar.playToClient(DataReadPayload.TYPE, DataReadPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onDataRead(p));
         registrar.playToClient(SuggestionsPayload.TYPE, SuggestionsPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onSuggestions(p));
 
         registrar.playToServer(MaterialListRequest.TYPE, MaterialListRequest.STREAM_CODEC, (req, ctx) -> {
@@ -63,6 +65,27 @@ public final class MnxNetwork {
         registrar.playToServer(ProcessRequest.TYPE, ProcessRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player != null) PolicyHandler.process(player, req.form());
+        });
+        registrar.playToServer(DataListRequest.TYPE, DataListRequest.STREAM_CODEC, (req, ctx) -> {
+            ServerPlayer player = authorized(ctx);
+            if (player == null) return;
+            var resources = player.server.getResourceManager();
+            var entries = dev.drimoz.materialnexus.datapack.EditableData.list(resources).stream()
+                    .map(e -> new DataListPayload.Item(e.kind().key, e.id(), e.source(), e.edited())).toList();
+            var forms = SnapshotManager.current().discovered().materials().values().stream()
+                    .flatMap(m -> m.keySet().stream()).map(f -> f.name()).distinct().sorted().toList();
+            PacketDistributor.sendToPlayer(player, new DataListPayload(entries, MaterialsCommand.untagged(SnapshotManager.current()), forms));
+        });
+        registrar.playToServer(DataReadRequest.TYPE, DataReadRequest.STREAM_CODEC, (req, ctx) -> {
+            ServerPlayer player = authorized(ctx);
+            if (player == null) return;
+            dev.drimoz.materialnexus.datapack.EditableData.Kind.byKey(req.kind()).ifPresent(kind -> {
+                var resources = player.server.getResourceManager();
+                var text = dev.drimoz.materialnexus.datapack.EditableData.read(resources, kind, req.id());
+                boolean edited = dev.drimoz.materialnexus.datapack.EditableData.list(resources).stream()
+                        .anyMatch(e -> e.kind() == kind && e.id().equals(req.id()) && e.edited());
+                PacketDistributor.sendToPlayer(player, new DataReadPayload(req.kind(), req.id(), text, edited));
+            });
         });
         registrar.playToServer(SuggestionsRequest.TYPE, SuggestionsRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);

@@ -63,21 +63,57 @@ final class PolicyHandler {
         List<PackContent.Effect> removed = current.stream().filter(e -> !proposed.contains(e)).toList();
         boolean valid = entries.stream().anyMatch(PolicyEditor.Entry::valid);
 
+        var data = dataEdits(player, request, added, !request.apply());
         if (!request.apply()) {
             PacketDistributor.sendToPlayer(player, new PreviewPayload(entries, added, removed, request.preset().filter(id -> preset.isPresent())));
             return;
         }
-        if (!valid && preset.isEmpty() && request.processes().isEmpty() && creations.isEmpty() && added.isEmpty() && removed.isEmpty()) return;
+        if (!valid && preset.isEmpty() && request.processes().isEmpty() && creations.isEmpty() && data.isEmpty() && added.isEmpty() && removed.isEmpty()) return;
         // With no valid choice, apply only regenerates the pack from the policy as written (e.g. edited by hand).
         writeAndReload(player, () -> {
-                    if (valid || preset.isPresent() || !request.processes().isEmpty()) {
+                    // Data edits live under policies/: the same backup covers them, so it is taken for them too.
+                    if (valid || preset.isPresent() || !request.processes().isEmpty() || !data.isEmpty()) {
                         PolicyEditor.apply(MnxPaths.policies(), entries, preset, processes(request));
                     }
+                    if (!data.isEmpty()) dev.drimoz.materialnexus.datapack.EditableData.write(data);
                     // Not part of the policy backup: an item registered after a restart cannot be reverted by a reload.
                     if (!creations.isEmpty()) CreatedItems.add(itemsFile(), creations);
                 },
                 creations.isEmpty() ? Component.translatable("message.materialnexus.applied", added.size() + removed.size())
-                        : Component.translatable("message.materialnexus.applied_restart", added.size() + removed.size()));
+                        : Component.translatable("message.materialnexus.applied_restart", added.size() + removed.size()),
+                !data.isEmpty());
+    }
+
+    /** Effect kinds listed in Preview for data edits (MNX-046); they are files of the edits pack, not generated content. */
+    static final String DATA_EDIT = "data_edit";
+    static final String DATA_RESET = "data_reset";
+    static final String DATA_INVALID = "data_invalid";
+
+    /**
+     * The valid data edits of a request, keyed by kind and id; each one is listed in {@code effects}. An invalid edit is
+     * listed too, and its reason sent to the player when previewing; it is never written.
+     */
+    private static Map<Map.Entry<dev.drimoz.materialnexus.datapack.EditableData.Kind, ResourceLocation>, java.util.Optional<String>> dataEdits(
+            ServerPlayer player, PreviewRequest request, List<PackContent.Effect> effects, boolean tell) {
+        var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, player.server.registryAccess());
+        Map<Map.Entry<dev.drimoz.materialnexus.datapack.EditableData.Kind, ResourceLocation>, java.util.Optional<String>> valid = new java.util.LinkedHashMap<>();
+        new java.util.TreeMap<>(request.data()).forEach((key, text) -> {
+            String[] parts = key.split("\\|", 2);
+            var kind = parts.length == 2 ? dev.drimoz.materialnexus.datapack.EditableData.Kind.byKey(parts[0]) : java.util.Optional.<dev.drimoz.materialnexus.datapack.EditableData.Kind>empty();
+            ResourceLocation id = parts.length == 2 ? ResourceLocation.tryParse(parts[1]) : null;
+            if (kind.isEmpty() || id == null) return;
+            ResourceLocation tag = ResourceLocation.fromNamespaceAndPath(dev.drimoz.materialnexus.MaterialNexus.MOD_ID, kind.get().key);
+            java.util.Optional<String> error = text.flatMap(t -> dev.drimoz.materialnexus.datapack.EditableData.validate(kind.get(), t,
+                    json -> net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, json).isSuccess()));
+            if (error.isPresent()) {
+                effects.add(new PackContent.Effect(DATA_INVALID, id, tag));
+                if (tell) player.sendSystemMessage(Component.translatable("message.materialnexus.data_invalid", kind.get().key, id.toString(), error.get()));
+                return;
+            }
+            effects.add(new PackContent.Effect(text.isPresent() ? DATA_EDIT : DATA_RESET, id, tag));
+            valid.put(Map.entry(kind.get(), id), text);
+        });
+        return valid;
     }
 
     /** The form's process rule as written, plus the routes already found in recipes (examples are read on demand). */
@@ -154,8 +190,15 @@ final class PolicyHandler {
         return explicit;
     }
 
-    /** Write the policy, regenerate the pack from it, reload, then reopen the GUI. */
     private static void writeAndReload(ServerPlayer player, PolicyWrite write, Component success) {
+        writeAndReload(player, write, success, false);
+    }
+
+    /**
+     * Write the policy, regenerate the pack from it, reload, then reopen the GUI. With {@code dataChanged} (MNX-046) the
+     * pack is generated a second time after the reload, from the data that reload just loaded (patterns, templates...).
+     */
+    private static void writeAndReload(ServerPlayer player, PolicyWrite write, Component success, boolean dataChanged) {
         MinecraftServer server = player.server;
         if (server.isDedicatedServer()) {
             player.sendSystemMessage(Component.translatable("message.materialnexus.read_only_apply"));
@@ -175,7 +218,23 @@ final class PolicyHandler {
             return;
         }
 
+        reload(player, success, dataChanged);
+    }
+
+    private static void reload(ServerPlayer player, Component success, boolean regenerateAfter) {
+        MinecraftServer server = player.server;
         server.reloadResources(server.getPackRepository().getSelectedIds()).whenComplete((ignored, error) -> server.execute(() -> {
+            if (regenerateAfter && error == null) {
+                try {
+                    var content = packContent(server, PolicyFiles.load(MnxPaths.policies()), PackContent.readManifest(MnxPaths.generated()));
+                    GeneratedPack.write(MnxPaths.generated(), content.files(), PackContent.toJson(content.effects()));
+                    reload(player, success, false);
+                    return;
+                } catch (IOException | RuntimeException e) {
+                    LOGGER.error("Material Nexus could not regenerate the pack after a data edit", e);
+                    player.sendSystemMessage(Component.translatable("message.materialnexus.apply_failed", e.getMessage()));
+                }
+            }
             BUSY.set(false);
             // The policy and pack are already written. A failure here comes from another mod's reload listener
             // after the data was swapped (e.g. IE arc recycling on live metal tag changes): report it, do not pretend

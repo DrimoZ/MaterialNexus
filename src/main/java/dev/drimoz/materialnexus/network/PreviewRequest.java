@@ -16,10 +16,12 @@ import java.util.List;
 
 /**
  * Client to server: pending canonical choices, process rule edits (form name → rule, MNX-036) and items to create
- * ("material/form", MNX-039), either to preview or (with {@code apply}) to write.
+ * ("material/form", MNX-039) and data edits ("kind|namespace:path" to text, or empty to restore the original, MNX-046),
+ * either to preview or (with {@code apply}) to write.
  */
 public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.util.Optional<ResourceLocation> preset,
-                             java.util.Map<String, ProcessRules.Rule> processes, List<String> creations)
+                             java.util.Map<String, ProcessRules.Rule> processes, List<String> creations,
+                             java.util.Map<String, java.util.Optional<String>> data)
         implements CustomPacketPayload {
     public static final Type<PreviewRequest> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "preview_request"));
@@ -30,10 +32,11 @@ public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.
         changes = List.copyOf(changes);
         processes = java.util.Map.copyOf(processes);
         creations = List.copyOf(creations);
+        data = java.util.Map.copyOf(data);
     }
 
     public PreviewRequest(List<CanonicalChange> changes, boolean apply) {
-        this(changes, apply, java.util.Optional.empty(), java.util.Map.of(), List.of());
+        this(changes, apply, java.util.Optional.empty(), java.util.Map.of(), List.of(), java.util.Map.of());
     }
 
     private static final int MAX_RULES = 256;
@@ -80,6 +83,8 @@ public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.
         buf.writeOptional(req.preset(), FriendlyByteBuf::writeResourceLocation);
         buf.writeMap(req.processes(), (b, form) -> b.writeUtf(form, NexusQueries.MAX_QUERY), PreviewRequest::writeRule);
         buf.writeCollection(req.creations(), (b, c) -> b.writeUtf(c, NexusQueries.MAX_QUERY * 2));
+        buf.writeMap(req.data(), (b, k) -> b.writeUtf(k, 256),
+                (b, t) -> b.writeOptional(t, (bb, s) -> bb.writeUtf(s, dev.drimoz.materialnexus.datapack.EditableData.MAX_TEXT)));
     }
 
     private static PreviewRequest read(FriendlyByteBuf buf) {
@@ -103,6 +108,12 @@ public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.
         if (creations < 0 || creations > MAX_RULES) throw new DecoderException("Too many items to create: " + creations);
         List<String> created = new ArrayList<>(creations);
         for (int i = 0; i < creations; i++) created.add(buf.readUtf(NexusQueries.MAX_QUERY * 2));
-        return new PreviewRequest(changes, apply, preset, processes, created);
+        int edits = buf.readVarInt();
+        if (edits < 0 || edits > dev.drimoz.materialnexus.datapack.EditableData.MAX_EDITS) throw new DecoderException("Too many data edits: " + edits);
+        java.util.Map<String, java.util.Optional<String>> data = new java.util.HashMap<>();
+        for (int i = 0; i < edits; i++) {
+            data.put(buf.readUtf(256), buf.readOptional(b -> b.readUtf(dev.drimoz.materialnexus.datapack.EditableData.MAX_TEXT)));
+        }
+        return new PreviewRequest(changes, apply, preset, processes, created, data);
     }
 }

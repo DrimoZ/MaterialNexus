@@ -14,6 +14,8 @@ final class PendingChanges {
     private static final Map<String, CanonicalChange> CHANGES = new LinkedHashMap<>();
     private static final Map<String, ProcessRules.Rule> PROCESSES = new LinkedHashMap<>();
     private static final java.util.Set<String> CREATIONS = new java.util.TreeSet<>();
+    /** MNX-046: "kind|id" to new text, or empty to go back to the original. */
+    private static final Map<String, Optional<String>> DATA = new LinkedHashMap<>();
 
     private PendingChanges() { }
 
@@ -32,13 +34,22 @@ final class PendingChanges {
 
     static List<CanonicalChange> all() { return List.copyOf(CHANGES.values()); }
 
-    static int size() { return CHANGES.size() + PROCESSES.size() + CREATIONS.size(); }
+    static int size() { return CHANGES.size() + PROCESSES.size() + CREATIONS.size() + DATA.size(); }
 
     static void clear() {
         CHANGES.clear();
         PROCESSES.clear();
         CREATIONS.clear();
+        DATA.clear();
     }
+
+    static Optional<Optional<String>> data(String kind, String id) { return Optional.ofNullable(DATA.get(kind + "|" + id)); }
+
+    static void setData(String kind, String id, Optional<String> text) { DATA.put(kind + "|" + id, text); }
+
+    static void clearData(String kind, String id) { DATA.remove(kind + "|" + id); }
+
+    static Map<String, Optional<String>> data() { return Map.copyOf(DATA); }
 
     /** Items to create for missing forms (MNX-039), as "material/form". Toggles. */
     static boolean creating(String material, String form) { return CREATIONS.contains(material + "/" + form); }

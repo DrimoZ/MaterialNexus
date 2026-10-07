@@ -62,6 +62,11 @@ public final class RecipeFormats {
     }
 
     /** Pure part of {@link #load}. A later file (by id) covering the same type wins; invalid files are skipped. */
+    /** Why this format file cannot be read, or empty (MNX-046 in-game edits). */
+    public static java.util.Optional<String> validate(JsonElement json) {
+        return FormatJson.CODEC.parse(JsonOps.INSTANCE, json).error().map(e -> e.message());
+    }
+
     public static RecipeFormats parse(Map<ResourceLocation, JsonElement> files) {
         Map<ResourceLocation, Format> byType = new HashMap<>();
         new TreeMap<>(files).forEach((file, json) -> FormatJson.CODEC.parse(JsonOps.INSTANCE, json)

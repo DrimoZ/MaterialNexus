@@ -36,10 +36,19 @@ public final class ClientHooks {
         if (Minecraft.getInstance().screen instanceof NexusScreen screen) screen.acceptProcess(payload);
     }
 
+    public static void onDataList(dev.drimoz.materialnexus.network.DataListPayload payload) {
+        if (Minecraft.getInstance().screen instanceof DataScreen screen) screen.acceptList(payload);
+    }
+
+    public static void onDataRead(dev.drimoz.materialnexus.network.DataReadPayload payload) {
+        if (Minecraft.getInstance().screen instanceof DataScreen screen) screen.acceptRead(payload);
+    }
+
     public static void onPreview(PreviewPayload payload) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof NexusScreen screen) mc.setScreen(new PreviewScreen(screen, payload));
         else if (mc.screen instanceof PresetScreen presets) mc.setScreen(new PreviewScreen(presets.parent(), payload));
+        else if (mc.screen instanceof DataScreen data) mc.setScreen(new PreviewScreen(data, payload));
     }
 
     public static void onUnifiedItems(UnifiedItemsPayload payload) {

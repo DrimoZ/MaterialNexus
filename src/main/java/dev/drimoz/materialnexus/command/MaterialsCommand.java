@@ -29,12 +29,7 @@ public final class MaterialsCommand {
     private static int report(net.minecraft.commands.CommandSourceStack source) {
         var snapshot = dev.drimoz.materialnexus.core.resolution.SnapshotManager.current();
         var missing = dev.drimoz.materialnexus.datapack.RecipeEdges.missingAll(source.getServer(), snapshot.discovered());
-        java.util.Set<String> names = new java.util.HashSet<>(dev.drimoz.materialnexus.datapack.MaterialDefinitions.aliases().keySet());
-        snapshot.materials().keySet().forEach(m -> names.add(m.name()));
-        java.util.Set<net.minecraft.resources.ResourceLocation> discovered = new java.util.HashSet<>();
-        snapshot.discovered().materials().values().forEach(forms -> forms.values().forEach(list -> list.forEach(p -> discovered.add(p.resource()))));
-        var untagged = dev.drimoz.materialnexus.datapack.FormPatterns.candidates(
-                net.minecraft.core.registries.BuiltInRegistries.ITEM.keySet(), names, discovered, 3);
+        var untagged = untagged(snapshot);
         java.nio.file.Path file = dev.drimoz.materialnexus.datapack.MnxPaths.root().resolve("report.md");
         try {
             java.nio.file.Files.createDirectories(file.getParent());
@@ -46,6 +41,17 @@ public final class MaterialsCommand {
         }
         source.sendSuccess(() -> Component.translatable("message.materialnexus.report_written", file.toString()), false);
         return 1;
+    }
+
+    /** Item name shapes for known materials that discovery did not find (MNX-041), for the report and the GUI. */
+    public static java.util.List<dev.drimoz.materialnexus.datapack.FormPatterns.Candidate> untagged(
+            dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot snapshot) {
+        java.util.Set<String> names = new java.util.HashSet<>(dev.drimoz.materialnexus.datapack.MaterialDefinitions.aliases().keySet());
+        snapshot.materials().keySet().forEach(m -> names.add(m.name()));
+        java.util.Set<net.minecraft.resources.ResourceLocation> discovered = new java.util.HashSet<>();
+        snapshot.discovered().materials().values().forEach(forms -> forms.values().forEach(list -> list.forEach(p -> discovered.add(p.resource()))));
+        return dev.drimoz.materialnexus.datapack.FormPatterns.candidates(
+                net.minecraft.core.registries.BuiltInRegistries.ITEM.keySet(), names, discovered, 3);
     }
 
     /** Every entry point (command, item) goes through here; the client is never trusted. */

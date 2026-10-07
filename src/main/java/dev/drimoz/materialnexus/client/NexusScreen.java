@@ -88,6 +88,8 @@ public final class NexusScreen extends Screen {
     protected void init() {
         int sideW = Math.max(120, Math.min(200, width / 4));
         if (!readOnly) {
+            addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.data"),
+                    b -> minecraft.setScreen(new DataScreen(this))).bounds(width - 488, 3, 72, 18).build());
             addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.presets"),
                     b -> minecraft.setScreen(new PresetScreen(this, presets))).bounds(width - 412, 3, 72, 18).build());
             addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.unify_all"),
@@ -98,7 +100,7 @@ public final class NexusScreen extends Screen {
             }).bounds(width - 216, 3, 104, 18).build());
             revert.active = canRevert;
             preview = addRenderableWidget(Button.builder(Component.empty(),
-                    b -> PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), false, java.util.Optional.empty(), PendingChanges.processes(), PendingChanges.creations()))).bounds(width - 108, 3, 102, 18).build());
+                    b -> PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), false, java.util.Optional.empty(), PendingChanges.processes(), PendingChanges.creations(), PendingChanges.data()))).bounds(width - 108, 3, 102, 18).build());
         }
 
         int half = (sideW - 14) / 2;

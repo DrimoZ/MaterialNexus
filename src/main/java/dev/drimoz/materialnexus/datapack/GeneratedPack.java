@@ -56,6 +56,13 @@ public final class GeneratedPack {
         }
         add(event, PACK_ID, dir);
         add(event, ITEMS_PACK_ID, items);
+        // MNX-046: in-game edits of Material Nexus data, a plain user-owned datapack under policies/.
+        try {
+            EditableData.ensurePack(EditableData.userPack());
+            add(event, EditableData.USER_PACK_ID, EditableData.userPack());
+        } catch (IOException e) {
+            LOGGER.error("Could not prepare the Material Nexus edits pack", e);
+        }
     }
 
     /** One convention tag file per created item's tag; the items are registered, so plain values. */

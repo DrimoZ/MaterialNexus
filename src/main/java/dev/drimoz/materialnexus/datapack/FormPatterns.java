@@ -66,6 +66,11 @@ public final class FormPatterns extends SimpleJsonResourceReloadListener {
         event.addListener(new FormPatterns());
     }
 
+    /** Why this forms file cannot be read, or empty (MNX-046 in-game edits). */
+    public static java.util.Optional<String> validate(JsonElement json) {
+        return CODEC.parse(JsonOps.INSTANCE, json).error().map(e -> e.message());
+    }
+
     public static Map<FormId, List<String>> patterns() {
         return patterns;
     }
