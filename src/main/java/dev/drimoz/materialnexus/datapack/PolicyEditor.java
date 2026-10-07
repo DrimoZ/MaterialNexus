@@ -62,7 +62,19 @@ public final class PolicyEditor {
      * {@code policies.bak} first, for "Revert last apply".
      */
     public static void apply(Path policiesDir, List<Entry> entries) throws IOException {
+        apply(policiesDir, entries, Optional.empty());
+    }
+
+    /** Choices and optionally a preset (written into global.json), behind a single backup for "Revert last apply". */
+    public static void apply(Path policiesDir, List<Entry> entries, Optional<JsonObject> preset) throws IOException {
         backup(policiesDir);
+        if (preset.isPresent()) {
+            Files.createDirectories(policiesDir);
+            Path global = policiesDir.resolve(PolicyFiles.GLOBAL_FILE);
+            JsonObject current = Files.exists(global) ? JsonParser.parseString(Files.readString(global, StandardCharsets.UTF_8)).getAsJsonObject() : new JsonObject();
+            Files.writeString(global, new GsonBuilder().setPrettyPrinting().create().toJson(Presets.overlay(current, preset.get())), StandardCharsets.UTF_8);
+        }
+
         Path materialsDir = policiesDir.resolve(PolicyFiles.MATERIALS_DIR);
         Files.createDirectories(materialsDir);
         Map<String, Path> fileByMaterial = indexMaterialFiles(materialsDir);

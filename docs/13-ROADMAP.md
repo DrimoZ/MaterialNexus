@@ -57,7 +57,7 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [ ] recipe editor
 - [ ] dashboard with counts
 - [ ] Loot and JEI/EMI tabs
-- [ ] presets
+- [x] presets (data-driven, 5 shipped, applied through Preview / Apply / Revert)
 - [ ] import/export policy
 - [x] diagnostics report (`/materials report` -> config/materialnexus/report.md)
 - [ ] full apply history (only if a real need appears)

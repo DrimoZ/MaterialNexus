@@ -41,8 +41,11 @@ public final class NexusScreen extends Screen {
     private Button preview;
     private int panelX, panelY, panelW, panelH;
 
-    public NexusScreen(boolean readOnly, boolean canRevert) {
+    private final java.util.List<net.minecraft.resources.ResourceLocation> presets;
+
+    public NexusScreen(boolean readOnly, boolean canRevert, java.util.List<net.minecraft.resources.ResourceLocation> presets) {
         super(Component.translatable("screen.materialnexus.title"));
+        this.presets = presets;
         this.readOnly = readOnly;
         this.canRevert = canRevert;
         this.forms = new FormsPanel(readOnly, form -> { tab = Tab.RECIPES; rebuildWidgets(); recipesSelect(form); });
@@ -59,6 +62,8 @@ public final class NexusScreen extends Screen {
     protected void init() {
         int sideW = Math.max(120, Math.min(200, width / 4));
         if (!readOnly) {
+            addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.presets"),
+                    b -> minecraft.setScreen(new PresetScreen(this, presets))).bounds(width - 412, 3, 72, 18).build());
             addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.unify_all"),
                     b -> PacketDistributor.sendToServer(SuggestionsRequest.INSTANCE)).bounds(width - 336, 3, 116, 18).build());
             Button revert = addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.revert"), b -> {

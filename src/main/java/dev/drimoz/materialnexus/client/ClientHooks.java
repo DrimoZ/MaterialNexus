@@ -17,7 +17,7 @@ public final class ClientHooks {
     public static void openNexus(OpenNexusPayload payload) {
         // Pending choices survive a failed apply; they are only dropped once the server confirms it wrote them.
         if (payload.applied()) PendingChanges.clear();
-        Minecraft.getInstance().setScreen(new NexusScreen(payload.readOnly(), payload.canRevert()));
+        Minecraft.getInstance().setScreen(new NexusScreen(payload.readOnly(), payload.canRevert(), payload.presets()));
     }
 
     public static void onMaterialList(MaterialListPayload payload) {
@@ -35,6 +35,7 @@ public final class ClientHooks {
     public static void onPreview(PreviewPayload payload) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof NexusScreen screen) mc.setScreen(new PreviewScreen(screen, payload));
+        else if (mc.screen instanceof PresetScreen presets) mc.setScreen(new PreviewScreen(presets.parent(), payload));
     }
 
     public static void onUnifiedItems(UnifiedItemsPayload payload) {

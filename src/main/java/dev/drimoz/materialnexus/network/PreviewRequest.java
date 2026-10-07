@@ -13,7 +13,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 /** Client to server: pending canonical choices, either to preview or (with {@code apply}) to write. */
-public record PreviewRequest(List<CanonicalChange> changes, boolean apply) implements CustomPacketPayload {
+public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.util.Optional<ResourceLocation> preset)
+        implements CustomPacketPayload {
     public static final Type<PreviewRequest> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "preview_request"));
     public static final StreamCodec<FriendlyByteBuf, PreviewRequest> STREAM_CODEC =
@@ -21,6 +22,10 @@ public record PreviewRequest(List<CanonicalChange> changes, boolean apply) imple
 
     public PreviewRequest {
         changes = List.copyOf(changes);
+    }
+
+    public PreviewRequest(List<CanonicalChange> changes, boolean apply) {
+        this(changes, apply, java.util.Optional.empty());
     }
 
     @Override public Type<PreviewRequest> type() { return TYPE; }
@@ -33,6 +38,7 @@ public record PreviewRequest(List<CanonicalChange> changes, boolean apply) imple
             buf.writeResourceLocation(c.provider());
         }
         buf.writeBoolean(req.apply());
+        buf.writeOptional(req.preset(), FriendlyByteBuf::writeResourceLocation);
     }
 
     private static PreviewRequest read(FriendlyByteBuf buf) {
@@ -42,6 +48,7 @@ public record PreviewRequest(List<CanonicalChange> changes, boolean apply) imple
         for (int i = 0; i < count; i++) {
             changes.add(new CanonicalChange(buf.readUtf(NexusQueries.MAX_QUERY), buf.readUtf(NexusQueries.MAX_QUERY), buf.readResourceLocation()));
         }
-        return new PreviewRequest(changes, buf.readBoolean());
+        boolean apply = buf.readBoolean();
+        return new PreviewRequest(changes, apply, buf.readOptional(FriendlyByteBuf::readResourceLocation));
     }
 }

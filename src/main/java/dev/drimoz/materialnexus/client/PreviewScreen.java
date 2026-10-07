@@ -48,7 +48,7 @@ public final class PreviewScreen extends Screen {
     }
 
     private void apply() {
-        PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), true));
+        PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), true, preview.preset()));
         // The server reopens Material Nexus once the reload has finished; pending choices are kept until then.
         minecraft.setScreen(null);
     }
@@ -62,6 +62,8 @@ public final class PreviewScreen extends Screen {
     public void render(GuiGraphics graphics, int mouseX, int mouseY, float partialTick) {
         super.render(graphics, mouseX, mouseY, partialTick);
         graphics.drawCenteredString(font, title, width / 2, 10, 0xFFFFFF);
+        preview.preset().ifPresent(id -> graphics.drawCenteredString(font, Component.translatable("screen.materialnexus.preview_preset",
+                Component.translatableWithFallback("materialnexus.preset." + id.getPath(), id.getPath())), width / 2, 19, 0x88AAFF));
         if (!hasChanges()) {
             graphics.drawCenteredString(font, Component.translatable("screen.materialnexus.no_changes"), width / 2, 40, 0xAAAAAA);
         }

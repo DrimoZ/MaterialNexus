@@ -1,0 +1,2 @@
+{ "mod_priority": ["minecraft", "mekanism", "modern_industrialization", "immersiveengineering", "create"],
+  "conversion_recipes": ["ingot", "nugget", "block", "dust", "plate", "gear", "rod", "wire", "raw", "raw_block"] }

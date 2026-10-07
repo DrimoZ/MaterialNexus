@@ -40,11 +40,13 @@ final class PolicyHandler {
     private PolicyHandler() { }
 
     static void preview(ServerPlayer player, PreviewRequest request) {
+        // An unknown preset id (removed datapack, forged packet) is simply ignored.
+        java.util.Optional<com.google.gson.JsonObject> preset = request.preset().flatMap(dev.drimoz.materialnexus.datapack.Presets::get);
         List<PolicyEditor.Entry> entries = PolicyEditor.preview(SnapshotManager.current(), request.changes());
         List<PackContent.Effect> proposed;
         List<PackContent.Effect> current;
         try {
-            ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies()).withExplicit(explicitChoices(entries));
+            ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies(), preset).withExplicit(explicitChoices(entries));
             current = PackContent.readManifest(MnxPaths.generated());
             proposed = packContent(player.server, policy, current).effects();
         } catch (IOException | RuntimeException e) {
@@ -57,12 +59,12 @@ final class PolicyHandler {
         boolean valid = entries.stream().anyMatch(PolicyEditor.Entry::valid);
 
         if (!request.apply()) {
-            PacketDistributor.sendToPlayer(player, new PreviewPayload(entries, added, removed));
+            PacketDistributor.sendToPlayer(player, new PreviewPayload(entries, added, removed, request.preset().filter(id -> preset.isPresent())));
             return;
         }
-        if (!valid && added.isEmpty() && removed.isEmpty()) return;
+        if (!valid && preset.isEmpty() && added.isEmpty() && removed.isEmpty()) return;
         // With no valid choice, apply only regenerates the pack from the policy as written (e.g. edited by hand).
-        writeAndReload(player, () -> { if (valid) PolicyEditor.apply(MnxPaths.policies(), entries); },
+        writeAndReload(player, () -> { if (valid || preset.isPresent()) PolicyEditor.apply(MnxPaths.policies(), entries, preset); },
                 Component.translatable("message.materialnexus.applied", added.size() + removed.size()));
     }
 

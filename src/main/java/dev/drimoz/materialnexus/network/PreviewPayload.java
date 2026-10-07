@@ -14,7 +14,8 @@ import java.util.List;
  * Server to client: the validated diff for a {@link PreviewRequest}: canonical changes, plus what the
  * generated pack would gain ({@code added}) or lose ({@code removed}) compared to the current one.
  */
-public record PreviewPayload(List<PolicyEditor.Entry> entries, List<PackContent.Effect> added, List<PackContent.Effect> removed)
+public record PreviewPayload(List<PolicyEditor.Entry> entries, List<PackContent.Effect> added, List<PackContent.Effect> removed,
+                             java.util.Optional<ResourceLocation> preset)
         implements CustomPacketPayload {
     public static final Type<PreviewPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "preview"));
@@ -39,6 +40,7 @@ public record PreviewPayload(List<PolicyEditor.Entry> entries, List<PackContent.
         });
         buf.writeCollection(p.added(), PreviewPayload::writeEffect);
         buf.writeCollection(p.removed(), PreviewPayload::writeEffect);
+        buf.writeOptional(p.preset(), FriendlyByteBuf::writeResourceLocation);
     }
 
     private static PreviewPayload read(FriendlyByteBuf buf) {
@@ -46,7 +48,8 @@ public record PreviewPayload(List<PolicyEditor.Entry> entries, List<PackContent.
                 buf.readList(b -> new PolicyEditor.Entry(b.readUtf(), b.readUtf(), b.readOptional(FriendlyByteBuf::readResourceLocation),
                         b.readResourceLocation(), b.readBoolean())),
                 buf.readList(PreviewPayload::readEffect),
-                buf.readList(PreviewPayload::readEffect));
+                buf.readList(PreviewPayload::readEffect),
+                buf.readOptional(FriendlyByteBuf::readResourceLocation));
     }
 
     private static void writeEffect(FriendlyByteBuf buf, PackContent.Effect e) {

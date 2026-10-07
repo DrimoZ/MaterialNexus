@@ -82,9 +82,15 @@ public final class PolicyFiles {
     private PolicyFiles() { }
 
     public static ResolutionPolicy load(Path policiesDir) throws IOException {
+        return load(policiesDir, java.util.Optional.empty());
+    }
+
+    /** The policy as written, or with a preset applied on top of global.json (MNX-019 preview). */
+    public static ResolutionPolicy load(Path policiesDir, java.util.Optional<JsonObject> preset) throws IOException {
         JsonElement global = new JsonObject();
         Path globalFile = policiesDir.resolve(GLOBAL_FILE);
         if (Files.isRegularFile(globalFile)) global = readJson(globalFile);
+        if (preset.isPresent()) global = Presets.overlay(global.isJsonObject() ? global.getAsJsonObject() : new JsonObject(), preset.get());
 
         Map<String, JsonElement> materials = new TreeMap<>();
         Path materialsDir = policiesDir.resolve(MATERIALS_DIR);

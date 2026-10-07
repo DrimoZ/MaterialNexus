@@ -65,6 +65,15 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /** MNX-019: the five shipped presets are loaded with the data. */
+    @GameTest(template = "empty")
+    public static void shippedPresetsAreLoaded(GameTestHelper helper) {
+        var presets = dev.drimoz.materialnexus.datapack.Presets.all().keySet();
+        helper.assertTrue(presets.size() >= 5 && presets.contains(ResourceLocation.fromNamespaceAndPath("materialnexus", "tech_pack")),
+                "shipped presets should be loaded, got " + presets);
+        helper.succeed();
+    }
+
     /** MNX-033: shipped material definitions are loaded by the data reload, before discovery uses them. */
     @GameTest(template = "empty")
     public static void shippedMaterialDefinitionsAreLoaded(GameTestHelper helper) {

@@ -78,13 +78,9 @@ Only read when Almost Unified is present (ADR-012).
 
 The exact codecs are deliberately versioned with the implementation; the domain contract is more important than freezing JSON prematurely.
 
-## Presets (V2)
+## Presets (MNX-019)
 
-- `vanilla_priority`
-- `create_priority`
-- `tech_pack`
-- `maximum_unification`
-- `minimal_changes`
+`data/<namespace>/material_nexus/presets/<id>.json` holds a partial `global.json`. Applying a preset (top bar "Presets") opens the Preview of the policy with the preset on top; Apply writes its fields into `global.json`, keeps every field it does not define (e.g. `almost_unified`), and is revertable. Names and descriptions come from `materialnexus.preset.<id>` and `.desc` lang keys. Shipped: `vanilla_priority`, `create_priority`, `tech_pack`, `maximum_unification`, `minimal_changes`; pack authors add their own by datapack.
 
 ## What Apply generates (MNX-007)
 
