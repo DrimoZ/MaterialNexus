@@ -223,7 +223,7 @@
   "screen.materialnexus.home.todo": "Formes à décider",
   "screen.materialnexus.home.unified": "Formes unifiées",
   "screen.materialnexus.home.aside": "Items écartés",
-  "screen.materialnexus.home.review": "Passer en revue ce qui est à décider",
+  "screen.materialnexus.home.review": "Trier ce qui est à décider",
   "screen.materialnexus.home.matrix": "Toutes les formes d'un coup d'œil",
   "screen.materialnexus.home.tip1": "Cliquez un item pour le garder ; rien ne change avant « Aperçu et appliquer ».",
   "screen.materialnexus.home.tip2": "Les items écartés sont des variantes ou d'autres matériaux : jamais unifiés sauf si vous les choisissez.",
@@ -256,5 +256,13 @@
   "screen.materialnexus.priority.unranked": "Non classés (+ pour ajouter) :",
   "screen.materialnexus.preview_priority": "Priorité des mods : %s",
   "screen.materialnexus.usage": "%1$s · produit par %2$s recettes · utilisé dans %3$s",
-  "screen.materialnexus.usage.mod": "%s"
+  "screen.materialnexus.usage.mod": "%s",
+  "screen.materialnexus.triage.title": "Trier",
+  "screen.materialnexus.triage.keys": "1-9 garder cet item · Maj + chiffre : pas le même · S ou → passer · B ou ← revenir · Échap sortir",
+  "screen.materialnexus.triage.empty": "Rien à décider : chaque doublon a déjà un choix.",
+  "screen.materialnexus.triage.done": "Les %s formes ont été vues. Aperçu et appliquer quand vous voulez.",
+  "screen.materialnexus.triage.progress": "%1$s / %2$s · %3$s choisies",
+  "screen.materialnexus.triage.item": "%1$s · %2$s",
+  "screen.materialnexus.triage.not_same": "Pas le même",
+  "screen.materialnexus.triage.usage": "%1$s prod. · %2$s util."
 }

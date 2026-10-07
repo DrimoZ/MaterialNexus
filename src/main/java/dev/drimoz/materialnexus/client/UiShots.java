@@ -36,7 +36,9 @@ public final class UiShots {
             new Step(430, "suggestions", "", ""),
             new Step(460, "preview", "", ""),
             new Step(700, "", "", "mnx_6_preview"),
-            new Step(710, "quit", "", ""));
+            new Step(705, "triage", "", ""),
+            new Step(780, "", "", "mnx_7_triage"),
+            new Step(790, "quit", "", ""));
     private static int ticks;
     private static int next;
 

@@ -35,7 +35,7 @@ import java.util.Optional;
  * choices stay pending on the client until Preview / Apply.
  */
 public final class NexusScreen extends Screen {
-    private enum View { HOME, MATERIALS, FORMS }
+    private enum View { HOME, MATERIALS, FORMS, TRIAGE }
     private enum Tab { FORMS, RECIPES, MISSING, PROCESS }
 
     private static final int TOP = 24;
@@ -49,6 +49,8 @@ public final class NexusScreen extends Screen {
     private final RecipesPanel recipes;
     private final ProcessPanel process;
     private final FormMatrix matrix;
+    private final TriagePanel triage;
+    private boolean triageOnMatrix;
     private final Ui.Hits hits = new Ui.Hits();
 
     private View view = View.HOME;
@@ -74,6 +76,7 @@ public final class NexusScreen extends Screen {
         this.recipes = new RecipesPanel(f -> PacketDistributor.sendToServer(new RecipeFamilyRequest(material, f)));
         this.process = new ProcessPanel(readOnly, this::rebuildWidgets);
         this.matrix = new FormMatrix(this::openMaterial, this::openForm);
+        this.triage = new TriagePanel(() -> go(View.HOME));
     }
 
     boolean readOnly() { return readOnly; }
@@ -147,6 +150,7 @@ public final class NexusScreen extends Screen {
             case "preview" -> preview();
             case "process" -> { tab = Tab.PROCESS; requestProcess(); rebuildWidgets(); }
             case "forms_tab" -> { tab = Tab.FORMS; rebuildWidgets(); }
+            case "triage" -> { PendingChanges.clear(); startTriage(); }
             case "priority" -> { if (totals != null) savePriority(new java.util.ArrayList<>(totals.mods().subList(0, Math.min(3, totals.mods().size())))); }
             default -> go(View.HOME);
         }
@@ -163,7 +167,20 @@ public final class NexusScreen extends Screen {
         if (view == View.MATERIALS && material == null && !payload.entries().isEmpty()) openMaterial(payload.entries().getFirst().material());
     }
 
+    /** MNX-053: the queue is built from the grid, which is requested first if needed. */
+    private void startTriage() {
+        view = View.TRIAGE;
+        drawer = null;
+        triageOnMatrix = true;
+        PacketDistributor.sendToServer(MatrixRequest.INSTANCE);
+        rebuildWidgets();
+    }
+
     void acceptDetail(MaterialDetailPayload payload) {
+        if (view == View.TRIAGE && !payload.byForm()) {
+            triage.accept(payload);
+            return;
+        }
         String expected = payload.byForm() ? form : material;
         if (!payload.material().equals(expected) || payload.byForm() != (view == View.FORMS)) return;
         detail = payload;
@@ -179,6 +196,10 @@ public final class NexusScreen extends Screen {
 
     void acceptMatrix(MatrixPayload payload) {
         matrix.accept(payload);
+        if (triageOnMatrix) {
+            triageOnMatrix = false;
+            triage.start(payload);
+        }
     }
 
     void acceptFamily(RecipeFamilyPayload payload) {
@@ -231,6 +252,7 @@ public final class NexusScreen extends Screen {
             case HOME -> initHome();
             case MATERIALS -> initMaterials();
             case FORMS -> initForms();
+            case TRIAGE -> { }
         }
         layoutDrawer();
     }
@@ -241,12 +263,8 @@ public final class NexusScreen extends Screen {
         int by = contentY + 82;
         addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.unify_all"),
                 b -> PacketDistributor.sendToServer(SuggestionsRequest.INSTANCE)).bounds(bx, by, 170, 20).build());
-        addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.home.review"), b -> {
-            filter = NexusQueries.TO_DECIDE;
-            material = null;
-            page = null;
-            go(View.MATERIALS);
-        }).bounds(bx + 176, by, 170, 20).build());
+        addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.home.review"), b -> startTriage())
+                .bounds(bx + 176, by, 170, 20).build());
         Button revert = addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.revert"), b -> {
             PacketDistributor.sendToServer(RevertRequest.INSTANCE);
             minecraft.setScreen(null);
@@ -300,6 +318,7 @@ public final class NexusScreen extends Screen {
             case HOME -> renderHome(g, mx, my);
             case MATERIALS -> renderMaterials(g, mx, my);
             case FORMS -> renderForms(g, mx, my);
+            case TRIAGE -> triage.render(g, font, contentX + 16, contentY + 12, contentW - 32, contentH - 20, mx, my);
         }
         renderBottom(g, mx, my);
         for (var widget : renderables) widget.render(g, mx, my, partialTick);
@@ -592,6 +611,7 @@ public final class NexusScreen extends Screen {
         if (super.mouseClicked(mx, my, button)) return true;
         if (hits.click(mx, my, button)) return true;
         if (my < TOP || my > height - BOTTOM || mx < contentX) return false;
+        if (view == View.TRIAGE) return triage.click(mx, my, button);
         if (view == View.FORMS && form == null) return matrix.click(mx, my, button);
         if (detail == null) return false;
         return switch (tab) {
@@ -629,6 +649,7 @@ public final class NexusScreen extends Screen {
             drawer = null;
             return true;
         }
+        if (view == View.TRIAGE && drawer == null && !(getFocused() instanceof EditBox) && triage.key(key)) return true;
         return super.keyPressed(key, scan, modifiers);
     }
 

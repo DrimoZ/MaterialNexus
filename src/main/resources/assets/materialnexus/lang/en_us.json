@@ -223,7 +223,7 @@
   "screen.materialnexus.home.todo": "Forms to decide",
   "screen.materialnexus.home.unified": "Forms unified",
   "screen.materialnexus.home.aside": "Items set aside",
-  "screen.materialnexus.home.review": "Review what is to decide",
+  "screen.materialnexus.home.review": "Triage what is to decide",
   "screen.materialnexus.home.matrix": "All forms at a glance",
   "screen.materialnexus.home.tip1": "Click an item to keep it; nothing changes until Preview and apply.",
   "screen.materialnexus.home.tip2": "Items set aside are variants or other materials: they are never unified unless you pick them.",
@@ -256,5 +256,13 @@
   "screen.materialnexus.priority.unranked": "Not ranked (+ to add):",
   "screen.materialnexus.preview_priority": "Mod priority: %s",
   "screen.materialnexus.usage": "%1$s · made by %2$s recipes · used in %3$s",
-  "screen.materialnexus.usage.mod": "%s"
+  "screen.materialnexus.usage.mod": "%s",
+  "screen.materialnexus.triage.title": "Triage",
+  "screen.materialnexus.triage.keys": "1-9 keep this item · shift + number: not the same · S or → skip · B or ← back · Esc leave",
+  "screen.materialnexus.triage.empty": "Nothing to decide: every duplicate already has a choice.",
+  "screen.materialnexus.triage.done": "All %s forms seen. Preview and apply when ready.",
+  "screen.materialnexus.triage.progress": "%1$s / %2$s · %3$s chosen",
+  "screen.materialnexus.triage.item": "%1$s · %2$s",
+  "screen.materialnexus.triage.not_same": "Not the same",
+  "screen.materialnexus.triage.usage": "%1$s made · %2$s used"
 }
