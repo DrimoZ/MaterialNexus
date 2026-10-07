@@ -62,14 +62,19 @@ public final class CreatedItems {
                 .toList();
     }
 
-    /** {@code colorFrom}: an item of the material whose texture gives the tint, unless {@code color} (0xRRGGBB) is set. */
-    public record Entry(MaterialId material, FormId form, Optional<ResourceLocation> colorFrom, Optional<Integer> color) {
+    /**
+     * {@code colorFrom}: an item of the material whose texture gives the tint, unless {@code color} (0xRRGGBB) is set.
+     * {@code texture} (MNX-073): the pack's own texture for the item, drawn as it is, instead of the tinted template.
+     */
+    public record Entry(MaterialId material, FormId form, Optional<ResourceLocation> colorFrom, Optional<Integer> color,
+                        Optional<ResourceLocation> texture) {
         static final Codec<Entry> CODEC = RecordCodecBuilder.create(i -> i.group(
                 MaterialId.CODEC.fieldOf("material").forGetter(Entry::material),
                 FormId.CODEC.fieldOf("form").forGetter(Entry::form),
                 ResourceLocation.CODEC.optionalFieldOf("color_from").forGetter(Entry::colorFrom),
                 Codec.STRING.xmap(s -> Integer.parseInt(s.replace("#", ""), 16), c -> String.format("#%06X", c))
-                        .optionalFieldOf("color").forGetter(Entry::color)
+                        .optionalFieldOf("color").forGetter(Entry::color),
+                ResourceLocation.CODEC.optionalFieldOf("texture").forGetter(Entry::texture)
         ).apply(i, Entry::new));
 
         public ResourceLocation id() {
@@ -128,6 +133,6 @@ public final class CreatedItems {
                 .flatMap(x -> x.canonical().stream())
                 .findFirst()
                 .or(() -> resolved.forms().values().stream().flatMap(x -> x.canonical().stream()).findFirst());
-        return Optional.of(new Entry(m.get(), f.get(), colorFrom, Optional.empty()));
+        return Optional.of(new Entry(m.get(), f.get(), colorFrom, Optional.empty(), Optional.empty()));
     }
 }

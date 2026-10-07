@@ -141,7 +141,7 @@ Consequences, made visible rather than hidden:
 
 **Why:** registries are frozen after startup; an item cannot appear on /reload. Templates plus a tint need no asset per item and work for any material.
 
-**Consequences:** creating an item needs a restart after Apply; Revert does not remove it (the registry cannot change on a reload). On a server, every client needs the same `items.json` (ship it with the modpack), or the registries will not match. Removing an entry deletes that item from every world that has it.
+**Consequences:** an entry may name its own `texture`, drawn untinted, and a resource pack can replace the generated model of any created item: only the template layer (layer 1) is tinted (MNX-073). Creating an item needs a restart after Apply; Revert does not remove it (the registry cannot change on a reload). On a server, every client needs the same `items.json` (ship it with the modpack), or the registries will not match. Removing an entry deletes that item from every world that has it.
 
 **Rejected:** registering items lazily or per world (impossible after the registry freeze); per-item asset files (a resource pack to maintain for every material).
 

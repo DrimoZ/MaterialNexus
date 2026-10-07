@@ -1,6 +1,7 @@
 {
   "parent": "minecraft:item/generated",
   "textures": {
-    "layer0": "materialnexus:item/template/fine_wire"
+    "layer0": "materialnexus:item/blank",
+    "layer1": "materialnexus:item/template/fine_wire"
   }
 }

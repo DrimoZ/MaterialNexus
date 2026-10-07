@@ -70,13 +70,23 @@ public final class GeneratedPack {
 
     /**
      * One convention tag file per created item's tag (the items are registered, so plain values), and one item model
-     * per item, parented to its form's template: the game finds a model for every item and logs no warning.
+     * per item, parented to its form's template (or using the entry's own texture): the game finds a model for every
+     * item and logs no warning. A resource pack above this one can replace any of these models.
      */
     private static Map<String, JsonElement> createdItemFiles() {
         Map<String, JsonObject> files = new java.util.TreeMap<>();
         for (var item : dev.drimoz.materialnexus.registry.MnxItems.CREATED) {
+            var entry = item.get().entry();
             JsonObject model = new JsonObject();
-            model.addProperty("parent", "materialnexus:item/template_" + item.get().entry().form().name());
+            if (entry.texture().isPresent()) {
+                // MNX-073: the pack's own texture, on layer 0, which is never tinted.
+                model.addProperty("parent", "minecraft:item/generated");
+                JsonObject textures = new JsonObject();
+                textures.addProperty("layer0", entry.texture().get().toString());
+                model.add("textures", textures);
+            } else {
+                model.addProperty("parent", "materialnexus:item/template_" + entry.form().name());
+            }
             files.put("assets/" + item.getId().getNamespace() + "/models/item/" + item.getId().getPath() + ".json", model);
         }
         for (var item : dev.drimoz.materialnexus.registry.MnxItems.CREATED) {

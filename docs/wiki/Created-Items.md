@@ -48,6 +48,23 @@ are metal forms. A material with an ingot gets no gem.
 `color_from` takes the average colour of that item's texture; `color` sets it directly. The file is
 read at startup only.
 
+## Your own texture or model
+
+The tinted template is only the default. Two ways to draw a created item your way:
+
+- **A texture in `items.json`**: `"texture": "mypack:item/netherite_rod"` on the entry. The item is
+  drawn with that texture (`assets/mypack/textures/item/netherite_rod.png`, from your resource pack
+  or a mod), as it is, without tint.
+- **A model in a resource pack**: `assets/materialnexus/models/item/<material>_<form>.json`
+  (`netherite_rod.json`), in a resource pack loaded above "Material Nexus created items". Any model
+  works; it is not tinted either.
+
+```json
+{ "material": "netherite", "form": "rod", "texture": "mypack:item/netherite_rod" }
+```
+
+Only the template, on its own layer, is ever tinted: your texture or model keeps its colours.
+
 ## Things to know
 
 - **Restart** after creating: until then, the item is listed as pending creation.
@@ -56,5 +73,5 @@ read at startup only.
 - **Removing an entry deletes the item** from every world that has some.
 - **On a server, every client needs the same `items.json`**: ship it with the pack, or players
   cannot join.
-- A resource pack can replace a template: `assets/materialnexus/textures/item/template/<form>.png`
-  (grayscale, tinted by the game).
+- A resource pack can also replace a template for every material at once:
+  `assets/materialnexus/textures/item/template/<form>.png` (grayscale, tinted by the game).

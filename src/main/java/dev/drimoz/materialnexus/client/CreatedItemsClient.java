@@ -18,6 +18,8 @@ import java.util.Map;
 /**
  * Created items (MNX-039) are drawn with their form's grayscale template (models written in the created items pack),
  * tinted with the material colour (from {@code items.json}, else the average colour of the material's ingot texture).
+ * Only layer 1, where the templates put their texture, is tinted (MNX-073): an item with its own texture, or whose
+ * model a resource pack replaced, keeps its colours.
  */
 @EventBusSubscriber(modid = MaterialNexus.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class CreatedItemsClient {
@@ -29,7 +31,7 @@ public final class CreatedItemsClient {
     @SubscribeEvent
     public static void registerColors(RegisterColorHandlersEvent.Item event) {
         for (var item : MnxItems.CREATED) {
-            event.register((stack, tint) -> 0xFF000000 | color(((CreatedItem) stack.getItem()).entry()), item.get());
+            event.register((stack, tint) -> tint == 1 ? 0xFF000000 | color(((CreatedItem) stack.getItem()).entry()) : -1, item.get());
         }
     }
 

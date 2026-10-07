@@ -42,4 +42,14 @@ class CreatedItemsTest {
         assertTrue(CreatedItems.validate(gemDiscovered, fluxite, "fluxite", "wire").isEmpty());
         assertTrue(CreatedItems.validate(gemDiscovered, fluxite, "fluxite", "plate").isPresent());
     }
+
+    /** MNX-073: a pack can give a created item its own texture; adding entries from the GUI keeps it. */
+    @Test
+    void ownTextureIsReadAndKept(@org.junit.jupiter.api.io.TempDir java.nio.file.Path dir) throws java.io.IOException {
+        var file = dir.resolve("items.json");
+        java.nio.file.Files.writeString(file, "{\"items\":[{\"material\":\"netherite\",\"form\":\"rod\",\"texture\":\"mypack:item/netherite_rod\"}]}");
+        CreatedItems.add(file, List.of());
+        var rod = CreatedItems.load(file).getFirst();
+        assertEquals(ResourceLocation.parse("mypack:item/netherite_rod"), rod.texture().orElseThrow());
+    }
 }
