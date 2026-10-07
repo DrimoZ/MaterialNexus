@@ -228,6 +228,33 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /**
+     * MNX-037: every shipped process template whose machine is loaded, filled for iron, is a recipe the game decodes.
+     * A template with a broken shape would otherwise only show up as "recipe_invalid" in a player's Preview.
+     */
+    @GameTest(template = "empty")
+    public static void shippedProcessTemplatesDecode(GameTestHelper helper) {
+        var server = helper.getLevel().getServer();
+        var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
+        var ingredient = new com.google.gson.JsonObject();
+        ingredient.addProperty("tag", "c:ingots/iron");
+        int checked = 0;
+        for (var template : dev.drimoz.materialnexus.datapack.ProcessTemplates.templates()) {
+            if (!ModList.get().isLoaded(template.machine().getNamespace()) && !template.machine().getNamespace().equals("minecraft")) continue;
+            String form = template.forms().isEmpty() ? "plate" : template.forms().keySet().iterator().next().name();
+            int in = template.patterns().isEmpty() ? 1 : 2;
+            var json = dev.drimoz.materialnexus.datapack.ProcessTemplates.fill(template, new dev.drimoz.materialnexus.datapack.ProcessTemplates.Values(
+                    "iron", form, ingredient, in, 1, "minecraft:iron_ingot", "c:ingots/iron"));
+            helper.assertTrue(json.isPresent(), template.machine() + " template did not fill");
+            var decoded = net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, json.get());
+            helper.assertTrue(decoded.isSuccess(), template.machine() + " template does not decode: "
+                    + decoded.error().map(Object::toString).orElse("") + " " + json.get());
+            checked++;
+        }
+        helper.assertTrue(checked > 0, "no template checked");
+        helper.succeed();
+    }
+
     /** MNX-028: an applied alternative becomes the canonical item when it enters the world or a container is converted. */
     @GameTest(template = "empty")
     public static void unifiedItemsAreConvertedWhenTouched(GameTestHelper helper) {

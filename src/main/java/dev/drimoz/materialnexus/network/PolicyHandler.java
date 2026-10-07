@@ -128,9 +128,15 @@ final class PolicyHandler {
         RecipeFormats formats = RecipeFormats.load(server.getResourceManager());
         PackContent.Content content = PackContent.full(resolved, policy, auPresent, (conversions, ownership) -> RecipeRewrites.plan(
                 RecipeSources.collect(server, conversions, formats, RecipeRewrites.overridden(applied)), conversions, formats, ownership));
-        if (policy.processes().isEmpty()) return content;
-        return PackContent.withProcesses(content, dev.drimoz.materialnexus.datapack.ProcessPlanner.plan(
-                RecipeSources.known(server, formats, RecipeRewrites.overridden(applied)), formats, resolved, policy));
+        if (!policy.processes().isEmpty()) {
+            var items = server.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.ITEM);
+            content = PackContent.withProcesses(content, dev.drimoz.materialnexus.datapack.ProcessPlanner.plan(
+                    RecipeSources.known(server, formats, RecipeRewrites.overridden(applied)), formats, resolved, policy,
+                    dev.drimoz.materialnexus.datapack.ProcessTemplates.templates(),
+                    tag -> items.getTag(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag)).map(t -> t.size() > 0).orElse(false)));
+        }
+        var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
+        return PackContent.withValidRecipes(content, json -> net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, json).isSuccess());
     }
 
     /** Form names were validated when the packet was decoded. */

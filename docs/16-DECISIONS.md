@@ -131,7 +131,7 @@ Consequences, made visible rather than hidden:
 
 **Why:** a recipe format only says where outputs are; writing a new recipe for a modded machine needs its exact JSON shape (molds, energy, fluids, wrappers). An existing recipe of the same machine for the same form carries all of it, for any mod, with no code and no template to maintain.
 
-**Consequences:** balance-affecting, so rules exist only in the policy (`processes` in `global.json`, per-material `process` overrides) and every generated or disabled recipe is listed in Preview (ADR-003). Process recipes are not an Almost Unified domain. A rule disabling a recipe wins over a unification rewrite of it. Machines with no example recipe for that form need a template (not implemented yet).
+**Consequences:** balance-affecting, so rules exist only in the policy (`processes` in `global.json`, per-material `process` overrides) and every generated or disabled recipe is listed in Preview (ADR-003). Process recipes are not an Almost Unified domain. A rule disabling a recipe wins over a unification rewrite of it. Machines with no example recipe for that form, or ratios a copy cannot carry (a shaped pattern), use a process template (MNX-037): data in `material_nexus/process_templates`, tried after the examples unless it says `prefer`. Every recipe Material Nexus writes, copied, templated or rewritten, is first decoded by the game; one that fails is not written and Preview lists it as `recipe_invalid`.
 
 **Rejected:** per-machine Java writers (closed to pack authors); templates first (a file to write per machine before anything works).
 

@@ -96,6 +96,7 @@ public final class PreviewScreen extends Screen {
             case dev.drimoz.materialnexus.datapack.ProcessPlanner.PROCESS -> processLine(e);
             case dev.drimoz.materialnexus.datapack.ProcessPlanner.DISABLE -> Component.translatable("screen.materialnexus.effect.process_disable", e.target().toString(), e.item().toString());
             case dev.drimoz.materialnexus.datapack.ProcessPlanner.UNSUPPORTED -> Component.translatable("screen.materialnexus.effect.process_unsupported", e.target().toString(), e.item().toString());
+            case PackContent.RECIPE_INVALID -> Component.translatable("screen.materialnexus.effect.recipe_invalid", e.target().toString(), e.item().toString());
             case PackContent.ITEM_CREATE -> Component.translatable("screen.materialnexus.effect.item_create", e.target().toString(), e.item().toString());
             case PackContent.ALMOST_UNIFIED -> Component.translatable("screen.materialnexus.effect.almost_unified",
                     Component.translatable("materialnexus.au_domain." + e.target().getPath()));

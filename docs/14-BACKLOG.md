@@ -32,7 +32,7 @@
 | MNX-030 | P1 | Recipe inputs | Literal alternative inputs of vanilla recipes become the canonical item; collapsed duplicates are disabled |
 | MNX-035 | P2 | Form views | Cross-material views per form (all ingots, all rods...) to decide form by form; same pending/preview flow |
 | MNX-036 | P2 | Process rules | "All rods are made in machine A (ratio x), machine B (ratio y)": per-form, per-machine generation rules written through recipe formats; balance-affecting, so explicit policy + Preview only (ADR-003) |
-| MNX-037 | P3 | Process templates | Data templates for machines with no example recipe of a form (ADR-018) |
+| MNX-037 | P1 | Process templates | Data templates for machines with no example or ratios a copy cannot carry; every written recipe decoded by the game first (ADR-018) |
 | MNX-038 | P2 | Larger dev pack | Addons and metal-heavy mods in dev runs |
 | MNX-039 | P1 | Created items | Items for missing forms from items.json, tinted templates, tagged, restart to register (ADR-019) |
 | MNX-040 | P1 | More forms | Tiny/dirty dusts, clumps, shards, crystals, sheetmetal; untagged forms through declared name patterns; coal/charcoal as gems; no ingot or wire offered for gem materials |

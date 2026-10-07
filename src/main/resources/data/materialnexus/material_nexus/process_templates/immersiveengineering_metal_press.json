@@ -1,0 +1,32 @@
+{
+  "machine": "immersiveengineering:metal_press",
+  "forms": {
+    "plate": {
+      "mold": "immersiveengineering:mold_plate"
+    },
+    "rod": {
+      "mold": "immersiveengineering:mold_rod"
+    },
+    "gear": {
+      "mold": "immersiveengineering:mold_gear"
+    },
+    "wire": {
+      "mold": "immersiveengineering:mold_wire"
+    }
+  },
+  "recipe": {
+    "type": "immersiveengineering:metal_press",
+    "energy": 2400,
+    "input": {
+      "basePredicate": "${input}",
+      "count": "${in}"
+    },
+    "mold": "${mold}",
+    "result": {
+      "basePredicate": {
+        "item": "${output_item}"
+      },
+      "count": "${out}"
+    }
+  }
+}

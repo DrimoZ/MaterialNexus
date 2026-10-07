@@ -1,0 +1,16 @@
+{
+  "machine": "create:milling",
+  "recipe": {
+    "type": "create:milling",
+    "ingredients": [
+      "${input}"
+    ],
+    "processing_time": 100,
+    "results": [
+      {
+        "count": "${out}",
+        "id": "${output_item}"
+      }
+    ]
+  }
+}

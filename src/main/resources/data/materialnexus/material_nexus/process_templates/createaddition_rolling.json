@@ -1,0 +1,15 @@
+{
+  "machine": "createaddition:rolling",
+  "recipe": {
+    "type": "createaddition:rolling",
+    "ingredients": [
+      "${input}"
+    ],
+    "results": [
+      {
+        "count": "${out}",
+        "id": "${output_item}"
+      }
+    ]
+  }
+}

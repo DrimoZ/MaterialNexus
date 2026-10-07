@@ -1,0 +1,16 @@
+{
+  "machine": "oritech:grinder",
+  "recipe": {
+    "type": "oritech:grinder",
+    "ingredients": [
+      "${input}"
+    ],
+    "results": [
+      {
+        "count": "${out}",
+        "id": "${output_item}"
+      }
+    ],
+    "time": 40
+  }
+}

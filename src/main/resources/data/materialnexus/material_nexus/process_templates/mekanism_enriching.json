@@ -1,0 +1,14 @@
+{
+  "machine": "mekanism:enriching",
+  "recipe": {
+    "type": "mekanism:enriching",
+    "input": {
+      "count": "${in}",
+      "${input}": ""
+    },
+    "output": {
+      "count": "${out}",
+      "id": "${output_item}"
+    }
+  }
+}

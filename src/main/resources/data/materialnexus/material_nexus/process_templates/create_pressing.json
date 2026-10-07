@@ -1,0 +1,15 @@
+{
+  "machine": "create:pressing",
+  "recipe": {
+    "type": "create:pressing",
+    "ingredients": [
+      "${input}"
+    ],
+    "results": [
+      {
+        "count": "${out}",
+        "id": "${output_item}"
+      }
+    ]
+  }
+}

@@ -95,6 +95,7 @@
   "screen.materialnexus.effect.process_recipe": "%1$s: %2$s × %3$s → %4$s × %5$s (%6$s)",
   "screen.materialnexus.effect.process_disable": "recipe %1$s disabled by the process rule for %2$s",
   "screen.materialnexus.effect.process_unsupported": "%1$s cannot make %2$s with this ratio: no recipe of that machine to copy (nothing generated)",
+  "screen.materialnexus.effect.recipe_invalid": "recipe %1$s for %2$s not written: the game cannot read it (template or format to fix)",
   "screen.materialnexus.effect.recipe_rewrite": "recipe %1$s now produces %2$s",
   "screen.materialnexus.effect.recipe_disable": "recipe %s disabled (exact duplicate after unification)",
   "screen.materialnexus.effect.recipe_unsupported": "recipe %1$s produces %2$s, not handled yet (modded type, left untouched)",

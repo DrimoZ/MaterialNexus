@@ -1,0 +1,16 @@
+{
+  "machine": "create:crushing",
+  "recipe": {
+    "type": "create:crushing",
+    "ingredients": [
+      "${input}"
+    ],
+    "processing_time": 100,
+    "results": [
+      {
+        "count": "${out}",
+        "id": "${output_item}"
+      }
+    ]
+  }
+}

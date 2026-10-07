@@ -1,0 +1,13 @@
+{
+  "machine": "create:compacting",
+  "recipe": {
+    "type": "create:compacting",
+    "ingredients": "${inputs}",
+    "results": [
+      {
+        "count": "${out}",
+        "id": "${output_item}"
+      }
+    ]
+  }
+}

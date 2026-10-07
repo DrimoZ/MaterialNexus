@@ -85,6 +85,17 @@ public final class ProcessPlanner {
 
     public static PackContent.Content plan(List<RecipeRewrites.Source> sources, RecipeFormats formats,
                                            SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy) {
+        return plan(sources, formats, resolved, policy, List.of(), tag -> true);
+    }
+
+    /**
+     * With templates (MNX-037): tried after the examples, or first when they say {@code prefer}. {@code tagExists} tells
+     * whether a convention tag has members in the game (a form found by name pattern has none): the ingredient is then
+     * the canonical item instead.
+     */
+    public static PackContent.Content plan(List<RecipeRewrites.Source> sources, RecipeFormats formats,
+                                           SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy,
+                                           List<ProcessTemplates.Template> templates, java.util.function.Predicate<ResourceLocation> tagExists) {
         ProcessRules rules = policy.processes();
         if (rules.isEmpty()) return new PackContent.Content(Map.of(), List.of());
         Index index = new Index(resolved);
@@ -113,11 +124,19 @@ public final class ProcessPlanner {
                 List<Known> existing = machine.stream().filter(k -> k.reading().makes(target) && k.reading().consumes(input)).toList();
                 if (!existing.isEmpty() && (!rule.get().enforceRatio() || existing.stream().anyMatch(k -> hasRatio(k.reading(), input, route)))) continue;
                 // The material's own recipe is the best example (it keeps its mold, energy...); then other materials'.
-                Optional<JsonObject> recipe = java.util.stream.Stream.concat(existing.stream(),
+                List<ProcessTemplates.Template> usable = templates.stream()
+                        .filter(t -> t.machine().equals(route.machine()) && t.appliesTo(form)).toList();
+                java.util.function.Supplier<Optional<JsonObject>> byExample = () -> java.util.stream.Stream.concat(existing.stream(),
                                 machine.stream().filter(k -> isExample(k.reading(), form, route.input(), material)))
                         .map(k -> copy(k.source().json().get(), k.outputKeys(), material, route, index))
                         .flatMap(Optional::stream)
                         .findFirst();
+                java.util.function.Supplier<Optional<JsonObject>> byTemplate = () -> usable.stream()
+                        .map(t -> fromTemplate(t, target, input, product, route, index, formats, tagExists))
+                        .flatMap(Optional::stream)
+                        .findFirst();
+                boolean preferTemplate = usable.stream().anyMatch(ProcessTemplates.Template::prefer);
+                Optional<JsonObject> recipe = preferTemplate ? byTemplate.get().or(byExample) : byExample.get().or(byTemplate);
                 if (recipe.isEmpty()) {
                     effects.add(new PackContent.Effect(UNSUPPORTED, route.machine(), product));
                     continue;
@@ -165,6 +184,24 @@ public final class ProcessPlanner {
                 .sorted(Map.Entry.<ProcessRules.Route, Integer>comparingByValue().reversed()
                         .thenComparing(e -> e.getKey().machine().toString()).thenComparing(e -> e.getKey().input().name()))
                 .limit(24).map(Map.Entry::getKey).toList();
+    }
+
+    /** A template filled for this route, kept only if reading it back gives exactly the requested ratio. */
+    private static Optional<JsonObject> fromTemplate(ProcessTemplates.Template template, MaterialForm target, MaterialForm input,
+                                                     ResourceLocation product, ProcessRules.Route route, Index index, RecipeFormats formats,
+                                                     java.util.function.Predicate<ResourceLocation> tagExists) {
+        Optional<ResourceLocation> inputTag = TagDiscovery.conventionTag(input.material(), input.form()).filter(tagExists);
+        Optional<ResourceLocation> inputItem = index.form(input).flatMap(ResolvedForm::canonical);
+        if (inputTag.isEmpty() && inputItem.isEmpty()) return Optional.empty();
+        JsonObject ingredient = new JsonObject();
+        if (inputTag.isPresent()) ingredient.addProperty("tag", inputTag.get().toString());
+        else ingredient.addProperty("item", inputItem.get().toString());
+        String outputTag = TagDiscovery.conventionTag(target.material(), target.form()).filter(tagExists).map(ResourceLocation::toString).orElse("");
+        return ProcessTemplates.fill(template, new ProcessTemplates.Values(target.material().name(), target.form().name(), ingredient,
+                        route.in(), route.out(), product.toString(), outputTag))
+                .filter(json -> RecipeRewrites.format(json, formats)
+                        .map(f -> hasRatio(read(json, f.outputKeys(), index), input, route) && read(json, f.outputKeys(), index).makes(target))
+                        .orElse(false));
     }
 
     /** {@code materialnexus:process/<form>/<material>/<input>/<in>/<out>/<machine namespace>/<machine path>}. */

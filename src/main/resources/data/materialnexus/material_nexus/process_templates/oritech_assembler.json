@@ -1,0 +1,14 @@
+{
+  "machine": "oritech:assembler",
+  "recipe": {
+    "type": "oritech:assembler",
+    "ingredients": "${inputs}",
+    "results": [
+      {
+        "count": "${out}",
+        "id": "${output_item}"
+      }
+    ],
+    "time": 160
+  }
+}

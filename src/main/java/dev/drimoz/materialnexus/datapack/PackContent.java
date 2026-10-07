@@ -38,6 +38,8 @@ public final class PackContent {
     public static final String ITEM_CONVERSION = "item_conversion";
     /** Preview only: an item created for a missing form (MNX-039), {@code target} the item, {@code item} the tag it joins. */
     public static final String ITEM_CREATE = "item_create";
+    /** A generated or rewritten recipe the game could not decode (MNX-037): not written, the original recipe stays. */
+    public static final String RECIPE_INVALID = "recipe_invalid";
     /** Informational: a domain left to Almost Unified ({@code target} = materialnexus:&lt;domain&gt;). Generates no file. */
     public static final String ALMOST_UNIFIED = "almost_unified";
     private static final ResourceLocation AU_ID = ResourceLocation.fromNamespaceAndPath(AlmostUnified.MOD_ID, "owner");
@@ -101,6 +103,32 @@ public final class PackContent {
                 .filter(e -> !(disabled.contains(e.target()) && (e.kind().equals(RecipeRewrites.REWRITE) || e.kind().equals(RecipeRewrites.DISABLE))))
                 .toList());
         effects.addAll(processes.effects());
+        effects.sort(ORDER);
+        return new Content(files, List.copyOf(effects));
+    }
+
+    /**
+     * Every recipe file this pack would write is decoded by the game first ({@code decodes}); one that fails is dropped
+     * and reported, so a wrong template or format never reaches the world. Disabling stubs have no type and pass.
+     */
+    public static Content withValidRecipes(Content content, java.util.function.Predicate<JsonObject> decodes) {
+        Map<String, JsonElement> files = new TreeMap<>(content.files());
+        java.util.Set<ResourceLocation> invalid = new java.util.HashSet<>();
+        for (var e : content.files().entrySet()) {
+            String[] parts = e.getKey().split("/", 4);
+            if (parts.length < 4 || !parts[0].equals("data") || !parts[2].equals("recipe") || !(e.getValue() instanceof JsonObject json) || !json.has("type")) continue;
+            JsonObject recipe = json.deepCopy();
+            recipe.remove("neoforge:conditions");
+            if (decodes.test(recipe)) continue;
+            files.remove(e.getKey());
+            invalid.add(ResourceLocation.fromNamespaceAndPath(parts[1], parts[3].substring(0, parts[3].length() - ".json".length())));
+        }
+        if (invalid.isEmpty()) return content;
+        List<Effect> effects = new ArrayList<>();
+        for (Effect e : content.effects()) {
+            boolean dropped = invalid.contains(e.target()) && (e.kind().equals(RecipeRewrites.REWRITE) || e.kind().equals(ProcessPlanner.PROCESS));
+            effects.add(dropped ? new Effect(RECIPE_INVALID, e.target(), e.item()) : e);
+        }
         effects.sort(ORDER);
         return new Content(files, List.copyOf(effects));
     }

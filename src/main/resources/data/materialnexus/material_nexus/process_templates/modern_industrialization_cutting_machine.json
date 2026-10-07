@@ -1,0 +1,26 @@
+{
+  "machine": "modern_industrialization:cutting_machine",
+  "recipe": {
+    "type": "modern_industrialization:cutting_machine",
+    "duration": 200,
+    "eu": 2,
+    "fluid_inputs": [
+      {
+        "amount": 1,
+        "fluid": "modern_industrialization:lubricant"
+      }
+    ],
+    "item_inputs": [
+      {
+        "amount": "${in}",
+        "${input}": ""
+      }
+    ],
+    "item_outputs": [
+      {
+        "amount": "${out}",
+        "item": "${output_item}"
+      }
+    ]
+  }
+}

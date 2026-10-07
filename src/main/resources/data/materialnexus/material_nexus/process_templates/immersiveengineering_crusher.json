@@ -1,0 +1,15 @@
+{
+  "machine": "immersiveengineering:crusher",
+  "recipe": {
+    "type": "immersiveengineering:crusher",
+    "energy": 3000,
+    "input": "${input}",
+    "result": {
+      "basePredicate": {
+        "item": "${output_item}"
+      },
+      "count": "${out}"
+    },
+    "secondaries": []
+  }
+}

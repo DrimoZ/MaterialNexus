@@ -1,0 +1,12 @@
+{
+  "machine": "minecraft:crafting_shapeless",
+  "recipe": {
+    "type": "minecraft:crafting_shapeless",
+    "category": "misc",
+    "ingredients": "${inputs}",
+    "result": {
+      "count": "${out}",
+      "id": "${output_item}"
+    }
+  }
+}

@@ -77,6 +77,44 @@ class ProcessPlannerTest {
         return json.getAsJsonObject();
     }
 
+    private static dev.drimoz.materialnexus.datapack.ProcessTemplates.Template shippedTemplate(String name) {
+        try (var in = ProcessPlannerTest.class.getResourceAsStream("/data/materialnexus/material_nexus/process_templates/" + name + ".json")) {
+            assertNotNull(in, name);
+            return dev.drimoz.materialnexus.datapack.ProcessTemplates.parse(JsonParser.parseReader(
+                    new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8))).orElseThrow();
+        } catch (java.io.IOException e) {
+            throw new java.io.UncheckedIOException(e);
+        }
+    }
+
+    /** MNX-037: what no example can carry (a 3-ingot pattern, a gear nobody presses yet) comes from a template, still exact. */
+    @Test
+    void templatesCoverWhatExamplesCannot() {
+        Route shaped = new Route(rl("minecraft:crafting_shaped"), INGOT, 3, 4);
+        Route gear = new Route(rl("immersiveengineering:metal_press"), INGOT, 2, 1);
+        Map<ResourceLocation, List<ResourceLocation>> tags = Map.of(
+                rl("c:ingots/iron"), List.of(rl("minecraft:iron_ingot")),
+                rl("c:rods/iron"), List.of(rl("immersiveengineering:stick_iron")),
+                rl("c:ingots/aluminum"), List.of(rl("immersiveengineering:ingot_aluminum")),
+                rl("c:rods/aluminum"), List.of(rl("immersiveengineering:stick_aluminum")),
+                rl("c:gears/aluminum"), List.of(rl("immersiveengineering:gear_aluminum")));
+        ResolutionPolicy policy = new ResolutionPolicy(List.of(), Map.of(), Map.of(), Map.of(), Set.of(), Set.of(), Set.of(), AlmostUnified.NONE,
+                new ProcessRules(Map.of(ROD, new Rule(List.of(shaped), false, false), new FormId("gear"), new Rule(List.of(gear), false, false)), Map.of()));
+        var resolved = CanonicalResolver.resolve(TagDiscovery.discover(tags), policy);
+        var content = ProcessPlanner.plan(SOURCES, RecipeRewritesTest.SHIPPED, resolved, policy,
+                List.of(shippedTemplate("minecraft_crafting_shaped"), shippedTemplate("immersiveengineering_metal_press")), tag -> true);
+
+        JsonObject rod = file(content, new MaterialForm(ALUMINUM, ROD), shaped);
+        assertEquals(3, rod.getAsJsonArray("pattern").size());
+        assertEquals("c:ingots/aluminum", rod.getAsJsonObject("key").getAsJsonObject("#").get("tag").getAsString());
+        assertEquals(4, rod.getAsJsonObject("result").get("count").getAsInt());
+
+        JsonObject press = file(content, new MaterialForm(ALUMINUM, new FormId("gear")), gear);
+        assertEquals("immersiveengineering:mold_gear", press.get("mold").getAsString());
+        assertEquals(2, press.getAsJsonObject("input").get("count").getAsInt());
+        assertEquals("immersiveengineering:gear_aluminum", press.getAsJsonObject("result").getAsJsonObject("basePredicate").get("item").getAsString());
+    }
+
     @Test
     void copiesAnotherMaterialsRecipeWithTheRequestedRatio() {
         Route press = new Route(rl("immersiveengineering:metal_press"), INGOT, 1, 2);

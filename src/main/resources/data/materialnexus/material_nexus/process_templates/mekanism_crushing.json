@@ -1,0 +1,14 @@
+{
+  "machine": "mekanism:crushing",
+  "recipe": {
+    "type": "mekanism:crushing",
+    "input": {
+      "count": "${in}",
+      "${input}": ""
+    },
+    "output": {
+      "count": "${out}",
+      "id": "${output_item}"
+    }
+  }
+}

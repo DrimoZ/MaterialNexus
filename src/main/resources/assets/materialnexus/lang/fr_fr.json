@@ -95,6 +95,7 @@
   "screen.materialnexus.effect.process_recipe": "%1$s : %2$s × %3$s → %4$s × %5$s (%6$s)",
   "screen.materialnexus.effect.process_disable": "recette %1$s désactivée par la règle de procédé de %2$s",
   "screen.materialnexus.effect.process_unsupported": "%1$s ne peut pas produire %2$s avec ce ratio : aucune recette de cette machine à copier (rien de généré)",
+  "screen.materialnexus.effect.recipe_invalid": "recette %1$s pour %2$s non écrite : le jeu ne sait pas la lire (gabarit ou format à corriger)",
   "screen.materialnexus.effect.recipe_rewrite": "la recette %1$s produit maintenant %2$s",
   "screen.materialnexus.effect.recipe_disable": "recette %s désactivée (doublon exact après unification)",
   "screen.materialnexus.effect.recipe_unsupported": "la recette %1$s produit %2$s, pas encore prise en charge (type moddé, laissée intacte)",

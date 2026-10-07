@@ -1,0 +1,14 @@
+{
+  "machine": "minecraft:blasting",
+  "recipe": {
+    "type": "minecraft:blasting",
+    "category": "misc",
+    "ingredient": "${input}",
+    "result": {
+      "count": "${out}",
+      "id": "${output_item}"
+    },
+    "experience": 0.1,
+    "cookingtime": 100
+  }
+}

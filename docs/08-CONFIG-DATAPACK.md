@@ -138,6 +138,24 @@ Still built in, on purpose: the forms that can be created (they need shipped tex
 
 Pattern forms: double_ingot, large_plate, curved_plate, bolt, ring, blade, rotor, drill_head, fine_wire (Modern Industrialization shipped, plus its untagged wires); Remin ores and Oritech small dusts are shipped too. An item matches only if `{material}` names a material some convention tag already knows; the match is shown as "item name pattern" evidence and never added to the game's tags.
 
+## Process templates (MNX-037)
+
+`data/<namespace>/material_nexus/process_templates/*.json`, one per machine, used when no recipe of that machine can be copied for a route (or first, with `"prefer": true`):
+
+```json
+{
+  "machine": "immersiveengineering:metal_press",
+  "forms": { "rod": { "mold": "immersiveengineering:mold_rod" }, "plate": { "mold": "immersiveengineering:mold_plate" } },
+  "recipe": { "type": "immersiveengineering:metal_press", "energy": 2400,
+              "input": { "basePredicate": "${input}", "count": "${in}" }, "mold": "${mold}",
+              "result": { "basePredicate": { "item": "${output_item}" }, "count": "${out}" } }
+}
+```
+
+Placeholders: `${input}` (the input form's tag, else its canonical item), `${inputs}` (that ingredient repeated `in` times), `${in}`, `${out}`, `${pattern}` (from `"patterns": {"3": ["#", "#", "#"]}`, crafting), `${output_item}`, `${output_tag}`, `${material}`, `${form}`, and the form's variables from `forms` (a template with `forms` applies only to those forms). An object key `"${input}"` merges the ingredient into that object (`{"amount": "${in}", "${input}": ""}` for MI and Mekanism stacks). A filled template is kept only if reading it back gives the exact ratio, and the game must decode it.
+
+Shipped: vanilla crafting (shaped, with patterns for 1 to 9 inputs, and shapeless), smelting, blasting, stonecutting; Create pressing, cutting, milling, crushing, compacting; Create Crafts & Additions rolling; Create Metallurgy grinding; IE metal press (plate, rod, gear, wire molds) and crusher; MI compressor, macerator, wiremill, cutting machine, packer (double ingot), forge hammer; Mekanism crushing and enriching; Oritech pulverizer, grinder and assembler.
+
 ## Recipe formats (ADR-016)
 
 To let Material Nexus rewrite another mod's recipes, add a file to any datapack (or KubeJS data):

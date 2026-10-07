@@ -1,0 +1,20 @@
+{
+  "machine": "modern_industrialization:macerator",
+  "recipe": {
+    "type": "modern_industrialization:macerator",
+    "duration": 200,
+    "eu": 2,
+    "item_inputs": [
+      {
+        "amount": "${in}",
+        "${input}": ""
+      }
+    ],
+    "item_outputs": [
+      {
+        "amount": "${out}",
+        "item": "${output_item}"
+      }
+    ]
+  }
+}

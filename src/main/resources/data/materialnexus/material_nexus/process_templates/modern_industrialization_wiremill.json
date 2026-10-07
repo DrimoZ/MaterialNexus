@@ -1,0 +1,20 @@
+{
+  "machine": "modern_industrialization:wiremill",
+  "recipe": {
+    "type": "modern_industrialization:wiremill",
+    "duration": 200,
+    "eu": 2,
+    "item_inputs": [
+      {
+        "amount": "${in}",
+        "${input}": ""
+      }
+    ],
+    "item_outputs": [
+      {
+        "amount": "${out}",
+        "item": "${output_item}"
+      }
+    ]
+  }
+}

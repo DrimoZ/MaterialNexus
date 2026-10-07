@@ -1,0 +1,16 @@
+{
+  "machine": "oritech:pulverizer",
+  "recipe": {
+    "type": "oritech:pulverizer",
+    "ingredients": [
+      "${input}"
+    ],
+    "results": [
+      {
+        "count": "${out}",
+        "id": "${output_item}"
+      }
+    ],
+    "time": 100
+  }
+}
