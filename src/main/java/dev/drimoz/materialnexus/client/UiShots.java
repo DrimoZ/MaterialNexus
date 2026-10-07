@@ -21,6 +21,7 @@ public final class UiShots {
 
     private static final List<Step> STEPS = List.of(
             new Step(60, "open", "", ""),
+            new Step(100, "priority", "", ""),
             new Step(110, "", "", "mnx_1_home"),
             new Step(115, "material", "copper", ""),
             new Step(170, "", "", "mnx_2_material"),

@@ -112,6 +112,12 @@ final class PendingChanges {
     static List<net.minecraft.network.chat.Component> globalLines() {
         List<net.minecraft.network.chat.Component> lines = new java.util.ArrayList<>();
         for (String field : GLOBAL_PATCH.keySet()) {
+            if (field.equals("mod_priority") && GLOBAL_PATCH.get(field).isJsonArray()) {
+                List<String> order = new java.util.ArrayList<>();
+                GLOBAL_PATCH.getAsJsonArray(field).forEach(e -> order.add(e.getAsString()));
+                lines.add(net.minecraft.network.chat.Component.translatable("screen.materialnexus.preview_priority", String.join(" > ", order)));
+                continue;
+            }
             if (!field.equals("not_same")) {
                 lines.add(net.minecraft.network.chat.Component.translatable("screen.materialnexus.preview_global", field));
                 continue;

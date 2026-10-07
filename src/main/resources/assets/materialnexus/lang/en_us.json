@@ -214,7 +214,7 @@
   "screen.materialnexus.matrix.cell": "%1$s · %2$s: %3$s",
   "screen.materialnexus.matrix.position": "Materials %1$s-%2$s of %3$s · forms %4$s-%5$s of %6$s (wheel, shift + wheel)",
   "screen.materialnexus.pending.none": "No pending change",
-  "screen.materialnexus.pending.count": "%1$s pending · %2$s choices, %3$s rules, %4$s items, %5$s data",
+  "screen.materialnexus.pending.count": "%1$s pending · %2$s choices, %3$s rules, %4$s items, %5$s data, %6$s settings",
   "screen.materialnexus.preview_short": "Preview and apply",
   "screen.materialnexus.discard_all": "Discard all",
   "screen.materialnexus.close": "Close",
@@ -250,5 +250,9 @@
   "materialnexus.not_unified.not_same": "marked as not the same",
   "screen.materialnexus.preview_not_same": "Not the same item: %s",
   "screen.materialnexus.preview_same_again": "Same item again: %s",
-  "screen.materialnexus.preview_global": "global.json: %s changed"
+  "screen.materialnexus.preview_global": "global.json: %s changed",
+  "screen.materialnexus.priority.title": "Mod priority",
+  "screen.materialnexus.priority.hint": "The first mod in the list wins every duplicate it provides.",
+  "screen.materialnexus.priority.unranked": "Not ranked (+ to add):",
+  "screen.materialnexus.preview_priority": "Mod priority: %s"
 }

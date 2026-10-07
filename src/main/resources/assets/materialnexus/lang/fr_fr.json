@@ -214,7 +214,7 @@
   "screen.materialnexus.matrix.cell": "%1$s · %2$s : %3$s",
   "screen.materialnexus.matrix.position": "Matériaux %1$s-%2$s sur %3$s · formes %4$s-%5$s sur %6$s (molette, Maj + molette)",
   "screen.materialnexus.pending.none": "Aucun changement en attente",
-  "screen.materialnexus.pending.count": "%1$s en attente · %2$s choix, %3$s règles, %4$s items, %5$s données",
+  "screen.materialnexus.pending.count": "%1$s en attente · %2$s choix, %3$s règles, %4$s items, %5$s données, %6$s réglages",
   "screen.materialnexus.preview_short": "Aperçu et appliquer",
   "screen.materialnexus.discard_all": "Tout annuler",
   "screen.materialnexus.close": "Fermer",
@@ -250,5 +250,9 @@
   "materialnexus.not_unified.not_same": "marqué « pas le même »",
   "screen.materialnexus.preview_not_same": "Pas le même item : %s",
   "screen.materialnexus.preview_same_again": "De nouveau le même item : %s",
-  "screen.materialnexus.preview_global": "global.json : %s modifié"
+  "screen.materialnexus.preview_global": "global.json : %s modifié",
+  "screen.materialnexus.priority.title": "Priorité des mods",
+  "screen.materialnexus.priority.hint": "Le premier mod de la liste gagne chaque doublon qu'il fournit.",
+  "screen.materialnexus.priority.unranked": "Non classés (+ pour ajouter) :",
+  "screen.materialnexus.preview_priority": "Priorité des mods : %s"
 }

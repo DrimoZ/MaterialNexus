@@ -21,8 +21,15 @@ public record MaterialListPayload(int page, int pageCount, int totalMatches, Str
         public int toDecide() { return duplicateForms - unifiedForms; }
     }
 
-    /** Whole-pack counts for the top bar (MNX-049): forms to decide, forms unified, items set aside as not the same. */
-    public record Totals(int toDecide, int unified, int setAside) { }
+    /**
+     * Whole-pack counts for the top bar (MNX-049): forms to decide, forms unified, items set aside as not the same; and
+     * the mods that provide duplicates, most involved first (MNX-051, mod priority).
+     */
+    public record Totals(int toDecide, int unified, int setAside, List<String> mods) {
+        public Totals {
+            mods = List.copyOf(mods);
+        }
+    }
 
     public MaterialListPayload {
         entries = List.copyOf(entries);
@@ -47,11 +54,12 @@ public record MaterialListPayload(int page, int pageCount, int totalMatches, Str
         buf.writeVarInt(p.totals().toDecide());
         buf.writeVarInt(p.totals().unified());
         buf.writeVarInt(p.totals().setAside());
+        buf.writeCollection(p.totals().mods(), FriendlyByteBuf::writeUtf);
     }
 
     private static MaterialListPayload read(FriendlyByteBuf buf) {
         return new MaterialListPayload(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readUtf(NexusQueries.MAX_QUERY), buf.readBoolean(),
                 buf.readList(b -> new Summary(b.readUtf(), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readOptional(FriendlyByteBuf::readResourceLocation))),
-                new Totals(buf.readVarInt(), buf.readVarInt(), buf.readVarInt()));
+                new Totals(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readList(FriendlyByteBuf::readUtf)));
     }
 }

@@ -147,6 +147,7 @@ public final class NexusScreen extends Screen {
             case "preview" -> preview();
             case "process" -> { tab = Tab.PROCESS; requestProcess(); rebuildWidgets(); }
             case "forms_tab" -> { tab = Tab.FORMS; rebuildWidgets(); }
+            case "priority" -> { if (totals != null) savePriority(new java.util.ArrayList<>(totals.mods().subList(0, Math.min(3, totals.mods().size())))); }
             default -> go(View.HOME);
         }
     }
@@ -296,7 +297,7 @@ public final class NexusScreen extends Screen {
         renderTop(g);
         renderNav(g, mx, my);
         switch (view) {
-            case HOME -> renderHome(g);
+            case HOME -> renderHome(g, mx, my);
             case MATERIALS -> renderMaterials(g, mx, my);
             case FORMS -> renderForms(g, mx, my);
         }
@@ -352,7 +353,8 @@ public final class NexusScreen extends Screen {
         } else {
             g.fill(8, y, 11, y + 8, Ui.ACCENT);
             g.drawString(font, Component.translatable("screen.materialnexus.pending.count", pending, PendingChanges.all().size(),
-                    PendingChanges.processes().size(), PendingChanges.creations().size(), PendingChanges.data().size()), 16, y, Ui.TEXT, false);
+                    PendingChanges.processes().size(), PendingChanges.creations().size(), PendingChanges.data().size(),
+                    PendingChanges.globalLines().size()), 16, y, Ui.TEXT, false);
         }
         int bx = width - 8;
         bx = bottomButton(g, mx, my, bx, Component.translatable("screen.materialnexus.preview_short"), Ui.ACCENT, this::preview);
@@ -373,7 +375,7 @@ public final class NexusScreen extends Screen {
         return x - 4;
     }
 
-    private void renderHome(GuiGraphics g) {
+    private void renderHome(GuiGraphics g, int mx, int my) {
         int x = contentX + 12;
         int y = contentY + 10;
         g.drawString(font, Component.translatable("screen.materialnexus.home.title"), x, y, Ui.TEXT, false);
@@ -384,10 +386,81 @@ public final class NexusScreen extends Screen {
             card(g, x + 2 * (cw + 6), y + 16, cw, Component.translatable("screen.materialnexus.home.aside"), totals.setAside(), Ui.NEUTRAL);
         }
         int ty = contentY + 140;
+        boolean wide = contentW > 640;
+        int tipWidth = wide ? 370 : contentW - 24;
         for (String key : List.of("home.tip1", "home.tip2", "home.tip3")) {
-            g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus." + key).getString(), contentW - 24), x, ty, Ui.MUTED, false);
-            ty += 12;
+            for (var line : font.split(Component.translatable("screen.materialnexus." + key), tipWidth)) {
+                g.drawString(font, line, x, ty, Ui.MUTED, false);
+                ty += 11;
+            }
+            ty += 3;
         }
+        renderModPriority(g, mx, my, wide ? contentX + 400 : x, wide ? contentY + 10 : ty + 12, wide ? Math.min(340, contentW - 410) : 300);
+    }
+
+    /**
+     * MNX-051: the mods providing duplicates, ranked (first wins every suggestion it is part of) or not ranked yet.
+     * Editing it is a pending change of the mod_priority field of global.json; Apply then unifies every form one of
+     * them provides.
+     */
+    private void renderModPriority(GuiGraphics g, int mx, int my, int x, int y, int w) {
+        if (totals == null) return;
+        g.drawString(font, Component.translatable("screen.materialnexus.priority.title"), x, y, Ui.TEXT, false);
+        g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.priority.hint").getString(), w), x, y + 11, Ui.FAINT, false);
+        List<String> ranked = new java.util.ArrayList<>();
+        if (PendingChanges.global("mod_priority") instanceof com.google.gson.JsonArray a) a.forEach(e -> ranked.add(e.getAsString()));
+        List<String> rest = totals.mods().stream().filter(m -> !ranked.contains(m)).toList();
+        int ry = y + 26;
+        int bottom = height - BOTTOM - 4;
+        boolean pending = PendingChanges.globalChanged("mod_priority");
+        for (int i = 0; i < ranked.size() && ry + 12 < bottom; i++) {
+            String mod = ranked.get(i);
+            g.fill(x, ry - 1, x + w, ry + 11, i % 2 == 0 ? 0x14FFFFFF : 0);
+            g.drawString(font, (i + 1) + ". " + modName(mod), x + 4, ry + 1, pending ? 0x88BBFF : Ui.TEXT, false);
+            int bx = x + w - 42;
+            int index = i;
+            if (!readOnly) {
+                bx = smallButton(g, mx, my, bx, ry, "▲", () -> movePriority(ranked, index, -1));
+                bx = smallButton(g, mx, my, bx, ry, "▼", () -> movePriority(ranked, index, 1));
+                smallButton(g, mx, my, bx, ry, "×", () -> { ranked.remove(index); savePriority(ranked); });
+            }
+            ry += 12;
+        }
+        if (!rest.isEmpty() && ry + 24 < bottom) {
+            g.drawString(font, Component.translatable("screen.materialnexus.priority.unranked"), x, ry + 4, Ui.FAINT, false);
+            ry += 16;
+        }
+        for (String mod : rest) {
+            if (ry + 12 >= bottom) break;
+            g.drawString(font, modName(mod), x + 4, ry + 1, Ui.MUTED, false);
+            if (!readOnly) smallButton(g, mx, my, x + w - 14, ry, "+", () -> { ranked.add(mod); savePriority(ranked); });
+            ry += 12;
+        }
+    }
+
+    private static String modName(String namespace) {
+        return net.neoforged.fml.ModList.get().getModContainerById(namespace).map(c -> c.getModInfo().getDisplayName()).orElse(namespace);
+    }
+
+    private int smallButton(GuiGraphics g, int mx, int my, int x, int y, String label, Runnable action) {
+        boolean over = mx >= x && mx < x + 12 && my >= y - 1 && my < y + 11;
+        g.fill(x, y - 1, x + 12, y + 11, over ? 0x60FFFFFF : 0x28FFFFFF);
+        g.drawCenteredString(font, label, x + 6, y + 1, Ui.TEXT);
+        hits.add(x, y - 1, 12, 12, action, null, List.of());
+        return x + 14;
+    }
+
+    private void movePriority(List<String> ranked, int index, int delta) {
+        int to = index + delta;
+        if (to < 0 || to >= ranked.size()) return;
+        java.util.Collections.swap(ranked, index, to);
+        savePriority(ranked);
+    }
+
+    private void savePriority(List<String> ranked) {
+        com.google.gson.JsonArray array = new com.google.gson.JsonArray();
+        ranked.forEach(array::add);
+        PendingChanges.setGlobal("mod_priority", array);
     }
 
     private void card(GuiGraphics g, int x, int y, int w, Component label, int value, int color) {

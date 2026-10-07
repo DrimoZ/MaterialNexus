@@ -102,16 +102,22 @@ public final class NexusQueries {
     /** Whole-pack counts for the top bar. */
     public static MaterialListPayload.Totals totals(ResolvedSnapshot snapshot) {
         int toDecide = 0, unified = 0, aside = 0;
+        Map<String, Integer> mods = new TreeMap<>();
         for (var m : snapshot.materials().values()) {
             for (ResolvedForm f : m.forms().values()) {
                 if (!f.alternatives().isEmpty()) {
+                    f.canonical().ifPresent(c -> mods.merge(c.getNamespace(), 1, Integer::sum));
+                    f.alternatives().forEach(a -> mods.merge(a.getNamespace(), 1, Integer::sum));
                     if (f.source() == PolicyPrecedence.DEFAULT) toDecide++;
                     else unified++;
                 }
                 aside += f.notUnified().size();
             }
         }
-        return new MaterialListPayload.Totals(toDecide, unified, aside);
+        List<String> byUse = mods.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey()))
+                .map(Map.Entry::getKey).toList();
+        return new MaterialListPayload.Totals(toDecide, unified, aside, byUse);
     }
 
     /** The item that stands for a group in lists: its ingot, gem, dust or block, else the first canonical item. */
