@@ -14,14 +14,13 @@ import java.io.File;
 import java.io.IOException;
 
 /**
- * The logo: one block of copper, in the isometric view the game gives blocks in an inventory, on Immaterial
- * Drawers' plate - so the mods' icons read as a set in a launcher (Ore Vein Tweaker's block, Portable Beacons'
- * beacon).
+ * The logo: the Nexus Terminal, in the isometric view the game gives blocks in an inventory, on Immaterial Drawers'
+ * plate - so the mods' icons read as a set in a launcher (Ore Vein Tweaker's block, Portable Beacons' beacon).
  *
- * <p>The block tells what the mod does. Its lit left face is the pack before: three copper blocks from three mods
- * stacked in bands, each its own copper (riveted and rusty, plain, pale and striped). The right face and the top are
- * the pack after: one copper, the plain one kept, with only a line of light where the bands met. Every face is drawn
- * in texture pixels and lit like a block; the textures are drawn here, not taken from any mod.
+ * <p>It is a tool, not a block to build with: a terminal whose screen shows the mod's own grid, materials against
+ * forms, in the screen's colours (orange to decide, green unified, blue pending, grey single), lit and glowing;
+ * vents on its side, and a copper ingot resting on top, the material it is about. Every face is drawn in texture
+ * pixels and lit like a block, except the screen, which gives light.
  *
  * <p>512 x 512: the mod list, CurseForge's project avatar and the GitHub social preview all scale it down from there.
  *
@@ -31,27 +30,25 @@ public final class GenerateLogo {
 
     private static final int SIZE = 512;
     /** Screen pixels per texture pixel. */
-    private static final double K = 13;
+    private static final double K = 12.5;
     private static final double COS = Math.cos(Math.toRadians(30));
     private static final double SIN = 0.5;
-    /** The block's edge, in texture pixels. */
+    /** The terminal's edge, in texture pixels. */
     private static final int B = 16;
 
     private static final Color PLATE_TOP = new Color(0x2A2244);
     private static final Color PLATE_BOTTOM = new Color(0x100D1C);
-    /** The screen's accent blue, a little brighter to glow. */
-    private static final Color LIGHT = new Color(0x6FB4FF);
+    /** The screen's accent blue. */
+    private static final Color LIGHT = new Color(0x5A9BE6);
 
-    /** The copper kept: plain, as vanilla draws a block of copper. */
-    private static final int[] KEPT = {0xE0794F, 0xD26D46, 0xEC8C60, 0xC8633F};
-    private static final int KEPT_LIGHT = 0xF4A57A, KEPT_DARK = 0xA9502F;
-    /** The other two: a riveted, rusty one and a pale, striped one. */
-    private static final int[] RUSTY = {0xB25737, 0xA44C30, 0xBE6340, 0x9A452B};
-    private static final int RIVET = 0xE9B08A;
-    private static final int[] PALE = {0xEBA585, 0xE09878, 0xF2B597, 0xD58C6C};
-
-    /** Where the bands of the left face start, in v (0 at the bottom). */
-    private static final int LOW = 5, HIGH = 11;
+    private static final int[] METAL = {0x4C515C, 0x464B55, 0x535865, 0x41454F};
+    private static final int METAL_LIGHT = 0x6A707D, METAL_DARK = 0x2C2F36, BOLT = 0x8E95A3;
+    private static final int SCREEN = 0x15171E, SCREEN_LINE = 0x1C1F28;
+    /** The grid's cells, as the screen draws them: to decide, unified, single, pending. */
+    private static final int O = 0xE8B23A, G = 0x4CC46A, N = 0x5A5A66, P = 0x5A9BE6;
+    private static final int[][] CELLS = {{G, G, O, N}, {O, G, N, G}, {N, P, G, O}};
+    private static final int[] COPPER = {0xE0794F, 0xD26D46, 0xEC8C60, 0xC8633F};
+    private static final int COPPER_LIGHT = 0xF4A57A;
 
     private static double cx;
     private static double cy;
@@ -67,14 +64,20 @@ public final class GenerateLogo {
         g.setClip(plate);
         grid(g);
 
-        // The block's origin: the centre of its base, placed so the whole cube is centred.
+        // The terminal's origin: the centre of its base, placed so the terminal and its ingot are centred.
         cx = SIZE / 2.0;
-        cy = SIZE / 2.0 + B * K * 0.5;
+        cy = SIZE / 2.0 + B * K * 0.42;
 
-        glow(g, cx, cy - B * K * 0.55, 250, 90);
+        glow(g, cx, cy - B * K * 0.55, 250, LIGHT, 80);
         shadow(g);
-        box(g);
-        seams(g);
+        double h = B / 2.0;
+        box(g, -h, 0, -h, h, B, h, GenerateLogo::terminal, true);
+        // The screen's light, in front of it.
+        double[] screen = project(0, B / 2.0, h);
+        glow(g, screen[0], screen[1], 170, LIGHT, 105);
+        // A copper ingot resting on top, across the terminal.
+        box(g, -5, B, -3, 5, B + 2, 3, (face, u, v) -> copper(u, v, face), false);
+        box(g, -4, B + 2, -2, 4, B + 3, 2, (face, u, v) -> face == 0 ? new Color(COPPER_LIGHT) : copper(u, v, face), false);
 
         g.setClip(null);
         g.setStroke(new BasicStroke(3f));
@@ -85,7 +88,7 @@ public final class GenerateLogo {
         System.out.println("Logo written.");
     }
 
-    // ------------------------------------------------------------------ the block's texture
+    // ------------------------------------------------------------------ the textures
 
     private static int noise(int u, int v, int salt) {
         int h = u * 73856093 ^ v * 19349663 ^ salt * 83492791;
@@ -98,89 +101,70 @@ public final class GenerateLogo {
         return palette[noise(u, v, salt) % palette.length];
     }
 
-    /** A block of the kept copper: speckled, its edges lit on the top-left and shaded on the bottom-right. */
-    private static Color kept(int u, int v, int salt) {
-        if (u == 0 || v == B - 1) return new Color(KEPT_LIGHT);
-        if (u == B - 1 || v == 0) return new Color(KEPT_DARK);
-        return new Color(pick(KEPT, u, v, salt));
+    /** Brushed metal with a lit top-left edge, a shaded bottom-right one and a bolt in each corner. */
+    private static Color metal(int u, int v, int salt) {
+        if ((u == 1 || u == B - 2) && (v == 1 || v == B - 2)) return new Color(BOLT);
+        if (u == 0 || v == 0) return new Color(METAL_LIGHT);
+        if (u == B - 1 || v == B - 1) return new Color(METAL_DARK);
+        return new Color(pick(METAL, u, v, salt));
     }
 
-    /** One band of the left face, as its mod draws its block of copper. */
-    private static Color band(int u, int v) {
-        if (v >= HIGH) {
-            // Riveted plates, rusty: a dark seam under them, a rivet every five pixels.
-            if (v == HIGH) return new Color(0x7E3A24);
-            if (v == B - 3 && u % 5 == 2) return new Color(RIVET);
-            return new Color(pick(RUSTY, u, v, 3));
-        }
-        if (v >= LOW) {
-            // The kept copper, a seam under it and its lit top row.
-            if (v == LOW) return new Color(KEPT_DARK);
-            if (v == HIGH - 1 || u == 0) return new Color(KEPT_LIGHT);
-            return new Color(pick(KEPT, u, v, 1));
-        }
-        // Pale and striped: a lighter line every other row.
-        return new Color(v % 2 == 0 ? pick(PALE, u, v, 5) : PALE[2]);
+    /** @param face 0 top, 1 left (the screen), 2 right (the vents); v from the top of the face */
+    private static Color terminal(int face, int u, int v) {
+        if (face == 1) return screen(u, v);
+        if (face == 2 && u >= 4 && u <= 11 && v >= 4 && v <= 11) return new Color(v % 2 == 0 ? METAL_DARK : METAL_LIGHT);
+        return metal(u, v, face);
     }
 
-    /** @param face 0 top, 1 left, 2 right */
-    private static Color texel(int face, int u, int v) {
-        if (face == 1) return band(u, v);
-        return kept(u, v, face == 0 ? 7 : 1);
+    /** The screen: a bezel, a title bar, and the grid of materials against forms. */
+    private static Color screen(int u, int v) {
+        if (u < 2 || u > 13 || v < 2 || v > 13) return metal(u, v, 1);
+        // The title bar: the accent, then dimmer.
+        if (v == 3 && u >= 3 && u <= 12) return u <= 8 ? LIGHT : new Color(0x34507A);
+        int row = (v - 5) / 3, col = (u - 3) / 3;
+        boolean inCell = v >= 5 && (v - 5) % 3 < 2 && u >= 3 && (u - 3) % 3 < 2 && row < 3 && col < 4;
+        if (inCell) return new Color(CELLS[row][col]);
+        return new Color(v % 2 == 0 ? SCREEN : SCREEN_LINE);
+    }
+
+    private static boolean isScreen(int face, int u, int v) {
+        return face == 1 && u >= 2 && u <= 13 && v >= 2 && v <= 13;
+    }
+
+    private static Color copper(int u, int v, int face) {
+        if (face == 1 && v == 0) return new Color(COPPER_LIGHT);
+        return new Color(pick(COPPER, u, v, 11 + face));
     }
 
     // ------------------------------------------------------------------ drawing
 
-    /** The cube by its three visible faces, each in texture pixels, lit like a block. */
-    private static void box(Graphics2D g) {
-        double h = B / 2.0;
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-        // Left face (z = h): u along x, v along y.
-        for (int u = 0; u < B; u++) {
-            for (int v = 0; v < B; v++) {
-                double x = -h + u;
-                g.setColor(shade(texel(1, u, v), 0.82));
-                g.fill(quad(x, v, h, x + 1, v, h, x + 1, v + 1, h, x, v + 1, h));
-            }
-        }
-        // Right face (x = h): u along -z, v along y.
-        for (int u = 0; u < B; u++) {
-            for (int v = 0; v < B; v++) {
-                double z = h - u - 1;
-                g.setColor(shade(texel(2, u, v), 0.6));
-                g.fill(quad(h, v, z, h, v, z + 1, h, v + 1, z + 1, h, v + 1, z));
-            }
-        }
-        // Top (y = B).
-        for (int u = 0; u < B; u++) {
-            for (int w = 0; w < B; w++) {
-                double x = -h + u;
-                double z = -h + w;
-                g.setColor(texel(0, u, B - 1 - w));
-                g.fill(quad(x, B, z, x + 1, B, z, x + 1, B, z + 1, x, B, z + 1));
-            }
-        }
-        g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
+    private interface Texture {
+        /** @param face 0 top, 1 left (+z), 2 right (+x); u, v in texture pixels from the face's top-left corner */
+        Color at(int face, int u, int v);
     }
 
-    /**
-     * On the right face, where the bands met on the left one: a line of light continuing each seam around the
-     * corner and fading out as it goes, so the face reads as the same block made one.
-     */
-    private static void seams(Graphics2D g) {
-        double h = B / 2.0;
+    /** A box by its three visible faces, in texture pixels, lit like a block; the screen gives light, so is not shaded. */
+    private static void box(Graphics2D g, double x0, double y0, double z0, double x1, double y1, double z1, Texture texture,
+                            boolean withScreen) {
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_OFF);
-        for (int v : new int[]{LOW, HIGH}) {
-            for (int u = 0; u < B; u++) {
-                double z = h - u - 1;
-                g.setColor(new Color(LIGHT.getRed(), LIGHT.getGreen(), LIGHT.getBlue(), Math.max(0, 235 - u * 15)));
-                g.fill(quad(h, v, z, h, v, z + 1, h, v + 1, z + 1, h, v + 1, z));
+        for (double x = x0; x < x1; x++)
+            for (double y = y0; y < y1; y++) {
+                int u = (int) (x - x0), v = (int) (y1 - y - 1);
+                Color c = texture.at(1, u, v);
+                g.setColor(withScreen && isScreen(1, u, v) ? c : shade(c, 0.82));
+                g.fill(quad(x, y, z1, x + 1, y, z1, x + 1, y + 1, z1, x, y + 1, z1));
             }
-        }
+        for (double z = z0; z < z1; z++)
+            for (double y = y0; y < y1; y++) {
+                g.setColor(shade(texture.at(2, (int) (z1 - z - 1), (int) (y1 - y - 1)), 0.62));
+                g.fill(quad(x1, y, z, x1, y, z + 1, x1, y + 1, z + 1, x1, y + 1, z));
+            }
+        for (double x = x0; x < x1; x++)
+            for (double z = z0; z < z1; z++) {
+                g.setColor(texture.at(0, (int) (x - x0), (int) (z - z0)));
+                g.fill(quad(x, y1, z, x + 1, y1, z, x + 1, y1, z + 1, x, y1, z + 1));
+            }
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        // The light the seams give off where they turn the corner.
-        double[] corner = project(h, B / 2.0, h);
-        glow(g, corner[0], corner[1], 130, 70);
     }
 
     private static double[] project(double x, double y, double z) {
@@ -204,10 +188,9 @@ public final class GenerateLogo {
         g.fill(new Ellipse2D.Double(c[0] - r, c[1] + K * 2 - r * 0.5, r * 2, r));
     }
 
-    private static void glow(Graphics2D g, double x, double y, float radius, int alpha) {
+    private static void glow(Graphics2D g, double x, double y, float radius, Color c, int alpha) {
         g.setPaint(new RadialGradientPaint(new Point2D.Double(x, y), radius, new float[]{0f, 1f},
-                new Color[]{new Color(LIGHT.getRed(), LIGHT.getGreen(), LIGHT.getBlue(), alpha),
-                        new Color(LIGHT.getRed(), LIGHT.getGreen(), LIGHT.getBlue(), 0)}));
+                new Color[]{new Color(c.getRed(), c.getGreen(), c.getBlue(), alpha), new Color(c.getRed(), c.getGreen(), c.getBlue(), 0)}));
         g.fill(new Ellipse2D.Double(x - radius, y - radius, radius * 2, radius * 2));
     }
 
