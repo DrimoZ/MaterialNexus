@@ -27,8 +27,11 @@ public final class TagDiscovery {
     private static final FormId BLOCK = new FormId("block");
     private static final FormId RAW_BLOCK = new FormId("raw_block");
 
-    /** Convention tag folder to form. Folders absent here are ignored, not guessed. */
-    private static final Map<String, FormId> FOLDERS = Map.ofEntries(
+    /**
+     * Built-in convention tag folders. Folders absent here and from data ({@code material_nexus/forms}) are ignored,
+     * not guessed.
+     */
+    private static final Map<String, FormId> BUILT_IN_FOLDERS = Map.ofEntries(
             Map.entry("ores", ORE),
             Map.entry("raw_materials", new FormId("raw")),
             Map.entry("storage_blocks", BLOCK),
@@ -63,6 +66,15 @@ public final class TagDiscovery {
      */
     public static final String PATTERN_PREFIX = "pattern/";
 
+    private static volatile Map<String, FormId> folders = BUILT_IN_FOLDERS;
+
+    /** Folders declared by data (MNX-041), on top of the built-in ones; a data folder may remap a built-in one. */
+    public static void setDataFolders(Map<String, FormId> extra) {
+        Map<String, FormId> merged = new HashMap<>(BUILT_IN_FOLDERS);
+        merged.putAll(extra);
+        folders = Map.copyOf(merged);
+    }
+
     /** Host rock to ore form: stone and deepslate ores are variants, never duplicates of each other. */
     private static final Map<String, String> GROUNDS = Map.of(
             "stone", "ore", "deepslate", "deepslate_ore", "netherrack", "nether_ore", "end_stone", "end_ore");
@@ -87,7 +99,7 @@ public final class TagDiscovery {
             if (!byPattern && !tag.getNamespace().equals(CONVENTION_NAMESPACE)) return;
             String[] parts = tag.getPath().substring(byPattern ? PATTERN_PREFIX.length() : 0).split("/");
             if (parts.length != 2) return;
-            FormId tagForm = FOLDERS.get(parts[0]);
+            FormId tagForm = folders.get(parts[0]);
             if (tagForm == null) return;
 
             String name = parts[1];
@@ -153,19 +165,19 @@ public final class TagDiscovery {
     }
 
     public static boolean isFolder(String folder) {
-        return FOLDERS.containsKey(folder);
+        return folders.containsKey(folder);
     }
 
     /** Folder name for a form, e.g. ingot to ingots. */
     public static java.util.Optional<String> folder(FormId form) {
-        return FOLDERS.entrySet().stream().filter(e -> e.getValue().equals(form)).map(Map.Entry::getKey).findFirst();
+        return folders.entrySet().stream().filter(e -> e.getValue().equals(form)).map(Map.Entry::getKey).findFirst();
     }
 
     /** The convention tag a material/form was discovered from, e.g. c:ingots/tin or c:storage_blocks/raw_tin. */
     public static java.util.Optional<ResourceLocation> conventionTag(MaterialId material, FormId form) {
         if (form.equals(RAW_BLOCK)) return java.util.Optional.of(ResourceLocation.fromNamespaceAndPath(CONVENTION_NAMESPACE, "storage_blocks/" + RAW_PREFIX + material.name()));
         if (form.equals(ORE) || form.name().endsWith("_ore")) return java.util.Optional.of(ResourceLocation.fromNamespaceAndPath(CONVENTION_NAMESPACE, "ores/" + material.name()));
-        return FOLDERS.entrySet().stream().filter(e -> e.getValue().equals(form)).map(Map.Entry::getKey).findFirst()
+        return folders.entrySet().stream().filter(e -> e.getValue().equals(form)).map(Map.Entry::getKey).findFirst()
                 .map(folder -> ResourceLocation.fromNamespaceAndPath(CONVENTION_NAMESPACE, folder + "/" + material.name()));
     }
 }

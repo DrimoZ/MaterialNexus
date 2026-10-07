@@ -19,6 +19,12 @@ public final class DiagnosticsReport {
     private DiagnosticsReport() { }
 
     public static String build(ResolvedSnapshot snapshot, Map<MaterialId, List<FamilyRelations.Relation>> missing) {
+        return build(snapshot, missing, List.of());
+    }
+
+    /** With the untagged-form audit (MNX-041): item name shapes to review, and to declare in material_nexus/forms. */
+    public static String build(ResolvedSnapshot snapshot, Map<MaterialId, List<FamilyRelations.Relation>> missing,
+                               List<dev.drimoz.materialnexus.datapack.FormPatterns.Candidate> untagged) {
         StringBuilder out = new StringBuilder();
         long unified = snapshot.materials().values().stream().flatMap(m -> m.forms().values().stream())
                 .filter(f -> f.canonical().isPresent() && !f.alternatives().isEmpty()).count();
@@ -48,6 +54,15 @@ public final class DiagnosticsReport {
             }
             out.append('\n');
         });
+        if (!untagged.isEmpty()) {
+            out.append("## Possibly untagged forms\n\n")
+                    .append("Items named after a known material but not discovered, grouped by name shape. A real form can be declared ")
+                    .append("in `data/<namespace>/material_nexus/forms/*.json` (`folders` + `patterns`); the rest is not a form (machines, tools...).\n\n")
+                    .append("| Pattern | Materials |\n|---|---|\n");
+            untagged.forEach(c -> out.append("| `").append(c.pattern()).append("` | ").append(c.materials().size()).append(": ")
+                    .append(String.join(", ", c.materials())).append(" |\n"));
+            out.append('\n');
+        }
         return out.toString();
     }
 

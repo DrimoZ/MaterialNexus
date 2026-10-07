@@ -121,13 +121,18 @@ In `global.json`, per form for every material. A material file can override it f
 
 Discovery reads the convention tags `c:<folder>/<material>` for these folders: ores, raw_materials, storage_blocks, ingots, nuggets, gems, dusts, tiny_dusts, dirty_dusts, clumps, shards, crystals, plates, sheetmetals, rods, gears, wires. A gem is the ingot of non-metals (coal and charcoal are tagged `c:gems/*` by Material Nexus, as vanilla leaves them untagged).
 
-Forms mods leave untagged are declared as item name patterns in `data/<namespace>/material_nexus/form_patterns/*.json`:
+Forms are data too, in `data/<namespace>/material_nexus/forms/*.json`: `folders` adds (or remaps) convention tag folders, `patterns` declares item name patterns for forms mods leave untagged:
 
 ```json
-{ "patterns": { "double_ingot": ["modern_industrialization:{material}_double_ingot"] } }
+{
+  "folders": { "ore_chunks": "ore_chunk" },
+  "patterns": { "double_ingot": ["modern_industrialization:{material}_double_ingot"] }
+}
 ```
 
-Pattern forms: double_ingot, large_plate, curved_plate, bolt, ring, blade, rotor, drill_head, fine_wire (Modern Industrialization shipped, plus its untagged wires). An item matches only if `{material}` names a material some convention tag already knows; the match is shown as "item name pattern" evidence and never added to the game's tags.
+`/materials report` ends with "Possibly untagged forms": undiscovered items named after a known material, grouped by name shape, to review and declare.
+
+Pattern forms: double_ingot, large_plate, curved_plate, bolt, ring, blade, rotor, drill_head, fine_wire (Modern Industrialization shipped, plus its untagged wires); Remin ores and Oritech small dusts are shipped too. An item matches only if `{material}` names a material some convention tag already knows; the match is shown as "item name pattern" evidence and never added to the game's tags.
 
 ## Recipe formats (ADR-016)
 

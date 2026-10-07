@@ -1,0 +1,5 @@
+{
+  "patterns": {
+    "tiny_dust": ["oritech:small_{material}_dust"]
+  }
+}

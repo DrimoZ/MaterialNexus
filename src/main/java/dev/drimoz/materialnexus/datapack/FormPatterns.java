@@ -26,18 +26,22 @@ import java.util.Set;
 import java.util.TreeMap;
 
 /**
- * Item name patterns for forms mods leave untagged (MNX-040), from
- * {@code data/<namespace>/material_nexus/form_patterns/*.json}:
- * {@code {"patterns": {"double_ingot": ["modern_industrialization:{material}_double_ingot"]}}}.
- * Declared data, not a guess: an item only counts when {@code {material}} names a material the tags already know.
+ * Forms as data (MNX-040/041), from {@code data/<namespace>/material_nexus/forms/*.json}:
+ * {@code {"folders": {"wires": "wire"}, "patterns": {"double_ingot": ["modern_industrialization:{material}_double_ingot"]}}}.
+ * Folders add convention tag folders to the built-in ones; patterns find forms mods leave untagged. Declared data,
+ * not a guess: a pattern item only counts when {@code {material}} names a material the tags already know.
  */
 @EventBusSubscriber(modid = MaterialNexus.MOD_ID)
 public final class FormPatterns extends SimpleJsonResourceReloadListener {
-    public static final String DIRECTORY = "material_nexus/form_patterns";
+    public static final String DIRECTORY = "material_nexus/forms";
     private static final String MATERIAL = "{material}";
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static final Codec<Map<FormId, List<String>>> CODEC =
-            Codec.unboundedMap(FormId.CODEC, Codec.STRING.listOf()).fieldOf("patterns").codec();
+    private record FormsFile(Map<String, FormId> folders, Map<FormId, List<String>> patterns) { }
+
+    private static final Codec<FormsFile> CODEC = com.mojang.serialization.codecs.RecordCodecBuilder.create(i -> i.group(
+            Codec.unboundedMap(Codec.STRING, FormId.CODEC).optionalFieldOf("folders", Map.of()).forGetter(FormsFile::folders),
+            Codec.unboundedMap(FormId.CODEC, Codec.STRING.listOf()).optionalFieldOf("patterns", Map.of()).forGetter(FormsFile::patterns)
+    ).apply(i, FormsFile::new));
     private static volatile Map<FormId, List<String>> patterns = Map.of();
 
     private FormPatterns() {
@@ -55,13 +59,18 @@ public final class FormPatterns extends SimpleJsonResourceReloadListener {
 
     @Override
     protected void apply(Map<ResourceLocation, JsonElement> files, ResourceManager resources, ProfilerFiller profiler) {
-        Map<FormId, List<String>> merged = new TreeMap<>();
+        Map<ResourceLocation, FormsFile> parsed = new TreeMap<>();
         new TreeMap<>(files).forEach((file, json) -> CODEC.parse(JsonOps.INSTANCE, json)
-                .resultOrPartial(error -> LOGGER.warn("Ignoring invalid form pattern file {}: {}", file, error))
-                .ifPresent(p -> p.forEach((form, list) -> {
-                    if (TagDiscovery.folder(form).isEmpty()) LOGGER.warn("{}: form '{}' is not a known form, ignored", file, form.name());
-                    else merged.computeIfAbsent(form, f -> new ArrayList<>()).addAll(list);
-                })));
+                .resultOrPartial(error -> LOGGER.warn("Ignoring invalid forms file {}: {}", file, error))
+                .ifPresent(f -> parsed.put(file, f)));
+        Map<String, FormId> folders = new TreeMap<>();
+        parsed.values().forEach(f -> folders.putAll(f.folders()));
+        TagDiscovery.setDataFolders(folders);
+        Map<FormId, List<String>> merged = new TreeMap<>();
+        parsed.forEach((file, f) -> f.patterns().forEach((form, list) -> {
+            if (TagDiscovery.folder(form).isEmpty()) LOGGER.warn("{}: form '{}' has no tag folder (add one under \"folders\"), ignored", file, form.name());
+            else merged.computeIfAbsent(form, x -> new ArrayList<>()).addAll(list);
+        }));
         patterns = Map.copyOf(merged);
     }
 
@@ -91,6 +100,41 @@ public final class FormPatterns extends SimpleJsonResourceReloadListener {
                 }
             }
         }));
+    }
+
+    /** An item name shape seen for several materials without being discovered: a pattern to review and maybe declare. */
+    public record Candidate(String pattern, List<String> materials) { }
+
+    /**
+     * MNX-041 audit: undiscovered items whose name contains a known material (longest match), grouped by the shape of
+     * the rest of the name; shapes seen for at least {@code minMaterials} materials, most common first.
+     */
+    public static List<Candidate> candidates(Collection<ResourceLocation> items, Set<String> knownNames, Set<ResourceLocation> discovered,
+                                             int minMaterials) {
+        Map<String, Set<String>> byPattern = new TreeMap<>();
+        for (ResourceLocation item : items) {
+            if (discovered.contains(item)) continue;
+            String[] tokens = item.getPath().split("_");
+            int bestFrom = -1, bestTo = -1;
+            for (int from = 0; from < tokens.length; from++) {
+                for (int to = tokens.length; to > from; to--) {
+                    if (to - from > bestTo - bestFrom && knownNames.contains(String.join("_", java.util.Arrays.copyOfRange(tokens, from, to)))) {
+                        bestFrom = from;
+                        bestTo = to;
+                    }
+                }
+            }
+            if (bestFrom < 0 || (bestFrom == 0 && bestTo == tokens.length)) continue;
+            String prefix = bestFrom == 0 ? "" : String.join("_", java.util.Arrays.copyOfRange(tokens, 0, bestFrom)) + "_";
+            String suffix = bestTo == tokens.length ? "" : "_" + String.join("_", java.util.Arrays.copyOfRange(tokens, bestTo, tokens.length));
+            byPattern.computeIfAbsent(item.getNamespace() + ":" + prefix + MATERIAL + suffix, k -> new java.util.TreeSet<>())
+                    .add(String.join("_", java.util.Arrays.copyOfRange(tokens, bestFrom, bestTo)));
+        }
+        return byPattern.entrySet().stream()
+                .filter(e -> e.getValue().size() >= minMaterials)
+                .sorted(java.util.Comparator.comparing((Map.Entry<String, Set<String>> e) -> -e.getValue().size()).thenComparing(Map.Entry::getKey))
+                .map(e -> new Candidate(e.getKey(), List.copyOf(e.getValue())))
+                .toList();
     }
 
     /** Material names the convention tags already name: {@code c:<known folder>/<name>}. */

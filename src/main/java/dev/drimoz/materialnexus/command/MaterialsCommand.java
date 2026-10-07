@@ -29,10 +29,16 @@ public final class MaterialsCommand {
     private static int report(net.minecraft.commands.CommandSourceStack source) {
         var snapshot = dev.drimoz.materialnexus.core.resolution.SnapshotManager.current();
         var missing = dev.drimoz.materialnexus.datapack.RecipeEdges.missingAll(source.getServer(), snapshot.discovered());
+        java.util.Set<String> names = new java.util.HashSet<>(dev.drimoz.materialnexus.datapack.MaterialDefinitions.aliases().keySet());
+        snapshot.materials().keySet().forEach(m -> names.add(m.name()));
+        java.util.Set<net.minecraft.resources.ResourceLocation> discovered = new java.util.HashSet<>();
+        snapshot.discovered().materials().values().forEach(forms -> forms.values().forEach(list -> list.forEach(p -> discovered.add(p.resource()))));
+        var untagged = dev.drimoz.materialnexus.datapack.FormPatterns.candidates(
+                net.minecraft.core.registries.BuiltInRegistries.ITEM.keySet(), names, discovered, 3);
         java.nio.file.Path file = dev.drimoz.materialnexus.datapack.MnxPaths.root().resolve("report.md");
         try {
             java.nio.file.Files.createDirectories(file.getParent());
-            java.nio.file.Files.writeString(file, dev.drimoz.materialnexus.diagnostics.DiagnosticsReport.build(snapshot, missing),
+            java.nio.file.Files.writeString(file, dev.drimoz.materialnexus.diagnostics.DiagnosticsReport.build(snapshot, missing, untagged),
                     java.nio.charset.StandardCharsets.UTF_8);
         } catch (java.io.IOException e) {
             source.sendFailure(Component.translatable("message.materialnexus.report_failed", e.getMessage()));

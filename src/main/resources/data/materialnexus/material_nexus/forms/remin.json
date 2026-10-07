@@ -1,0 +1,5 @@
+{
+  "patterns": {
+    "ore": ["remin:{material}_ore", "remin:deepslate_{material}_ore"]
+  }
+}

@@ -39,5 +39,12 @@ class FormPatternsTest {
         assertEquals(1, discovered.providers(new MaterialId("stainless_steel"), new FormId("double_ingot")).size());
         // "steel_turbine" is not a material any tag names: the blade is not attached anywhere.
         assertTrue(discovered.materials().keySet().stream().noneMatch(m -> m.name().equals("steel_turbine")));
+
+        // The audit groups what is still undiscovered by name shape, longest material first (stainless_steel, not steel).
+        var candidates = FormPatterns.candidates(List.of(
+                        ResourceLocation.parse("mi:aluminum_hot_ingot"), ResourceLocation.parse("mi:stainless_steel_hot_ingot"),
+                        ResourceLocation.parse("mi:aluminum_ingot")),
+                Set.of("aluminum", "stainless_steel", "steel"), Set.of(ResourceLocation.parse("mi:aluminum_ingot")), 2);
+        assertEquals(List.of(new FormPatterns.Candidate("mi:{material}_hot_ingot", List.of("aluminum", "stainless_steel"))), candidates);
     }
 }
