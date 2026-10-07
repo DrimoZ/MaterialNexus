@@ -11,9 +11,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.event.AddReloadListenerEvent;
 import org.slf4j.Logger;
 
 import java.util.HashMap;
@@ -25,7 +25,7 @@ import java.util.TreeMap;
  * {@code {"id": "aluminum", "aliases": ["aluminium"]}}. Loaded with the other data, before tags are
  * bound, so discovery sees them. Aliases merge a material named differently by some mods into this one.
  */
-@EventBusSubscriber(modid = MaterialNexus.MOD_ID)
+@Mod.EventBusSubscriber(modid = MaterialNexus.MOD_ID)
 public final class MaterialDefinitions extends SimpleJsonResourceReloadListener {
     public static final String DIRECTORY = "material_nexus/materials";
     private static final Logger LOGGER = LogUtils.getLogger();

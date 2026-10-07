@@ -11,8 +11,8 @@ public record MaterialDefinition(
         List<String> aliases) {
     public static final Codec<MaterialDefinition> CODEC = RecordCodecBuilder.create(i -> i.group(
             MaterialId.CODEC.fieldOf("id").forGetter(MaterialDefinition::id),
-            FormId.CODEC.listOf().optionalFieldOf("forms", List.of()).forGetter(MaterialDefinition::forms),
-            Codec.STRING.listOf().optionalFieldOf("aliases", List.of()).forGetter(MaterialDefinition::aliases)
+            dev.drimoz.materialnexus.core.OptionalFields.strict(FormId.CODEC.listOf(), "forms", List.of()).forGetter(MaterialDefinition::forms),
+            dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.STRING.listOf(), "aliases", List.of()).forGetter(MaterialDefinition::aliases)
     ).apply(i, MaterialDefinition::new));
 
     public MaterialDefinition {

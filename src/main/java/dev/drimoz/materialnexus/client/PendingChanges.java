@@ -195,7 +195,7 @@ final class PendingChanges {
     /** Every pending change as one request (Preview, or Apply with {@code apply}). */
     static dev.drimoz.materialnexus.network.PreviewRequest request(boolean apply, Optional<ResourceLocation> preset) {
         return new dev.drimoz.materialnexus.network.PreviewRequest(all(), apply, preset, processes(), creations(), data(),
-                GLOBAL_PATCH.isEmpty() ? Optional.empty() : Optional.of(GLOBAL_PATCH.toString()));
+                GLOBAL_PATCH.size() == 0 ? Optional.empty() : Optional.of(GLOBAL_PATCH.toString()));
     }
 
     private static String key(String material, String form) { return material + "/" + form; }

@@ -20,7 +20,6 @@ import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -98,7 +97,6 @@ final class PolicyHandler {
      */
     private static Map<Map.Entry<dev.drimoz.materialnexus.datapack.EditableData.Kind, ResourceLocation>, java.util.Optional<String>> dataEdits(
             ServerPlayer player, PreviewRequest request, List<PackContent.Effect> effects, boolean tell) {
-        var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, player.server.registryAccess());
         Map<Map.Entry<dev.drimoz.materialnexus.datapack.EditableData.Kind, ResourceLocation>, java.util.Optional<String>> valid = new java.util.LinkedHashMap<>();
         new java.util.TreeMap<>(request.data()).forEach((key, text) -> {
             String[] parts = key.split("\\|", 2);
@@ -107,7 +105,7 @@ final class PolicyHandler {
             if (kind.isEmpty() || id == null) return;
             ResourceLocation tag = ResourceLocation.fromNamespaceAndPath(dev.drimoz.materialnexus.MaterialNexus.MOD_ID, kind.get().key);
             java.util.Optional<String> error = text.flatMap(t -> dev.drimoz.materialnexus.datapack.EditableData.validate(kind.get(), t,
-                    json -> net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, json).isSuccess()));
+                    json -> RecipeSources.decodeError(json).isEmpty()));
             if (error.isPresent()) {
                 effects.add(new PackContent.Effect(DATA_INVALID, id, tag));
                 if (tell) player.sendSystemMessage(Component.translatable("message.materialnexus.data_invalid", kind.get().key, id.toString(), error.get()));
@@ -176,7 +174,7 @@ final class PolicyHandler {
     }
 
     private static PackContent.Content packContent(MinecraftServer server, ResolutionPolicy policy, List<PackContent.Effect> applied) {
-        boolean auPresent = net.neoforged.fml.ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID);
+        boolean auPresent = net.minecraftforge.fml.ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID);
         var resolved = CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy);
         RecipeFormats formats = RecipeFormats.load(server.getResourceManager());
         PackContent.Content content = PackContent.full(resolved, policy, auPresent, (conversions, ownership) -> RecipeRewrites.plan(
@@ -188,8 +186,7 @@ final class PolicyHandler {
                     dev.drimoz.materialnexus.datapack.ProcessTemplates.templates(),
                     tag -> items.getTag(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag)).map(t -> t.size() > 0).orElse(false)));
         }
-        var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
-        return PackContent.withValidRecipes(content, json -> net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, json).isSuccess());
+        return PackContent.withValidRecipes(content, json -> RecipeSources.decodeError(json).isEmpty());
     }
 
     /**
@@ -283,9 +280,9 @@ final class PolicyHandler {
      */
     private static void resync(MinecraftServer server) {
         var players = server.getPlayerList();
-        players.broadcastAll(new net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket(
+        players.broadcastAll(new net.minecraft.network.protocol.game.ClientboundUpdateTagsPacket(
                 net.minecraft.tags.TagNetworkSerialization.serializeTagsToNetwork(server.registries())));
-        var recipes = new net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket(server.getRecipeManager().getOrderedRecipes());
+        var recipes = new net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket(server.getRecipeManager().getRecipes());
         var unified = new UnifiedItemsPayload(dev.drimoz.materialnexus.conversion.ItemConversions.alternatives(),
                 dev.drimoz.materialnexus.conversion.ItemConversions.mapping());
         for (ServerPlayer p : players.getPlayers()) {

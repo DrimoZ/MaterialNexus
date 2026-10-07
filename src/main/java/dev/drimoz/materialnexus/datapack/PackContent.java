@@ -116,9 +116,9 @@ public final class PackContent {
         java.util.Set<ResourceLocation> invalid = new java.util.HashSet<>();
         for (var e : content.files().entrySet()) {
             String[] parts = e.getKey().split("/", 4);
-            if (parts.length < 4 || !parts[0].equals("data") || !parts[2].equals("recipe") || !(e.getValue() instanceof JsonObject json) || !json.has("type")) continue;
+            if (parts.length < 4 || !parts[0].equals("data") || !parts[2].equals("recipes") || !(e.getValue() instanceof JsonObject json) || !json.has("type")) continue;
             JsonObject recipe = json.deepCopy();
-            recipe.remove("neoforge:conditions");
+            recipe.remove("conditions");
             if (decodes.test(recipe)) continue;
             files.remove(e.getKey());
             invalid.add(ResourceLocation.fromNamespaceAndPath(parts[1], parts[3].substring(0, parts[3].length() - ".json".length())));
@@ -156,13 +156,13 @@ public final class PackContent {
             if (policy.conversionRecipeForms().contains(form)) {
                 for (ResourceLocation alt : f.alternatives()) {
                     String id = "convert/" + material.name() + "/" + form.name() + "/" + alt.getNamespace() + "_" + alt.getPath().replace('/', '_');
-                    files.put("data/materialnexus/recipe/" + id + ".json", conversionRecipe(alt, canonical));
+                    files.put("data/materialnexus/recipes/" + id + ".json", conversionRecipe(alt, canonical));
                     effects.add(new Effect(CONVERSION, canonical, alt));
                 }
             }
         }));
         removals.forEach((tag, items) -> {
-            files.put("data/" + tag.getNamespace() + "/tags/item/" + tag.getPath() + ".json", tagRemoval(items));
+            files.put("data/" + tag.getNamespace() + "/tags/items/" + tag.getPath() + ".json", tagRemoval(items));
             items.forEach(item -> effects.add(new Effect(TAG_REMOVE, tag, item)));
         });
         effects.sort(ORDER);
@@ -187,7 +187,7 @@ public final class PackContent {
         ingredients.add(ingredient);
         JsonObject result = new JsonObject();
         result.addProperty("count", 1);
-        result.addProperty("id", to.toString());
+        result.addProperty("item", to.toString());
         JsonObject recipe = new JsonObject();
         recipe.addProperty("type", "minecraft:crafting_shapeless");
         recipe.addProperty("category", "misc");

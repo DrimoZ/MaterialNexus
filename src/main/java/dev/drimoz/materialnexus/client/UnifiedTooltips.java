@@ -5,16 +5,16 @@ import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.entity.player.ItemTooltipEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.event.entity.player.ItemTooltipEvent;
 
 /**
  * MNX-054: players of the pack see what unification does without opening the tool: an alternative says which item it
  * becomes, the kept item says it is the one kept. From the applied pack only, sent at each data sync.
  */
-@EventBusSubscriber(modid = MaterialNexus.MOD_ID, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = MaterialNexus.MOD_ID, value = Dist.CLIENT)
 public final class UnifiedTooltips {
     private UnifiedTooltips() { }
 

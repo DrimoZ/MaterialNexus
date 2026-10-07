@@ -71,10 +71,9 @@ public final class CreatedItems {
         static final Codec<Entry> CODEC = RecordCodecBuilder.create(i -> i.group(
                 MaterialId.CODEC.fieldOf("material").forGetter(Entry::material),
                 FormId.CODEC.fieldOf("form").forGetter(Entry::form),
-                ResourceLocation.CODEC.optionalFieldOf("color_from").forGetter(Entry::colorFrom),
-                Codec.STRING.xmap(s -> Integer.parseInt(s.replace("#", ""), 16), c -> String.format("#%06X", c))
-                        .optionalFieldOf("color").forGetter(Entry::color),
-                ResourceLocation.CODEC.optionalFieldOf("texture").forGetter(Entry::texture)
+                dev.drimoz.materialnexus.core.OptionalFields.strict(ResourceLocation.CODEC, "color_from").forGetter(Entry::colorFrom),
+                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.STRING.xmap(s -> Integer.parseInt(s.replace("#", ""), 16), c -> String.format("#%06X", c)), "color").forGetter(Entry::color),
+                dev.drimoz.materialnexus.core.OptionalFields.strict(ResourceLocation.CODEC, "texture").forGetter(Entry::texture)
         ).apply(i, Entry::new));
 
         public ResourceLocation id() {
@@ -87,7 +86,7 @@ public final class CreatedItems {
         }
     }
 
-    private static final Codec<List<Entry>> FILE_CODEC = Entry.CODEC.listOf().optionalFieldOf("items", List.of()).codec();
+    private static final Codec<List<Entry>> FILE_CODEC = dev.drimoz.materialnexus.core.OptionalFields.strict(Entry.CODEC.listOf(), "items", List.of()).codec();
 
     private CreatedItems() { }
 
@@ -96,7 +95,7 @@ public final class CreatedItems {
         if (!Files.isRegularFile(file)) return List.of();
         try {
             List<Entry> entries = FILE_CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)))
-                    .getOrThrow(IllegalArgumentException::new);
+                    .getOrThrow(false, error -> { throw new IllegalArgumentException(error); });
             List<Entry> valid = new ArrayList<>();
             for (Entry e : entries) {
                 if (!FORMS.contains(e.form())) LOGGER.warn("{}: form '{}' has no template, {} not created", FILE, e.form().name(), e.id());
@@ -115,7 +114,7 @@ public final class CreatedItems {
         for (Entry e : added) if (all.stream().noneMatch(a -> a.id().equals(e.id()))) all.add(e);
         Files.createDirectories(file.getParent());
         Files.writeString(file, new GsonBuilder().setPrettyPrinting().create()
-                .toJson(FILE_CODEC.encodeStart(JsonOps.INSTANCE, all).getOrThrow()), StandardCharsets.UTF_8);
+                .toJson(FILE_CODEC.encodeStart(JsonOps.INSTANCE, all).getOrThrow(false, error -> { })), StandardCharsets.UTF_8);
     }
 
     /**

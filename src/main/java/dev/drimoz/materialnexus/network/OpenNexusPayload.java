@@ -3,10 +3,7 @@ package dev.drimoz.materialnexus.network;
 import dev.drimoz.materialnexus.MaterialNexus;
 import dev.drimoz.materialnexus.datapack.MnxPaths;
 import dev.drimoz.materialnexus.datapack.PolicyEditor;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.network.codec.ByteBufCodecs;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.level.ServerPlayer;
 
@@ -19,15 +16,19 @@ public record OpenNexusPayload(boolean readOnly, boolean canRevert, boolean appl
         implements CustomPacketPayload {
     public static final Type<OpenNexusPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "open_nexus"));
-    public static final StreamCodec<ByteBuf, OpenNexusPayload> STREAM_CODEC = StreamCodec.composite(
-            ByteBufCodecs.BOOL, OpenNexusPayload::readOnly,
-            ByteBufCodecs.BOOL, OpenNexusPayload::canRevert,
-            ByteBufCodecs.BOOL, OpenNexusPayload::applied,
-            ByteBufCodecs.map(java.util.HashMap::new, ResourceLocation.STREAM_CODEC,
-                    ByteBufCodecs.stringUtf8(dev.drimoz.materialnexus.datapack.EditableData.MAX_TEXT)), OpenNexusPayload::presets,
-            ByteBufCodecs.stringUtf8(dev.drimoz.materialnexus.datapack.EditableData.MAX_TEXT), OpenNexusPayload::global,
-            ByteBufCodecs.stringUtf8(dev.drimoz.materialnexus.datapack.EditableData.MAX_TEXT), OpenNexusPayload::history,
-            OpenNexusPayload::new);
+    private static final int MAX_TEXT = dev.drimoz.materialnexus.datapack.EditableData.MAX_TEXT;
+    public static final StreamCodec<FriendlyByteBuf, OpenNexusPayload> STREAM_CODEC = StreamCodec.of(
+            (buf, p) -> {
+                buf.writeBoolean(p.readOnly());
+                buf.writeBoolean(p.canRevert());
+                buf.writeBoolean(p.applied());
+                buf.writeMap(p.presets(), FriendlyByteBuf::writeResourceLocation, (b, text) -> b.writeUtf(text, MAX_TEXT));
+                buf.writeUtf(p.global(), MAX_TEXT);
+                buf.writeUtf(p.history(), MAX_TEXT);
+            },
+            buf -> new OpenNexusPayload(buf.readBoolean(), buf.readBoolean(), buf.readBoolean(),
+                    buf.readMap(java.util.HashMap::new, FriendlyByteBuf::readResourceLocation, b -> b.readUtf(MAX_TEXT)),
+                    buf.readUtf(MAX_TEXT), buf.readUtf(MAX_TEXT)));
 
     public static OpenNexusPayload forPlayer(ServerPlayer player) {
         return forPlayer(player, false);

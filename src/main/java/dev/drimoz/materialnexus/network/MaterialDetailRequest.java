@@ -2,8 +2,6 @@ package dev.drimoz.materialnexus.network;
 
 import dev.drimoz.materialnexus.MaterialNexus;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /** Client to server: every resolved form of one material, or of one form across materials. */

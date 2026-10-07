@@ -30,7 +30,7 @@ class PolicyEditorTest {
 
     @Test
     void applyRoundTripsThroughThePolicyFiles(@TempDir Path root) throws IOException {
-        var discovered = TagDiscovery.discover(Map.of(ResourceLocation.fromNamespaceAndPath("c", "ingots/tin"), List.of(MEK, TE)));
+        var discovered = TagDiscovery.discover(Map.of(ResourceLocation.fromNamespaceAndPath("forge", "ingots/tin"), List.of(MEK, TE)));
         var snapshot = new ResolvedSnapshot(1, Instant.EPOCH, discovered, CanonicalResolver.resolve(discovered, ResolutionPolicy.NONE));
 
         Path policies = root.resolve("policies");
@@ -77,7 +77,7 @@ class PolicyEditorTest {
         Files.writeString(existing, "{\"material\":\"tin\",\"forms\":{\"ingot\":{\"preferred_provider\":\"ghost:tin_ingot\"}}}");
         var ignored = PolicyEditor.preview(saved, List.of(new CanonicalChange("tin", "ingot", CanonicalChange.RESET)),
                 PolicyFiles.load(policies).explicitProviders().keySet());
-        assertTrue(ignored.getFirst().valid());
+        assertTrue(ignored.get(0).valid());
         PolicyEditor.apply(policies, ignored);
         assertTrue(PolicyFiles.load(policies).explicitProviders().isEmpty());
 

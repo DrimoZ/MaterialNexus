@@ -5,13 +5,13 @@ import dev.drimoz.materialnexus.network.OpenNexusPayload;
 import net.minecraft.commands.Commands;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.RegisterCommandsEvent;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.event.RegisterCommandsEvent;
+import dev.drimoz.materialnexus.network.PacketDistributor;
 
 /** {@code /materials} and the single server-side gate for opening the screen (ADR-013). */
-@EventBusSubscriber(modid = MaterialNexus.MOD_ID)
+@Mod.EventBusSubscriber(modid = MaterialNexus.MOD_ID)
 public final class MaterialsCommand {
     public static final int PERMISSION_LEVEL = 2;
 

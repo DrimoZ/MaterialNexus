@@ -10,7 +10,7 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
-import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.Recipe;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,20 +91,20 @@ public final class RecipeEdges {
     private static List<FamilyRelations.Edge> edges(MinecraftServer server, Set<ResourceLocation> all) {
         List<FamilyRelations.Edge> edges = new ArrayList<>();
         dev.drimoz.materialnexus.integration.RecipeFormats formats = dev.drimoz.materialnexus.integration.RecipeFormats.load(server.getResourceManager());
-        for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
-            ItemStack out = holder.value().getResultItem(server.registryAccess());
-            if (out.isEmpty() || holder.value().getIngredients().isEmpty()) {
+        for (Recipe<?> holder : server.getRecipeManager().getRecipes()) {
+            ItemStack out = holder.getResultItem(server.registryAccess());
+            if (out.isEmpty() || holder.getIngredients().isEmpty()) {
                 // Machine recipes (MI, Mekanism...) often hide their result or ingredients from vanilla APIs: read their JSON.
                 // ponytail: reads those files on each request; index them on reload if this shows up in a profile.
-                ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
+                ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.getSerializer());
                 if (type != null && formats.forType(type).isPresent()) {
-                    RecipeSources.originalJson(server.getResourceManager(), holder.id()).ifPresent(json -> edges.addAll(fromJson(json, formats)));
+                    RecipeSources.originalJson(server.getResourceManager(), holder.getId()).ifPresent(json -> edges.addAll(fromJson(json, formats)));
                 }
                 if (out.isEmpty()) continue;
             }
             ResourceLocation result = BuiltInRegistries.ITEM.getKey(out.getItem());
             List<Set<ResourceLocation>> ingredients = new ArrayList<>();
-            for (Ingredient ingredient : holder.value().getIngredients()) {
+            for (Ingredient ingredient : holder.getIngredients()) {
                 ingredients.add(Arrays.stream(ingredient.getItems()).map(s -> BuiltInRegistries.ITEM.getKey(s.getItem())).collect(Collectors.toSet()));
             }
             edges.add(new FamilyRelations.Edge(result, ingredients));

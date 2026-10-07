@@ -17,7 +17,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** ADR-012: two unifiers must never act on the same domain by accident. */
 class AlmostUnifiedTest {
-    private static final ResourceLocation INGOTS_TIN = ResourceLocation.fromNamespaceAndPath("c", "ingots/tin");
+    private static final ResourceLocation INGOTS_TIN = ResourceLocation.fromNamespaceAndPath("forge", "ingots/tin");
     private static final ResourceLocation MEK = ResourceLocation.fromNamespaceAndPath("mekanism", "ingot_tin");
     private static final ResourceLocation MI = ResourceLocation.fromNamespaceAndPath("modern_industrialization", "tin_ingot");
 
@@ -38,18 +38,18 @@ class AlmostUnifiedTest {
         List<AlmostUnified.Ownership> seen = new ArrayList<>();
 
         assertTrue(kinds("{" + unify + "}", false, seen).contains(PackContent.TAG_REMOVE), "without AU, Material Nexus owns everything");
-        assertEquals(AlmostUnified.Ownership.ALL, seen.getLast());
+        assertEquals(AlmostUnified.Ownership.ALL, seen.get(seen.size() - 1));
 
         List<String> unarbitrated = kinds("{" + unify + "}", true, seen);
         assertFalse(unarbitrated.contains(PackContent.TAG_REMOVE), "AU unifies by default: an unarbitrated domain is left to it");
         assertTrue(unarbitrated.containsAll(List.of("almost_unified:tags", "almost_unified:output_rewrite",
                 "almost_unified:recipe_disable", "almost_unified:viewer_hiding")), unarbitrated.toString());
-        assertEquals(new AlmostUnified.Ownership(false, false, false, false), seen.getLast());
+        assertEquals(new AlmostUnified.Ownership(false, false, false, false), seen.get(seen.size() - 1));
 
         List<String> partial = kinds("{" + unify + ",\"almost_unified\":{\"tags\":\"mnx\",\"output_rewrite\":\"au\"}}", true, seen);
         assertTrue(partial.contains(PackContent.TAG_REMOVE));
         assertFalse(partial.contains("almost_unified:tags"));
-        assertEquals(new AlmostUnified.Ownership(true, false, false, false), seen.getLast());
+        assertEquals(new AlmostUnified.Ownership(true, false, false, false), seen.get(seen.size() - 1));
 
         assertThrows(IllegalArgumentException.class, () -> kinds("{\"almost_unified\":{\"tags\":\"both\"}}", true, seen));
     }

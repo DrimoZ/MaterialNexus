@@ -18,8 +18,11 @@ final class MaterialSidebar extends ObjectSelectionList<MaterialSidebar.Entry> {
     private String selected;
 
     MaterialSidebar(Minecraft minecraft, int width, int height, int y, Consumer<String> onSelect) {
-        super(minecraft, width, height, y, 20);
+        super(minecraft, width, height, y, y + height, 20);
         this.onSelect = onSelect;
+        // The main screen draws its own flat background (MNX-049).
+        setRenderBackground(false);
+        setRenderTopAndBottom(false);
     }
 
     void show(List<MaterialListPayload.Summary> entries, String selectedMaterial, boolean byForm) {
@@ -28,18 +31,11 @@ final class MaterialSidebar extends ObjectSelectionList<MaterialSidebar.Entry> {
         children().stream().filter(e -> e.summary.material().equals(selected)).findFirst().ifPresent(this::setSelected);
     }
 
-    /** The main screen draws its own flat background (MNX-049). */
-    @Override
-    protected void renderListBackground(GuiGraphics g) { }
-
-    @Override
-    protected void renderListSeparators(GuiGraphics g) { }
-
     @Override
     public int getRowWidth() { return width - 10; }
 
     @Override
-    protected int getScrollbarPosition() { return getX() + width - 5; }
+    protected int getScrollbarPosition() { return x0 + width - 5; }
 
     static int status(MaterialListPayload.Summary s) {
         if (s.duplicateForms() == 0) return Ui.NEUTRAL;

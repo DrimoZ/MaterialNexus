@@ -14,43 +14,43 @@ logoBlur = false
 description = '''${mod_description}'''
 
 [[dependencies.${mod_id}]]
-modId = "neoforge"
-type = "required"
-versionRange = "${neo_version_range}"
+modId = "forge"
+mandatory = true
+versionRange = "${forge_version_range}"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
 modId = "minecraft"
-type = "required"
+mandatory = true
 versionRange = "${minecraft_version_range}"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
 modId = "jei"
-type = "optional"
+mandatory = false
 versionRange = "*"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
 modId = "emi"
-type = "optional"
+mandatory = false
 versionRange = "*"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
 modId = "almostunified"
-type = "optional"
+mandatory = false
 versionRange = "*"
 ordering = "NONE"
 side = "BOTH"
 
 [[dependencies.${mod_id}]]
 modId = "kubejs"
-type = "optional"
+mandatory = false
 versionRange = "*"
 ordering = "NONE"
 side = "BOTH"

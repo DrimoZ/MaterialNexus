@@ -53,7 +53,11 @@ public final class ItemConversions {
     /** The canonical stack keeping count and components, or the same stack when nothing applies. */
     public static ItemStack convert(ItemStack stack) {
         Item to = active.get(stack.getItem());
-        return to == null ? stack : stack.transmuteCopy(to, stack.getCount());
+        if (to == null) return stack;
+        ItemStack converted = new ItemStack(to, stack.getCount());
+        // 1.21 transmuteCopy keeps the components; on 1.20.1 the same data lives in the stack NBT.
+        if (stack.getTag() != null) converted.setTag(stack.getTag().copy());
+        return converted;
     }
 
     /** Converts every slot of a container in place; returns how many stacks changed. */

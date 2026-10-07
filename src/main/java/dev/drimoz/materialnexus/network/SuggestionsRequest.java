@@ -1,9 +1,7 @@
 package dev.drimoz.materialnexus.network;
 
 import dev.drimoz.materialnexus.MaterialNexus;
-import io.netty.buffer.ByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
+import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.resources.ResourceLocation;
 
 /**
@@ -15,7 +13,8 @@ public record SuggestionsRequest(boolean saved) implements CustomPacketPayload {
     public static final SuggestionsRequest SAVED = new SuggestionsRequest(true);
     public static final Type<SuggestionsRequest> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "suggestions_request"));
-    public static final StreamCodec<ByteBuf, SuggestionsRequest> STREAM_CODEC = net.minecraft.network.codec.ByteBufCodecs.BOOL.map(SuggestionsRequest::new, SuggestionsRequest::saved);
+    public static final StreamCodec<FriendlyByteBuf, SuggestionsRequest> STREAM_CODEC = StreamCodec.of(
+            (buf, req) -> buf.writeBoolean(req.saved()), buf -> new SuggestionsRequest(buf.readBoolean()));
 
     @Override public Type<SuggestionsRequest> type() { return TYPE; }
 }

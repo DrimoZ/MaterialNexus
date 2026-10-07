@@ -45,7 +45,7 @@ final class ProcessPanel {
     boolean scroll(double delta) {
         if (payload == null) return false;
         int max = Math.max(0, addable().size() - visibleExamples());
-        int next = Math.clamp(firstExample - (int) Math.signum(delta), 0, max);
+        int next = net.minecraft.util.Mth.clamp(firstExample - (int) Math.signum(delta), 0, max);
         if (next == firstExample) return false;
         firstExample = next;
         return true;
@@ -84,7 +84,7 @@ final class ProcessPanel {
     }
 
     private static ProcessRules.Route ratio(ProcessRules.Route r, int in, int out) {
-        return new ProcessRules.Route(r.machine(), r.input(), Math.clamp(in, 1, 64), Math.clamp(out, 1, 64));
+        return new ProcessRules.Route(r.machine(), r.input(), net.minecraft.util.Mth.clamp(in, 1, 64), net.minecraft.util.Mth.clamp(out, 1, 64));
     }
 
     private int routesTop() { return y + (undecided > 0 ? 26 : 14); }
@@ -124,7 +124,7 @@ final class ProcessPanel {
         }
         List<ProcessRules.Route> examples = addable();
         int ey = examplesTop() + 12;
-        firstExample = Math.clamp(firstExample, 0, Math.max(0, examples.size() - visibleExamples()));
+        firstExample = net.minecraft.util.Mth.clamp(firstExample, 0, Math.max(0, examples.size() - visibleExamples()));
         for (int row = 0; row < visibleExamples() && firstExample + row < examples.size(); row++) {
             ProcessRules.Route e = examples.get(firstExample + row);
             add.accept(small("+", x + width - 16, ey + row * ROW, () -> edit(r -> {

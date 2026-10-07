@@ -7,8 +7,6 @@ import dev.drimoz.materialnexus.core.recipe.FamilyRelations;
 import dev.drimoz.materialnexus.core.policy.PolicyPrecedence;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;

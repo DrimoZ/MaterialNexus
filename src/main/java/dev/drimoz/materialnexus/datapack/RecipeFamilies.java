@@ -6,7 +6,7 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.Recipe;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -48,23 +48,23 @@ public final class RecipeFamilies {
         }
 
         RecipeFormats formats = RecipeFormats.load(server.getResourceManager());
-        for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
-            ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
-            ItemStack out = holder.value().getResultItem(server.registryAccess());
+        for (Recipe<?> holder : server.getRecipeManager().getRecipes()) {
+            ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.getSerializer());
+            ItemStack out = holder.getResultItem(server.registryAccess());
             List<ResourceLocation> outputs = new ArrayList<>();
             if (!out.isEmpty()) {
                 outputs.add(BuiltInRegistries.ITEM.getKey(out.getItem()));
             } else if (type != null && formats.forType(type).isPresent()) {
-                RecipeSources.originalJson(server.getResourceManager(), holder.id()).ifPresent(json -> outputs.addAll(RecipeRewrites.outputIds(json, formats)));
+                RecipeSources.originalJson(server.getResourceManager(), holder.getId()).ifPresent(json -> outputs.addAll(RecipeRewrites.outputIds(json, formats)));
             }
             for (ResourceLocation output : outputs) {
                 if (!members.contains(output)) continue;
                 boolean known = type != null && formats.forType(type).isPresent();
-                Status status = rewritten.contains(holder.id()) ? Status.REWRITTEN
+                Status status = rewritten.contains(holder.getId()) ? Status.REWRITTEN
                         : form.canonical().map(output::equals).orElse(false) ? Status.CANONICAL
                         : alternatives.contains(output) ? (known ? Status.ALTERNATIVE : Status.UNSUPPORTED)
                         : Status.OTHER;
-                rows.add(new Row(holder.id(), type == null ? holder.id() : type, output, status));
+                rows.add(new Row(holder.getId(), type == null ? holder.getId() : type, output, status));
                 break;
             }
         }

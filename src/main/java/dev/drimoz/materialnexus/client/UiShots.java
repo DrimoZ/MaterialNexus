@@ -3,10 +3,10 @@ package dev.drimoz.materialnexus.client;
 import dev.drimoz.materialnexus.MaterialNexus;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.Screenshot;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.event.TickEvent;
 
 import java.util.List;
 
@@ -14,7 +14,7 @@ import java.util.List;
  * Dev only (MNX-049): with {@code -Dmaterialnexus.uishots=true} (the {@code uiShots} run), once the world is loaded,
  * opens Material Nexus, walks its views and saves a screenshot of each to {@code screenshots/}, then quits.
  */
-@EventBusSubscriber(modid = MaterialNexus.MOD_ID, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = MaterialNexus.MOD_ID, value = Dist.CLIENT)
 public final class UiShots {
     private static final boolean ENABLED = Boolean.getBoolean("materialnexus.uishots");
     private record Step(int tick, String view, String arg, String shot) { }
@@ -56,8 +56,8 @@ public final class UiShots {
     private UiShots() { }
 
     @SubscribeEvent
-    public static void onTick(ClientTickEvent.Post event) {
-        if (!ENABLED || next >= STEPS.size()) return;
+    public static void onTick(TickEvent.ClientTickEvent event) {
+        if (event.phase != TickEvent.Phase.END || !ENABLED || next >= STEPS.size()) return;
         Minecraft mc = Minecraft.getInstance();
         if (mc.player == null || mc.level == null) return;
         ticks++;
@@ -73,7 +73,7 @@ public final class UiShots {
                 // Through the server, as the command does, so presets and global.json are the real ones.
                 var server = mc.getSingleplayerServer();
                 var player = server.getPlayerList().getPlayer(mc.player.getUUID());
-                server.execute(() -> net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,
+                server.execute(() -> dev.drimoz.materialnexus.network.PacketDistributor.sendToPlayer(player,
                         dev.drimoz.materialnexus.network.OpenNexusPayload.forPlayer(player)));
             }
             case "quit" -> mc.stop();

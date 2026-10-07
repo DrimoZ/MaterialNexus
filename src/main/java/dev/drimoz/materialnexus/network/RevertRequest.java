@@ -2,8 +2,6 @@ package dev.drimoz.materialnexus.network;
 
 import dev.drimoz.materialnexus.MaterialNexus;
 import io.netty.buffer.ByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 /** Client to server: restore the policy that was active before the last apply. */

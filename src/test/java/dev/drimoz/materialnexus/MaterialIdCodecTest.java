@@ -13,10 +13,10 @@ class MaterialIdCodecTest {
     @Test
     void definitionRoundTripsAndRejectsInvalidNames() {
         JsonElement json = JsonParser.parseString("{\"id\":\"copper\",\"forms\":[\"ingot\",\"plate\"],\"aliases\":[\"cuivre\"]}");
-        MaterialDefinition def = MaterialDefinition.CODEC.parse(JsonOps.INSTANCE, json).getOrThrow();
-        assertEquals(json, MaterialDefinition.CODEC.encodeStart(JsonOps.INSTANCE, def).getOrThrow());
+        MaterialDefinition def = MaterialDefinition.CODEC.parse(JsonOps.INSTANCE, json).getOrThrow(false, error -> { });
+        assertEquals(json, MaterialDefinition.CODEC.encodeStart(JsonOps.INSTANCE, def).getOrThrow(false, error -> { }));
 
-        assertTrue(MaterialDefinition.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString("{\"id\":\"c:tin\"}")).isError());
-        assertTrue(MaterialDefinition.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString("{\"id\":\"tin\",\"forms\":[\"Plate\"]}")).isError());
+        assertTrue(MaterialDefinition.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString("{\"id\":\"c:tin\"}")).error().isPresent());
+        assertTrue(MaterialDefinition.CODEC.parse(JsonOps.INSTANCE, JsonParser.parseString("{\"id\":\"tin\",\"forms\":[\"Plate\"]}")).error().isPresent());
     }
 }

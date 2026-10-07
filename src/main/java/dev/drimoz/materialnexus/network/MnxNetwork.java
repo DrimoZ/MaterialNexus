@@ -4,9 +4,15 @@ import dev.drimoz.materialnexus.client.ClientHooks;
 import dev.drimoz.materialnexus.command.MaterialsCommand;
 import dev.drimoz.materialnexus.core.resolution.SnapshotManager;
 import net.minecraft.server.level.ServerPlayer;
-import net.neoforged.neoforge.network.PacketDistributor;
-import net.neoforged.neoforge.network.event.RegisterPayloadHandlersEvent;
-import net.neoforged.neoforge.network.handling.IPayloadContext;
+import net.minecraft.network.FriendlyByteBuf;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraftforge.network.NetworkDirection;
+import net.minecraftforge.network.NetworkEvent;
+import net.minecraftforge.network.NetworkRegistry;
+import net.minecraftforge.network.simple.SimpleChannel;
+
+import java.util.function.BiConsumer;
+import java.util.function.Consumer;
 
 /**
  * Request/response only: the client asks for one view, the server answers once (docs/09).
@@ -14,28 +20,32 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  */
 public final class MnxNetwork {
     private static final String VERSION = "11";
+    /** Both sides must run the same protocol version: a client without the mod, or another version, is refused. */
+    static final SimpleChannel CHANNEL = NetworkRegistry.newSimpleChannel(
+            ResourceLocation.fromNamespaceAndPath(dev.drimoz.materialnexus.MaterialNexus.MOD_ID, "main"), () -> VERSION, VERSION::equals, VERSION::equals);
+    private static int nextId;
 
     private MnxNetwork() { }
 
-    public static void register(RegisterPayloadHandlersEvent event) {
-        var registrar = event.registrar(VERSION);
-        registrar.playToClient(OpenNexusPayload.TYPE, OpenNexusPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.openNexus(p));
-        registrar.playToClient(MaterialListPayload.TYPE, MaterialListPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onMaterialList(p));
-        registrar.playToClient(MaterialDetailPayload.TYPE, MaterialDetailPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onMaterialDetail(p));
-        registrar.playToClient(PreviewPayload.TYPE, PreviewPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onPreview(p));
-        registrar.playToClient(UnifiedItemsPayload.TYPE, UnifiedItemsPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onUnifiedItems(p));
-        registrar.playToClient(RecipeFamilyPayload.TYPE, RecipeFamilyPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onRecipeFamily(p));
-        registrar.playToClient(ProcessPayload.TYPE, ProcessPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onProcess(p));
-        registrar.playToClient(DataListPayload.TYPE, DataListPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onDataList(p));
-        registrar.playToClient(DataReadPayload.TYPE, DataReadPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onDataRead(p));
-        registrar.playToClient(MatrixPayload.TYPE, MatrixPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onMatrix(p));
-        registrar.playToClient(SuggestionsPayload.TYPE, SuggestionsPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onSuggestions(p));
+    /** Called once from the mod constructor. Message ids follow registration order, identical on both sides. */
+    public static void register() {
+        toClient(OpenNexusPayload.class, OpenNexusPayload.STREAM_CODEC, p -> ClientHooks.openNexus(p));
+        toClient(MaterialListPayload.class, MaterialListPayload.STREAM_CODEC, p -> ClientHooks.onMaterialList(p));
+        toClient(MaterialDetailPayload.class, MaterialDetailPayload.STREAM_CODEC, p -> ClientHooks.onMaterialDetail(p));
+        toClient(PreviewPayload.class, PreviewPayload.STREAM_CODEC, p -> ClientHooks.onPreview(p));
+        toClient(UnifiedItemsPayload.class, UnifiedItemsPayload.STREAM_CODEC, p -> ClientHooks.onUnifiedItems(p));
+        toClient(RecipeFamilyPayload.class, RecipeFamilyPayload.STREAM_CODEC, p -> ClientHooks.onRecipeFamily(p));
+        toClient(ProcessPayload.class, ProcessPayload.STREAM_CODEC, p -> ClientHooks.onProcess(p));
+        toClient(DataListPayload.class, DataListPayload.STREAM_CODEC, p -> ClientHooks.onDataList(p));
+        toClient(DataReadPayload.class, DataReadPayload.STREAM_CODEC, p -> ClientHooks.onDataRead(p));
+        toClient(MatrixPayload.class, MatrixPayload.STREAM_CODEC, p -> ClientHooks.onMatrix(p));
+        toClient(SuggestionsPayload.class, SuggestionsPayload.STREAM_CODEC, p -> ClientHooks.onSuggestions(p));
 
-        registrar.playToServer(MaterialListRequest.TYPE, MaterialListRequest.STREAM_CODEC, (req, ctx) -> {
+        toServer(MaterialListRequest.class, MaterialListRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player != null) PacketDistributor.sendToPlayer(player, NexusQueries.listPage(SnapshotManager.current(), req.page(), req.query(), req.byForm(), req.status()));
         });
-        registrar.playToServer(MaterialDetailRequest.TYPE, MaterialDetailRequest.STREAM_CODEC, (req, ctx) -> {
+        toServer(MaterialDetailRequest.class, MaterialDetailRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player != null) {
                 var snapshot = SnapshotManager.current();
@@ -55,19 +65,19 @@ public final class MnxNetwork {
                 });
             }
         });
-        registrar.playToServer(PreviewRequest.TYPE, PreviewRequest.STREAM_CODEC, (req, ctx) -> {
+        toServer(PreviewRequest.class, PreviewRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player != null) PolicyHandler.preview(player, req);
         });
-        registrar.playToServer(RevertRequest.TYPE, RevertRequest.STREAM_CODEC, (req, ctx) -> {
+        toServer(RevertRequest.class, RevertRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player != null) PolicyHandler.revert(player);
         });
-        registrar.playToServer(RestoreRequest.TYPE, RestoreRequest.STREAM_CODEC, (req, ctx) -> {
+        toServer(RestoreRequest.class, RestoreRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player != null) PolicyHandler.restore(player, req.snapshot());
         });
-        registrar.playToServer(RecipeFamilyRequest.TYPE, RecipeFamilyRequest.STREAM_CODEC, (req, ctx) -> {
+        toServer(RecipeFamilyRequest.class, RecipeFamilyRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player == null) return;
             var material = dev.drimoz.materialnexus.core.domain.MaterialId.read(req.material()).result();
@@ -78,11 +88,11 @@ public final class MnxNetwork {
             if (f != null) PacketDistributor.sendToPlayer(player, new RecipeFamilyPayload(req.material(), req.form(),
                     dev.drimoz.materialnexus.datapack.RecipeFamilies.family(player.server, f)));
         });
-        registrar.playToServer(ProcessRequest.TYPE, ProcessRequest.STREAM_CODEC, (req, ctx) -> {
+        toServer(ProcessRequest.class, ProcessRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player != null) PolicyHandler.process(player, req.form());
         });
-        registrar.playToServer(DataListRequest.TYPE, DataListRequest.STREAM_CODEC, (req, ctx) -> {
+        toServer(DataListRequest.class, DataListRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player == null) return;
             var resources = player.server.getResourceManager();
@@ -92,7 +102,7 @@ public final class MnxNetwork {
                     .flatMap(m -> m.keySet().stream()).map(f -> f.name()).distinct().sorted().toList();
             PacketDistributor.sendToPlayer(player, new DataListPayload(entries, MaterialsCommand.untagged(SnapshotManager.current()), forms));
         });
-        registrar.playToServer(DataReadRequest.TYPE, DataReadRequest.STREAM_CODEC, (req, ctx) -> {
+        toServer(DataReadRequest.class, DataReadRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player == null) return;
             dev.drimoz.materialnexus.datapack.EditableData.Kind.byKey(req.kind()).ifPresent(kind -> {
@@ -103,19 +113,34 @@ public final class MnxNetwork {
                 PacketDistributor.sendToPlayer(player, new DataReadPayload(req.kind(), req.id(), text, edited));
             });
         });
-        registrar.playToServer(MatrixRequest.TYPE, MatrixRequest.STREAM_CODEC, (req, ctx) -> {
+        toServer(MatrixRequest.class, MatrixRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player != null) PacketDistributor.sendToPlayer(player, NexusQueries.matrix(SnapshotManager.current()));
         });
-        registrar.playToServer(SuggestionsRequest.TYPE, SuggestionsRequest.STREAM_CODEC, (req, ctx) -> {
+        toServer(SuggestionsRequest.class, SuggestionsRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player != null) PacketDistributor.sendToPlayer(player, req.saved() ? SuggestionsPayload.saved(PolicyHandler.savedChoices())
                     : SuggestionsPayload.of(SnapshotManager.current()));
         });
     }
 
+    private static <T extends CustomPacketPayload> void toClient(Class<T> type, StreamCodec<? super FriendlyByteBuf, T> codec, Consumer<T> handler) {
+        CHANNEL.messageBuilder(type, nextId++, NetworkDirection.PLAY_TO_CLIENT)
+                .encoder((msg, buf) -> codec.encode(buf, msg)).decoder(codec::decode)
+                .consumerMainThread((msg, ctx) -> handler.accept(msg)).add();
+    }
+
+    /** Server-bound handlers run on the server thread, like the NeoForge payload handlers on main. */
+    private static <T extends CustomPacketPayload> void toServer(Class<T> type, StreamCodec<? super FriendlyByteBuf, T> codec,
+                                                                 BiConsumer<T, NetworkEvent.Context> handler) {
+        CHANNEL.messageBuilder(type, nextId++, NetworkDirection.PLAY_TO_SERVER)
+                .encoder((msg, buf) -> codec.encode(buf, msg)).decoder(codec::decode)
+                .consumerMainThread((msg, ctx) -> handler.accept(msg, ctx.get())).add();
+    }
+
     /** Permission is re-checked on every request; opening the screen once grants nothing. */
-    private static ServerPlayer authorized(IPayloadContext ctx) {
-        return ctx.player() instanceof ServerPlayer player && player.hasPermissions(MaterialsCommand.PERMISSION_LEVEL) ? player : null;
+    private static ServerPlayer authorized(NetworkEvent.Context ctx) {
+        ServerPlayer player = ctx.getSender();
+        return player != null && player.hasPermissions(MaterialsCommand.PERMISSION_LEVEL) ? player : null;
     }
 }

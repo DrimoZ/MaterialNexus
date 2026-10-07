@@ -103,9 +103,9 @@ public final class PolicyEditor {
                 JsonObject rules = child(current, "processes");
                 processes.forEach((form, rule) -> {
                     if (rule.routes().isEmpty() && !rule.exclusive() && !rule.enforceRatio()) rules.remove(form.name());
-                    else rules.add(form.name(), PolicyFiles.PROCESS.encodeStart(com.mojang.serialization.JsonOps.INSTANCE, rule).getOrThrow());
+                    else rules.add(form.name(), PolicyFiles.PROCESS.encodeStart(com.mojang.serialization.JsonOps.INSTANCE, rule).getOrThrow(false, error -> { }));
                 });
-                if (rules.isEmpty()) current.remove("processes");
+                if (rules.size() == 0) current.remove("processes");
             }
             Files.writeString(global, new GsonBuilder().setPrettyPrinting().create().toJson(current), StandardCharsets.UTF_8);
         }
@@ -130,7 +130,7 @@ public final class PolicyEditor {
                 } else if (forms.get(e.form()) instanceof JsonObject saved) {
                     // MNX-058: back to default; the form's other fields (priority, process) stay.
                     saved.remove("preferred_provider");
-                    if (saved.isEmpty()) forms.remove(e.form());
+                    if (saved.size() == 0) forms.remove(e.form());
                 }
             }
             Files.writeString(file, new GsonBuilder().setPrettyPrinting().create().toJson(root), StandardCharsets.UTF_8);

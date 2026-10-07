@@ -40,7 +40,7 @@ final class FormMatrix {
     }
 
     private void relayout() {
-        if (data != null && !data.forms().isEmpty()) stride = Math.clamp((width - LABEL) / data.forms().size(), 12, 26);
+        if (data != null && !data.forms().isEmpty()) stride = net.minecraft.util.Mth.clamp((width - LABEL) / data.forms().size(), 12, 26);
     }
 
     boolean loaded() { return data != null; }
@@ -57,8 +57,8 @@ final class FormMatrix {
     void scroll(double delta) {
         if (data == null) return;
         int step = (int) -Math.signum(delta) * 3;
-        if (Screen.hasShiftDown()) firstCol = Math.clamp(firstCol + step, 0, Math.max(0, data.forms().size() - visibleCols()));
-        else firstRow = Math.clamp(firstRow + step, 0, Math.max(0, data.materials().size() - visibleRows()));
+        if (Screen.hasShiftDown()) firstCol = net.minecraft.util.Mth.clamp(firstCol + step, 0, Math.max(0, data.forms().size() - visibleCols()));
+        else firstRow = net.minecraft.util.Mth.clamp(firstRow + step, 0, Math.max(0, data.materials().size() - visibleRows()));
     }
 
     boolean click(double mx, double my, int button) {

@@ -15,9 +15,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.event.AddReloadListenerEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -41,7 +41,7 @@ import java.util.TreeMap;
  * merges the ingredient's fields into that object (MI and Mekanism stacks). Other placeholders inside strings are
  * replaced as text: {@code ${material}}, {@code ${form}}, {@code ${output_item}}, {@code ${output_tag}}, form variables.
  */
-@EventBusSubscriber(modid = MaterialNexus.MOD_ID)
+@Mod.EventBusSubscriber(modid = MaterialNexus.MOD_ID)
 public final class ProcessTemplates extends SimpleJsonResourceReloadListener {
     public static final String DIRECTORY = "material_nexus/process_templates";
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -56,9 +56,9 @@ public final class ProcessTemplates extends SimpleJsonResourceReloadListener {
     private record Head(ResourceLocation machine, boolean prefer, Map<FormId, Map<String, String>> forms, Map<String, List<String>> patterns) {
         static final Codec<Head> CODEC = RecordCodecBuilder.create(i -> i.group(
                 ResourceLocation.CODEC.fieldOf("machine").forGetter(Head::machine),
-                Codec.BOOL.optionalFieldOf("prefer", false).forGetter(Head::prefer),
-                Codec.unboundedMap(FormId.CODEC, Codec.unboundedMap(Codec.STRING, Codec.STRING)).optionalFieldOf("forms", Map.of()).forGetter(Head::forms),
-                Codec.unboundedMap(Codec.STRING, Codec.STRING.listOf()).optionalFieldOf("patterns", Map.of()).forGetter(Head::patterns)
+                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.BOOL, "prefer", false).forGetter(Head::prefer),
+                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.unboundedMap(FormId.CODEC, Codec.unboundedMap(Codec.STRING, Codec.STRING)), "forms", Map.of()).forGetter(Head::forms),
+                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.unboundedMap(Codec.STRING, Codec.STRING.listOf()), "patterns", Map.of()).forGetter(Head::patterns)
         ).apply(i, Head::new));
     }
 

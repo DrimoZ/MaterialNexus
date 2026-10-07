@@ -21,7 +21,7 @@ import static org.junit.jupiter.api.Assertions.*;
 class CanonicalResolverTest {
     private static final MaterialId COPPER = new MaterialId("copper");
     private static final MaterialForm COPPER_PLATE = new MaterialForm(COPPER, new FormId("plate"));
-    private static final ResourceLocation PLATES_COPPER = ResourceLocation.fromNamespaceAndPath("c", "plates/copper");
+    private static final ResourceLocation PLATES_COPPER = ResourceLocation.fromNamespaceAndPath("forge", "plates/copper");
     private static final ResourceLocation A = ResourceLocation.fromNamespaceAndPath("moda", "copper_plate");
     private static final ResourceLocation B = ResourceLocation.fromNamespaceAndPath("modb", "copper_plate");
     private static final ResourceLocation C = ResourceLocation.fromNamespaceAndPath("modc", "copper_plate");
@@ -75,11 +75,11 @@ class CanonicalResolverTest {
         ResourceLocation createDeepZinc = ResourceLocation.fromNamespaceAndPath("create", "deepslate_zinc_ore");
         ResourceLocation otherDeepZinc = ResourceLocation.fromNamespaceAndPath("othermod", "deepslate_zinc_ore");
         var discovered = TagDiscovery.discover(Map.of(
-                ResourceLocation.fromNamespaceAndPath("c", "rods/wooden"), List.of(stick, treated),
-                ResourceLocation.fromNamespaceAndPath("c", "rods/treated_wood"), List.of(treated),
-                ResourceLocation.fromNamespaceAndPath("c", "gems/certus_quartz"), List.of(certus, charged),
-                ResourceLocation.fromNamespaceAndPath("c", "ores/zinc"), List.of(createZinc, createDeepZinc, otherDeepZinc),
-                ResourceLocation.fromNamespaceAndPath("c", "ores_in_ground/deepslate"), List.of(createDeepZinc)));
+                ResourceLocation.fromNamespaceAndPath("forge", "rods/wooden"), List.of(stick, treated),
+                ResourceLocation.fromNamespaceAndPath("forge", "rods/treated_wood"), List.of(treated),
+                ResourceLocation.fromNamespaceAndPath("forge", "gems/certus_quartz"), List.of(certus, charged),
+                ResourceLocation.fromNamespaceAndPath("forge", "ores/zinc"), List.of(createZinc, createDeepZinc, otherDeepZinc),
+                ResourceLocation.fromNamespaceAndPath("forge", "ores_in_ground/deepslate"), List.of(createDeepZinc)));
         var resolved = CanonicalResolver.resolve(discovered, ResolutionPolicy.NONE);
         ResolvedForm wooden = resolved.get(new MaterialId("wooden")).forms().get(new FormId("rod"));
         ResolvedForm gem = resolved.get(new MaterialId("certus_quartz")).forms().get(new FormId("gem"));
@@ -111,20 +111,20 @@ class CanonicalResolverTest {
     void namesTellVariantsFromDuplicates() {
         var rl = (java.util.function.Function<String, ResourceLocation>) ResourceLocation::parse;
         Map<ResourceLocation, List<ResourceLocation>> tags = Map.of(
-                rl.apply("c:gems/amethyst"), List.of(rl.apply("minecraft:amethyst_shard"), rl.apply("remin:yellow_amethyst")),
-                rl.apply("c:gems/quartz"), List.of(rl.apply("minecraft:quartz")),
-                rl.apply("c:gems/milky_quartz"), List.of(rl.apply("minecraft:quartz"), rl.apply("remin:milky_quartz")),
-                rl.apply("c:plates/plastic"), List.of(rl.apply("oritech:plastic_sheet"), rl.apply("immersiveengineering:plate_duroplast")),
-                rl.apply("c:rods/wooden"), List.of(rl.apply("minecraft:stick"), rl.apply("silentgear:netherwood_stick")),
+                rl.apply("forge:gems/amethyst"), List.of(rl.apply("minecraft:amethyst_shard"), rl.apply("remin:yellow_amethyst")),
+                rl.apply("forge:gems/quartz"), List.of(rl.apply("minecraft:quartz")),
+                rl.apply("forge:gems/milky_quartz"), List.of(rl.apply("minecraft:quartz"), rl.apply("remin:milky_quartz")),
+                rl.apply("forge:plates/plastic"), List.of(rl.apply("oritech:plastic_sheet"), rl.apply("immersiveengineering:plate_duroplast")),
+                rl.apply("forge:rods/wooden"), List.of(rl.apply("minecraft:stick"), rl.apply("silentgear:netherwood_stick")),
                 // Real duplicates stay duplicates: adjectives and alternative spellings of the material are fine.
-                rl.apply("c:plates/gold"), List.of(rl.apply("create:golden_sheet"), rl.apply("immersiveengineering:plate_gold")),
-                rl.apply("c:ingots/aluminum"), List.of(rl.apply("remin:aluminium_ingot"), rl.apply("immersiveengineering:ingot_aluminum")),
-                rl.apply("c:storage_blocks/raw_osmium"), List.of(rl.apply("mekanism:block_raw_osmium"), rl.apply("othermod:raw_osmium_block")));
+                rl.apply("forge:plates/gold"), List.of(rl.apply("create:golden_sheet"), rl.apply("immersiveengineering:plate_gold")),
+                rl.apply("forge:ingots/aluminum"), List.of(rl.apply("remin:aluminium_ingot"), rl.apply("immersiveengineering:ingot_aluminum")),
+                rl.apply("forge:storage_blocks/raw_osmium"), List.of(rl.apply("mekanism:block_raw_osmium"), rl.apply("othermod:raw_osmium_block")));
         var resolved = CanonicalResolver.resolve(TagDiscovery.discover(tags), ResolutionPolicy.NONE);
         java.util.function.BiFunction<String, String, ResolvedForm> form = (m, f) -> resolved.get(new MaterialId(m)).forms().get(new FormId(f));
 
         assertTrue(form.apply("amethyst", "gem").alternatives().isEmpty());
-        assertEquals("materialnexus.not_unified.named_variant", form.apply("amethyst", "gem").notUnified().getFirst().reasonKey());
+        assertEquals("materialnexus.not_unified.named_variant", form.apply("amethyst", "gem").notUnified().get(0).reasonKey());
         assertEquals(rl.apply("remin:milky_quartz"), form.apply("milky_quartz", "gem").canonical().orElseThrow());
         assertTrue(form.apply("milky_quartz", "gem").alternatives().isEmpty(), "vanilla quartz is set aside (more specific or named after quartz)");
         assertTrue(form.apply("plastic", "plate").alternatives().isEmpty());

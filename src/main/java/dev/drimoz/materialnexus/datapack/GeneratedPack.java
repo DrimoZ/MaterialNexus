@@ -7,13 +7,11 @@ import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import net.minecraft.SharedConstants;
 import net.minecraft.network.chat.Component;
-import net.minecraft.server.packs.PackLocationInfo;
-import net.minecraft.server.packs.PackSelectionConfig;
 import net.minecraft.server.packs.PackType;
 import net.minecraft.server.packs.PathPackResources;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
-import net.neoforged.neoforge.event.AddPackFindersEvent;
+import net.minecraftforge.event.AddPackFindersEvent;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -22,7 +20,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -91,7 +88,7 @@ public final class GeneratedPack {
         }
         for (var item : dev.drimoz.materialnexus.registry.MnxItems.CREATED) {
             var tag = item.get().entry().tag();
-            files.computeIfAbsent("data/" + tag.getNamespace() + "/tags/item/" + tag.getPath() + ".json", p -> {
+            files.computeIfAbsent("data/" + tag.getNamespace() + "/tags/items/" + tag.getPath() + ".json", p -> {
                 JsonObject file = new JsonObject();
                 file.addProperty("replace", false);
                 file.add("values", new JsonArray());
@@ -144,9 +141,9 @@ public final class GeneratedPack {
     }
 
     private static void add(AddPackFindersEvent event, String id, Path dir, PackType type) {
-        var info = new PackLocationInfo(id, Component.translatable("materialnexus.pack.generated"), PackSource.BUILT_IN, Optional.empty());
-        Pack pack = Pack.readMetaAndCreate(info, new PathPackResources.PathResourcesSupplier(dir), type,
-                new PackSelectionConfig(true, Pack.Position.TOP, false));
+        // Required, at the top of the pack list, not pinned there (1.21: PackSelectionConfig(true, TOP, false)).
+        Pack pack = Pack.readMetaAndCreate(id, Component.translatable("materialnexus.pack.generated"), true,
+                name -> new PathPackResources(name, dir, true), type, Pack.Position.TOP, PackSource.BUILT_IN);
         if (pack != null) event.addRepositorySource(consumer -> consumer.accept(pack));
     }
 

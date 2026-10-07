@@ -43,7 +43,7 @@ public final class NexusQueries {
                 .filter(s -> status == ALL || (status == TO_DECIDE ? s.toDecide() > 0 : s.unifiedForms() > 0))
                 .toList();
         int pageCount = Math.max(1, (matches.size() + PAGE_SIZE - 1) / PAGE_SIZE);
-        int clamped = Math.clamp(page, 0, pageCount - 1);
+        int clamped = net.minecraft.util.Mth.clamp(page, 0, pageCount - 1);
         int from = clamped * PAGE_SIZE;
         return new MaterialListPayload(clamped, pageCount, matches.size(), filter, byForm,
                 matches.subList(from, Math.min(from + PAGE_SIZE, matches.size())), totals(snapshot));

@@ -133,7 +133,7 @@ public final class CanonicalResolver {
         if (byPriority == null) byPriority = firstByModPriority(candidates, notUnified, policy.globalModPriority(), PolicyPrecedence.GLOBAL, "global_priority", "", ignored);
         if (byPriority != null) return byPriority;
 
-        if (candidates.size() == 1) return result(candidates.getFirst(), candidates, notUnified, PolicyPrecedence.DEFAULT, ignored, "only_provider");
+        if (candidates.size() == 1) return result(candidates.get(0), candidates, notUnified, PolicyPrecedence.DEFAULT, ignored, "only_provider");
         List<Provider> vanilla = candidates.stream().filter(p -> p.sourceMod().equals(VANILLA)).toList();
         if (!vanilla.isEmpty()) {
             return result(vanilla.stream().min(TIE_BREAK).orElseThrow(), candidates, notUnified, PolicyPrecedence.DEFAULT, ignored, "vanilla_default");

@@ -183,15 +183,15 @@ public final class RecipeRewrites {
 
     static JsonObject disabled() {
         JsonObject condition = new JsonObject();
-        condition.addProperty("type", "neoforge:false");
+        condition.addProperty("type", "forge:false");
         JsonArray conditions = new JsonArray();
         conditions.add(condition);
         JsonObject recipe = new JsonObject();
-        recipe.add("neoforge:conditions", conditions);
+        recipe.add("conditions", conditions);
         return recipe;
     }
 
     private static String path(ResourceLocation id) {
-        return "data/" + id.getNamespace() + "/recipe/" + id.getPath() + ".json";
+        return "data/" + id.getNamespace() + "/recipes/" + id.getPath() + ".json";
     }
 }

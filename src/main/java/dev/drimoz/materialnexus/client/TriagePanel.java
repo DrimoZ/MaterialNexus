@@ -9,7 +9,7 @@ import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.PacketDistributor;
+import dev.drimoz.materialnexus.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -65,7 +65,7 @@ final class TriagePanel {
     }
 
     private void move(int delta) {
-        index = Math.clamp(index + delta, 0, queue.size());
+        index = net.minecraft.util.Mth.clamp(index + delta, 0, queue.size());
         request();
     }
 
@@ -159,7 +159,7 @@ final class TriagePanel {
             g.renderItem(Names.stack(candidate), 0, 0);
             g.pose().popPose();
             if (notSame) g.drawString(font, Component.translatable("screen.materialnexus.triage.not_same"), cx + 4, cy + 50, Ui.DANGER, false);
-            String mod = net.neoforged.fml.ModList.get().getModContainerById(candidate.getNamespace()).map(c -> c.getModInfo().getDisplayName()).orElse(candidate.getNamespace());
+            String mod = net.minecraftforge.fml.ModList.get().getModContainerById(candidate.getNamespace()).map(c -> c.getModInfo().getDisplayName()).orElse(candidate.getNamespace());
             g.drawString(font, font.plainSubstrByWidth(mod, box - 8), cx + 4, cy + 60, Ui.TEXT, false);
             var usage = detail.usage().get(candidate);
             if (usage != null) {
@@ -167,7 +167,7 @@ final class TriagePanel {
             }
             int n = i;
             hits.add(cx, cy, box, 84, () -> pick(n, false), () -> pick(n, true), List.of(Names.stack(candidate).getHoverName(),
-                    Component.literal(candidate.toString()).withColor(0x888888)));
+                    Component.literal(candidate.toString()).withStyle(s -> s.withColor(0x888888))));
             cx += box + 6;
             if (cx + box > x + w) {
                 cx = x;

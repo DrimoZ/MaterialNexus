@@ -35,7 +35,7 @@ public final class ProcessPlanner {
     public static final String PROCESS = "process_recipe";
     public static final String DISABLE = "process_disable";
     public static final String UNSUPPORTED = "process_unsupported";
-    private static final String CONDITIONS = "neoforge:conditions";
+    private static final String CONDITIONS = "conditions";
     private static final List<String> ID_KEYS = List.of("tag", "item", "id");
     private static final List<String> COUNT_KEYS = List.of("count", "amount");
 
@@ -52,7 +52,7 @@ public final class ProcessPlanner {
     private record Reading(Optional<Ref> output, List<Ref> inputs, List<Ref> all) {
         Optional<MaterialId> onlyMaterial() {
             var materials = all.stream().map(r -> r.target().material()).distinct().toList();
-            return materials.size() == 1 ? Optional.of(materials.getFirst()) : Optional.empty();
+            return materials.size() == 1 ? Optional.of(materials.get(0)) : Optional.empty();
         }
 
         boolean makes(MaterialForm form) { return output.map(r -> r.target().equals(form)).orElse(false); }
@@ -212,7 +212,7 @@ public final class ProcessPlanner {
     }
 
     private static String path(ResourceLocation id) {
-        return "data/" + id.getNamespace() + "/recipe/" + id.getPath() + ".json";
+        return "data/" + id.getNamespace() + "/recipes/" + id.getPath() + ".json";
     }
 
     private static void disable(ResourceLocation id, ResourceLocation product, Map<String, JsonElement> files, List<PackContent.Effect> effects) {
@@ -331,15 +331,15 @@ public final class ProcessPlanner {
         if (ref.node() == null || ref.field() == null) return false;
         for (String k : COUNT_KEYS) if (ref.node().get(k) instanceof JsonPrimitive p && p.isNumber()) { ref.node().addProperty(k, n); return true; }
         if (ref.wrapper() != null) for (String k : COUNT_KEYS) if (ref.wrapper().get(k) instanceof JsonPrimitive p && p.isNumber()) { ref.wrapper().addProperty(k, n); return true; }
-        // Only a 1.21 item stack ({"id": ...}) is known to accept a count it did not have.
-        if (output && ref.field().equals("id")) { ref.node().addProperty("count", n); return true; }
+        // Only a 1.20.1 item stack ({"item": ...}) is known to accept a count it did not have.
+        if (output && ref.field().equals("item")) { ref.node().addProperty("count", n); return true; }
         return false;
     }
 
     /** One counted ingredient gets the count; ingredients repeated in a list (Create, shapeless) are repeated n times. */
     private static void setInput(List<Ref> refs, int n) {
         if (refs.isEmpty()) return;
-        Ref first = refs.getFirst();
+        Ref first = refs.get(0);
         if (first.node() == null) return;
         boolean counted = first.list() == null || COUNT_KEYS.stream().anyMatch(k -> first.node().has(k));
         if (refs.size() == 1 && counted && first.uses() == 1) {

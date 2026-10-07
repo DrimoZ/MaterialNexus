@@ -18,15 +18,15 @@ class CreatedItemsTest {
     @Test
     void onlyMissingTemplatedFormsOfRealMaterials() {
         var tags = Map.of(
-                ResourceLocation.parse("c:ingots/netherite"), List.of(ResourceLocation.parse("minecraft:netherite_ingot")),
-                ResourceLocation.parse("c:rods/iron"), List.of(ResourceLocation.parse("immersiveengineering:stick_iron")));
+                ResourceLocation.parse("forge:ingots/netherite"), List.of(ResourceLocation.parse("minecraft:netherite_ingot")),
+                ResourceLocation.parse("forge:rods/iron"), List.of(ResourceLocation.parse("immersiveengineering:stick_iron")));
         var discovered = TagDiscovery.discover(tags);
         var resolved = CanonicalResolver.resolve(discovered, ResolutionPolicy.NONE);
         var netherite = resolved.get(new MaterialId("netherite"));
 
         var rod = CreatedItems.validate(discovered, netherite, "netherite", "rod").orElseThrow();
         assertEquals(ResourceLocation.parse("materialnexus:netherite_rod"), rod.id());
-        assertEquals(ResourceLocation.parse("c:rods/netherite"), rod.tag());
+        assertEquals(ResourceLocation.parse("forge:rods/netherite"), rod.tag());
         assertEquals(ResourceLocation.parse("minecraft:netherite_ingot"), rod.colorFrom().orElseThrow());
 
         assertTrue(CreatedItems.validate(discovered, netherite, "netherite", "ingot").isEmpty(), "form already present");
@@ -35,7 +35,7 @@ class CreatedItemsTest {
         assertTrue(CreatedItems.validate(discovered, netherite, "iron", "gear").isEmpty(), "name must match the material");
 
         // A gem is the ingot of non-metals: no ingot, no wire offered for it.
-        var gems = Map.of(ResourceLocation.parse("c:gems/fluxite"), List.of(ResourceLocation.parse("oritech:fluxite")));
+        var gems = Map.of(ResourceLocation.parse("forge:gems/fluxite"), List.of(ResourceLocation.parse("oritech:fluxite")));
         var gemDiscovered = TagDiscovery.discover(gems);
         var fluxite = CanonicalResolver.resolve(gemDiscovered, ResolutionPolicy.NONE).get(new MaterialId("fluxite"));
         assertTrue(CreatedItems.validate(gemDiscovered, fluxite, "fluxite", "ingot").isEmpty());
@@ -49,7 +49,7 @@ class CreatedItemsTest {
         var file = dir.resolve("items.json");
         java.nio.file.Files.writeString(file, "{\"items\":[{\"material\":\"netherite\",\"form\":\"rod\",\"texture\":\"mypack:item/netherite_rod\"}]}");
         CreatedItems.add(file, List.of());
-        var rod = CreatedItems.load(file).getFirst();
+        var rod = CreatedItems.load(file).get(0);
         assertEquals(ResourceLocation.parse("mypack:item/netherite_rod"), rod.texture().orElseThrow());
     }
 }

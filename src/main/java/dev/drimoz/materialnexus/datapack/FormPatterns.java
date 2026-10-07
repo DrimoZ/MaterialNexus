@@ -12,9 +12,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.event.AddReloadListenerEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -33,7 +33,7 @@ import java.util.TreeMap;
  * remove the conversions checked for missing recipes. Declared data,
  * not a guess: a pattern item only counts when {@code {material}} names a material the tags already know.
  */
-@EventBusSubscriber(modid = MaterialNexus.MOD_ID)
+@Mod.EventBusSubscriber(modid = MaterialNexus.MOD_ID)
 public final class FormPatterns extends SimpleJsonResourceReloadListener {
     public static final String DIRECTORY = "material_nexus/forms";
     private static final String MATERIAL = "{material}";
@@ -50,10 +50,10 @@ public final class FormPatterns extends SimpleJsonResourceReloadListener {
             ).apply(i, dev.drimoz.materialnexus.core.recipe.FamilyRelations.Relation::new));
 
     private static final Codec<FormsFile> CODEC = com.mojang.serialization.codecs.RecordCodecBuilder.create(i -> i.group(
-            Codec.unboundedMap(Codec.STRING, FormId.CODEC).optionalFieldOf("folders", Map.of()).forGetter(FormsFile::folders),
-            Codec.unboundedMap(FormId.CODEC, Codec.STRING.listOf()).optionalFieldOf("patterns", Map.of()).forGetter(FormsFile::patterns),
-            RELATION.listOf().optionalFieldOf("relations", List.of()).forGetter(FormsFile::relations),
-            RELATION.listOf().optionalFieldOf("remove_relations", List.of()).forGetter(FormsFile::removeRelations)
+            dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.unboundedMap(Codec.STRING, FormId.CODEC), "folders", Map.of()).forGetter(FormsFile::folders),
+            dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.unboundedMap(FormId.CODEC, Codec.STRING.listOf()), "patterns", Map.of()).forGetter(FormsFile::patterns),
+            dev.drimoz.materialnexus.core.OptionalFields.strict(RELATION.listOf(), "relations", List.of()).forGetter(FormsFile::relations),
+            dev.drimoz.materialnexus.core.OptionalFields.strict(RELATION.listOf(), "remove_relations", List.of()).forGetter(FormsFile::removeRelations)
     ).apply(i, FormsFile::new));
     private static volatile Map<FormId, List<String>> patterns = Map.of();
 
@@ -163,7 +163,7 @@ public final class FormPatterns extends SimpleJsonResourceReloadListener {
         Set<String> names = new HashSet<>(aliases);
         for (ResourceLocation tag : tags) {
             String[] parts = tag.getPath().split("/");
-            if (tag.getNamespace().equals("c") && parts.length == 2 && TagDiscovery.isFolder(parts[0])) names.add(parts[1]);
+            if (tag.getNamespace().equals(TagDiscovery.CONVENTION_NAMESPACE) && parts.length == 2 && TagDiscovery.isFolder(parts[0])) names.add(parts[1]);
         }
         return names;
     }

@@ -1,0 +1,4 @@
+[07oct.2026 23:08:58.607] [Test worker/DEBUG] [io.netty.util.internal.logging.InternalLoggerFactory/]: Using SLF4J as the default logging framework
+[07oct.2026 23:08:58.614] [Test worker/DEBUG] [io.netty.util.ResourceLeakDetector/]: -Dio.netty.leakDetection.level: simple
+[07oct.2026 23:08:58.614] [Test worker/DEBUG] [io.netty.util.ResourceLeakDetector/]: -Dio.netty.leakDetection.targetRecords: 4
+[07oct.2026 23:08:58.964] [Test worker/WARN] [dev.drimoz.materialnexus.datapack.MaterialDefinitions/]: Alias 'aluminium' is claimed by both aluminum and bauxite (zpack:other); keeping aluminum

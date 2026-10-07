@@ -18,7 +18,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.PacketDistributor;
+import dev.drimoz.materialnexus.network.PacketDistributor;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -67,7 +67,7 @@ final class DataPanel {
         return button;
     }
 
-    private int side() { return Math.clamp(w / 3, 170, 260); }
+    private int side() { return net.minecraft.util.Mth.clamp(w / 3, 170, 260); }
 
     // ---- widgets -------------------------------------------------------------------------------------------
 
@@ -139,7 +139,7 @@ final class DataPanel {
     private void initUntagged(Consumer<AbstractWidget> add, Font font) {
         List<FormPatterns.Candidate> candidates = list.untagged();
         int pages = Math.max(1, (candidates.size() + PAGE - 1) / PAGE);
-        untaggedPage = Math.clamp(untaggedPage, 0, pages - 1);
+        untaggedPage = net.minecraft.util.Mth.clamp(untaggedPage, 0, pages - 1);
         int ry = y + 76;
         for (int i = untaggedPage * PAGE; i < Math.min(candidates.size(), (untaggedPage + 1) * PAGE); i++) {
             FormPatterns.Candidate c = candidates.get(i);
@@ -274,7 +274,7 @@ final class DataPanel {
                     g.drawString(font, font.plainSubstrByWidth(label, side - 30), x + 18, ry + 2, isSelected ? Ui.TEXT : 0xC8C8D0, false);
                     if (my >= top && my < bottom) {
                         hits.add(x + 4, ry, side - 6, ROW, () -> select(item), null,
-                                List.of(Component.literal(item.id().toString()), Component.translatable("screen.materialnexus.data.source", item.source()).withColor(0x888888)));
+                                List.of(Component.literal(item.id().toString()), Component.translatable("screen.materialnexus.data.source", item.source()).withStyle(s -> s.withColor(0x888888))));
                     }
                 }
             }

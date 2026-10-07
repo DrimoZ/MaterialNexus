@@ -54,7 +54,7 @@ final class PreviewDrawer implements Drawer {
         if (!preview.removed().isEmpty()) {
             groups.add(new Group("removed", Ui.MUTED | 0xFF000000, preview.removed().stream().map(Describe::describe).toList()));
         }
-        if (groups.size() == 1) open.add(groups.getFirst().key());
+        if (groups.size() == 1) open.add(groups.get(0).key());
     }
 
     boolean hasChanges() {

@@ -47,24 +47,24 @@ public final class PolicyFiles {
 
     /** {@code {"routes": [...], "exclusive": false, "enforce_ratio": false}}; MNX-036. */
     static final Codec<ProcessRules.Rule> PROCESS = RecordCodecBuilder.create(i -> i.group(
-            ROUTE.listOf().optionalFieldOf("routes", List.of()).forGetter(ProcessRules.Rule::routes),
-            Codec.BOOL.optionalFieldOf("exclusive", false).forGetter(ProcessRules.Rule::exclusive),
-            Codec.BOOL.optionalFieldOf("enforce_ratio", false).forGetter(ProcessRules.Rule::enforceRatio)
+            dev.drimoz.materialnexus.core.OptionalFields.strict(ROUTE.listOf(), "routes", List.of()).forGetter(ProcessRules.Rule::routes),
+            dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.BOOL, "exclusive", false).forGetter(ProcessRules.Rule::exclusive),
+            dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.BOOL, "enforce_ratio", false).forGetter(ProcessRules.Rule::enforceRatio)
     ).apply(i, ProcessRules.Rule::new));
 
     private record FormPolicy(Optional<ResourceLocation> preferredProvider, List<String> modPriority, Optional<ProcessRules.Rule> process) {
         static final Codec<FormPolicy> CODEC = RecordCodecBuilder.create(i -> i.group(
-                ResourceLocation.CODEC.optionalFieldOf("preferred_provider").forGetter(FormPolicy::preferredProvider),
-                Codec.STRING.listOf().optionalFieldOf("mod_priority", List.of()).forGetter(FormPolicy::modPriority),
-                PROCESS.optionalFieldOf("process").forGetter(FormPolicy::process)
+                dev.drimoz.materialnexus.core.OptionalFields.strict(ResourceLocation.CODEC, "preferred_provider").forGetter(FormPolicy::preferredProvider),
+                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.STRING.listOf(), "mod_priority", List.of()).forGetter(FormPolicy::modPriority),
+                dev.drimoz.materialnexus.core.OptionalFields.strict(PROCESS, "process").forGetter(FormPolicy::process)
         ).apply(i, FormPolicy::new));
     }
 
     private record MaterialPolicy(MaterialId material, List<String> modPriority, Map<FormId, FormPolicy> forms) {
         static final Codec<MaterialPolicy> CODEC = RecordCodecBuilder.create(i -> i.group(
                 MaterialId.CODEC.fieldOf("material").forGetter(MaterialPolicy::material),
-                Codec.STRING.listOf().optionalFieldOf("mod_priority", List.of()).forGetter(MaterialPolicy::modPriority),
-                Codec.unboundedMap(FormId.CODEC, FormPolicy.CODEC).optionalFieldOf("forms", Map.of()).forGetter(MaterialPolicy::forms)
+                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.STRING.listOf(), "mod_priority", List.of()).forGetter(MaterialPolicy::modPriority),
+                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.unboundedMap(FormId.CODEC, FormPolicy.CODEC), "forms", Map.of()).forGetter(MaterialPolicy::forms)
         ).apply(i, MaterialPolicy::new));
     }
 
@@ -72,12 +72,12 @@ public final class PolicyFiles {
     private record GlobalPolicy(List<String> modPriority, List<String> exclude, List<String> conversionRecipes,
                                 Map<String, String> almostUnified, Map<FormId, ProcessRules.Rule> processes, List<ResourceLocation> notSame) {
         static final Codec<GlobalPolicy> CODEC = RecordCodecBuilder.create(i -> i.group(
-                Codec.STRING.listOf().optionalFieldOf("mod_priority", List.of()).forGetter(GlobalPolicy::modPriority),
-                Codec.STRING.listOf().optionalFieldOf("exclude", List.of()).forGetter(GlobalPolicy::exclude),
-                Codec.STRING.listOf().optionalFieldOf("conversion_recipes", List.of()).forGetter(GlobalPolicy::conversionRecipes),
-                Codec.unboundedMap(Codec.STRING, Codec.STRING).optionalFieldOf("almost_unified", Map.of()).forGetter(GlobalPolicy::almostUnified),
-                Codec.unboundedMap(FormId.CODEC, PROCESS).optionalFieldOf("processes", Map.of()).forGetter(GlobalPolicy::processes),
-                ResourceLocation.CODEC.listOf().optionalFieldOf("not_same", List.of()).forGetter(GlobalPolicy::notSame)
+                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.STRING.listOf(), "mod_priority", List.of()).forGetter(GlobalPolicy::modPriority),
+                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.STRING.listOf(), "exclude", List.of()).forGetter(GlobalPolicy::exclude),
+                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.STRING.listOf(), "conversion_recipes", List.of()).forGetter(GlobalPolicy::conversionRecipes),
+                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.unboundedMap(Codec.STRING, Codec.STRING), "almost_unified", Map.of()).forGetter(GlobalPolicy::almostUnified),
+                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.unboundedMap(FormId.CODEC, PROCESS), "processes", Map.of()).forGetter(GlobalPolicy::processes),
+                dev.drimoz.materialnexus.core.OptionalFields.strict(ResourceLocation.CODEC.listOf(), "not_same", List.of()).forGetter(GlobalPolicy::notSame)
         ).apply(i, GlobalPolicy::new));
     }
 
@@ -169,7 +169,9 @@ public final class PolicyFiles {
     }
 
     private static <T> T decode(Codec<T> codec, JsonElement json, String file) {
-        return codec.parse(JsonOps.INSTANCE, json).getOrThrow(error -> new IllegalArgumentException("Invalid policy file " + file + ": " + error));
+        return codec.parse(JsonOps.INSTANCE, json).getOrThrow(false, error -> {
+            throw new IllegalArgumentException("Invalid policy file " + file + ": " + error);
+        });
     }
 
     private static JsonElement readJson(Path file) throws IOException {

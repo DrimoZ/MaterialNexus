@@ -42,25 +42,25 @@ class ProcessPlannerTest {
     // Real shapes from IE 12.4, Create 6 and vanilla.
     private static final List<Source> SOURCES = List.of(
             source("immersiveengineering:metalpress/rod_iron", """
-                    {"neoforge:conditions":[{"type":"neoforge:not","value":{"type":"neoforge:tag_empty","tag":"c:rods/iron"}}],
-                     "type":"immersiveengineering:metal_press","energy":2400,"input":{"tag":"c:ingots/iron"},
-                     "mold":"immersiveengineering:mold_rod","result":{"basePredicate":{"tag":"c:rods/iron"},"count":2}}"""),
+                    {"conditions":[{"type":"neoforge:not","value":{"type":"neoforge:tag_empty","tag":"forge:rods/iron"}}],
+                     "type":"immersiveengineering:metal_press","energy":2400,"input":{"tag":"forge:ingots/iron"},
+                     "mold":"immersiveengineering:mold_rod","result":{"basePredicate":{"tag":"forge:rods/iron"},"count":2}}"""),
             source("create:pressing/iron_ingot", """
-                    {"type":"create:pressing","ingredients":[{"tag":"c:ingots/iron"}],"results":[{"id":"create:iron_sheet"}]}"""),
+                    {"type":"create:pressing","ingredients":[{"tag":"forge:ingots/iron"}],"results":[{"item":"create:iron_sheet"}]}"""),
             source("immersiveengineering:crafting/stick_iron", """
-                    {"type":"minecraft:crafting_shaped","category":"misc","key":{"i":{"tag":"c:ingots/iron"}},"pattern":["i","i"],
-                     "result":{"count":4,"id":"immersiveengineering:stick_iron"}}"""),
+                    {"type":"minecraft:crafting_shaped","category":"misc","key":{"i":{"tag":"forge:ingots/iron"}},"pattern":["i","i"],
+                     "result":{"count":4,"item":"immersiveengineering:stick_iron"}}"""),
             source("test:cut_iron_rod", """
-                    {"type":"minecraft:stonecutting","ingredient":{"tag":"c:ingots/iron"},"result":{"count":2,"id":"immersiveengineering:stick_iron"}}"""));
+                    {"type":"minecraft:stonecutting","ingredient":{"tag":"forge:ingots/iron"},"result":{"count":2,"item":"immersiveengineering:stick_iron"}}"""));
 
     private static PackContent.Content plan(Map<FormId, Rule> rules) {
         Map<ResourceLocation, List<ResourceLocation>> tags = Map.of(
-                rl("c:ingots/iron"), List.of(rl("minecraft:iron_ingot")),
-                rl("c:rods/iron"), List.of(rl("immersiveengineering:stick_iron")),
-                rl("c:plates/iron"), List.of(rl("create:iron_sheet")),
-                rl("c:ingots/aluminum"), List.of(rl("immersiveengineering:ingot_aluminum")),
-                rl("c:rods/aluminum"), List.of(rl("immersiveengineering:stick_aluminum")),
-                rl("c:plates/aluminum"), List.of(rl("immersiveengineering:plate_aluminum")));
+                rl("forge:ingots/iron"), List.of(rl("minecraft:iron_ingot")),
+                rl("forge:rods/iron"), List.of(rl("immersiveengineering:stick_iron")),
+                rl("forge:plates/iron"), List.of(rl("create:iron_sheet")),
+                rl("forge:ingots/aluminum"), List.of(rl("immersiveengineering:ingot_aluminum")),
+                rl("forge:rods/aluminum"), List.of(rl("immersiveengineering:stick_aluminum")),
+                rl("forge:plates/aluminum"), List.of(rl("immersiveengineering:plate_aluminum")));
         ResolutionPolicy policy = new ResolutionPolicy(List.of(), Map.of(), Map.of(), Map.of(), Set.of(), Set.of(), Set.of(),
                 AlmostUnified.NONE, new ProcessRules(rules, Map.of()));
         var resolved = CanonicalResolver.resolve(TagDiscovery.discover(tags), policy);
@@ -68,7 +68,7 @@ class ProcessPlannerTest {
     }
 
     private static String path(MaterialForm target, Route route) {
-        return "data/materialnexus/recipe/" + ProcessPlanner.recipeId(target, route).getPath() + ".json";
+        return "data/materialnexus/recipes/" + ProcessPlanner.recipeId(target, route).getPath() + ".json";
     }
 
     private static JsonObject file(PackContent.Content content, MaterialForm target, Route route) {
@@ -93,11 +93,11 @@ class ProcessPlannerTest {
         Route shaped = new Route(rl("minecraft:crafting_shaped"), INGOT, 3, 4);
         Route gear = new Route(rl("immersiveengineering:metal_press"), INGOT, 2, 1);
         Map<ResourceLocation, List<ResourceLocation>> tags = Map.of(
-                rl("c:ingots/iron"), List.of(rl("minecraft:iron_ingot")),
-                rl("c:rods/iron"), List.of(rl("immersiveengineering:stick_iron")),
-                rl("c:ingots/aluminum"), List.of(rl("immersiveengineering:ingot_aluminum")),
-                rl("c:rods/aluminum"), List.of(rl("immersiveengineering:stick_aluminum")),
-                rl("c:gears/aluminum"), List.of(rl("immersiveengineering:gear_aluminum")));
+                rl("forge:ingots/iron"), List.of(rl("minecraft:iron_ingot")),
+                rl("forge:rods/iron"), List.of(rl("immersiveengineering:stick_iron")),
+                rl("forge:ingots/aluminum"), List.of(rl("immersiveengineering:ingot_aluminum")),
+                rl("forge:rods/aluminum"), List.of(rl("immersiveengineering:stick_aluminum")),
+                rl("forge:gears/aluminum"), List.of(rl("immersiveengineering:gear_aluminum")));
         ResolutionPolicy policy = new ResolutionPolicy(List.of(), Map.of(), Map.of(), Map.of(), Set.of(), Set.of(), Set.of(), AlmostUnified.NONE,
                 new ProcessRules(Map.of(ROD, new Rule(List.of(shaped), false, false), new FormId("gear"), new Rule(List.of(gear), false, false)), Map.of()));
         var resolved = CanonicalResolver.resolve(TagDiscovery.discover(tags), policy);
@@ -106,7 +106,7 @@ class ProcessPlannerTest {
 
         JsonObject rod = file(content, new MaterialForm(ALUMINUM, ROD), shaped);
         assertEquals(3, rod.getAsJsonArray("pattern").size());
-        assertEquals("c:ingots/aluminum", rod.getAsJsonObject("key").getAsJsonObject("#").get("tag").getAsString());
+        assertEquals("forge:ingots/aluminum", rod.getAsJsonObject("key").getAsJsonObject("#").get("tag").getAsString());
         assertEquals(4, rod.getAsJsonObject("result").get("count").getAsInt());
 
         JsonObject press = file(content, new MaterialForm(ALUMINUM, new FormId("gear")), gear);
@@ -127,14 +127,14 @@ class ProcessPlannerTest {
 
         // IE: tags swapped everywhere (conditions too), count kept on the basePredicate wrapper, mold untouched.
         JsonObject ie = file(content, aluRod, press);
-        assertEquals("c:ingots/aluminum", ie.getAsJsonObject("input").get("tag").getAsString());
-        assertEquals("c:rods/aluminum", ie.getAsJsonObject("result").getAsJsonObject("basePredicate").get("tag").getAsString());
+        assertEquals("forge:ingots/aluminum", ie.getAsJsonObject("input").get("tag").getAsString());
+        assertEquals("forge:rods/aluminum", ie.getAsJsonObject("result").getAsJsonObject("basePredicate").get("tag").getAsString());
         assertEquals(2, ie.getAsJsonObject("result").get("count").getAsInt());
         assertFalse(ie.toString().contains("iron"), ie.toString());
         assertEquals("immersiveengineering:mold_rod", ie.get("mold").getAsString());
 
         // Shaped crafting with the same ratio: copied; the canonical aluminum rod is the output.
-        assertEquals("immersiveengineering:stick_aluminum", file(content, aluRod, shaped).getAsJsonObject("result").get("id").getAsString());
+        assertEquals("immersiveengineering:stick_aluminum", file(content, aluRod, shaped).getAsJsonObject("result").get("item").getAsString());
         // A pattern cannot be resized safely: reported, not guessed.
         assertTrue(content.effects().contains(new PackContent.Effect(ProcessPlanner.UNSUPPORTED, rl("minecraft:crafting_shaped"),
                 rl("immersiveengineering:stick_aluminum"))));
@@ -143,7 +143,7 @@ class ProcessPlannerTest {
         // Create: 2 ingots → 1 plate is the ingredient listed twice; the output is an item stack.
         JsonObject create = file(content, new MaterialForm(ALUMINUM, PLATE), pressing);
         assertEquals(2, create.getAsJsonArray("ingredients").size());
-        assertEquals("immersiveengineering:plate_aluminum", create.getAsJsonArray("results").get(0).getAsJsonObject().get("id").getAsString());
+        assertEquals("immersiveengineering:plate_aluminum", create.getAsJsonArray("results").get(0).getAsJsonObject().get("item").getAsString());
 
         // enforce_ratio: iron's own 1 → 1 pressing is replaced by a 2 → 1 copy of itself.
         assertTrue(content.effects().contains(new PackContent.Effect(ProcessPlanner.DISABLE, rl("create:pressing/iron_ingot"), rl("create:iron_sheet"))));

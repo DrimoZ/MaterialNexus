@@ -10,7 +10,7 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.ItemStack;
-import net.minecraft.world.item.crafting.RecipeHolder;
+import net.minecraft.world.item.crafting.Recipe;
 
 import java.io.IOException;
 import java.io.Reader;
@@ -58,22 +58,22 @@ public final class RecipeSources {
 
         // ponytail: reads the JSON of every known-format recipe on each preview (13k on the dev pack: ~0.5 s, explicit
         // player action only; MNX-044 measured a worst-case preview under 2 s). Index on reload if packs get much bigger.
-        for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
-            if (ours.contains(holder.id())) continue;
-            ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
+        for (Recipe<?> holder : server.getRecipeManager().getRecipes()) {
+            if (ours.contains(holder.getId())) continue;
+            ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.getSerializer());
             // A recipe with no file (added in memory by a script, e.g. KubeJS) has no JSON we may rewrite: it is
             // reported like an unknown type rather than silently skipped.
-            Optional<JsonObject> file = type != null && formats.forType(type).isPresent() ? originalJson(resources, holder.id()) : Optional.empty();
+            Optional<JsonObject> file = type != null && formats.forType(type).isPresent() ? originalJson(resources, holder.getId()) : Optional.empty();
             if (file.isPresent()) {
                 JsonObject json = file.get();
                 List<ResourceLocation> outputs = RecipeRewrites.outputIds(json, formats);
                 boolean touches = outputs.stream().anyMatch(items::contains) || mentions(json.toString(), conversions.keySet());
-                if (touches) sources.add(new RecipeRewrites.Source(holder.id(), Optional.of(json), firstOrSelf(outputs, holder.id())));
+                if (touches) sources.add(new RecipeRewrites.Source(holder.getId(), Optional.of(json), firstOrSelf(outputs, holder.getId())));
             } else {
-                ItemStack out = holder.value().getResultItem(server.registryAccess());
+                ItemStack out = holder.getResultItem(server.registryAccess());
                 ResourceLocation result = out.isEmpty() ? null : BuiltInRegistries.ITEM.getKey(out.getItem());
                 if (result != null && conversions.containsKey(result)) {
-                    sources.add(new RecipeRewrites.Source(holder.id(), Optional.empty(), result));
+                    sources.add(new RecipeRewrites.Source(holder.getId(), Optional.empty(), result));
                 }
             }
         }
@@ -90,9 +90,9 @@ public final class RecipeSources {
     public static List<RecipeRewrites.Source> known(MinecraftServer server, RecipeFormats formats, Collection<ResourceLocation> overridden) {
         ResourceManager resources = server.getResourceManager();
         Set<ResourceLocation> ids = new java.util.TreeSet<>(overridden);
-        for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
-            ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
-            if (type != null && formats.forType(type).isPresent()) ids.add(holder.id());
+        for (Recipe<?> holder : server.getRecipeManager().getRecipes()) {
+            ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.getSerializer());
+            if (type != null && formats.forType(type).isPresent()) ids.add(holder.getId());
         }
         List<RecipeRewrites.Source> sources = new ArrayList<>();
         // Our own generated recipes have no file beneath the generated pack, so they are never read back here.
@@ -103,12 +103,25 @@ public final class RecipeSources {
     }
 
     private static ResourceLocation firstOrSelf(List<ResourceLocation> outputs, ResourceLocation recipe) {
-        return outputs.isEmpty() ? recipe : outputs.getFirst();
+        return outputs.isEmpty() ? recipe : outputs.get(0);
+    }
+
+    /**
+     * Forge 1.20.1 port: why the game cannot read this recipe JSON, or empty when it can (1.21 decodes with Recipe.CODEC).
+     * Load conditions are not evaluated here; callers strip them first.
+     */
+    public static Optional<String> decodeError(JsonObject json) {
+        try {
+            net.minecraft.world.item.crafting.RecipeManager.fromJson(ResourceLocation.fromNamespaceAndPath("materialnexus", "validation"), json);
+            return Optional.empty();
+        } catch (RuntimeException e) {
+            return Optional.of(String.valueOf(e.getMessage()));
+        }
     }
 
     /** The highest-priority definition of a recipe, skipping the Material Nexus generated pack. */
     static Optional<JsonObject> originalJson(ResourceManager resources, ResourceLocation id) {
-        ResourceLocation file = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "recipe/" + id.getPath() + ".json");
+        ResourceLocation file = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "recipes/" + id.getPath() + ".json");
         List<Resource> stack = resources.getResourceStack(file);
         for (int i = stack.size() - 1; i >= 0; i--) {
             Resource resource = stack.get(i);

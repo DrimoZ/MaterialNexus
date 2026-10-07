@@ -15,9 +15,9 @@ import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.TagsUpdatedEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.event.TagsUpdatedEvent;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.Map;
 
 /** Runs discovery once per server data load (startup and /reload), never per tick. */
-@EventBusSubscriber(modid = MaterialNexus.MOD_ID)
+@Mod.EventBusSubscriber(modid = MaterialNexus.MOD_ID)
 public final class DiscoveryEvents {
     private static final Logger LOGGER = LogUtils.getLogger();
 
@@ -62,7 +62,7 @@ public final class DiscoveryEvents {
             // In-world conversion follows the applied pack, not the policy files (ADR-015).
             ItemConversions.install(PackContent.itemConversions(applied));
             ItemConversions.setViewerHiding(policy.almostUnified().mnxOwns(dev.drimoz.materialnexus.core.policy.AlmostUnified.Domain.VIEWER_HIDING,
-                    net.neoforged.fml.ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID)));
+                    net.minecraftforge.fml.ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID)));
             LOGGER.info("Material Nexus discovered {} materials ({} providers) in {} ms",
                     discovered.materials().size(), discovered.providerCount(), (System.nanoTime() - start) / 1_000_000);
         } catch (IOException | RuntimeException e) {

@@ -16,11 +16,12 @@ import java.util.SortedMap;
 import java.util.TreeMap;
 
 /**
- * Turns {@code c:<folder>/<material>} item tags into material/form providers. Pure: the caller
+ * Turns {@code forge:<folder>/<material>} item tags into material/form providers. Pure: the caller
  * supplies tag memberships, so this never touches registries and never runs on a tick.
  */
 public final class TagDiscovery {
-    private static final String CONVENTION_NAMESPACE = "c";
+    // Forge 1.20.1 port: the convention tags of this ecosystem are forge:<folder>/<material> (c: arrived with 1.21).
+    public static final String CONVENTION_NAMESPACE = "forge";
     private static final String RAW_PREFIX = "raw_";
     private static final String ORES_IN_GROUND = "ores_in_ground/";
     private static final FormId ORE = new FormId("ore");
@@ -103,7 +104,7 @@ public final class TagDiscovery {
             if (tagForm == null) return;
 
             String name = parts[1];
-            // c:storage_blocks/raw_copper is the raw block of copper, not a material called raw_copper.
+            // forge:storage_blocks/raw_copper is the raw block of copper, not a material called raw_copper.
             if (tagForm.equals(BLOCK) && name.startsWith(RAW_PREFIX)) {
                 tagForm = RAW_BLOCK;
                 name = name.substring(RAW_PREFIX.length());
@@ -119,7 +120,7 @@ public final class TagDiscovery {
                 if (tagForm.equals(ORE)) {
                     String ground = groundOf.get(item);
                     form = ground != null ? oreForm(ground) : oreFormByName(item);
-                    explanation += ground != null ? " + #c:" + ORES_IN_GROUND + ground : " + name (" + form + ")";
+                    explanation += ground != null ? " + #" + CONVENTION_NAMESPACE + ":" + ORES_IN_GROUND + ground : " + name (" + form + ")";
                 }
                 byForm.computeIfAbsent(form, f -> new TreeMap<>())
                         .computeIfAbsent(item, i -> new ArrayList<>())
@@ -173,7 +174,7 @@ public final class TagDiscovery {
         return folders.entrySet().stream().filter(e -> e.getValue().equals(form)).map(Map.Entry::getKey).findFirst();
     }
 
-    /** The convention tag a material/form was discovered from, e.g. c:ingots/tin or c:storage_blocks/raw_tin. */
+    /** The convention tag a material/form was discovered from, e.g. forge:ingots/tin or forge:storage_blocks/raw_tin. */
     public static java.util.Optional<ResourceLocation> conventionTag(MaterialId material, FormId form) {
         if (form.equals(RAW_BLOCK)) return java.util.Optional.of(ResourceLocation.fromNamespaceAndPath(CONVENTION_NAMESPACE, "storage_blocks/" + RAW_PREFIX + material.name()));
         if (form.equals(ORE) || form.name().endsWith("_ore")) return java.util.Optional.of(ResourceLocation.fromNamespaceAndPath(CONVENTION_NAMESPACE, "ores/" + material.name()));

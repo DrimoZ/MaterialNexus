@@ -9,9 +9,9 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.event.AddReloadListenerEvent;
 import org.slf4j.Logger;
 
 import java.util.Map;
@@ -23,7 +23,7 @@ import java.util.TreeMap;
  * {@code global.json}. Applying one replaces the fields it defines and keeps the others, through the usual
  * Preview / Apply / Revert flow. Names come from {@code materialnexus.preset.<path>} lang keys.
  */
-@EventBusSubscriber(modid = MaterialNexus.MOD_ID)
+@Mod.EventBusSubscriber(modid = MaterialNexus.MOD_ID)
 public final class Presets extends SimpleJsonResourceReloadListener {
     public static final String DIRECTORY = "material_nexus/presets";
     private static final Logger LOGGER = LogUtils.getLogger();

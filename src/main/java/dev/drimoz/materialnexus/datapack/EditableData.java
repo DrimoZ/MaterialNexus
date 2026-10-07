@@ -68,7 +68,7 @@ public final class EditableData {
         for (Kind kind : Kind.values()) {
             resources.listResourceStacks(kind.directory, f -> f.getPath().endsWith(".json")).forEach((file, stack) -> {
                 if (stack.isEmpty()) return;
-                String source = stack.getLast().sourcePackId();
+                String source = stack.get(stack.size() - 1).sourcePackId();
                 entries.add(new Entry(kind, id(kind, file), source, source.equals(USER_PACK_ID)));
             });
         }
@@ -80,7 +80,7 @@ public final class EditableData {
     public static Optional<String> read(ResourceManager resources, Kind kind, ResourceLocation id) {
         List<Resource> stack = resources.getResourceStack(file(kind, id));
         if (stack.isEmpty()) return Optional.empty();
-        try (Reader reader = stack.getLast().openAsReader()) {
+        try (Reader reader = stack.get(stack.size() - 1).openAsReader()) {
             return Optional.of(new GsonBuilder().setPrettyPrinting().create().toJson(JsonParser.parseReader(reader)));
         } catch (IOException | RuntimeException e) {
             return Optional.empty();
@@ -115,11 +115,11 @@ public final class EditableData {
                 var template = ProcessTemplates.parse(json);
                 if (template.isEmpty()) yield Optional.of("needs \"machine\" and a \"recipe\" object");
                 JsonObject ingredient = new JsonObject();
-                ingredient.addProperty("tag", "c:ingots/iron");
+                ingredient.addProperty("tag", "forge:ingots/iron");
                 String form = template.get().forms().isEmpty() ? "plate" : template.get().forms().keySet().iterator().next().name();
                 int in = template.get().patterns().keySet().stream().mapToInt(Integer::parseInt).min().orElse(1);
                 var filled = ProcessTemplates.fill(template.get(), new ProcessTemplates.Values("iron", form, ingredient, in, 1,
-                        "minecraft:iron_ingot", "c:ingots/iron"));
+                        "minecraft:iron_ingot", "forge:ingots/iron"));
                 if (filled.isEmpty()) yield Optional.of("a placeholder has no value");
                 yield decodes.test(filled.get()) ? Optional.<String>empty() : Optional.of("the game cannot read the filled recipe");
             }

@@ -21,7 +21,7 @@ import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.PacketDistributor;
+import dev.drimoz.materialnexus.network.PacketDistributor;
 
 import java.util.List;
 import java.util.Locale;
@@ -176,7 +176,7 @@ public final class NexusScreen extends Screen {
         if (payload.byForm() || !payload.query().equals(query.strip().toLowerCase(Locale.ROOT))) return;
         page = payload;
         if (list != null) list.show(payload.entries(), material, false);
-        if (view == View.MATERIALS && material == null && !payload.entries().isEmpty()) openMaterial(payload.entries().getFirst().material());
+        if (view == View.MATERIALS && material == null && !payload.entries().isEmpty()) openMaterial(payload.entries().get(0).material());
     }
 
     /** MNX-053: the queue is built from the grid, which is requested first if needed. */
@@ -306,12 +306,12 @@ public final class NexusScreen extends Screen {
         reset.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("screen.materialnexus.reset.all.tooltip")));
     }
 
-    private int listWidth() { return Math.clamp(width / 5, 110, 170); }
+    private int listWidth() { return net.minecraft.util.Mth.clamp(width / 5, 110, 170); }
 
     private void initMaterials() {
         int lw = listWidth();
         list = addRenderableWidget(new MaterialSidebar(minecraft, lw, contentH - 20, contentY + 20, this::openMaterial));
-        list.setX(contentX);
+        list.setLeftPos(contentX);
         if (page != null) list.show(page.entries(), material, false);
         layoutDetail(contentX + lw + 6);
     }
@@ -369,7 +369,7 @@ public final class NexusScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphics g, int mx, int my, float partialTick) { }
+    public void renderBackground(GuiGraphics g) { }
 
     private void renderTop(GuiGraphics g) {
         g.drawString(font, title, 8, 8, Ui.TEXT, false);
@@ -585,7 +585,7 @@ public final class NexusScreen extends Screen {
     }
 
     static String modName(String namespace) {
-        return net.neoforged.fml.ModList.get().getModContainerById(namespace).map(c -> c.getModInfo().getDisplayName()).orElse(namespace);
+        return net.minecraftforge.fml.ModList.get().getModContainerById(namespace).map(c -> c.getModInfo().getDisplayName()).orElse(namespace);
     }
 
     private int smallButton(GuiGraphics g, int mx, int my, int x, int y, String label, Runnable action) {
@@ -782,7 +782,7 @@ public final class NexusScreen extends Screen {
     }
 
     @Override
-    public boolean mouseScrolled(double mx, double my, double scrollX, double scrollY) {
+    public boolean mouseScrolled(double mx, double my, double scrollY) {
         if (drawer != null && drawer.contains(mx, my)) {
             drawer.scroll(scrollY);
             return true;
@@ -801,7 +801,7 @@ public final class NexusScreen extends Screen {
             }
             return true;
         }
-        return super.mouseScrolled(mx, my, scrollX, scrollY);
+        return super.mouseScrolled(mx, my, scrollY);
     }
 
     @Override

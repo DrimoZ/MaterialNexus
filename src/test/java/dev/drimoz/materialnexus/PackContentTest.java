@@ -21,7 +21,13 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** What MNX-007 writes into a pack: only player decisions, only real alternatives, and stable across applies. */
 class PackContentTest {
-    private static final ResourceLocation INGOTS_TIN = ResourceLocation.fromNamespaceAndPath("c", "ingots/tin");
+    /** Writing the pack reads the game version (pack_format); no FML bootstrap on the 1.20.1 test classpath. */
+    @org.junit.jupiter.api.BeforeAll
+    static void gameVersion() {
+        net.minecraft.SharedConstants.tryDetectVersion();
+    }
+
+    private static final ResourceLocation INGOTS_TIN = ResourceLocation.fromNamespaceAndPath("forge", "ingots/tin");
     private static final ResourceLocation MEK = ResourceLocation.fromNamespaceAndPath("mekanism", "ingot_tin");
     private static final ResourceLocation MI = ResourceLocation.fromNamespaceAndPath("modern_industrialization", "tin_ingot");
     private static final ResourceLocation MI_VARIANT = ResourceLocation.fromNamespaceAndPath("modern_industrialization", "tin_ingot_alt");
@@ -43,8 +49,8 @@ class PackContentTest {
                 new PackContent.Effect(PackContent.CONVERSION, MEK, IE),
                 new PackContent.Effect(PackContent.ITEM_CONVERSION, MEK, IE),
                 new PackContent.Effect(PackContent.TAG_REMOVE, INGOTS_TIN, IE)), content.effects());
-        assertTrue(content.files().containsKey("data/c/tags/item/ingots/tin.json"));
-        assertTrue(content.files().get("data/c/tags/item/ingots/tin.json").toString().contains("\"remove\":[\"immersiveengineering:ingot_tin\"]"));
+        assertTrue(content.files().containsKey("data/forge/tags/items/ingots/tin.json"));
+        assertTrue(content.files().get("data/forge/tags/items/ingots/tin.json").toString().contains("\"remove\":[\"immersiveengineering:ingot_tin\"]"));
 
         // After the reload the tag no longer contains IE; restoring from the manifest yields the same pack again.
         Path pack = root.resolve("generated");

@@ -21,10 +21,10 @@ import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
-import net.neoforged.fml.ModList;
-import net.neoforged.neoforge.common.util.FakePlayerFactory;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.common.util.FakePlayerFactory;
+import net.minecraftforge.gametest.GameTestHolder;
+import net.minecraftforge.gametest.PrefixGameTestTemplate;
 
 /** Runtime acceptance tests; one per critical behavior. */
 @GameTestHolder(MaterialNexus.MOD_ID)
@@ -150,17 +150,16 @@ public final class MaterialNexusGameTests {
         var plan = dev.drimoz.materialnexus.datapack.ProcessPlanner.plan(RecipeSources.known(server, formats, java.util.List.of()), formats,
                 dev.drimoz.materialnexus.core.resolution.CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy), policy);
 
-        var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
         var generated = plan.effects().stream().filter(e -> e.kind().equals(dev.drimoz.materialnexus.datapack.ProcessPlanner.PROCESS)).toList();
         helper.assertTrue(generated.stream().anyMatch(e -> e.item().equals(ResourceLocation.withDefaultNamespace("iron_nugget"))),
                 "iron nuggets 1 → 8 should be generated, got " + plan.effects());
         for (var e : generated) {
-            var json = plan.files().get("data/materialnexus/recipe/" + e.target().getPath() + ".json").getAsJsonObject().deepCopy();
-            json.remove("neoforge:conditions");
-            var recipe = net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, json);
-            helper.assertTrue(recipe.isSuccess(), e.target() + " does not decode: " + recipe.error().map(Object::toString).orElse("") + " " + json);
+            var json = plan.files().get("data/materialnexus/recipes/" + e.target().getPath() + ".json").getAsJsonObject().deepCopy();
+            json.remove("conditions");
+            var recipe = RecipeSources.decodeError(json);
+            helper.assertTrue(recipe.isEmpty(), e.target() + " does not decode: " + recipe.orElse("") + " " + json);
         }
-        var iron = plan.files().get("data/materialnexus/recipe/" + dev.drimoz.materialnexus.datapack.ProcessPlanner.recipeId(
+        var iron = plan.files().get("data/materialnexus/recipes/" + dev.drimoz.materialnexus.datapack.ProcessPlanner.recipeId(
                 new dev.drimoz.materialnexus.core.domain.MaterialForm(new MaterialId("iron"), new FormId("nugget")), nugget).getPath() + ".json");
         helper.assertTrue(iron != null && iron.toString().contains("\"count\":8"), "iron nugget recipe must give 8, got " + iron);
         helper.succeed();
@@ -174,7 +173,7 @@ public final class MaterialNexusGameTests {
     public static void createdItemIsRegisteredTaggedAndDiscovered(GameTestHelper helper) {
         ResourceLocation id = ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "netherite_rod");
         helper.assertTrue(net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(id), "netherite_rod should be registered");
-        var tag = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, ResourceLocation.parse("c:rods/netherite"));
+        var tag = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, ResourceLocation.parse("forge:rods/netherite"));
         helper.assertTrue(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(id)).is(tag), "netherite_rod should be in #c:rods/netherite");
         var providers = SnapshotManager.current().discovered().providers(new MaterialId("netherite"), new FormId("rod"));
         helper.assertTrue(providers.stream().anyMatch(p -> p.resource().equals(id)), "discovery should see the netherite rod, got " + providers);
@@ -243,7 +242,7 @@ public final class MaterialNexusGameTests {
      */
     @GameTest(template = "empty")
     public static void almostUnifiedKeepsTheDomainsItWasNotGiven(GameTestHelper helper) {
-        if (!net.neoforged.fml.ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID)) {
+        if (!net.minecraftforge.fml.ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID)) {
             helper.succeed();
             return;
         }
@@ -273,20 +272,19 @@ public final class MaterialNexusGameTests {
     @GameTest(template = "empty")
     public static void shippedProcessTemplatesDecode(GameTestHelper helper) {
         var server = helper.getLevel().getServer();
-        var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
         var ingredient = new com.google.gson.JsonObject();
-        ingredient.addProperty("tag", "c:ingots/iron");
+        ingredient.addProperty("tag", "forge:ingots/iron");
         int checked = 0;
         for (var template : dev.drimoz.materialnexus.datapack.ProcessTemplates.templates()) {
             if (!ModList.get().isLoaded(template.machine().getNamespace()) && !template.machine().getNamespace().equals("minecraft")) continue;
             String form = template.forms().isEmpty() ? "plate" : template.forms().keySet().iterator().next().name();
             int in = template.patterns().isEmpty() ? 1 : 2;
             var json = dev.drimoz.materialnexus.datapack.ProcessTemplates.fill(template, new dev.drimoz.materialnexus.datapack.ProcessTemplates.Values(
-                    "iron", form, ingredient, in, 1, "minecraft:iron_ingot", "c:ingots/iron"));
+                    "iron", form, ingredient, in, 1, "minecraft:iron_ingot", "forge:ingots/iron"));
             helper.assertTrue(json.isPresent(), template.machine() + " template did not fill");
-            var decoded = net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, json.get());
-            helper.assertTrue(decoded.isSuccess(), template.machine() + " template does not decode: "
-                    + decoded.error().map(Object::toString).orElse("") + " " + json.get());
+            var decoded = RecipeSources.decodeError(json.get());
+            helper.assertTrue(decoded.isEmpty(), template.machine() + " template does not decode: "
+                    + decoded.orElse("") + " " + json.get());
             checked++;
         }
         helper.assertTrue(checked > 0, "no template checked");
@@ -339,7 +337,7 @@ public final class MaterialNexusGameTests {
                 "copper/ingot should include minecraft:copper_ingot");
         helper.assertTrue(discovered.providers(copper, new FormId("raw_block")).stream()
                 .anyMatch(p -> p.resource().equals(ResourceLocation.withDefaultNamespace("raw_copper_block"))),
-                "c:storage_blocks/raw_copper should map to copper/raw_block");
+                "forge:storage_blocks/raw_copper should map to copper/raw_block");
         helper.assertFalse(discovered.materials().containsKey(new MaterialId("raw_copper")),
                 "raw_copper must not be discovered as its own material");
         // MNX-027: host-rock variants are separate forms, never duplicates of each other.

@@ -25,8 +25,8 @@ class MaterialDefinitionsTest {
         ResourceLocation a = ResourceLocation.fromNamespaceAndPath("moda", "aluminum_ingot");
         ResourceLocation b = ResourceLocation.fromNamespaceAndPath("modb", "aluminium_ingot");
         var discovered = TagDiscovery.discover(Map.of(
-                ResourceLocation.fromNamespaceAndPath("c", "ingots/aluminum"), List.of(a),
-                ResourceLocation.fromNamespaceAndPath("c", "ingots/aluminium"), List.of(b)), aliases);
+                ResourceLocation.fromNamespaceAndPath("forge", "ingots/aluminum"), List.of(a),
+                ResourceLocation.fromNamespaceAndPath("forge", "ingots/aluminium"), List.of(b)), aliases);
         assertEquals(2, discovered.providers(new MaterialId("aluminum"), new FormId("ingot")).size());
         assertFalse(discovered.materials().containsKey(new MaterialId("aluminium")));
     }

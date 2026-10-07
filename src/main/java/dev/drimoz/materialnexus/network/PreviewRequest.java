@@ -7,8 +7,6 @@ import dev.drimoz.materialnexus.core.policy.ProcessRules;
 import dev.drimoz.materialnexus.datapack.PolicyEditor;
 import io.netty.handler.codec.DecoderException;
 import net.minecraft.network.FriendlyByteBuf;
-import net.minecraft.network.codec.StreamCodec;
-import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;

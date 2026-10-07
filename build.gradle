@@ -1,18 +1,18 @@
 plugins {
     id 'java-library'
     id 'maven-publish'
-    // Matches the ModDevGradle line used by Immaterial Drawers for NeoForge 1.21.1.
-    id 'net.neoforged.moddev' version '2.0.75'
+    // Forge 1.20.1 port: the ModDevGradle line for legacy Forge, same DSL as the NeoForge build on main.
+    id 'net.neoforged.moddev.legacyforge' version '2.0.75'
 }
 
 version = "${mod_version}+${minecraft_version}"
 group = mod_group_id
 base { archivesName = mod_id }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
 
-neoForge {
-    version = project.neo_version
+legacyForge {
+    version = "${minecraft_version}-${forge_version}"
 
     parchment {
         minecraftVersion = project.parchment_minecraft_version
@@ -23,7 +23,7 @@ neoForge {
         client {
             client()
             gameDirectory = project.file('run')
-            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
         }
         // MNX-049: dev-only UI screenshots. Copies the dev world and config to run-ui (the dev world is never touched),
         // opens the world, walks the Material Nexus screen and saves screenshots to run-ui/screenshots, then quits.
@@ -37,12 +37,12 @@ neoForge {
             server()
             gameDirectory = project.file('run')
             programArgument '--nogui'
-            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
         }
         gameTestServer {
             type = 'gameTestServer'
             gameDirectory = project.file('run-gametest')
-            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            systemProperty 'forge.enabledGameTestNamespaces', mod_id
         }
         data {
             data()
@@ -62,11 +62,13 @@ neoForge {
             sourceSet(sourceSets.main)
         }
     }
+}
 
-    unitTest {
-        enable()
-        testedMod = mods."${mod_id}"
-    }
+// legacyforge has no unitTest setup: the JUnit tests are pure (ids, codecs, JSON), the game classes on the
+// classpath are enough, no FML bootstrap needed.
+sourceSets.test {
+    compileClasspath += sourceSets.main.compileClasspath
+    runtimeClasspath += sourceSets.main.runtimeClasspath
 }
 
 repositories {
@@ -89,61 +91,39 @@ repositories {
 
 dependencies {
     // Optional viewer integrations: compile against the API, never make the viewer a hard dependency.
-    compileOnly "mezz.jei:jei-${jei_minecraft_version}-common-api:${jei_version}"
-    compileOnly "mezz.jei:jei-${jei_minecraft_version}-neoforge-api:${jei_version}"
+    // Forge 1.20.1 mod jars are SRG-named: the mod* configurations remap them to the dev mappings.
+    modCompileOnly "mezz.jei:jei-${minecraft_version}-common-api:${jei_version}"
+    modCompileOnly "mezz.jei:jei-${minecraft_version}-forge-api:${jei_version}"
     // EMI: compiled against for the viewer adapter only; `-Pemi` adds it to the dev run.
-    compileOnly "maven.modrinth:emi:${emi_version}"
+    modCompileOnly "maven.modrinth:emi:${emi_version}"
     if (project.hasProperty('emi')) {
-        runtimeOnly "maven.modrinth:emi:${emi_version}"
+        modRuntimeOnly "maven.modrinth:emi:${emi_version}"
     }
 
     // KubeJS: compiled against for the script bindings only (MNX-067, ADR-001); `-Pkubejs` adds it to the dev runs.
-    compileOnly "dev.latvian.mods:kubejs-neoforge:${kubejs_version}"
-    compileOnly "dev.latvian.mods:rhino:${rhino_version}"
+    modCompileOnly "dev.latvian.mods:kubejs-forge:${kubejs_version}"
+    modCompileOnly "dev.latvian.mods:rhino-forge:${rhino_version}"
     if (project.hasProperty("kubejs")) {
-        // The Modrinth jars bundle what the Maven artifacts pull from repositories we do not use.
-        runtimeOnly "maven.modrinth:kubejs:${kubejs_modrinth}"
-        runtimeOnly "maven.modrinth:rhino:${rhino_modrinth}"
-        runtimeOnly "maven.modrinth:better-advanced-tooltips:${better_advanced_tooltips_modrinth}"
+        modRuntimeOnly "maven.modrinth:kubejs:${kubejs_modrinth}"
+        modRuntimeOnly "maven.modrinth:rhino:${rhino_modrinth}"
+        modRuntimeOnly "maven.modrinth:architectury-api:${architectury_version}"
     }
 
     // Almost Unified: `-Pau` adds it to the dev runs, to check the domain arbitration (ADR-012) against the real mod.
     if (project.hasProperty("au")) {
-        runtimeOnly "maven.modrinth:almostunified:${almostunified_version}"
+        modRuntimeOnly "maven.modrinth:almostunified:${almostunified_version}"
     }
 
-    // A small real pack for the dev runs: overlapping copper/tin/zinc/aluminum providers are what
-    // discovery and resolution exist for. runtimeOnly, never compiled against or shipped.
+    // A small real pack for the dev runs: overlapping copper/tin/lead/silver providers are what discovery and
+    // resolution exist for. runtimeOnly, never compiled against or shipped. Modern Industrialization has no
+    // Forge 1.20.1 build, so it is not part of this pack.
     if (!project.hasProperty('vanilla')) {
-        runtimeOnly "mezz.jei:jei-${jei_minecraft_version}-neoforge:${jei_version}"
-        runtimeOnly "maven.modrinth:jade:${jade_version}"
-        runtimeOnly "maven.modrinth:mekanism:${mekanism_version}"
-        runtimeOnly "maven.modrinth:create:${create_version}"
-        runtimeOnly "maven.modrinth:immersiveengineering:${immersiveengineering_version}"
-        runtimeOnly "maven.modrinth:ex-deorum:${ex_deorum_version}"
-        runtimeOnly "maven.modrinth:ae2:${ae2_version}"
-        runtimeOnly "maven.modrinth:modern-industrialization:${modern_industrialization_version}"
-        runtimeOnly "maven.modrinth:guideme:${guideme_version}"
-        // Addons and metal-heavy mods: more overlapping providers, recipe types and tag conventions.
-        runtimeOnly "maven.modrinth:mekanism-generators:${mekanism_version}"
-        runtimeOnly "maven.modrinth:mekanism-tools:${mekanism_version}"
-        runtimeOnly "maven.modrinth:immersivepetroleum:${immersivepetroleum_version}"
-        runtimeOnly "maven.modrinth:createaddition:${createaddition_version}"
-        runtimeOnly "maven.modrinth:create-new-age:${create_new_age_version}"
-        runtimeOnly "maven.modrinth:create-metallurgy:${create_metallurgy_version}"
-        runtimeOnly "maven.modrinth:oritech:${oritech_version}"
-        runtimeOnly "maven.modrinth:architectury-api:${architectury_version}"
-        runtimeOnly "maven.modrinth:geckolib:${geckolib_version}"
-        runtimeOnly "maven.modrinth:athena-ctm:${athena_version}"
-        runtimeOnly "maven.modrinth:remin:${remin_version}"
-        runtimeOnly "maven.modrinth:extreme-reactors:${extreme_reactors_version}"
-        runtimeOnly "maven.modrinth:zerocore:${zerocore_version}"
-        runtimeOnly "maven.modrinth:silent-gear:${silent_gear_version}"
-        runtimeOnly "maven.modrinth:silent-lib:${silent_lib_version}"
-        runtimeOnly "maven.modrinth:occultism:${occultism_version}"
-        runtimeOnly "maven.modrinth:smartbrainlib:${smartbrainlib_version}"
-        runtimeOnly "maven.modrinth:curios:${curios_version}"
-        runtimeOnly "maven.modrinth:modonomicon:${modonomicon_version}"
+        modRuntimeOnly "mezz.jei:jei-${minecraft_version}-forge:${jei_version}"
+        modRuntimeOnly "maven.modrinth:jade:${jade_version}"
+        modRuntimeOnly "maven.modrinth:mekanism:${mekanism_version}"
+        modRuntimeOnly "maven.modrinth:create:${create_version}"
+        modRuntimeOnly "maven.modrinth:immersiveengineering:${immersiveengineering_version}"
+        modRuntimeOnly "maven.modrinth:ae2:${ae2_version}"
     }
 
     testImplementation platform("org.junit:junit-bom:5.10.2")
@@ -174,8 +154,8 @@ var generateModMetadata = tasks.register('generateModMetadata', ProcessResources
     var replaceProperties = [
             minecraft_version      : minecraft_version,
             minecraft_version_range: minecraft_version_range,
-            neo_version            : neo_version,
-            neo_version_range      : neo_version_range,
+            forge_version          : forge_version,
+            forge_version_range    : forge_version_range,
             loader_version_range   : loader_version_range,
             mod_id                 : mod_id,
             mod_name               : mod_name,
@@ -192,7 +172,7 @@ var generateModMetadata = tasks.register('generateModMetadata', ProcessResources
 
 sourceSets.main.resources.srcDir generateModMetadata
 sourceSets.main.resources.srcDir 'src/generated/resources'
-neoForge.ideSyncTask generateModMetadata
+legacyForge.ideSyncTask generateModMetadata
 
 processResources {
     exclude '.cache/**'
@@ -205,7 +185,7 @@ tasks.named('jar', Jar) {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release = 21
+    options.release = 17
     options.compilerArgs << '-Xlint:deprecation'
 }
 

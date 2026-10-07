@@ -61,7 +61,7 @@ final class DetailTable {
     void scroll(double delta) {
         if (detail == null) return;
         double max = Math.max(0, HEAD + (detail.forms().size() + creatable().size()) * ROW - height);
-        scroll = Math.clamp(scroll - delta * ROW, 0, max);
+        scroll = net.minecraft.util.Mth.clamp(scroll - delta * ROW, 0, max);
     }
 
     boolean click(double mx, double my, int button) {
@@ -119,7 +119,7 @@ final class DetailTable {
             List<Component> tip = itemTip(kept.get(), Component.translatable(pending.isPresent() ? "screen.materialnexus.role.pending" : "screen.materialnexus.role.canonical"));
             tip.add(Component.translatable("screen.materialnexus.why", why,
                     Component.translatable("materialnexus.source." + Names.lowerName(f.source())),
-                    Component.translatable("materialnexus.confidence." + Names.lowerName(f.confidence()))).withColor(0xAAAAAA));
+                    Component.translatable("materialnexus.confidence." + Names.lowerName(f.confidence()))).withStyle(s -> s.withColor(0xAAAAAA)));
             ResourceLocation k = kept.get();
             notSameMark(g, k, sx, top + 4);
             hits.add(sx - 1, top + 3, 20, 20, () -> choose(material, view.form(), k, f, decided), notSame(k), withHint(tip, k));
@@ -146,7 +146,7 @@ final class DetailTable {
             if (ix + 20 > right) break;
             Ui.slot(g, n.item(), ix, top + 4, 0, true);
             List<Component> tip = itemTip(n.item(), Component.translatable("screen.materialnexus.role.not_unified",
-                    Component.translatable(n.reasonKey(), n.reasonArgs().toArray())).withColor(0xCC8888));
+                    Component.translatable(n.reasonKey(), n.reasonArgs().toArray())).withStyle(s -> s.withColor(0xCC8888)));
             notSameMark(g, n.item(), ix, top + 4);
             hits.add(ix - 1, top + 3, 20, 20, () -> choose(material, view.form(), n.item(), f, decided), notSame(n.item()), withHint(tip, n.item()));
             ix += 21;
@@ -207,17 +207,17 @@ final class DetailTable {
         List<Component> out = new ArrayList<>(tip);
         // MNX-052: what helps choose: its mod, and how central it is in the pack's recipes.
         var usage = detail.usage().get(item);
-        String mod = net.neoforged.fml.ModList.get().getModContainerById(item.getNamespace()).map(c -> c.getModInfo().getDisplayName()).orElse(item.getNamespace());
-        out.add(usage == null ? Component.translatable("screen.materialnexus.usage.mod", mod).withColor(0x88AACC)
-                : Component.translatable("screen.materialnexus.usage", mod, usage.produced(), usage.used()).withColor(0x88AACC));
+        String mod = net.minecraftforge.fml.ModList.get().getModContainerById(item.getNamespace()).map(c -> c.getModInfo().getDisplayName()).orElse(item.getNamespace());
+        out.add(usage == null ? Component.translatable("screen.materialnexus.usage.mod", mod).withStyle(s -> s.withColor(0x88AACC))
+                : Component.translatable("screen.materialnexus.usage", mod, usage.produced(), usage.used()).withStyle(s -> s.withColor(0x88AACC)));
         if (readOnly) return out;
-        out.add(Component.translatable(PendingChanges.notSame(item) ? "screen.materialnexus.not_same.unmark" : "screen.materialnexus.not_same.mark").withColor(0x777788));
+        out.add(Component.translatable(PendingChanges.notSame(item) ? "screen.materialnexus.not_same.unmark" : "screen.materialnexus.not_same.mark").withStyle(s -> s.withColor(0x777788)));
         return out;
     }
 
     private static List<Component> itemTip(ResourceLocation item, Component role) {
-        return new ArrayList<>(List.of(Names.stack(item).getHoverName(), Component.literal(item.toString()).withColor(0x888888),
-                role.copy().withColor(0xAAAAAA)));
+        return new ArrayList<>(List.of(Names.stack(item).getHoverName(), Component.literal(item.toString()).withStyle(s -> s.withColor(0x888888)),
+                role.copy().withStyle(s -> s.withColor(0xAAAAAA))));
     }
 
     /** Pick an item as the pending canonical; picking the pending one again, or the already decided one, cancels. */

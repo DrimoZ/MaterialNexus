@@ -1,6 +1,6 @@
 package dev.drimoz.materialnexus.datapack;
 
-import net.neoforged.fml.loading.FMLPaths;
+import net.minecraftforge.fml.loading.FMLPaths;
 
 import java.nio.file.Path;
 

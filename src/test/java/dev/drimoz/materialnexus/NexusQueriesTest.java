@@ -22,7 +22,7 @@ class NexusQueriesTest {
     void untrustedRequestsAreClampedOrIgnored() {
         Map<ResourceLocation, List<ResourceLocation>> tags = new HashMap<>();
         for (int i = 0; i < NexusQueries.PAGE_SIZE + 5; i++) {
-            tags.put(ResourceLocation.fromNamespaceAndPath("c", "ingots/metal" + i),
+            tags.put(ResourceLocation.fromNamespaceAndPath("forge", "ingots/metal" + i),
                     List.of(ResourceLocation.fromNamespaceAndPath("moda", "metal" + i), ResourceLocation.fromNamespaceAndPath("modb", "metal" + i)));
         }
         var discovered = TagDiscovery.discover(tags);
@@ -32,7 +32,7 @@ class NexusQueriesTest {
         assertEquals(1, last.page());
         assertEquals(5, last.entries().size());
         assertEquals(0, NexusQueries.listPage(snapshot, -7, "").page());
-        assertEquals(1, last.entries().getFirst().duplicateForms());
+        assertEquals(1, last.entries().get(0).duplicateForms());
 
         assertEquals(1, NexusQueries.listPage(snapshot, 0, "  METAL516 ").totalMatches());
         assertTrue(NexusQueries.detail(snapshot, "../etc").isEmpty());
@@ -42,7 +42,7 @@ class NexusQueriesTest {
         // MNX-035: the same snapshot seen by form; one ingot card per material, each keyed by its material.
         var byForm = NexusQueries.listPage(snapshot, 0, "", true);
         assertEquals(1, byForm.totalMatches());
-        assertEquals(NexusQueries.PAGE_SIZE + 5, byForm.entries().getFirst().duplicateForms());
+        assertEquals(NexusQueries.PAGE_SIZE + 5, byForm.entries().get(0).duplicateForms());
         var ingots = NexusQueries.detail(snapshot, "ingot", true).orElseThrow();
         assertEquals(NexusQueries.PAGE_SIZE + 5, ingots.forms().size());
         assertTrue(ingots.forms().stream().allMatch(v -> v.form().equals("ingot") && v.material().startsWith("metal")));

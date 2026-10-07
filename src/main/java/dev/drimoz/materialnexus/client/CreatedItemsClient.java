@@ -6,10 +6,10 @@ import dev.drimoz.materialnexus.item.CreatedItem;
 import dev.drimoz.materialnexus.registry.MnxItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.common.Mod;
+import net.minecraftforge.client.event.RegisterColorHandlersEvent;
 
 import java.io.InputStream;
 import java.util.HashMap;
@@ -21,7 +21,7 @@ import java.util.Map;
  * Only layer 1, where the templates put their texture, is tinted (MNX-073): an item with its own texture, or whose
  * model a resource pack replaced, keeps its colours.
  */
-@EventBusSubscriber(modid = MaterialNexus.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@Mod.EventBusSubscriber(modid = MaterialNexus.MOD_ID, bus = Mod.EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class CreatedItemsClient {
     private static final int FALLBACK = 0xA0A0A0;
     private static final Map<ResourceLocation, Integer> COLORS = new HashMap<>();
