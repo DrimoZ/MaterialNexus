@@ -468,7 +468,7 @@ public final class NexusScreen extends Screen {
             }
             ty += 3;
         }
-        ty = renderHistory(g, x, ty + 8, tipWidth, wide ? 12 : 4);
+        ty = renderHistory(g, mx, my, x, ty + 8, tipWidth, wide ? 12 : 4);
         renderModPriority(g, mx, my, wide ? contentX + 420 : x, wide ? contentY + 10 : ty + 12, wide ? Math.min(340, contentW - 430) : 300);
     }
 
@@ -522,7 +522,7 @@ public final class NexusScreen extends Screen {
     }
 
     /** MNX-056: one line per apply or revert, newest first; returns the y below the list. */
-    private int renderHistory(GuiGraphics g, int x, int y, int w, int max) {
+    private int renderHistory(GuiGraphics g, int mx, int my, int x, int y, int w, int max) {
         g.drawString(font, Component.translatable("screen.materialnexus.history.title"), x, y, Ui.TEXT, false);
         y += 13;
         if (history.isEmpty()) {
@@ -530,23 +530,50 @@ public final class NexusScreen extends Screen {
             return y + 11;
         }
         var format = java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm").withZone(java.time.ZoneId.systemDefault());
-        for (var entry : history.subList(0, Math.min(max, history.size()))) {
+        List<com.google.gson.JsonObject> shown = history.subList(0, Math.min(max, history.size()));
+        for (int i = 0; i < shown.size(); i++) {
+            var entry = shown.get(i);
             if (y + 11 > height - BOTTOM - 4) break;
-            String when;
-            try {
-                when = format.format(java.time.Instant.parse(entry.get("at").getAsString()));
-            } catch (RuntimeException e) {
-                when = "?";
+            String when = when(format, entry, "at");
+            String kind = entry.has("kind") ? entry.get("kind").getAsString() : "apply";
+            Component line = switch (kind) {
+                case "revert" -> Component.translatable("screen.materialnexus.history.revert", when);
+                case "restore" -> Component.translatable("screen.materialnexus.history.restore", when, when(format, entry, "from"));
+                default -> Component.translatable("screen.materialnexus.history.apply", when, num(entry, "effects"), num(entry, "choices"),
+                        num(entry, "rules"), num(entry, "items"), num(entry, "data"));
+            };
+            g.fill(x, y, x + 2, y + 8, kind.equals("apply") ? Ui.SUCCESS : Ui.WARNING);
+            // MNX-064: every older entry whose copy is kept can be restored; the newest one is the current state.
+            boolean restorable = i > 0 && !readOnly && entry.has("snapshot");
+            g.drawString(font, font.plainSubstrByWidth(line.getString(), w - (restorable ? 20 : 6)), x + 6, y, Ui.MUTED, false);
+            if (restorable) {
+                String id = entry.get("snapshot").getAsString();
+                String date = when;
+                int rx = x + w - 10;
+                boolean over = mx >= rx - 2 && mx < rx + 10 && my >= y - 1 && my < y + 10;
+                g.drawString(font, "↺", rx, y, over ? Ui.TEXT : 0x88AAFF, false);
+                hits.add(rx - 2, y - 1, 12, 11, () -> minecraft.setScreen(new net.minecraft.client.gui.screens.ConfirmScreen(yes -> {
+                    if (yes) {
+                        PacketDistributor.sendToServer(new dev.drimoz.materialnexus.network.RestoreRequest(id));
+                        minecraft.setScreen(null);
+                    } else {
+                        minecraft.setScreen(this);
+                    }
+                }, Component.translatable("screen.materialnexus.history.restore.confirm", date),
+                        Component.translatable("screen.materialnexus.history.restore.confirm_hint"))), null,
+                        List.of(Component.translatable("screen.materialnexus.history.restore.tooltip", date)));
             }
-            boolean revert = entry.has("kind") && "revert".equals(entry.get("kind").getAsString());
-            Component line = revert ? Component.translatable("screen.materialnexus.history.revert", when)
-                    : Component.translatable("screen.materialnexus.history.apply", when, num(entry, "effects"), num(entry, "choices"),
-                            num(entry, "rules"), num(entry, "items"), num(entry, "data"));
-            g.fill(x, y, x + 2, y + 8, revert ? Ui.WARNING : Ui.SUCCESS);
-            g.drawString(font, font.plainSubstrByWidth(line.getString(), w - 6), x + 6, y, Ui.MUTED, false);
             y += 11;
         }
         return y;
+    }
+
+    private static String when(java.time.format.DateTimeFormatter format, com.google.gson.JsonObject entry, String field) {
+        try {
+            return format.format(java.time.Instant.parse(entry.get(field).getAsString()));
+        } catch (RuntimeException e) {
+            return "?";
+        }
     }
 
     private static int num(com.google.gson.JsonObject entry, String field) {

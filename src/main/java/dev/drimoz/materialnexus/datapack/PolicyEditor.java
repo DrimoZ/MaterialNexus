@@ -147,7 +147,7 @@ public final class PolicyEditor {
 
     /**
      * "Revert last apply" (ADR-009): swaps the policy with its backup, so the current policy becomes
-     * the new backup and a second revert redoes the apply. One level, no history (ADR-005).
+     * the new backup and a second revert redoes the apply. Older states are restored from the history (ADR-021).
      */
     public static void revert(Path policiesDir) throws IOException {
         Path bak = backupDir(policiesDir);
@@ -160,14 +160,30 @@ public final class PolicyEditor {
         else Files.createDirectories(bak);
     }
 
+    /**
+     * MNX-064: puts back the policy saved in {@code snapshot} (a copy taken at an apply, ADR-021). The current policy
+     * becomes the backup first, so "Revert last apply" undoes the restore.
+     */
+    public static void restore(Path policiesDir, Path snapshot) throws IOException {
+        if (!Files.isDirectory(snapshot)) throw new IOException("No saved policy at " + snapshot);
+        backup(policiesDir);
+        deleteRecursively(policiesDir);
+        copyTree(snapshot, policiesDir);
+    }
+
     private static void backup(Path policiesDir) throws IOException {
         Path bak = backupDir(policiesDir);
         deleteRecursively(bak);
         Files.createDirectories(bak);
-        if (!Files.exists(policiesDir)) return;
-        try (Stream<Path> walk = Files.walk(policiesDir)) {
+        if (Files.exists(policiesDir)) copyTree(policiesDir, bak);
+    }
+
+    /** Copies a folder into {@code to} (created if needed). */
+    static void copyTree(Path from, Path to) throws IOException {
+        Files.createDirectories(to);
+        try (Stream<Path> walk = Files.walk(from)) {
             for (Path source : walk.toList()) {
-                Path target = bak.resolve(policiesDir.relativize(source).toString());
+                Path target = to.resolve(from.relativize(source).toString());
                 if (Files.isDirectory(source)) Files.createDirectories(target);
                 else Files.copy(source, target);
             }
@@ -199,7 +215,7 @@ public final class PolicyEditor {
         return parent.getAsJsonObject(key);
     }
 
-    private static void deleteRecursively(Path dir) throws IOException {
+    static void deleteRecursively(Path dir) throws IOException {
         if (!Files.exists(dir)) return;
         try (Stream<Path> walk = Files.walk(dir)) {
             for (Path p : walk.sorted(Comparator.reverseOrder()).toList()) Files.delete(p);

@@ -152,3 +152,13 @@ Consequences, made visible rather than hidden:
 **Why:** a tag says "usable as", not "the same item"; mods tag their variants under the base material. Names are the only other evidence available without per-mod code.
 
 **Consequences:** a set-aside item can still be chosen explicitly (click it); "Unify all suggestions" never picks it. Wrong calls are visible in the GUI and the report with their word.
+
+## ADR-021 - Applied states are kept and can be restored
+
+**Decision:** every apply, revert and restore keeps a copy of `config/materialnexus/policies/` as it is right after it (`config/materialnexus/history/<epoch millis>/`, the 20 newest), recorded in `history.jsonl`. The Home view lists the entries; any older entry whose copy is kept can be restored, after a confirmation. A restore writes the copy back behind the usual backup, so "Revert last apply" undoes it, and is itself an entry.
+
+**Why:** "Revert last apply" (one level, ADR-009) cannot go back past a second apply; trying several settings means losing the earlier ones.
+
+**Consequences:** this supersedes the "no history" part of ADR-005 for the player's own settings only: nothing about the world, inventories or items is recorded. Data edits (`policies/data`) come back with a restore; created items do not (registry, ADR-019). Copies are small (the policy files only).
+
+**Rejected:** a diff log replayed on demand (fragile against hand edits); unlimited copies.

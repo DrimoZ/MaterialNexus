@@ -304,5 +304,10 @@
   "screen.materialnexus.priority.reset": "↺ Reset",
   "screen.materialnexus.priority.reset.tooltip": "Empties the mod priority (pending until Preview and apply)",
   "screen.materialnexus.home.unified.chosen": "%s chosen",
-  "screen.materialnexus.home.unified.priority": "%s by priority"
+  "screen.materialnexus.home.unified.priority": "%s by priority",
+  "screen.materialnexus.history.restore": "%1$s · settings restored to %2$s",
+  "screen.materialnexus.history.restore.tooltip": "Restore the settings as they were after %s",
+  "screen.materialnexus.history.restore.confirm": "Restore the settings as they were after %s?",
+  "screen.materialnexus.history.restore.confirm_hint": "Your current settings are kept as the backup: Revert last apply undoes this. Data is reloaded right away.",
+  "message.materialnexus.restored": "Material Nexus: settings restored and data reloaded."
 }

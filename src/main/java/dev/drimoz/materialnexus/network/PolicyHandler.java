@@ -146,6 +146,17 @@ final class PolicyHandler {
                 Component.translatable("message.materialnexus.reverted"));
     }
 
+    /** MNX-064: the policy kept with a history entry, written back; data edits under policies/ come back too. */
+    static void restore(ServerPlayer player, String snapshot) {
+        var saved = dev.drimoz.materialnexus.datapack.ApplyHistory.snapshot(snapshot);
+        if (saved.isEmpty()) return;
+        writeAndReload(player, () -> {
+                    PolicyEditor.restore(MnxPaths.policies(), saved.get());
+                    dev.drimoz.materialnexus.datapack.ApplyHistory.appendRestore(snapshot);
+                },
+                Component.translatable("message.materialnexus.restored"), true);
+    }
+
     /** The whole generated pack for a policy: tags and conversions, then the recipes they imply. */
     private static java.nio.file.Path itemsFile() {
         return MnxPaths.root().resolve(CreatedItems.FILE);

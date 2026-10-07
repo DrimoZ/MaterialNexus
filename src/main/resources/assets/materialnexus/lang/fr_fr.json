@@ -304,5 +304,10 @@
   "screen.materialnexus.priority.reset": "↺ Réinitialiser",
   "screen.materialnexus.priority.reset.tooltip": "Vide la priorité des mods (en attente jusqu'à Aperçu et appliquer)",
   "screen.materialnexus.home.unified.chosen": "%s choisies",
-  "screen.materialnexus.home.unified.priority": "%s par priorité"
+  "screen.materialnexus.home.unified.priority": "%s par priorité",
+  "screen.materialnexus.history.restore": "%1$s · réglages restaurés à %2$s",
+  "screen.materialnexus.history.restore.tooltip": "Restaurer les réglages tels qu'ils étaient après %s",
+  "screen.materialnexus.history.restore.confirm": "Restaurer les réglages tels qu'ils étaient après %s ?",
+  "screen.materialnexus.history.restore.confirm_hint": "Vos réglages actuels sont gardés en sauvegarde : Annuler le dernier Apply défait ceci. Les données sont rechargées tout de suite.",
+  "message.materialnexus.restored": "Material Nexus : réglages restaurés et données rechargées."
 }

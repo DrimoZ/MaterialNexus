@@ -80,5 +80,15 @@ class PolicyEditorTest {
         assertTrue(ignored.getFirst().valid());
         PolicyEditor.apply(policies, ignored);
         assertTrue(PolicyFiles.load(policies).explicitProviders().isEmpty());
+
+        // MNX-064: restoring a kept copy brings those files back, and Revert undoes the restore.
+        Path copy = root.resolve("history").resolve("1");
+        Files.createDirectories(copy.resolve("materials"));
+        Files.writeString(copy.resolve("materials").resolve("tin.json"), "{\"material\":\"tin\",\"forms\":{\"ingot\":{\"preferred_provider\":\"" + TE + "\"}}}");
+        PolicyEditor.restore(policies, copy);
+        assertEquals(TE, PolicyFiles.load(policies).explicitProviders().get(tinIngot));
+        assertFalse(Files.exists(existing), "files absent from the copy are gone after a restore");
+        PolicyEditor.revert(policies);
+        assertTrue(Files.exists(existing));
     }
 }
