@@ -35,7 +35,7 @@ import java.util.Optional;
  * choices stay pending on the client until Preview / Apply.
  */
 public final class NexusScreen extends Screen {
-    private enum View { HOME, MATERIALS, FORMS, TRIAGE, PRESETS }
+    private enum View { HOME, MATERIALS, FORMS, TRIAGE, PRESETS, DATA }
     private enum Tab { FORMS, RECIPES, MISSING, PROCESS }
 
     private static final int TOP = 24;
@@ -45,6 +45,7 @@ public final class NexusScreen extends Screen {
     private final boolean readOnly;
     private final boolean canRevert;
     private final PresetPanel presets;
+    private final DataPanel data = new DataPanel(() -> { if (this.view == View.DATA) rebuildWidgets(); });
     private final DetailTable table;
     private final RecipesPanel recipes;
     private final ProcessPanel process;
@@ -160,6 +161,7 @@ public final class NexusScreen extends Screen {
             case "forms_tab" -> { tab = Tab.FORMS; rebuildWidgets(); }
             case "triage" -> { PendingChanges.clear(); startTriage(); }
             case "presets" -> go(View.PRESETS);
+            case "data" -> go(View.DATA);
             case "pending" -> { PendingChanges.set("copper", "ingot", dev.drimoz.materialnexus.datapack.CanonicalChange.RESET); togglePending(); }
             case "priority" -> { if (totals != null) savePriority(new java.util.ArrayList<>(totals.mods().subList(0, Math.min(3, totals.mods().size())))); }
             default -> go(View.HOME);
@@ -202,6 +204,14 @@ public final class NexusScreen extends Screen {
             recipes.select(recipesOnArrival);
             recipesOnArrival = null;
         }
+    }
+
+    void acceptDataList(dev.drimoz.materialnexus.network.DataListPayload payload) {
+        data.acceptList(payload);
+    }
+
+    void acceptDataRead(dev.drimoz.materialnexus.network.DataReadPayload payload) {
+        data.acceptRead(payload);
     }
 
     void acceptMatrix(MatrixPayload payload) {
@@ -268,6 +278,7 @@ public final class NexusScreen extends Screen {
             case MATERIALS -> initMaterials();
             case FORMS -> initForms();
             case TRIAGE, PRESETS -> { }
+            case DATA -> data.init(widget -> addRenderableWidget(widget), font, contentX, contentY, contentW, contentH);
         }
         layoutDrawer();
     }
@@ -340,6 +351,7 @@ public final class NexusScreen extends Screen {
             case MATERIALS -> renderMaterials(g, mx, my);
             case FORMS -> renderForms(g, mx, my);
             case TRIAGE -> triage.render(g, font, contentX + 16, contentY + 12, contentW - 32, contentH - 20, mx, my);
+            case DATA -> data.render(g, font, mx, my);
             case PRESETS -> presets.render(g, font, contentX + 12, contentY + 10, contentW - 24, contentH - 20, mx, my);
         }
         renderBottom(g, mx, my);
@@ -376,7 +388,7 @@ public final class NexusScreen extends Screen {
         y = navItem(g, mx, my, y, "materials", view == View.MATERIALS, () -> go(View.MATERIALS));
         y = navItem(g, mx, my, y, "forms", view == View.FORMS, () -> { form = null; go(View.FORMS); });
         if (readOnly) return;
-        y = navItem(g, mx, my, y, "data", false, () -> minecraft.setScreen(new DataScreen(this)));
+        y = navItem(g, mx, my, y, "data", view == View.DATA, () -> go(View.DATA));
         navItem(g, mx, my, y, "presets", view == View.PRESETS, () -> go(View.PRESETS));
     }
 
@@ -719,6 +731,7 @@ public final class NexusScreen extends Screen {
         if (my < TOP || my > height - BOTTOM || mx < contentX) return false;
         if (view == View.TRIAGE) return triage.click(mx, my, button);
         if (view == View.PRESETS && presets.click(mx, my, button)) return true;
+        if (view == View.DATA) return data.click(mx, my, button);
         if (view == View.FORMS && form == null) return matrix.click(mx, my, button);
         if (detail == null) return false;
         return switch (tab) {
@@ -734,6 +747,7 @@ public final class NexusScreen extends Screen {
             drawer.scroll(scrollY);
             return true;
         }
+        if (view == View.DATA && data.scroll(mx, my, scrollY)) return true;
         if (view == View.FORMS && form == null && mx >= contentX) {
             matrix.scroll(scrollY);
             return true;

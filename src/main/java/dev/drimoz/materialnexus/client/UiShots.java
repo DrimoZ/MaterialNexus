@@ -46,7 +46,9 @@ public final class UiShots {
             new Step(930, "", "", "mnx_9_presets"),
             new Step(932, "pending", "", ""),
             new Step(945, "", "", "mnx_10_pending"),
-            new Step(950, "quit", "", ""));
+            new Step(948, "data", "", ""),
+            new Step(990, "", "", "mnx_11_data"),
+            new Step(995, "quit", "", ""));
     private static int ticks;
     private static int next;
 

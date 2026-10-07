@@ -38,11 +38,11 @@ public final class ClientHooks {
     }
 
     public static void onDataList(dev.drimoz.materialnexus.network.DataListPayload payload) {
-        if (Minecraft.getInstance().screen instanceof DataScreen screen) screen.acceptList(payload);
+        if (Minecraft.getInstance().screen instanceof NexusScreen screen) screen.acceptDataList(payload);
     }
 
     public static void onDataRead(dev.drimoz.materialnexus.network.DataReadPayload payload) {
-        if (Minecraft.getInstance().screen instanceof DataScreen screen) screen.acceptRead(payload);
+        if (Minecraft.getInstance().screen instanceof NexusScreen screen) screen.acceptDataRead(payload);
     }
 
     public static void onMatrix(dev.drimoz.materialnexus.network.MatrixPayload payload) {
@@ -52,7 +52,6 @@ public final class ClientHooks {
     public static void onPreview(PreviewPayload payload) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof NexusScreen screen) screen.showPreview(payload);
-        else if (mc.screen instanceof DataScreen data) mc.setScreen(new PreviewScreen(data, payload));
     }
 
     public static void onUnifiedItems(UnifiedItemsPayload payload) {

@@ -38,13 +38,13 @@ final class PreviewDrawer implements Drawer {
         this.preview = preview;
         this.apply = apply;
         this.close = close;
-        List<Component> choices = new ArrayList<>(preview.entries().stream().map(PreviewScreen::describe).toList());
+        List<Component> choices = new ArrayList<>(preview.entries().stream().map(Describe::describe).toList());
         PendingChanges.processes().keySet().stream().sorted()
                 .forEach(form -> choices.add(Component.translatable("screen.materialnexus.preview_process", Names.form(form))));
         choices.addAll(PendingChanges.globalLines());
         if (!choices.isEmpty()) groups.add(new Group("choices", Ui.ACCENT, choices));
         Map<String, List<Component>> byKind = new LinkedHashMap<>();
-        for (PackContent.Effect e : preview.added()) byKind.computeIfAbsent(e.kind(), k -> new ArrayList<>()).add(PreviewScreen.describe(e));
+        for (PackContent.Effect e : preview.added()) byKind.computeIfAbsent(e.kind(), k -> new ArrayList<>()).add(Describe.describe(e));
         List<String> kinds = new ArrayList<>(ORDER.stream().filter(byKind::containsKey).toList());
         byKind.keySet().stream().filter(k -> !ORDER.contains(k)).forEach(kinds::add);
         for (String kind : kinds) {
@@ -52,7 +52,7 @@ final class PreviewDrawer implements Drawer {
             groups.add(new Group(kind, color, byKind.get(kind)));
         }
         if (!preview.removed().isEmpty()) {
-            groups.add(new Group("removed", Ui.MUTED | 0xFF000000, preview.removed().stream().map(PreviewScreen::describe).toList()));
+            groups.add(new Group("removed", Ui.MUTED | 0xFF000000, preview.removed().stream().map(Describe::describe).toList()));
         }
         if (groups.size() == 1) open.add(groups.getFirst().key());
     }
