@@ -1,6 +1,6 @@
-<p align="center"><img src="src/main/resources/logo.png" width="96" alt="Material Nexus logo"></p>
-
 # Material Nexus
+
+![Material Nexus](src/main/resources/logo.png)
 
 **Unify materials. Understand recipes. Control the pack.**
 

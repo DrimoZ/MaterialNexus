@@ -155,7 +155,10 @@ dependencies {
 tasks.matching { it.name == 'runUiShots' }.configureEach {
     doFirst {
         delete 'run-ui/screenshots'
-        copy { from 'run'; into 'run-ui'; include 'saves/**', 'config/**', 'options.txt' }
+        // session.lock: the world may be open in a running game; a copy for screenshots does not need the lock.
+        copy { from 'run'; into 'run-ui'; include 'saves/**', 'config/**', 'options.txt'; exclude '**/session.lock' }
+        // -Pstore: the store captures, on the dev world as a fresh pack sees it (no Material Nexus settings).
+        if (project.hasProperty('store')) delete 'run-ui/config/materialnexus'
     }
 }
 
