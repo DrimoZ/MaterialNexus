@@ -121,9 +121,12 @@ final class PendingChanges {
 
     static boolean globalChanged(String field) { return GLOBAL_PATCH.has(field); }
 
-    /** MNX-058 "everything back to default": empty mod priority, not-same list, conversion recipes and process rules. */
+    /**
+     * MNX-058 "everything back to default": empty not-same list, conversion recipes and process rules. The mod priority
+     * is kept (MNX-061): it has its own reset, on the Home view.
+     */
     static void resetSettings() {
-        for (String field : List.of("mod_priority", "not_same", "conversion_recipes")) setGlobal(field, new com.google.gson.JsonArray());
+        for (String field : List.of("not_same", "conversion_recipes")) setGlobal(field, new com.google.gson.JsonArray());
         if (baseGlobal.get("processes") instanceof com.google.gson.JsonObject rules) {
             rules.keySet().forEach(form -> PROCESSES.put(form, new ProcessRules.Rule(List.of(), false, false)));
         }

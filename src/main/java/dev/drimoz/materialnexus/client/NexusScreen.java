@@ -476,6 +476,15 @@ public final class NexusScreen extends Screen {
     private void renderModPriority(GuiGraphics g, int mx, int my, int x, int y, int w) {
         if (totals == null) return;
         g.drawString(font, Component.translatable("screen.materialnexus.priority.title"), x, y, Ui.TEXT, false);
+        // MNX-061: the priority has its own reset, separate from "Reset everything to default".
+        if (!readOnly && PendingChanges.global("mod_priority") instanceof com.google.gson.JsonArray current && !current.isEmpty()) {
+            Component reset = Component.translatable("screen.materialnexus.priority.reset");
+            int rx = x + w - font.width(reset);
+            boolean over = mx >= rx && mx < x + w && my >= y - 1 && my < y + 9;
+            g.drawString(font, reset, rx, y, over ? Ui.TEXT : 0x88AAFF, false);
+            hits.add(rx, y - 1, font.width(reset), 10, () -> PendingChanges.setGlobal("mod_priority", new com.google.gson.JsonArray()), null,
+                    List.of(Component.translatable("screen.materialnexus.priority.reset.tooltip")));
+        }
         g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.priority.hint").getString(), w), x, y + 11, Ui.FAINT, false);
         List<String> ranked = new java.util.ArrayList<>();
         if (PendingChanges.global("mod_priority") instanceof com.google.gson.JsonArray a) a.forEach(e -> ranked.add(e.getAsString()));

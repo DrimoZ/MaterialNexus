@@ -277,7 +277,7 @@
   "screen.materialnexus.reset.here": "↺ Back to default (%s)",
   "screen.materialnexus.reset.here.tooltip": "Every saved choice shown here goes back to default (pending until Preview and apply)",
   "screen.materialnexus.reset.all": "Reset everything to default",
-  "screen.materialnexus.reset.all.tooltip": "Every saved choice, the mod priority, items marked not the same, conversion recipes and process rules go back to default. Pending until Preview and apply; Revert last apply undoes it. Created items stay.",
+  "screen.materialnexus.reset.all.tooltip": "Every saved choice, items marked not the same, conversion recipes and process rules go back to default. The mod priority is kept (it has its own reset). Pending until Preview and apply; Revert last apply undoes it. Created items stay.",
   "screen.materialnexus.data.intro": "The files Material Nexus reads its rules from. Your edit is saved as your own version (config/materialnexus/policies/data) and wins over the mod's; Back to original removes it.",
   "screen.materialnexus.data.untagged_count": "Untagged forms (%s)",
   "screen.materialnexus.data.untagged_none": "Every item named like a form is recognised.",
@@ -300,5 +300,7 @@
   "screen.materialnexus.data.kind.presets": "Presets",
   "screen.materialnexus.data.kind.presets.desc": "Ready-made pack-wide settings, shown in the Presets view.",
   "screen.materialnexus.data.kind.materials": "Materials",
-  "screen.materialnexus.data.kind.materials.desc": "Other names a material goes by in some mods (aluminium = aluminum), merged into one material."
+  "screen.materialnexus.data.kind.materials.desc": "Other names a material goes by in some mods (aluminium = aluminum), merged into one material.",
+  "screen.materialnexus.priority.reset": "↺ Reset",
+  "screen.materialnexus.priority.reset.tooltip": "Empties the mod priority (pending until Preview and apply)"
 }

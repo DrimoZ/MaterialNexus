@@ -277,7 +277,7 @@
   "screen.materialnexus.reset.here": "↺ Retour par défaut (%s)",
   "screen.materialnexus.reset.here.tooltip": "Chaque choix enregistré affiché ici revient par défaut (en attente jusqu'à Aperçu et appliquer)",
   "screen.materialnexus.reset.all": "Tout remettre par défaut",
-  "screen.materialnexus.reset.all.tooltip": "Chaque choix enregistré, la priorité des mods, les items marqués pas le même, les recettes de conversion et les règles de process reviennent par défaut. En attente jusqu'à Aperçu et appliquer ; Annuler le dernier Apply le défait. Les items créés restent.",
+  "screen.materialnexus.reset.all.tooltip": "Chaque choix enregistré, les items marqués pas le même, les recettes de conversion et les règles de process reviennent par défaut. La priorité des mods est gardée (elle a son propre reset). En attente jusqu'à Aperçu et appliquer ; Annuler le dernier Apply le défait. Les items créés restent.",
   "screen.materialnexus.data.intro": "Les fichiers où Material Nexus lit ses règles. Votre modification est enregistrée comme votre version (config/materialnexus/policies/data) et passe avant celle du mod ; Retour à l'original la retire.",
   "screen.materialnexus.data.untagged_count": "Formes sans tag (%s)",
   "screen.materialnexus.data.untagged_none": "Chaque item nommé comme une forme est reconnu.",
@@ -300,5 +300,7 @@
   "screen.materialnexus.data.kind.presets": "Presets",
   "screen.materialnexus.data.kind.presets.desc": "Réglages prêts à l'emploi pour tout le pack, affichés dans la vue Presets.",
   "screen.materialnexus.data.kind.materials": "Matériaux",
-  "screen.materialnexus.data.kind.materials.desc": "Les autres noms d'un matériau dans certains mods (aluminium = aluminum), fusionnés en un seul matériau."
+  "screen.materialnexus.data.kind.materials.desc": "Les autres noms d'un matériau dans certains mods (aluminium = aluminum), fusionnés en un seul matériau.",
+  "screen.materialnexus.priority.reset": "↺ Réinitialiser",
+  "screen.materialnexus.priority.reset.tooltip": "Vide la priorité des mods (en attente jusqu'à Aperçu et appliquer)"
 }
