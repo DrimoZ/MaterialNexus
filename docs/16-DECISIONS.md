@@ -144,3 +144,11 @@ Consequences, made visible rather than hidden:
 **Consequences:** creating an item needs a restart after Apply; Revert does not remove it (the registry cannot change on a reload). On a server, every client needs the same `items.json` (ship it with the modpack), or the registries will not match. Removing an entry deletes that item from every world that has it.
 
 **Rejected:** registering items lazily or per world (impossible after the registry freeze); per-item asset files (a resource pack to maintain for every material).
+
+## ADR-020 - Names tell variants from duplicates
+
+**Decision:** within one form, a candidate whose id names a variant (a word left once form words and the material are removed: Remin's `yellow_amethyst` tagged `c:gems/amethyst`, IE's `plate_duroplast` tagged `c:plates/plastic`, Silent Gear's `netherwood_stick` tagged `c:rods/wooden`, Create's `crushed_raw_iron` tagged as raw iron) or another known material (`minecraft:quartz` tagged `c:gems/milky_quartz`) is listed as not unified, with the word that gave it away. Words close to the material (golden for gold, aluminium for aluminum) and the words of the material's vanilla items (lazuli for lapis) do not count; vanilla ids are never variants. The rule only applies when a plainly named candidate exists.
+
+**Why:** a tag says "usable as", not "the same item"; mods tag their variants under the base material. Names are the only other evidence available without per-mod code.
+
+**Consequences:** a set-aside item can still be chosen explicitly (click it); "Unify all suggestions" never picks it. Wrong calls are visible in the GUI and the report with their word.
