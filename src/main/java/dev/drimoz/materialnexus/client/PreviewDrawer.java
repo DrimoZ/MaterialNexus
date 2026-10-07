@@ -78,7 +78,7 @@ final class PreviewDrawer {
 
     void render(GuiGraphics g, Font font, int mx, int my) {
         hits.clear();
-        g.fill(x, y, x + width, y + height, 0xF0141418);
+        g.fill(x, y, x + width, y + height, 0xFF141418);
         g.fill(x, y, x + 1, y + height, Ui.ACCENT);
         g.drawString(font, Component.translatable("screen.materialnexus.preview_title"), x + 8, y + 6, Ui.TEXT, false);
         preview.preset().ifPresent(id -> g.drawString(font, Component.translatable("screen.materialnexus.preview_preset",

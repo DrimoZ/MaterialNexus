@@ -38,7 +38,13 @@ public final class UiShots {
             new Step(700, "", "", "mnx_6_preview"),
             new Step(705, "triage", "", ""),
             new Step(780, "", "", "mnx_7_triage"),
-            new Step(790, "quit", "", ""));
+            new Step(785, "home", "", ""),
+            new Step(788, "priority", "", ""),
+            new Step(792, "preview", "", ""),
+            new Step(900, "", "", "mnx_8_home_preview"),
+            new Step(905, "presets", "", ""),
+            new Step(930, "", "", "mnx_9_presets"),
+            new Step(940, "quit", "", ""));
     private static int ticks;
     private static int next;
 
@@ -58,7 +64,13 @@ public final class UiShots {
             return;
         }
         switch (step.view()) {
-            case "open" -> mc.setScreen(new NexusScreen(false, true, List.of(), "[]"));
+            case "open" -> {
+                // Through the server, as the command does, so presets and global.json are the real ones.
+                var server = mc.getSingleplayerServer();
+                var player = server.getPlayerList().getPlayer(mc.player.getUUID());
+                server.execute(() -> net.neoforged.neoforge.network.PacketDistributor.sendToPlayer(player,
+                        dev.drimoz.materialnexus.network.OpenNexusPayload.forPlayer(player)));
+            }
             case "quit" -> mc.stop();
             default -> { if (mc.screen instanceof NexusScreen screen) screen.devShow(step.view(), step.arg()); }
         }

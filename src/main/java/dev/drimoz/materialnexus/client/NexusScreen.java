@@ -35,7 +35,7 @@ import java.util.Optional;
  * choices stay pending on the client until Preview / Apply.
  */
 public final class NexusScreen extends Screen {
-    private enum View { HOME, MATERIALS, FORMS, TRIAGE }
+    private enum View { HOME, MATERIALS, FORMS, TRIAGE, PRESETS }
     private enum Tab { FORMS, RECIPES, MISSING, PROCESS }
 
     private static final int TOP = 24;
@@ -44,7 +44,7 @@ public final class NexusScreen extends Screen {
 
     private final boolean readOnly;
     private final boolean canRevert;
-    private final List<ResourceLocation> presets;
+    private final PresetPanel presets;
     private final DetailTable table;
     private final RecipesPanel recipes;
     private final ProcessPanel process;
@@ -70,11 +70,11 @@ public final class NexusScreen extends Screen {
     /** MNX-056: the latest applies and reverts, newest first (lines of history.jsonl). */
     private final List<com.google.gson.JsonObject> history = new java.util.ArrayList<>();
 
-    public NexusScreen(boolean readOnly, boolean canRevert, List<ResourceLocation> presets, String historyJson) {
+    public NexusScreen(boolean readOnly, boolean canRevert, java.util.Map<ResourceLocation, String> presets, String historyJson) {
         super(Component.translatable("screen.materialnexus.title"));
         this.readOnly = readOnly;
         this.canRevert = canRevert;
-        this.presets = presets;
+        this.presets = new PresetPanel(presets);
         try {
             com.google.gson.JsonParser.parseString(historyJson).getAsJsonArray().forEach(e -> history.add(e.getAsJsonObject()));
         } catch (RuntimeException ignored) {
@@ -159,6 +159,7 @@ public final class NexusScreen extends Screen {
             case "process" -> { tab = Tab.PROCESS; requestProcess(); rebuildWidgets(); }
             case "forms_tab" -> { tab = Tab.FORMS; rebuildWidgets(); }
             case "triage" -> { PendingChanges.clear(); startTriage(); }
+            case "presets" -> go(View.PRESETS);
             case "priority" -> { if (totals != null) savePriority(new java.util.ArrayList<>(totals.mods().subList(0, Math.min(3, totals.mods().size())))); }
             default -> go(View.HOME);
         }
@@ -260,7 +261,7 @@ public final class NexusScreen extends Screen {
             case HOME -> initHome();
             case MATERIALS -> initMaterials();
             case FORMS -> initForms();
-            case TRIAGE -> { }
+            case TRIAGE, PRESETS -> { }
         }
         layoutDrawer();
     }
@@ -327,11 +328,20 @@ public final class NexusScreen extends Screen {
             case MATERIALS -> renderMaterials(g, mx, my);
             case FORMS -> renderForms(g, mx, my);
             case TRIAGE -> triage.render(g, font, contentX + 16, contentY + 12, contentW - 32, contentH - 20, mx, my);
+            case PRESETS -> presets.render(g, font, contentX + 12, contentY + 10, contentW - 24, contentH - 20, mx, my);
         }
         renderBottom(g, mx, my);
         for (var widget : renderables) widget.render(g, mx, my, partialTick);
-        if (drawer != null) drawer.render(g, font, mx, my);
-        else hits.tooltip(g, font, mx, my);
+        if (drawer != null) {
+            // Batched text (unicode glyphs such as ▲▼) would otherwise be drawn after the drawer's background.
+            g.flush();
+            g.pose().pushPose();
+            g.pose().translate(0, 0, 200);
+            drawer.render(g, font, mx, my);
+            g.pose().popPose();
+        } else {
+            hits.tooltip(g, font, mx, my);
+        }
     }
 
     @Override
@@ -355,7 +365,7 @@ public final class NexusScreen extends Screen {
         y = navItem(g, mx, my, y, "forms", view == View.FORMS, () -> { form = null; go(View.FORMS); });
         if (readOnly) return;
         y = navItem(g, mx, my, y, "data", false, () -> minecraft.setScreen(new DataScreen(this)));
-        navItem(g, mx, my, y, "presets", false, () -> minecraft.setScreen(new PresetScreen(this, presets)));
+        navItem(g, mx, my, y, "presets", view == View.PRESETS, () -> go(View.PRESETS));
     }
 
     private int navItem(GuiGraphics g, int mx, int my, int y, String key, boolean active, Runnable action) {
@@ -502,7 +512,7 @@ public final class NexusScreen extends Screen {
         }
     }
 
-    private static String modName(String namespace) {
+    static String modName(String namespace) {
         return net.neoforged.fml.ModList.get().getModContainerById(namespace).map(c -> c.getModInfo().getDisplayName()).orElse(namespace);
     }
 
@@ -657,6 +667,7 @@ public final class NexusScreen extends Screen {
         if (hits.click(mx, my, button)) return true;
         if (my < TOP || my > height - BOTTOM || mx < contentX) return false;
         if (view == View.TRIAGE) return triage.click(mx, my, button);
+        if (view == View.PRESETS && presets.click(mx, my, button)) return true;
         if (view == View.FORMS && form == null) return matrix.click(mx, my, button);
         if (detail == null) return false;
         return switch (tab) {
