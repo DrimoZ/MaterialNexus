@@ -13,10 +13,11 @@ import net.minecraft.world.item.ItemStack;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
-import java.util.function.Consumer;
+import java.util.function.BiConsumer;
 
 /**
- * "Forms" tab of {@link NexusScreen}: one card per form showing every provider as an icon. Clicking an icon
+ * "Forms" tab of {@link NexusScreen}: one card per form of a material, or per material of a form (MNX-035), showing
+ * every provider as an icon. Clicking an icon
  * makes it the pending canonical choice (clicking it again cancels); nothing is written before Preview / Apply.
  */
 final class FormsPanel {
@@ -31,19 +32,19 @@ final class FormsPanel {
     }
 
     private final boolean readOnly;
-    private final Consumer<String> openRecipes;
+    private final BiConsumer<String, String> openRecipes;
     private final List<Hit> hits = new ArrayList<>();
     private MaterialDetailPayload detail;
     private int x, y, width, height;
     private double scroll;
 
-    FormsPanel(boolean readOnly, Consumer<String> openRecipes) {
+    FormsPanel(boolean readOnly, BiConsumer<String, String> openRecipes) {
         this.readOnly = readOnly;
         this.openRecipes = openRecipes;
     }
 
     void show(MaterialDetailPayload detail) {
-        if (this.detail == null || !this.detail.material().equals(detail.material())) scroll = 0;
+        if (this.detail == null || !this.detail.material().equals(detail.material()) || this.detail.byForm() != detail.byForm()) scroll = 0;
         this.detail = detail;
     }
 
@@ -83,7 +84,7 @@ final class FormsPanel {
 
     private void renderCard(GuiGraphics g, Font font, MaterialDetailPayload.FormView view, int top, int mx, int my) {
         ResolvedForm f = view.resolved();
-        String material = detail.material();
+        String material = view.material();
         Optional<ResourceLocation> pending = PendingChanges.get(material, view.form());
         boolean decided = f.source() != PolicyPrecedence.DEFAULT && !f.alternatives().isEmpty();
 
@@ -96,15 +97,16 @@ final class FormsPanel {
         else if (f.canonical().isEmpty()) { status = Component.translatable("screen.materialnexus.status.nothing"); statusColor = 0xFF888888; }
         else { status = Component.translatable("screen.materialnexus.status.single"); statusColor = 0xFF888888; }
 
-        g.drawString(font, Names.form(view.form()), x + 6, top + 4, 0xFFFFFF);
-        int formWidth = font.width(Names.form(view.form()));
+        Component label = detail.byForm() ? Names.material(material) : Names.form(view.form());
+        g.drawString(font, label, x + 6, top + 4, 0xFFFFFF);
+        int formWidth = font.width(label);
         g.drawString(font, status, x + 12 + formWidth, top + 4, statusColor);
 
         Component recipes = Component.translatable("screen.materialnexus.open_recipes");
         int rx = x + width - font.width(recipes) - 6;
         boolean overRecipes = mx >= rx && mx < x + width && my >= top + 2 && my < top + 14;
         g.drawString(font, recipes, rx, top + 4, overRecipes ? 0xFFFFFF : 0x88AAFF);
-        hits.add(new Hit(rx, top + 2, x + width - rx, 12, () -> openRecipes.accept(view.form()), List.of()));
+        hits.add(new Hit(rx, top + 2, x + width - rx, 12, () -> openRecipes.accept(material, view.form()), List.of()));
 
         Component why = Component.translatable(f.reasonKey(), f.reasonArgs().toArray());
         g.drawString(font, font.plainSubstrByWidth(why.getString(), width - 12), x + 6, top + 15, 0x999999);
@@ -122,12 +124,12 @@ final class FormsPanel {
             if (isCanonical) tip.add(Component.translatable("screen.materialnexus.why", why,
                     Component.translatable("materialnexus.source." + Names.lowerName(f.source())),
                     Component.translatable("materialnexus.confidence." + Names.lowerName(f.confidence()))).withColor(0xAAAAAA));
-            ix = icon(g, item, ix, iy, border, tip, () -> choose(view.form(), item, f, decided));
+            ix = icon(g, item, ix, iy, border, tip, () -> choose(material, view.form(), item, f, decided));
         }
         for (ResolvedForm.NotUnified n : f.notUnified()) {
             List<Component> tip = List.of(Names.stack(n.item()).getHoverName(), Component.literal(n.item().toString()).withColor(0x888888),
                     Component.translatable("screen.materialnexus.role.not_unified", Component.translatable(n.reasonKey(), n.reasonArgs().toArray())).withColor(0xCC8888));
-            ix = icon(g, n.item(), ix, iy, DIM, tip, () -> choose(view.form(), n.item(), f, decided));
+            ix = icon(g, n.item(), ix, iy, DIM, tip, () -> choose(material, view.form(), n.item(), f, decided));
         }
     }
 
@@ -141,9 +143,8 @@ final class FormsPanel {
     }
 
     /** Pick an item as the pending canonical; picking the pending one again, or the already decided one, cancels. */
-    private void choose(String form, ResourceLocation item, ResolvedForm f, boolean decided) {
+    private void choose(String material, String form, ResourceLocation item, ResolvedForm f, boolean decided) {
         if (readOnly) return;
-        String material = detail.material();
         boolean samePending = PendingChanges.get(material, form).map(item::equals).orElse(false);
         boolean alreadyDecided = decided && f.canonical().map(item::equals).orElse(false);
         if (samePending || alreadyDecided) PendingChanges.clear(material, form);

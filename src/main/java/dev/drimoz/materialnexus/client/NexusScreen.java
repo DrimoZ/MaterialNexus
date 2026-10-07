@@ -22,7 +22,8 @@ import java.util.Locale;
 
 /**
  * Material Nexus main screen: materials on the left, the selected material on the right with Forms / Recipes /
- * Missing tabs, global actions on top. Everything shown comes from targeted server requests; choices stay
+ * Missing tabs, global actions on top. The left column can list forms instead (MNX-035): the right side then shows
+ * that form across every material, deciding form by form with the same pending choices. Everything shown comes from targeted server requests; choices stay
  * pending on the client until Preview / Apply.
  */
 public final class NexusScreen extends Screen {
@@ -37,6 +38,8 @@ public final class NexusScreen extends Screen {
     private MaterialDetailPayload detail;
     private String selected;
     private Tab tab = Tab.FORMS;
+    private boolean byForm;
+    private String recipesOnArrival;
     private MaterialSidebar sidebar;
     private Button preview;
     private int panelX, panelY, panelW, panelH;
@@ -48,7 +51,7 @@ public final class NexusScreen extends Screen {
         this.presets = presets;
         this.readOnly = readOnly;
         this.canRevert = canRevert;
-        this.forms = new FormsPanel(readOnly, form -> { tab = Tab.RECIPES; rebuildWidgets(); recipesSelect(form); });
+        this.forms = new FormsPanel(readOnly, this::openRecipes);
         this.recipes = new RecipesPanel(form -> PacketDistributor.sendToServer(new RecipeFamilyRequest(selected, form)));
     }
 
@@ -56,7 +59,27 @@ public final class NexusScreen extends Screen {
 
     void refresh() { rebuildWidgets(); }
 
-    private void recipesSelect(String form) { recipes.select(form); }
+    /** From a card: the Recipes tab of that material; from a form view this switches back to materials first. */
+    private void openRecipes(String material, String form) {
+        tab = Tab.RECIPES;
+        if (!byForm) {
+            rebuildWidgets();
+            recipes.select(form);
+            return;
+        }
+        recipesOnArrival = form;
+        setMode(false, material, material);
+    }
+
+    private void setMode(boolean forms, String filter, String select) {
+        byForm = forms;
+        query = filter;
+        page = null;
+        detail = null;
+        selected = null;
+        if (select != null) select(select);
+        rebuildWidgets();
+    }
 
     @Override
     protected void init() {
@@ -75,13 +98,20 @@ public final class NexusScreen extends Screen {
                     b -> PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), false))).bounds(width - 108, 3, 102, 18).build());
         }
 
-        EditBox search = new EditBox(font, 6, 28, sideW - 12, 16, Component.translatable("screen.materialnexus.search"));
+        int half = (sideW - 14) / 2;
+        Button materialsMode = addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.mode.materials"),
+                b -> setMode(false, "", null)).bounds(6, 27, half, 16).build());
+        Button formsMode = addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.mode.forms"),
+                b -> { tab = Tab.FORMS; setMode(true, "", null); }).bounds(8 + half, 27, half, 16).build());
+        materialsMode.active = byForm;
+        formsMode.active = !byForm;
+        EditBox search = new EditBox(font, 6, 46, sideW - 12, 16, Component.translatable("screen.materialnexus.search"));
         search.setMaxLength(NexusQueries.MAX_QUERY);
         search.setHint(Component.translatable("screen.materialnexus.search"));
         search.setValue(query);
         search.setResponder(v -> { query = v; requestPage(0); });
         addRenderableWidget(search);
-        sidebar = addRenderableWidget(new MaterialSidebar(minecraft, sideW, height - 48 - 26, 48, this::select));
+        sidebar = addRenderableWidget(new MaterialSidebar(minecraft, sideW, height - 66 - 26, 66, this::select));
         addRenderableWidget(Button.builder(Component.literal("<"), b -> { if (page != null) requestPage(page.page() - 1); })
                 .bounds(6, height - 22, 20, 18).build());
         addRenderableWidget(Button.builder(Component.literal(">"), b -> { if (page != null) requestPage(page.page() + 1); })
@@ -91,14 +121,14 @@ public final class NexusScreen extends Screen {
         panelW = width - panelX - 8;
         int tabY = 46;
         int tx = panelX;
-        for (Tab t : Tab.values()) {
+        for (Tab t : byForm ? new Tab[] {Tab.FORMS} : Tab.values()) {
             Button b = addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.tab." + t.name().toLowerCase(Locale.ROOT)),
                     x -> { tab = t; rebuildWidgets(); }).bounds(tx, tabY, 76, 18).build());
             b.active = tab != t && detail != null;
             tx += 80;
         }
         if (!readOnly && detail != null) {
-            addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.unify_material"),
+            addRenderableWidget(Button.builder(Component.translatable(byForm ? "screen.materialnexus.unify_form" : "screen.materialnexus.unify_material"),
                     b -> acceptMaterialSuggestions()).bounds(panelX + panelW - 110, tabY, 110, 18).build());
         }
         panelY = tabY + 24;
@@ -107,47 +137,51 @@ public final class NexusScreen extends Screen {
         recipes.layout(panelX, panelY, panelW, panelH);
 
         if (page == null) requestPage(0);
-        else sidebar.show(page.entries(), selected);
+        else sidebar.show(page.entries(), selected, byForm);
     }
 
     private void requestPage(int index) {
-        PacketDistributor.sendToServer(new MaterialListRequest(index, query));
+        PacketDistributor.sendToServer(new MaterialListRequest(index, query, byForm));
     }
 
     private void select(String material) {
         selected = material;
-        PacketDistributor.sendToServer(new MaterialDetailRequest(material));
+        PacketDistributor.sendToServer(new MaterialDetailRequest(material, byForm));
     }
 
     /** Responses can arrive out of order while typing; only the one matching the current filter is shown. */
     void acceptList(MaterialListPayload payload) {
-        if (!payload.query().equals(query.strip().toLowerCase(Locale.ROOT))) return;
+        if (payload.byForm() != byForm || !payload.query().equals(query.strip().toLowerCase(Locale.ROOT))) return;
         page = payload;
-        sidebar.show(payload.entries(), selected);
+        sidebar.show(payload.entries(), selected, byForm);
         if (selected == null && !payload.entries().isEmpty()) select(payload.entries().getFirst().material());
     }
 
     void acceptDetail(MaterialDetailPayload payload) {
-        if (!payload.material().equals(selected)) return;
+        if (payload.byForm() != byForm || !payload.material().equals(selected)) return;
         boolean first = detail == null;
         detail = payload;
         forms.show(payload);
-        recipes.show(payload);
+        if (!byForm) recipes.show(payload);
         if (first || tab != Tab.FORMS) rebuildWidgets();
+        if (recipesOnArrival != null) {
+            recipes.select(recipesOnArrival);
+            recipesOnArrival = null;
+        }
     }
 
     void acceptFamily(RecipeFamilyPayload payload) {
         recipes.accept(payload);
     }
 
-    /** Every suggestion of this material becomes a pending choice; choices already made are kept. */
+    /** Every suggestion shown (this material, or this form across materials) becomes a pending choice; choices already made are kept. */
     private void acceptMaterialSuggestions() {
         for (MaterialDetailPayload.FormView view : detail.forms()) {
             var f = view.resolved();
             boolean suggestion = f.source() == dev.drimoz.materialnexus.core.policy.PolicyPrecedence.DEFAULT
                     && f.canonical().isPresent() && !f.alternatives().isEmpty();
-            if (suggestion && PendingChanges.get(detail.material(), view.form()).isEmpty()) {
-                PendingChanges.set(detail.material(), view.form(), f.canonical().get());
+            if (suggestion && PendingChanges.get(view.material(), view.form()).isEmpty()) {
+                PendingChanges.set(view.material(), view.form(), f.canonical().get());
             }
         }
     }
@@ -159,7 +193,7 @@ public final class NexusScreen extends Screen {
         g.fill(0, 0, width, 24, 0x88000000);
         g.drawString(font, title, 8, 8, 0xFFFFFF);
         if (page != null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.materials", page.totalMatches()), 8 + font.width(title) + 10, 8, 0xAAAAAA);
+            g.drawString(font, Component.translatable(byForm ? "screen.materialnexus.forms" : "screen.materialnexus.materials", page.totalMatches()), 8 + font.width(title) + 10, 8, 0xAAAAAA);
             int sideW = panelX - 10;
             g.drawCenteredString(font, Component.translatable("screen.materialnexus.page", page.page() + 1, page.pageCount()), sideW / 2, height - 17, 0xAAAAAA);
         }
@@ -170,7 +204,7 @@ public final class NexusScreen extends Screen {
             g.drawString(font, Component.translatable("screen.materialnexus.select_material"), panelX, 30, 0x888888);
             return;
         }
-        g.drawString(font, Names.material(detail.material()), panelX, 30, 0xFFFFFF);
+        g.drawString(font, byForm ? Names.form(detail.material()) : Names.material(detail.material()), panelX, 30, 0xFFFFFF);
         switch (tab) {
             case FORMS -> forms.render(g, font, mouseX, mouseY);
             case RECIPES -> recipes.render(g, font, mouseX, mouseY);

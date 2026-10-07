@@ -38,5 +38,14 @@ class NexusQueriesTest {
         assertTrue(NexusQueries.detail(snapshot, "../etc").isEmpty());
         assertTrue(NexusQueries.detail(snapshot, "unknown").isEmpty());
         assertEquals(1, NexusQueries.detail(snapshot, "metal3").orElseThrow().forms().size());
+
+        // MNX-035: the same snapshot seen by form; one ingot card per material, each keyed by its material.
+        var byForm = NexusQueries.listPage(snapshot, 0, "", true);
+        assertEquals(1, byForm.totalMatches());
+        assertEquals(NexusQueries.PAGE_SIZE + 5, byForm.entries().getFirst().duplicateForms());
+        var ingots = NexusQueries.detail(snapshot, "ingot", true).orElseThrow();
+        assertEquals(NexusQueries.PAGE_SIZE + 5, ingots.forms().size());
+        assertTrue(ingots.forms().stream().allMatch(v -> v.form().equals("ingot") && v.material().startsWith("metal")));
+        assertTrue(NexusQueries.detail(snapshot, "../ingot", true).isEmpty());
     }
 }

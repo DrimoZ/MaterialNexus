@@ -9,7 +9,7 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 import java.util.function.Consumer;
 
-/** Left column of {@link NexusScreen}: materials of the current page, with a status dot each. */
+/** Left column of {@link NexusScreen}: materials (or forms, MNX-035) of the current page, with a status dot each. */
 final class MaterialSidebar extends ObjectSelectionList<MaterialSidebar.Entry> {
     static final int DONE = 0xFF55FF55;
     static final int PENDING = 0xFFFFCC33;
@@ -23,9 +23,9 @@ final class MaterialSidebar extends ObjectSelectionList<MaterialSidebar.Entry> {
         this.onSelect = onSelect;
     }
 
-    void show(List<MaterialListPayload.Summary> entries, String selectedMaterial) {
+    void show(List<MaterialListPayload.Summary> entries, String selectedMaterial, boolean byForm) {
         selected = selectedMaterial;
-        replaceEntries(entries.stream().map(Entry::new).toList());
+        replaceEntries(entries.stream().map(s -> new Entry(s, byForm)).toList());
         children().stream().filter(e -> e.summary.material().equals(selected)).findFirst().ifPresent(this::setSelected);
     }
 
@@ -44,10 +44,12 @@ final class MaterialSidebar extends ObjectSelectionList<MaterialSidebar.Entry> {
     final class Entry extends ObjectSelectionList.Entry<Entry> {
         private final MaterialListPayload.Summary summary;
         private final Component name;
+        private final boolean byForm;
 
-        Entry(MaterialListPayload.Summary summary) {
+        Entry(MaterialListPayload.Summary summary, boolean byForm) {
             this.summary = summary;
-            this.name = Names.material(summary.material());
+            this.byForm = byForm;
+            this.name = byForm ? Names.form(summary.material()) : Names.material(summary.material());
         }
 
         @Override
@@ -55,7 +57,7 @@ final class MaterialSidebar extends ObjectSelectionList<MaterialSidebar.Entry> {
             var font = Minecraft.getInstance().font;
             g.fill(left + 2, top + 6, left + 7, top + 11, status(summary));
             g.drawString(font, font.plainSubstrByWidth(name.getString(), width - 16), left + 12, top + 2, 0xFFFFFF);
-            g.drawString(font, Component.translatable("screen.materialnexus.sidebar_counts", summary.forms(), summary.duplicateForms()), left + 12, top + 12, 0x888888);
+            g.drawString(font, Component.translatable(byForm ? "screen.materialnexus.sidebar_counts_form" : "screen.materialnexus.sidebar_counts", summary.forms(), summary.duplicateForms()), left + 12, top + 12, 0x888888);
         }
 
         @Override

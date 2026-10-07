@@ -9,14 +9,14 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.List;
 
 /** Server to client: one page of material summaries, in response to {@link MaterialListRequest}. */
-public record MaterialListPayload(int page, int pageCount, int totalMatches, String query, List<Summary> entries)
+public record MaterialListPayload(int page, int pageCount, int totalMatches, String query, boolean byForm, List<Summary> entries)
         implements CustomPacketPayload {
     public static final Type<MaterialListPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "material_list"));
     public static final StreamCodec<FriendlyByteBuf, MaterialListPayload> STREAM_CODEC =
             StreamCodec.of(MaterialListPayload::write, MaterialListPayload::read);
 
-    /** One row: how many forms, items, and forms with more than one provider. */
+    /** One row: how many forms (materials, by form), items, and of those with more than one provider. */
     public record Summary(String material, int forms, int providers, int duplicateForms, int unifiedForms) { }
 
     public MaterialListPayload {
@@ -30,6 +30,7 @@ public record MaterialListPayload(int page, int pageCount, int totalMatches, Str
         buf.writeVarInt(p.pageCount());
         buf.writeVarInt(p.totalMatches());
         buf.writeUtf(p.query(), NexusQueries.MAX_QUERY);
+        buf.writeBoolean(p.byForm());
         buf.writeCollection(p.entries(), (b, e) -> {
             b.writeUtf(e.material());
             b.writeVarInt(e.forms());
@@ -40,7 +41,7 @@ public record MaterialListPayload(int page, int pageCount, int totalMatches, Str
     }
 
     private static MaterialListPayload read(FriendlyByteBuf buf) {
-        return new MaterialListPayload(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readUtf(NexusQueries.MAX_QUERY),
+        return new MaterialListPayload(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readUtf(NexusQueries.MAX_QUERY), buf.readBoolean(),
                 buf.readList(b -> new Summary(b.readUtf(), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readVarInt())));
     }
 }

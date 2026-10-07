@@ -13,15 +13,18 @@ import net.minecraft.resources.ResourceLocation;
 
 import java.util.List;
 
-/** Server to client: every resolved form of one material, in response to {@link MaterialDetailRequest}. */
-public record MaterialDetailPayload(String material, List<FormView> forms, List<FamilyRelations.Relation> missing)
+/**
+ * Server to client, in response to {@link MaterialDetailRequest}: every resolved form of one material, or with
+ * {@code byForm} one form across every material (MNX-035). {@code material} is the name of whichever was asked.
+ */
+public record MaterialDetailPayload(String material, boolean byForm, List<FormView> forms, List<FamilyRelations.Relation> missing)
         implements CustomPacketPayload {
     public static final Type<MaterialDetailPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "material_detail"));
     public static final StreamCodec<FriendlyByteBuf, MaterialDetailPayload> STREAM_CODEC =
             StreamCodec.of(MaterialDetailPayload::write, MaterialDetailPayload::read);
 
-    public record FormView(String form, ResolvedForm resolved) { }
+    public record FormView(String material, String form, ResolvedForm resolved) { }
 
     public MaterialDetailPayload {
         forms = List.copyOf(forms);
@@ -30,15 +33,17 @@ public record MaterialDetailPayload(String material, List<FormView> forms, List<
 
     /** The same detail with the missing-recipe proposals computed on the server (MNX-010). */
     public MaterialDetailPayload withMissing(List<FamilyRelations.Relation> relations) {
-        return new MaterialDetailPayload(material, forms, relations);
+        return new MaterialDetailPayload(material, byForm, forms, relations);
     }
 
     @Override public Type<MaterialDetailPayload> type() { return TYPE; }
 
     private static void write(FriendlyByteBuf buf, MaterialDetailPayload p) {
         buf.writeUtf(p.material());
+        buf.writeBoolean(p.byForm());
         buf.writeCollection(p.forms(), (b, view) -> {
             ResolvedForm f = view.resolved();
+            b.writeUtf(view.material());
             b.writeUtf(view.form());
             b.writeOptional(f.canonical(), FriendlyByteBuf::writeResourceLocation);
             b.writeCollection(f.alternatives(), FriendlyByteBuf::writeResourceLocation);
@@ -60,7 +65,7 @@ public record MaterialDetailPayload(String material, List<FormView> forms, List<
     }
 
     private static MaterialDetailPayload read(FriendlyByteBuf buf) {
-        return new MaterialDetailPayload(buf.readUtf(), buf.readList(b -> new FormView(b.readUtf(), new ResolvedForm(
+        return new MaterialDetailPayload(buf.readUtf(), buf.readBoolean(), buf.readList(b -> new FormView(b.readUtf(), b.readUtf(), new ResolvedForm(
                 b.readOptional(FriendlyByteBuf::readResourceLocation),
                 b.readList(FriendlyByteBuf::readResourceLocation),
                 b.readList(bb -> new ResolvedForm.NotUnified(bb.readResourceLocation(), bb.readUtf(), bb.readList(FriendlyByteBuf::readUtf))),

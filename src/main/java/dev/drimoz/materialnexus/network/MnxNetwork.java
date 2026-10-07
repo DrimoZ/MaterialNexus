@@ -13,7 +13,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * Client handler bodies call {@link ClientHooks}, so client classes never load on a dedicated server.
  */
 public final class MnxNetwork {
-    private static final String VERSION = "1";
+    private static final String VERSION = "2";
 
     private MnxNetwork() { }
 
@@ -29,14 +29,14 @@ public final class MnxNetwork {
 
         registrar.playToServer(MaterialListRequest.TYPE, MaterialListRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
-            if (player != null) PacketDistributor.sendToPlayer(player, NexusQueries.listPage(SnapshotManager.current(), req.page(), req.query()));
+            if (player != null) PacketDistributor.sendToPlayer(player, NexusQueries.listPage(SnapshotManager.current(), req.page(), req.query(), req.byForm()));
         });
         registrar.playToServer(MaterialDetailRequest.TYPE, MaterialDetailRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player != null) {
                 var snapshot = SnapshotManager.current();
-                NexusQueries.detail(snapshot, req.material()).ifPresent(d -> PacketDistributor.sendToPlayer(player,
-                        d.withMissing(dev.drimoz.materialnexus.datapack.RecipeEdges.missing(player.server, snapshot.discovered(),
+                NexusQueries.detail(snapshot, req.material(), req.byForm()).ifPresent(d -> PacketDistributor.sendToPlayer(player,
+                        d.byForm() ? d : d.withMissing(dev.drimoz.materialnexus.datapack.RecipeEdges.missing(player.server, snapshot.discovered(),
                                 new dev.drimoz.materialnexus.core.domain.MaterialId(d.material())))));
             }
         });
