@@ -28,7 +28,20 @@ import java.util.Set;
  * before Material Nexus (ADR-010). Called on preview / apply only, never per tick.
  */
 public final class RecipeSources {
+    /** Any quoted namespaced id in a recipe's JSON text. */
+    private static final java.util.regex.Pattern QUOTED_ID = java.util.regex.Pattern.compile("\"([a-z0-9_.-]+:[a-z0-9_./-]+)\"");
+
     private RecipeSources() { }
+
+    /** One pass over the text instead of one search per alternative (MNX-044: 178 alternatives × 13k recipes). */
+    private static boolean mentions(String text, Set<ResourceLocation> ids) {
+        var m = QUOTED_ID.matcher(text);
+        while (m.find()) {
+            ResourceLocation id = ResourceLocation.tryParse(m.group(1));
+            if (id != null && ids.contains(id)) return true;
+        }
+        return false;
+    }
 
     /**
      * Known-format recipes producing or literally consuming an alternative or canonical item, read from
@@ -41,11 +54,10 @@ public final class RecipeSources {
         Set<ResourceLocation> ours = new HashSet<>(overridden);
         Set<ResourceLocation> items = new HashSet<>(conversions.keySet());
         items.addAll(conversions.values());
-        List<String> alternativeIds = conversions.keySet().stream().map(id -> "\"" + id + "\"").toList();
         List<RecipeRewrites.Source> sources = new ArrayList<>();
 
-        // ponytail: reads the JSON of every known-format recipe on each preview (a few thousand small files,
-        // explicit player action only). Index by output on reload if this ever shows up in a profile.
+        // ponytail: reads the JSON of every known-format recipe on each preview (13k on the dev pack: ~0.5 s, explicit
+        // player action only; MNX-044 measured a worst-case preview under 2 s). Index on reload if packs get much bigger.
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
             if (ours.contains(holder.id())) continue;
             ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
@@ -55,8 +67,7 @@ public final class RecipeSources {
             if (file.isPresent()) {
                 JsonObject json = file.get();
                 List<ResourceLocation> outputs = RecipeRewrites.outputIds(json, formats);
-                String text = json.toString();
-                boolean touches = outputs.stream().anyMatch(items::contains) || alternativeIds.stream().anyMatch(text::contains);
+                boolean touches = outputs.stream().anyMatch(items::contains) || mentions(json.toString(), conversions.keySet());
                 if (touches) sources.add(new RecipeRewrites.Source(holder.id(), Optional.of(json), firstOrSelf(outputs, holder.id())));
             } else {
                 ItemStack out = holder.value().getResultItem(server.registryAccess());

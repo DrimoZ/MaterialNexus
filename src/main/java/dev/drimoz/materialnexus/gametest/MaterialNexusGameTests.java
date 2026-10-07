@@ -191,6 +191,43 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /**
+     * MNX-044: a worst-case Preview on the dev pack (every suggestion accepted, rules on three forms) stays interactive.
+     * Logs each step; fails above 5 s, which is when a recipe index becomes worth its complexity.
+     */
+    @GameTest(template = "empty", timeoutTicks = 2000)
+    public static void fullPreviewOnTheDevPackIsFast(GameTestHelper helper) {
+        var server = helper.getLevel().getServer();
+        var snapshot = SnapshotManager.current();
+        long t0 = System.nanoTime();
+        var explicit = new java.util.HashMap<dev.drimoz.materialnexus.core.domain.MaterialForm, ResourceLocation>();
+        dev.drimoz.materialnexus.network.SuggestionsPayload.of(snapshot).changes().forEach(c -> explicit.put(
+                new dev.drimoz.materialnexus.core.domain.MaterialForm(new MaterialId(c.material()), new FormId(c.form())), c.provider()));
+        var ingot = new FormId("ingot");
+        var rules = new java.util.HashMap<FormId, dev.drimoz.materialnexus.core.policy.ProcessRules.Rule>();
+        for (String form : java.util.List.of("rod", "plate", "wire")) {
+            rules.put(new FormId(form), new dev.drimoz.materialnexus.core.policy.ProcessRules.Rule(java.util.List.of(
+                    new dev.drimoz.materialnexus.core.policy.ProcessRules.Route(ResourceLocation.withDefaultNamespace("crafting_shapeless"), ingot, 1, 2)), true, true));
+        }
+        var policy = dev.drimoz.materialnexus.core.policy.ResolutionPolicy.NONE.withExplicit(explicit).withProcesses(rules);
+        var resolved = dev.drimoz.materialnexus.core.resolution.CanonicalResolver.resolve(snapshot.discovered(), policy);
+        long t1 = System.nanoTime();
+        var formats = RecipeFormats.load(server.getResourceManager());
+        var content = PackContent.full(resolved, policy, false, (conversions, ownership) -> RecipeRewrites.plan(
+                RecipeSources.collect(server, conversions, formats, java.util.List.of()), conversions, formats, ownership));
+        long t2 = System.nanoTime();
+        var known = RecipeSources.known(server, formats, java.util.List.of());
+        long t3 = System.nanoTime();
+        var processes = dev.drimoz.materialnexus.datapack.ProcessPlanner.plan(known, formats, resolved, policy);
+        long t4 = System.nanoTime();
+        org.slf4j.LoggerFactory.getLogger("MaterialNexusPerf").info(
+                "Preview: {} choices, resolve {} ms, unification+rewrites {} ms ({} effects), read {} recipes {} ms, processes {} ms ({} effects)",
+                explicit.size(), (t1 - t0) / 1_000_000, (t2 - t1) / 1_000_000, content.effects().size(), known.size(), (t3 - t2) / 1_000_000,
+                (t4 - t3) / 1_000_000, processes.effects().size());
+        helper.assertTrue((t4 - t0) / 1_000_000 < 5000, "full preview took " + (t4 - t0) / 1_000_000 + " ms");
+        helper.succeed();
+    }
+
     /** MNX-028: an applied alternative becomes the canonical item when it enters the world or a container is converted. */
     @GameTest(template = "empty")
     public static void unifiedItemsAreConvertedWhenTouched(GameTestHelper helper) {
