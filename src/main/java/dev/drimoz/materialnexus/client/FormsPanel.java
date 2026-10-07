@@ -136,8 +136,9 @@ final class FormsPanel {
 
     /** MNX-039: forms this material lacks and Material Nexus can create (template texture); click to toggle. */
     private void renderCreate(GuiGraphics g, Font font, int top, int mx, int my) {
-        List<String> missing = dev.drimoz.materialnexus.item.CreatedItems.FORMS.stream().map(f -> f.name())
-                .filter(f -> detail.forms().stream().noneMatch(v -> v.form().equals(f))).sorted().toList();
+        java.util.Set<dev.drimoz.materialnexus.core.domain.FormId> present = new java.util.HashSet<>();
+        detail.forms().forEach(v -> present.add(new dev.drimoz.materialnexus.core.domain.FormId(v.form())));
+        List<String> missing = dev.drimoz.materialnexus.item.CreatedItems.creatable(present).stream().map(f -> f.name()).toList();
         if (missing.isEmpty()) return;
         String material = detail.material();
         g.fill(x, top, x + width, top + CARD - 4, 0x33000000);

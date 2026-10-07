@@ -39,7 +39,28 @@ public final class TagDiscovery {
             Map.entry("plates", new FormId("plate")),
             Map.entry("rods", new FormId("rod")),
             Map.entry("gears", new FormId("gear")),
-            Map.entry("wires", new FormId("wire")));
+            Map.entry("wires", new FormId("wire")),
+            Map.entry("tiny_dusts", new FormId("tiny_dust")),
+            Map.entry("dirty_dusts", new FormId("dirty_dust")),
+            Map.entry("clumps", new FormId("clump")),
+            Map.entry("shards", new FormId("shard")),
+            Map.entry("crystals", new FormId("crystal")),
+            Map.entry("sheetmetals", new FormId("sheetmetal")),
+            // Usually untagged; found through item name patterns declared as data (FormPatterns).
+            Map.entry("double_ingots", new FormId("double_ingot")),
+            Map.entry("large_plates", new FormId("large_plate")),
+            Map.entry("curved_plates", new FormId("curved_plate")),
+            Map.entry("bolts", new FormId("bolt")),
+            Map.entry("rings", new FormId("ring")),
+            Map.entry("blades", new FormId("blade")),
+            Map.entry("rotors", new FormId("rotor")),
+            Map.entry("drill_heads", new FormId("drill_head")));
+
+    /**
+     * Members injected from item name patterns (MNX-040) live under {@code materialnexus:pattern/<folder>/<material>}:
+     * read like convention tags, explained as patterns, never written to the game's tags.
+     */
+    public static final String PATTERN_PREFIX = "pattern/";
 
     /** Host rock to ore form: stone and deepslate ores are variants, never duplicates of each other. */
     private static final Map<String, String> GROUNDS = Map.of(
@@ -61,8 +82,9 @@ public final class TagDiscovery {
         SortedMap<MaterialId, SortedMap<FormId, SortedMap<ResourceLocation, List<DiscoveryEvidence>>>> found = new TreeMap<>();
 
         tagMembers.forEach((tag, members) -> {
-            if (!tag.getNamespace().equals(CONVENTION_NAMESPACE)) return;
-            String[] parts = tag.getPath().split("/");
+            boolean byPattern = tag.getNamespace().equals("materialnexus") && tag.getPath().startsWith(PATTERN_PREFIX);
+            if (!byPattern && !tag.getNamespace().equals(CONVENTION_NAMESPACE)) return;
+            String[] parts = tag.getPath().substring(byPattern ? PATTERN_PREFIX.length() : 0).split("/");
             if (parts.length != 2) return;
             FormId tagForm = FOLDERS.get(parts[0]);
             if (tagForm == null) return;
@@ -80,7 +102,7 @@ public final class TagDiscovery {
             var byForm = found.computeIfAbsent(material.get(), m -> new TreeMap<>());
             for (ResourceLocation item : members) {
                 FormId form = tagForm;
-                String explanation = "#" + tag + (aliasOf != null ? " (alias of " + aliasOf + ")" : "");
+                String explanation = (byPattern ? "item name pattern" : "#" + tag) + (aliasOf != null ? " (alias of " + aliasOf + ")" : "");
                 if (tagForm.equals(ORE)) {
                     String ground = groundOf.get(item);
                     form = ground != null ? oreForm(ground) : oreFormByName(item);
@@ -88,7 +110,8 @@ public final class TagDiscovery {
                 }
                 byForm.computeIfAbsent(form, f -> new TreeMap<>())
                         .computeIfAbsent(item, i -> new ArrayList<>())
-                        .add(new DiscoveryEvidence(aliasOf != null ? Confidence.EXPLICIT_DEFINITION : Confidence.MATERIAL_TAG, explanation));
+                        .add(new DiscoveryEvidence(aliasOf != null ? Confidence.EXPLICIT_DEFINITION
+                                : byPattern ? Confidence.INTEGRATION : Confidence.MATERIAL_TAG, explanation));
             }
         });
 
@@ -126,6 +149,15 @@ public final class TagDiscovery {
         if (path.contains("nether")) return oreForm("netherrack");
         if (path.startsWith("end_") || path.contains("end_stone")) return oreForm("end_stone");
         return ORE;
+    }
+
+    public static boolean isFolder(String folder) {
+        return FOLDERS.containsKey(folder);
+    }
+
+    /** Folder name for a form, e.g. ingot to ingots. */
+    public static java.util.Optional<String> folder(FormId form) {
+        return FOLDERS.entrySet().stream().filter(e -> e.getValue().equals(form)).map(Map.Entry::getKey).findFirst();
     }
 
     /** The convention tag a material/form was discovered from, e.g. c:ingots/tin or c:storage_blocks/raw_tin. */

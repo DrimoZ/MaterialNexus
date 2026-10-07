@@ -33,5 +33,13 @@ class CreatedItemsTest {
         assertTrue(CreatedItems.validate(discovered, netherite, "netherite", "ore").isEmpty(), "no template for ores");
         assertTrue(CreatedItems.validate(discovered, null, "unobtainium", "rod").isEmpty(), "unknown material");
         assertTrue(CreatedItems.validate(discovered, netherite, "iron", "gear").isEmpty(), "name must match the material");
+
+        // A gem is the ingot of non-metals: no ingot, no wire offered for it.
+        var gems = Map.of(ResourceLocation.parse("c:gems/fluxite"), List.of(ResourceLocation.parse("oritech:fluxite")));
+        var gemDiscovered = TagDiscovery.discover(gems);
+        var fluxite = CanonicalResolver.resolve(gemDiscovered, ResolutionPolicy.NONE).get(new MaterialId("fluxite"));
+        assertTrue(CreatedItems.validate(gemDiscovered, fluxite, "fluxite", "ingot").isEmpty());
+        assertTrue(CreatedItems.validate(gemDiscovered, fluxite, "fluxite", "wire").isEmpty());
+        assertTrue(CreatedItems.validate(gemDiscovered, fluxite, "fluxite", "plate").isPresent());
     }
 }

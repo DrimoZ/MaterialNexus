@@ -25,7 +25,9 @@ public final class FamilyRelations {
             relation("nugget", "ingot"), relation("ingot", "nugget"),
             relation("ingot", "block"), relation("block", "ingot"),
             relation("raw", "raw_block"), relation("raw_block", "raw"),
-            relation("raw", "ingot"), relation("dust", "ingot"));
+            relation("raw", "ingot"), relation("dust", "ingot"),
+            // Gems are the ingots of non-metals.
+            relation("gem", "block"), relation("block", "gem"));
 
     /** Longest chain of recipes still counted as a conversion (dust, hot ingot, ingot is two). */
     public static final int MAX_STEPS = 3;

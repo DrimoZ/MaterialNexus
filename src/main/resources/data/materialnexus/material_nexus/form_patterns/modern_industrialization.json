@@ -1,0 +1,28 @@
+{
+  "patterns": {
+    "double_ingot": [
+      "modern_industrialization:{material}_double_ingot"
+    ],
+    "large_plate": [
+      "modern_industrialization:{material}_large_plate"
+    ],
+    "curved_plate": [
+      "modern_industrialization:{material}_curved_plate"
+    ],
+    "bolt": [
+      "modern_industrialization:{material}_bolt"
+    ],
+    "ring": [
+      "modern_industrialization:{material}_ring"
+    ],
+    "blade": [
+      "modern_industrialization:{material}_blade"
+    ],
+    "rotor": [
+      "modern_industrialization:{material}_rotor"
+    ],
+    "drill_head": [
+      "modern_industrialization:{material}_drill_head"
+    ]
+  }
+}

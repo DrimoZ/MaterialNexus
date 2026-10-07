@@ -38,6 +38,21 @@ public final class CreatedItems {
     public static final Set<FormId> FORMS = Set.of(new FormId("ingot"), new FormId("nugget"), new FormId("dust"), new FormId("plate"),
             new FormId("rod"), new FormId("gear"), new FormId("wire"));
     private static final Logger LOGGER = LogUtils.getLogger();
+    private static final FormId INGOT = new FormId("ingot");
+    private static final FormId GEM = new FormId("gem");
+    private static final FormId WIRE = new FormId("wire");
+
+    /**
+     * Forms that can be created for a material having {@code present}: templated, missing, and for a gem material
+     * (a gem is the ingot of non-metals: coal, quartz, diamond...) no ingot and no wire, which are metal forms.
+     */
+    public static List<FormId> creatable(Set<FormId> present) {
+        return FORMS.stream()
+                .filter(f -> !present.contains(f))
+                .filter(f -> !(present.contains(GEM) && (f.equals(INGOT) || f.equals(WIRE))))
+                .sorted(java.util.Comparator.comparing(FormId::name))
+                .toList();
+    }
 
     /** {@code colorFrom}: an item of the material whose texture gives the tint, unless {@code color} (0xRRGGBB) is set. */
     public record Entry(MaterialId material, FormId form, Optional<ResourceLocation> colorFrom, Optional<Integer> color) {
@@ -98,7 +113,7 @@ public final class CreatedItems {
         Optional<MaterialId> m = MaterialId.read(material).result();
         Optional<FormId> f = FormId.read(form).result();
         if (m.isEmpty() || f.isEmpty() || resolved == null || !resolved.material().equals(m.get()) || !FORMS.contains(f.get())) return Optional.empty();
-        if (!discovered.providers(m.get(), f.get()).isEmpty()) return Optional.empty();
+        if (!creatable(resolved.forms().keySet()).contains(f.get()) || !discovered.providers(m.get(), f.get()).isEmpty()) return Optional.empty();
         Optional<ResourceLocation> colorFrom = Stream.of("ingot", "gem")
                 .map(name -> resolved.forms().get(new FormId(name)))
                 .filter(Objects::nonNull)

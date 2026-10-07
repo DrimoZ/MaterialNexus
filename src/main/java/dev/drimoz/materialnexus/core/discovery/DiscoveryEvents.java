@@ -49,6 +49,10 @@ public final class DiscoveryEvents {
             List<PackContent.Effect> applied = PackContent.readManifest(MnxPaths.generated()).stream()
                     .filter(e -> BuiltInRegistries.ITEM.containsKey(e.item())).toList();
             PackContent.restoreRemovedMembers(tagMembers, applied);
+            // MNX-040: forms mods leave untagged (MI double ingots...), from declared item name patterns.
+            dev.drimoz.materialnexus.datapack.FormPatterns.inject(tagMembers, BuiltInRegistries.ITEM.keySet(),
+                    dev.drimoz.materialnexus.datapack.FormPatterns.patterns(),
+                    dev.drimoz.materialnexus.datapack.FormPatterns.knownNames(tagMembers.keySet(), MaterialDefinitions.aliases().keySet()));
 
             DiscoveredMaterials discovered = TagDiscovery.discover(tagMembers, MaterialDefinitions.aliases());
             ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies());

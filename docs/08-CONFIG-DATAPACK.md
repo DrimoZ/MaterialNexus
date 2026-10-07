@@ -117,6 +117,18 @@ In `global.json`, per form for every material. A material file can override it f
 
 `config/materialnexus/items.json`, written by the GUI ("Create a missing form" on a material) or by hand. Forms: ingot, nugget, dust, plate, rod, gear, wire. Optional `"color": "#4D494D"` instead of `color_from`. Read at startup only: restart after a change, ship it to clients, and never remove an entry from a running world unless its items may disappear. A resource pack can replace the templates (`materialnexus:item/template/<form>`).
 
+## Forms and item name patterns (MNX-040)
+
+Discovery reads the convention tags `c:<folder>/<material>` for these folders: ores, raw_materials, storage_blocks, ingots, nuggets, gems, dusts, tiny_dusts, dirty_dusts, clumps, shards, crystals, plates, sheetmetals, rods, gears, wires. A gem is the ingot of non-metals (coal and charcoal are tagged `c:gems/*` by Material Nexus, as vanilla leaves them untagged).
+
+Forms mods leave untagged are declared as item name patterns in `data/<namespace>/material_nexus/form_patterns/*.json`:
+
+```json
+{ "patterns": { "double_ingot": ["modern_industrialization:{material}_double_ingot"] } }
+```
+
+Pattern forms: double_ingot, large_plate, curved_plate, bolt, ring, blade, rotor, drill_head (Modern Industrialization shipped). An item matches only if `{material}` names a material some convention tag already knows; the match is shown as "item name pattern" evidence and never added to the game's tags.
+
 ## Recipe formats (ADR-016)
 
 To let Material Nexus rewrite another mod's recipes, add a file to any datapack (or KubeJS data):
