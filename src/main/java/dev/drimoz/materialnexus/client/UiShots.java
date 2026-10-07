@@ -58,7 +58,7 @@ public final class UiShots {
             return;
         }
         switch (step.view()) {
-            case "open" -> mc.setScreen(new NexusScreen(false, true, List.of()));
+            case "open" -> mc.setScreen(new NexusScreen(false, true, List.of(), "[]"));
             case "quit" -> mc.stop();
             default -> { if (mc.screen instanceof NexusScreen screen) screen.devShow(step.view(), step.arg()); }
         }

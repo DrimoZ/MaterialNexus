@@ -266,5 +266,9 @@
   "screen.materialnexus.triage.not_same": "Not the same",
   "screen.materialnexus.triage.usage": "%1$s made · %2$s used",
   "tooltip.materialnexus.becomes": "Material Nexus: becomes %s",
-  "tooltip.materialnexus.kept": "Material Nexus: kept item"
+  "tooltip.materialnexus.kept": "Material Nexus: kept item",
+  "screen.materialnexus.history.title": "History",
+  "screen.materialnexus.history.none": "Nothing applied yet.",
+  "screen.materialnexus.history.apply": "%1$s · %2$s changes applied (%3$s choices, %4$s rules, %5$s items, %6$s data)",
+  "screen.materialnexus.history.revert": "%s · last apply reverted"
 }

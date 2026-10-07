@@ -79,6 +79,8 @@ final class PolicyHandler {
                     if (!data.isEmpty()) dev.drimoz.materialnexus.datapack.EditableData.write(data);
                     // Not part of the policy backup: an item registered after a restart cannot be reverted by a reload.
                     if (!creations.isEmpty()) CreatedItems.add(itemsFile(), creations);
+                    dev.drimoz.materialnexus.datapack.ApplyHistory.append("apply", (int) entries.stream().filter(PolicyEditor.Entry::valid).count(),
+                            request.processes().size(), creations.size(), data.size(), preset.isPresent() ? 1 : 0, added.size() + removed.size());
                 },
                 creations.isEmpty() ? Component.translatable("message.materialnexus.applied", added.size() + removed.size())
                         : Component.translatable("message.materialnexus.applied_restart", added.size() + removed.size()),
@@ -137,7 +139,10 @@ final class PolicyHandler {
 
     static void revert(ServerPlayer player) {
         if (!PolicyEditor.canRevert(MnxPaths.policies())) return;
-        writeAndReload(player, () -> PolicyEditor.revert(MnxPaths.policies()),
+        writeAndReload(player, () -> {
+                    PolicyEditor.revert(MnxPaths.policies());
+                    dev.drimoz.materialnexus.datapack.ApplyHistory.append("revert", 0, 0, 0, 0, 0, 0);
+                },
                 Component.translatable("message.materialnexus.reverted"));
     }
 

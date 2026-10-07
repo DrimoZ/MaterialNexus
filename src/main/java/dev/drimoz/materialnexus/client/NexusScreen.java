@@ -67,11 +67,19 @@ public final class NexusScreen extends Screen {
     private PreviewDrawer drawer;
     private int contentX, contentY, contentW, contentH;
 
-    public NexusScreen(boolean readOnly, boolean canRevert, List<ResourceLocation> presets) {
+    /** MNX-056: the latest applies and reverts, newest first (lines of history.jsonl). */
+    private final List<com.google.gson.JsonObject> history = new java.util.ArrayList<>();
+
+    public NexusScreen(boolean readOnly, boolean canRevert, List<ResourceLocation> presets, String historyJson) {
         super(Component.translatable("screen.materialnexus.title"));
         this.readOnly = readOnly;
         this.canRevert = canRevert;
         this.presets = presets;
+        try {
+            com.google.gson.JsonParser.parseString(historyJson).getAsJsonArray().forEach(e -> history.add(e.getAsJsonObject()));
+        } catch (RuntimeException ignored) {
+            // Nothing to show.
+        }
         this.table = new DetailTable(readOnly, this::openRecipes);
         this.recipes = new RecipesPanel(f -> PacketDistributor.sendToServer(new RecipeFamilyRequest(material, f)));
         this.process = new ProcessPanel(readOnly, this::rebuildWidgets);
@@ -414,6 +422,7 @@ public final class NexusScreen extends Screen {
             }
             ty += 3;
         }
+        ty = renderHistory(g, x, ty + 8, tipWidth, wide ? 12 : 4);
         renderModPriority(g, mx, my, wide ? contentX + 400 : x, wide ? contentY + 10 : ty + 12, wide ? Math.min(340, contentW - 410) : 300);
     }
 
@@ -454,6 +463,42 @@ public final class NexusScreen extends Screen {
             g.drawString(font, modName(mod), x + 4, ry + 1, Ui.MUTED, false);
             if (!readOnly) smallButton(g, mx, my, x + w - 14, ry, "+", () -> { ranked.add(mod); savePriority(ranked); });
             ry += 12;
+        }
+    }
+
+    /** MNX-056: one line per apply or revert, newest first; returns the y below the list. */
+    private int renderHistory(GuiGraphics g, int x, int y, int w, int max) {
+        g.drawString(font, Component.translatable("screen.materialnexus.history.title"), x, y, Ui.TEXT, false);
+        y += 13;
+        if (history.isEmpty()) {
+            g.drawString(font, Component.translatable("screen.materialnexus.history.none"), x, y, Ui.FAINT, false);
+            return y + 11;
+        }
+        var format = java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm").withZone(java.time.ZoneId.systemDefault());
+        for (var entry : history.subList(0, Math.min(max, history.size()))) {
+            if (y + 11 > height - BOTTOM - 4) break;
+            String when;
+            try {
+                when = format.format(java.time.Instant.parse(entry.get("at").getAsString()));
+            } catch (RuntimeException e) {
+                when = "?";
+            }
+            boolean revert = entry.has("kind") && "revert".equals(entry.get("kind").getAsString());
+            Component line = revert ? Component.translatable("screen.materialnexus.history.revert", when)
+                    : Component.translatable("screen.materialnexus.history.apply", when, num(entry, "effects"), num(entry, "choices"),
+                            num(entry, "rules"), num(entry, "items"), num(entry, "data"));
+            g.fill(x, y, x + 2, y + 8, revert ? Ui.WARNING : Ui.SUCCESS);
+            g.drawString(font, font.plainSubstrByWidth(line.getString(), w - 6), x + 6, y, Ui.MUTED, false);
+            y += 11;
+        }
+        return y;
+    }
+
+    private static int num(com.google.gson.JsonObject entry, String field) {
+        try {
+            return entry.has(field) ? entry.get(field).getAsInt() : 0;
+        } catch (RuntimeException e) {
+            return 0;
         }
     }
 
