@@ -76,18 +76,28 @@ public final class PreviewScreen extends Screen {
     public boolean isPauseScreen() { return false; }
 
     private Line choiceLine(PolicyEditor.Entry e) {
+        return new Line(describe(e), e.valid() ? 0x55FF55 : 0xFF5555);
+    }
+
+    /** One canonical choice in words; shared with the preview drawer (MNX-049). */
+    static Component describe(PolicyEditor.Entry e) {
         Component material = Names.material(e.material());
         Component form = Names.form(e.form());
         if (!e.valid()) {
-            return new Line(Component.translatable("screen.materialnexus.preview_invalid", material, form, e.to().toString()), 0xFF5555);
+            return Component.translatable("screen.materialnexus.preview_invalid", material, form, e.to().toString());
         }
         Component from = e.from().map(id -> (Component) Component.literal(id.toString()))
                 .orElse(Component.translatable("screen.materialnexus.none"));
-        return new Line(Component.translatable("screen.materialnexus.preview_line", material, form, from, e.to().toString()), 0x55FF55);
+        return Component.translatable("screen.materialnexus.preview_line", material, form, from, e.to().toString());
     }
 
     private Line effectLine(PackContent.Effect e, String prefixKey, int color) {
-        Component effect = switch (e.kind()) {
+        return new Line(Component.translatable(prefixKey, describe(e)), color);
+    }
+
+    /** One pack effect in words; shared with the preview drawer (MNX-049). */
+    static Component describe(PackContent.Effect e) {
+        return switch (e.kind()) {
             case PackContent.TAG_REMOVE -> Component.translatable("screen.materialnexus.effect.tag_remove", e.target().toString(), e.item().toString());
             case PackContent.ITEM_CONVERSION -> Component.translatable("screen.materialnexus.effect.item_conversion", e.item().toString(), e.target().toString());
             case RecipeRewrites.REWRITE -> Component.translatable("screen.materialnexus.effect.recipe_rewrite", e.target().toString(), e.item().toString());
@@ -105,7 +115,6 @@ public final class PreviewScreen extends Screen {
                     Component.translatable("materialnexus.au_domain." + e.target().getPath()));
             default -> Component.translatable("screen.materialnexus.effect.conversion", e.item().toString(), e.target().toString());
         };
-        return new Line(Component.translatable(prefixKey, effect), color);
     }
 
     /** The ratio is in the generated recipe id: process/&lt;form&gt;/&lt;material&gt;/&lt;input&gt;/&lt;in&gt;/&lt;out&gt;/&lt;machine ns&gt;/&lt;machine path&gt;. */

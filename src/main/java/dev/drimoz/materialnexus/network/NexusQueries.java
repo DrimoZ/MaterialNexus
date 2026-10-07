@@ -18,7 +18,11 @@ import java.util.TreeMap;
  * pages are clamped, names validated.
  */
 public final class NexusQueries {
-    public static final int PAGE_SIZE = 50;
+    /** Large enough that the redesigned list (MNX-049) scrolls instead of paging; still a bound on untrusted requests. */
+    public static final int PAGE_SIZE = 512;
+    public static final int ALL = 0;
+    public static final int TO_DECIDE = 1;
+    public static final int UNIFIED = 2;
     public static final int MAX_QUERY = 64;
 
     private NexusQueries() { }
@@ -28,16 +32,21 @@ public final class NexusQueries {
     }
 
     public static MaterialListPayload listPage(ResolvedSnapshot snapshot, int page, String query, boolean byForm) {
+        return listPage(snapshot, page, query, byForm, ALL);
+    }
+
+    public static MaterialListPayload listPage(ResolvedSnapshot snapshot, int page, String query, boolean byForm, int status) {
         String filter = query.strip().toLowerCase(Locale.ROOT);
         List<MaterialListPayload.Summary> matches = groups(snapshot, byForm).entrySet().stream()
                 .filter(e -> e.getKey().contains(filter))
-                .map(e -> summarize(e.getKey(), e.getValue().values()))
+                .map(e -> summarize(e.getKey(), e.getValue()))
+                .filter(s -> status == ALL || (status == TO_DECIDE ? s.toDecide() > 0 : s.unifiedForms() > 0))
                 .toList();
         int pageCount = Math.max(1, (matches.size() + PAGE_SIZE - 1) / PAGE_SIZE);
         int clamped = Math.clamp(page, 0, pageCount - 1);
         int from = clamped * PAGE_SIZE;
         return new MaterialListPayload(clamped, pageCount, matches.size(), filter, byForm,
-                matches.subList(from, Math.min(from + PAGE_SIZE, matches.size())));
+                matches.subList(from, Math.min(from + PAGE_SIZE, matches.size())), totals(snapshot));
     }
 
     public static Optional<MaterialDetailPayload> detail(ResolvedSnapshot snapshot, String material) {
@@ -56,6 +65,30 @@ public final class NexusQueries {
                 .toList(), List.of()));
     }
 
+    /**
+     * The whole pack as a grid (MNX-049): materials × forms, each cell {@code 0} absent, {@code 1} nothing to decide,
+     * {@code 2} to decide (a suggestion), {@code 3} unified.
+     */
+    public static MatrixPayload matrix(ResolvedSnapshot snapshot) {
+        List<String> materials = snapshot.materials().keySet().stream().map(MaterialId::name).toList();
+        TreeMap<String, Integer> formCounts = new TreeMap<>();
+        snapshot.materials().values().forEach(m -> m.forms().keySet().forEach(f -> formCounts.merge(f.name(), 1, Integer::sum)));
+        // Most common forms first: the left of the grid is where most materials have something.
+        List<String> forms = formCounts.entrySet().stream()
+                .sorted(Map.Entry.<String, Integer>comparingByValue().reversed().thenComparing(Map.Entry.comparingByKey()))
+                .map(Map.Entry::getKey).toList();
+        byte[] cells = new byte[materials.size() * forms.size()];
+        int row = 0;
+        for (var m : snapshot.materials().values()) {
+            for (int col = 0; col < forms.size(); col++) {
+                ResolvedForm f = m.forms().get(new FormId(forms.get(col)));
+                cells[row * forms.size() + col] = (byte) (f == null ? 0 : f.alternatives().isEmpty() ? 1 : f.source() == PolicyPrecedence.DEFAULT ? 2 : 3);
+            }
+            row++;
+        }
+        return new MatrixPayload(materials, forms, cells);
+    }
+
     /** name → (other axis name → resolved form). By material it is the snapshot itself; by form it is transposed. */
     private static Map<String, Map<String, ResolvedForm>> groups(ResolvedSnapshot snapshot, boolean byForm) {
         // ponytail: rebuilt per request; fine for a GUI click, cache in the snapshot if packs get huge
@@ -66,7 +99,32 @@ public final class NexusQueries {
         return groups;
     }
 
-    private static MaterialListPayload.Summary summarize(String name, Collection<ResolvedForm> forms) {
+    /** Whole-pack counts for the top bar. */
+    public static MaterialListPayload.Totals totals(ResolvedSnapshot snapshot) {
+        int toDecide = 0, unified = 0, aside = 0;
+        for (var m : snapshot.materials().values()) {
+            for (ResolvedForm f : m.forms().values()) {
+                if (!f.alternatives().isEmpty()) {
+                    if (f.source() == PolicyPrecedence.DEFAULT) toDecide++;
+                    else unified++;
+                }
+                aside += f.notUnified().size();
+            }
+        }
+        return new MaterialListPayload.Totals(toDecide, unified, aside);
+    }
+
+    /** The item that stands for a group in lists: its ingot, gem, dust or block, else the first canonical item. */
+    private static Optional<net.minecraft.resources.ResourceLocation> icon(Map<String, ResolvedForm> forms) {
+        for (String preferred : List.of("ingot", "gem", "dust", "block")) {
+            ResolvedForm f = forms.get(preferred);
+            if (f != null && f.canonical().isPresent()) return f.canonical();
+        }
+        return forms.values().stream().flatMap(f -> f.canonical().stream()).findFirst();
+    }
+
+    private static MaterialListPayload.Summary summarize(String name, Map<String, ResolvedForm> group) {
+        Collection<ResolvedForm> forms = group.values();
         int providers = 0;
         int duplicates = 0;
         int unified = 0;
@@ -75,6 +133,6 @@ public final class NexusQueries {
             if (!form.alternatives().isEmpty()) duplicates++;
             if (!form.alternatives().isEmpty() && form.source() != PolicyPrecedence.DEFAULT) unified++;
         }
-        return new MaterialListPayload.Summary(name, forms.size(), providers, duplicates, unified);
+        return new MaterialListPayload.Summary(name, forms.size(), providers, duplicates, unified, icon(group));
     }
 }

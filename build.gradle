@@ -25,6 +25,14 @@ neoForge {
             gameDirectory = project.file('run')
             systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
         }
+        // MNX-049: dev-only UI screenshots. Copies the dev world and config to run-ui (the dev world is never touched),
+        // opens the world, walks the Material Nexus screen and saves screenshots to run-ui/screenshots, then quits.
+        uiShots {
+            client()
+            gameDirectory = project.file("run-ui")
+            systemProperty "materialnexus.uishots", "true"
+            programArguments.addAll "--quickPlaySingleplayer", "New World", "--width", "2000", "--height", "1070"
+        }
         server {
             server()
             gameDirectory = project.file('run')
@@ -124,6 +132,13 @@ dependencies {
 }
 
 // MNX-039: created items are read at startup, so the GameTest run gets its items.json before launch.
+tasks.matching { it.name == 'runUiShots' }.configureEach {
+    doFirst {
+        delete 'run-ui/screenshots'
+        copy { from 'run'; into 'run-ui'; include 'saves/**', 'config/**', 'options.txt' }
+    }
+}
+
 tasks.matching { it.name == 'runGameTestServer' }.configureEach {
     doFirst { copy { from 'src/gametest-fixtures'; into 'run-gametest' } }
 }

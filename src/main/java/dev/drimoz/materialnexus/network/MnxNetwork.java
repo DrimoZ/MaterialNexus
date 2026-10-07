@@ -13,7 +13,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * Client handler bodies call {@link ClientHooks}, so client classes never load on a dedicated server.
  */
 public final class MnxNetwork {
-    private static final String VERSION = "4";
+    private static final String VERSION = "5";
 
     private MnxNetwork() { }
 
@@ -28,11 +28,12 @@ public final class MnxNetwork {
         registrar.playToClient(ProcessPayload.TYPE, ProcessPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onProcess(p));
         registrar.playToClient(DataListPayload.TYPE, DataListPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onDataList(p));
         registrar.playToClient(DataReadPayload.TYPE, DataReadPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onDataRead(p));
+        registrar.playToClient(MatrixPayload.TYPE, MatrixPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onMatrix(p));
         registrar.playToClient(SuggestionsPayload.TYPE, SuggestionsPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onSuggestions(p));
 
         registrar.playToServer(MaterialListRequest.TYPE, MaterialListRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
-            if (player != null) PacketDistributor.sendToPlayer(player, NexusQueries.listPage(SnapshotManager.current(), req.page(), req.query(), req.byForm()));
+            if (player != null) PacketDistributor.sendToPlayer(player, NexusQueries.listPage(SnapshotManager.current(), req.page(), req.query(), req.byForm(), req.status()));
         });
         registrar.playToServer(MaterialDetailRequest.TYPE, MaterialDetailRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
@@ -86,6 +87,10 @@ public final class MnxNetwork {
                         .anyMatch(e -> e.kind() == kind && e.id().equals(req.id()) && e.edited());
                 PacketDistributor.sendToPlayer(player, new DataReadPayload(req.kind(), req.id(), text, edited));
             });
+        });
+        registrar.playToServer(MatrixRequest.TYPE, MatrixRequest.STREAM_CODEC, (req, ctx) -> {
+            ServerPlayer player = authorized(ctx);
+            if (player != null) PacketDistributor.sendToPlayer(player, NexusQueries.matrix(SnapshotManager.current()));
         });
         registrar.playToServer(SuggestionsRequest.TYPE, SuggestionsRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);

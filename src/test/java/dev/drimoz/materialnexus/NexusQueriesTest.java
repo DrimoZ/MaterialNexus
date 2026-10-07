@@ -34,7 +34,7 @@ class NexusQueriesTest {
         assertEquals(0, NexusQueries.listPage(snapshot, -7, "").page());
         assertEquals(1, last.entries().getFirst().duplicateForms());
 
-        assertEquals(1, NexusQueries.listPage(snapshot, 0, "  METAL7 ").totalMatches());
+        assertEquals(1, NexusQueries.listPage(snapshot, 0, "  METAL516 ").totalMatches());
         assertTrue(NexusQueries.detail(snapshot, "../etc").isEmpty());
         assertTrue(NexusQueries.detail(snapshot, "unknown").isEmpty());
         assertEquals(1, NexusQueries.detail(snapshot, "metal3").orElseThrow().forms().size());

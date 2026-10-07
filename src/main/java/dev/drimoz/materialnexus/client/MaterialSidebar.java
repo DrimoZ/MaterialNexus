@@ -9,17 +9,16 @@ import net.minecraft.network.chat.Component;
 import java.util.List;
 import java.util.function.Consumer;
 
-/** Left column of {@link NexusScreen}: materials (or forms, MNX-035) of the current page, with a status dot each. */
+/**
+ * Material (or form) list of the main screen (MNX-049): a status edge (amber: duplicates to decide, green: all
+ * decided, grey: nothing to unify), the item that stands for it, its name, and how many forms are still to decide.
+ */
 final class MaterialSidebar extends ObjectSelectionList<MaterialSidebar.Entry> {
-    static final int DONE = 0xFF55FF55;
-    static final int PENDING = 0xFFFFCC33;
-    static final int NOTHING = 0xFF777777;
-
     private final Consumer<String> onSelect;
     private String selected;
 
     MaterialSidebar(Minecraft minecraft, int width, int height, int y, Consumer<String> onSelect) {
-        super(minecraft, width, height, y, 22);
+        super(minecraft, width, height, y, 20);
         this.onSelect = onSelect;
     }
 
@@ -29,35 +28,45 @@ final class MaterialSidebar extends ObjectSelectionList<MaterialSidebar.Entry> {
         children().stream().filter(e -> e.summary.material().equals(selected)).findFirst().ifPresent(this::setSelected);
     }
 
+    /** The main screen draws its own flat background (MNX-049). */
     @Override
-    public int getRowWidth() { return width - 12; }
+    protected void renderListBackground(GuiGraphics g) { }
 
     @Override
-    protected int getScrollbarPosition() { return getX() + width - 6; }
+    protected void renderListSeparators(GuiGraphics g) { }
 
-    /** Green: every duplicated form is decided. Amber: duplicates still only suggested. Grey: nothing to unify. */
+    @Override
+    public int getRowWidth() { return width - 10; }
+
+    @Override
+    protected int getScrollbarPosition() { return getX() + width - 5; }
+
     static int status(MaterialListPayload.Summary s) {
-        if (s.duplicateForms() == 0) return NOTHING;
-        return s.unifiedForms() >= s.duplicateForms() ? DONE : PENDING;
+        if (s.duplicateForms() == 0) return Ui.NEUTRAL;
+        return s.toDecide() > 0 ? Ui.WARNING : Ui.SUCCESS;
     }
 
     final class Entry extends ObjectSelectionList.Entry<Entry> {
         private final MaterialListPayload.Summary summary;
         private final Component name;
-        private final boolean byForm;
 
         Entry(MaterialListPayload.Summary summary, boolean byForm) {
             this.summary = summary;
-            this.byForm = byForm;
             this.name = byForm ? Names.form(summary.material()) : Names.material(summary.material());
         }
 
         @Override
         public void render(GuiGraphics g, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
             var font = Minecraft.getInstance().font;
-            g.fill(left + 2, top + 6, left + 7, top + 11, status(summary));
-            g.drawString(font, font.plainSubstrByWidth(name.getString(), width - 16), left + 12, top + 2, 0xFFFFFF);
-            g.drawString(font, Component.translatable(byForm ? "screen.materialnexus.sidebar_counts_form" : "screen.materialnexus.sidebar_counts", summary.forms(), summary.duplicateForms()), left + 12, top + 12, 0x888888);
+            boolean isSelected = summary.material().equals(selected);
+            if (isSelected) g.fill(left - 2, top - 1, left + width, top + height, 0x30FFFFFF);
+            else if (hovering) g.fill(left - 2, top - 1, left + width, top + height, 0x14FFFFFF);
+            g.fill(left - 2, top - 1, left, top + height, status(summary));
+            summary.icon().ifPresent(icon -> g.renderItem(Names.stack(icon), left + 2, top));
+            String count = summary.toDecide() > 0 ? String.valueOf(summary.toDecide()) : "";
+            int countWidth = font.width(count);
+            g.drawString(font, font.plainSubstrByWidth(name.getString(), width - 26 - countWidth - 6), left + 21, top + 5, Ui.TEXT, false);
+            if (!count.isEmpty()) g.drawString(font, count, left + width - countWidth - 4, top + 5, Ui.WARNING, false);
         }
 
         @Override
