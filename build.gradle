@@ -80,6 +80,11 @@ repositories {
         url = "https://api.modrinth.com/maven"
         content { includeGroup 'maven.modrinth' }
     }
+    maven {
+        name = "Latvian (KubeJS)"
+        url = "https://maven.latvian.dev/releases"
+        content { includeGroup 'dev.latvian.mods' }
+    }
 }
 
 dependencies {
@@ -90,6 +95,16 @@ dependencies {
     compileOnly "maven.modrinth:emi:${emi_version}"
     if (project.hasProperty('emi')) {
         runtimeOnly "maven.modrinth:emi:${emi_version}"
+    }
+
+    // KubeJS: compiled against for the script bindings only (MNX-067, ADR-001); `-Pkubejs` adds it to the dev runs.
+    compileOnly "dev.latvian.mods:kubejs-neoforge:${kubejs_version}"
+    compileOnly "dev.latvian.mods:rhino:${rhino_version}"
+    if (project.hasProperty("kubejs")) {
+        // The Modrinth jars bundle what the Maven artifacts pull from repositories we do not use.
+        runtimeOnly "maven.modrinth:kubejs:${kubejs_modrinth}"
+        runtimeOnly "maven.modrinth:rhino:${rhino_modrinth}"
+        runtimeOnly "maven.modrinth:better-advanced-tooltips:${better_advanced_tooltips_modrinth}"
     }
 
     // Almost Unified: `-Pau` adds it to the dev runs, to check the domain arbitration (ADR-012) against the real mod.

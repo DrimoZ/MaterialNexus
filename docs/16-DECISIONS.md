@@ -2,7 +2,7 @@
 
 ## ADR-001 — No KubeJS dependency
 
-**Decision:** Material Nexus works independently. An optional KubeJS bridge may be added later.
+**Decision:** Material Nexus works independently. An optional KubeJS bridge may be added later.  Added in MNX-067: a read-only `MaterialNexus` script binding, loaded only when KubeJS is installed (see 10-COMPATIBILITY).
 
 **Why:** the target user should not need a scripting engine to solve material unification.
 
