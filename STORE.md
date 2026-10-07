@@ -75,9 +75,11 @@ you. Nothing changes until you have seen the preview and pressed Apply.
 
 - **Every change listed first**: tags cleaned, items converted, recipes rewritten or disabled,
   recipes not handled yet.
-- **Apply writes one generated datapack** and reloads: the alternatives leave the tags, recipes
-  that output them give the kept item instead, and items already in the world become the kept one
-  when the game touches them (dropped, in an opened container, at login).
+- **Apply writes one generated datapack** and reloads: the alternatives leave the material's tag,
+  recipes that make or use them are rewritten to the kept item (a rewrite that duplicates another
+  recipe is disabled instead), and items already in the world become the kept one when the game
+  touches them (dropped, in an opened container, at login). Nothing scans the world.
+- **Recipes it cannot rewrite are named**, never guessed: add a one-file recipe format and they are.
 - **Recipes of many mods** are rewritten from data: Create and its addons, Mekanism, Immersive
   Engineering, Modern Industrialization, Oritech, Occultism, Silent Gear and more.
 
@@ -108,7 +110,8 @@ you. Nothing changes until you have seen the preview and pressed Apply.
 
 ![Data](run-ui/store-art/screen_data.png)
 
-Everything is files in `config/materialnexus/`, made to ship with the pack. The rules themselves
+Everything is files in `config/materialnexus/`, made to ship with the pack; the
+[wiki](https://github.com/DrimoZ/MaterialNexus/wiki) documents every field. The rules themselves
 (which tags and names make a form, how a mod's recipes store their items, process templates,
 presets) are datapack data, editable in game in the Data view. `/materials report` writes a full
 analysis. KubeJS scripts get a read-only `MaterialNexus` binding to ask which item is kept.
@@ -137,6 +140,11 @@ or restore an earlier state from the history.
 a dedicated server the screen is read-only. If you created items, every client needs the same
 `items.json`.
 
+**Is it like Almost Unified?** Both unify. Material Nexus is built around a screen and a
+preview: you see every duplicate, every variant set aside and every recipe it would change before
+anything happens, and you can undo anything. It also writes missing machine recipes and creates
+missing items. The two can run together, each doing its own part.
+
 **Fabric?** No.
 
 **Can I put it in my modpack?** Yes. No need to ask.
@@ -156,6 +164,7 @@ not lift them into another project.
 
 ### Links
 
+[Wiki](https://github.com/DrimoZ/MaterialNexus/wiki) ·
 [Source](https://github.com/DrimoZ/MaterialNexus) ·
 [Report a bug](https://github.com/DrimoZ/MaterialNexus/issues)
 
@@ -171,7 +180,7 @@ not lift them into another project.
 - [ ] Gallery: `screen_home.png`, `screen_material.png`, `screen_matrix.png`, `screen_triage.png`,
       `screen_preview.png`, `screen_process.png`.
 - [ ] Paste the summary and the description.
-- [ ] Upload the jar from `gradlew build` (`materialnexus-0.1.0+1.21.1.jar`), release type **Beta**,
+- [ ] Upload the jar from `gradlew build` (`build/libs`), release type **Beta**,
       loader NeoForge, with the `## 0.1.0` section of `CHANGELOG.md`.
 - [ ] Optional dependencies: JEI, EMI, Almost Unified, KubeJS.
 - [ ] Tag `v0.1.0`, and add the CurseForge link to the README and to the links above.
