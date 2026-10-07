@@ -144,6 +144,7 @@
   "materialnexus.form.ring": "Ring",
   "materialnexus.form.blade": "Blade",
   "materialnexus.form.rotor": "Rotor",
+  "materialnexus.form.fine_wire": "Fine wire",
   "materialnexus.form.drill_head": "Drill head",
   "message.materialnexus.no_permission": "Material Nexus requires operator permission (level 2).",
   "message.materialnexus.report_written": "Material Nexus: report written to %s",

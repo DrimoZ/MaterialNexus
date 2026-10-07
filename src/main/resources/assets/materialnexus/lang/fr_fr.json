@@ -144,6 +144,7 @@
   "materialnexus.form.ring": "Anneau",
   "materialnexus.form.blade": "Lame",
   "materialnexus.form.rotor": "Rotor",
+  "materialnexus.form.fine_wire": "Fil fin",
   "materialnexus.form.drill_head": "Tête de foreuse",
   "message.materialnexus.no_permission": "Material Nexus nécessite les droits opérateur (niveau 2).",
   "message.materialnexus.report_written": "Material Nexus : rapport écrit dans %s",

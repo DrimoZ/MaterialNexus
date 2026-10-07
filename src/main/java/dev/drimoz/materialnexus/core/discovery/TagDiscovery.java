@@ -54,7 +54,8 @@ public final class TagDiscovery {
             Map.entry("rings", new FormId("ring")),
             Map.entry("blades", new FormId("blade")),
             Map.entry("rotors", new FormId("rotor")),
-            Map.entry("drill_heads", new FormId("drill_head")));
+            Map.entry("drill_heads", new FormId("drill_head")),
+            Map.entry("fine_wires", new FormId("fine_wire")));
 
     /**
      * Members injected from item name patterns (MNX-040) live under {@code materialnexus:pattern/<folder>/<material>}:

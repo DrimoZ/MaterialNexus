@@ -127,7 +127,7 @@ Forms mods leave untagged are declared as item name patterns in `data/<namespace
 { "patterns": { "double_ingot": ["modern_industrialization:{material}_double_ingot"] } }
 ```
 
-Pattern forms: double_ingot, large_plate, curved_plate, bolt, ring, blade, rotor, drill_head (Modern Industrialization shipped). An item matches only if `{material}` names a material some convention tag already knows; the match is shown as "item name pattern" evidence and never added to the game's tags.
+Pattern forms: double_ingot, large_plate, curved_plate, bolt, ring, blade, rotor, drill_head, fine_wire (Modern Industrialization shipped, plus its untagged wires). An item matches only if `{material}` names a material some convention tag already knows; the match is shown as "item name pattern" evidence and never added to the game's tags.
 
 ## Recipe formats (ADR-016)
 

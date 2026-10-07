@@ -23,6 +23,12 @@
     ],
     "drill_head": [
       "modern_industrialization:{material}_drill_head"
+    ],
+    "wire": [
+      "modern_industrialization:{material}_wire"
+    ],
+    "fine_wire": [
+      "modern_industrialization:{material}_fine_wire"
     ]
   }
 }
