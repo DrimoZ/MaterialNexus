@@ -133,6 +133,8 @@
   "materialnexus.not_unified.same_mod": "several items from %s",
   "materialnexus.not_unified.more_specific": "belongs to %s",
   "materialnexus.not_unified.policy": "excluded",
+  "materialnexus.not_unified.named_variant": "named as a variant (%s)",
+  "materialnexus.not_unified.names_other": "named after %s",
   "screen.materialnexus.not_unified": "Not unified: %s",
   "screen.materialnexus.not_unified_item": "%1$s (%2$s)",
   "screen.materialnexus.no_canonical": "nothing to unify",

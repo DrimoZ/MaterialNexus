@@ -160,7 +160,7 @@ public final class TagDiscovery {
         String path = item.getPath();
         if (path.contains("deepslate")) return oreForm("deepslate");
         if (path.contains("nether")) return oreForm("netherrack");
-        if (path.startsWith("end_") || path.contains("end_stone")) return oreForm("end_stone");
+        if (path.startsWith("end_") || path.contains("end_stone") || path.contains("endstone")) return oreForm("end_stone");
         return ORE;
     }
 

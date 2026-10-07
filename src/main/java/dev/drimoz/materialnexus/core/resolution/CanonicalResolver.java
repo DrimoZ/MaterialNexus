@@ -28,7 +28,9 @@ import java.util.stream.Collectors;
  *
  * <p>Only interchangeable candidates are unified. A tag means "usable as", not "the same item", so
  * providers are first sorted out (ADR-014): several items of one mod are variants of each other; an
- * item also tagged as a more specific material belongs there; excluded materials/forms are left
+ * item also tagged as a more specific material belongs there; an item named as a variant (Remin's
+ * yellow_amethyst tagged as amethyst) or after another material (vanilla quartz tagged as milky
+ * quartz) is set aside when a plainly named one exists (MNX-047); excluded materials/forms are left
  * alone. Nothing is removed from any tag: those providers are listed, explained, and untouched.
  */
 public final class CanonicalResolver {
@@ -43,18 +45,26 @@ public final class CanonicalResolver {
 
     public static SortedMap<MaterialId, ResolvedMaterial> resolve(DiscoveredMaterials discovered, ResolutionPolicy policy) {
         Specificity specificity = new Specificity(discovered);
+        java.util.Set<String> names = discovered.materials().keySet().stream().map(MaterialId::name).collect(Collectors.toSet());
+        // The words of a material's vanilla items name it too: lazuli for lapis.
+        Map<MaterialId, java.util.Set<String>> vanillaWords = new HashMap<>();
+        discovered.materials().forEach((material, forms) -> forms.values().forEach(list -> list.stream()
+                .filter(p -> p.resource().getNamespace().equals(VANILLA))
+                .forEach(p -> vanillaWords.computeIfAbsent(material, m -> new java.util.HashSet<>()).addAll(Names.words(p.resource())))));
         SortedMap<MaterialId, ResolvedMaterial> result = new TreeMap<>();
         discovered.materials().forEach((material, forms) -> {
             SortedMap<FormId, ResolvedForm> resolved = new TreeMap<>();
             forms.forEach((form, providers) -> {
-                if (!providers.isEmpty()) resolved.put(form, resolveForm(new MaterialForm(material, form), providers, policy, specificity));
+                if (!providers.isEmpty()) resolved.put(form, resolveForm(new MaterialForm(material, form), providers, policy, specificity, names,
+                        vanillaWords.getOrDefault(material, java.util.Set.of())));
             });
             result.put(material, new ResolvedMaterial(material, Collections.unmodifiableSortedMap(resolved)));
         });
         return Collections.unmodifiableSortedMap(result);
     }
 
-    private static ResolvedForm resolveForm(MaterialForm key, List<Provider> providers, ResolutionPolicy policy, Specificity specificity) {
+    private static ResolvedForm resolveForm(MaterialForm key, List<Provider> providers, ResolutionPolicy policy, Specificity specificity,
+                                            java.util.Set<String> names, java.util.Set<String> vanillaWords) {
         ResourceLocation explicit = policy.explicitProviders().get(key);
         boolean excluded = policy.isExcluded(key);
         Map<ResourceLocation, Optional<MaterialId>> elsewhereOf = new HashMap<>();
@@ -78,6 +88,18 @@ public final class CanonicalResolver {
             } else {
                 candidates.add(p);
             }
+        }
+
+        // MNX-047: tags say "usable as", names say what the item is. Only when a plainly named candidate exists.
+        Map<ResourceLocation, String[]> oddNames = new HashMap<>();
+        for (Provider p : candidates) Names.odd(p.resource(), key, names, vanillaWords).ifPresent(why -> oddNames.put(p.resource(), why));
+        if (!oddNames.isEmpty() && oddNames.size() < candidates.size()) {
+            candidates.removeIf(p -> {
+                String[] why = oddNames.get(p.resource());
+                if (why == null) return false;
+                notUnified.put(p.resource(), new NotUnified(p.resource(), NOT_UNIFIED + why[0], List.of(why[1])));
+                return true;
+            });
         }
 
         Confidence strongest = providers.stream().map(Provider::confidence).min(Comparator.naturalOrder()).orElseThrow();
@@ -135,6 +157,55 @@ public final class CanonicalResolver {
                 .toList();
         return new ResolvedForm(Optional.of(canonical.resource()), alternatives, List.copyOf(notUnified.values()),
                 source, canonical.confidence(), WHY + reason, List.of(args), ignored);
+    }
+
+    /** Reading item ids as words (MNX-047). */
+    static final class Names {
+        /** Words that name a form, not a material: what remains of an id without them should be the material. */
+        private static final java.util.Set<String> FORM_WORDS = java.util.Set.of("ingot", "nugget", "gem", "dust", "plate", "sheet", "rod",
+                "stick", "gear", "wire", "block", "storage", "ore", "raw", "deepslate", "nether", "end", "stone", "tiny", "small", "dirty",
+                "clump", "shard", "crystal", "sheetmetal", "double", "large", "curved", "bolt", "ring", "blade", "rotor", "drill", "head",
+                "fine", "item", "material", "chunk", "bar", "pile", "powder", "powdered", "grit");
+
+        private Names() { }
+
+        /**
+         * Why an item does not look like plain {@code key}: {@code [reason, word]}, or empty. "names_other": once form
+         * words are removed it names another known material (minecraft:quartz as milky quartz). "named_variant": a word
+         * is left that is neither a form word nor the material (yellow_amethyst); vanilla ids are the reference names
+         * and never count as variants. Words close to the material's (golden for gold, aluminium for aluminum) are fine.
+         */
+        static Optional<String[]> odd(ResourceLocation item, MaterialForm key, java.util.Set<String> materials, java.util.Set<String> vanillaWords) {
+            List<String> words = words(item);
+            String rest = String.join("_", words);
+            if (!rest.isEmpty() && !rest.equals(key.material().name()) && materials.contains(rest)) return Optional.of(new String[] {"names_other", rest});
+            if (item.getNamespace().equals(VANILLA)) return Optional.empty();
+            List<String> own = new ArrayList<>(List.of(key.material().name().split("_")));
+            own.addAll(vanillaWords);
+            List<String> extra = words.stream().filter(w -> own.stream().noneMatch(o -> close(w, o))).toList();
+            return extra.isEmpty() ? Optional.empty() : Optional.of(new String[] {"named_variant", String.join("_", extra)});
+        }
+
+        /** The words of an id that are not form words. */
+        static List<String> words(ResourceLocation item) {
+            List<String> words = new ArrayList<>();
+            for (String w : item.getPath().split("[_/]")) {
+                if (!w.isEmpty() && !isFormWord(w)) words.add(w);
+            }
+            return words;
+        }
+
+        private static boolean isFormWord(String w) {
+            return FORM_WORDS.contains(w) || (w.endsWith("s") && FORM_WORDS.contains(w.substring(0, w.length() - 1)));
+        }
+
+        /** golden/gold, wooden/wood, aluminium/aluminum. */
+        private static boolean close(String a, String b) {
+            if (a.startsWith(b) || b.startsWith(a)) return true;
+            int common = 0;
+            while (common < Math.min(a.length(), b.length()) && a.charAt(common) == b.charAt(common)) common++;
+            return common >= 5;
+        }
     }
 
     /**

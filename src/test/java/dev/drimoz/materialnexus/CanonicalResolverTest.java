@@ -106,6 +106,36 @@ class CanonicalResolverTest {
         assertEquals(2, woodenExcluded.notUnified().size());
     }
 
+    /** MNX-047, from a real pack: mods tag other items under a material; the names give them away. */
+    @Test
+    void namesTellVariantsFromDuplicates() {
+        var rl = (java.util.function.Function<String, ResourceLocation>) ResourceLocation::parse;
+        Map<ResourceLocation, List<ResourceLocation>> tags = Map.of(
+                rl.apply("c:gems/amethyst"), List.of(rl.apply("minecraft:amethyst_shard"), rl.apply("remin:yellow_amethyst")),
+                rl.apply("c:gems/quartz"), List.of(rl.apply("minecraft:quartz")),
+                rl.apply("c:gems/milky_quartz"), List.of(rl.apply("minecraft:quartz"), rl.apply("remin:milky_quartz")),
+                rl.apply("c:plates/plastic"), List.of(rl.apply("oritech:plastic_sheet"), rl.apply("immersiveengineering:plate_duroplast")),
+                rl.apply("c:rods/wooden"), List.of(rl.apply("minecraft:stick"), rl.apply("silentgear:netherwood_stick")),
+                // Real duplicates stay duplicates: adjectives and alternative spellings of the material are fine.
+                rl.apply("c:plates/gold"), List.of(rl.apply("create:golden_sheet"), rl.apply("immersiveengineering:plate_gold")),
+                rl.apply("c:ingots/aluminum"), List.of(rl.apply("remin:aluminium_ingot"), rl.apply("immersiveengineering:ingot_aluminum")),
+                rl.apply("c:storage_blocks/raw_osmium"), List.of(rl.apply("mekanism:block_raw_osmium"), rl.apply("othermod:raw_osmium_block")));
+        var resolved = CanonicalResolver.resolve(TagDiscovery.discover(tags), ResolutionPolicy.NONE);
+        java.util.function.BiFunction<String, String, ResolvedForm> form = (m, f) -> resolved.get(new MaterialId(m)).forms().get(new FormId(f));
+
+        assertTrue(form.apply("amethyst", "gem").alternatives().isEmpty());
+        assertEquals("materialnexus.not_unified.named_variant", form.apply("amethyst", "gem").notUnified().getFirst().reasonKey());
+        assertEquals(rl.apply("remin:milky_quartz"), form.apply("milky_quartz", "gem").canonical().orElseThrow());
+        assertTrue(form.apply("milky_quartz", "gem").alternatives().isEmpty(), "vanilla quartz is set aside (more specific or named after quartz)");
+        assertTrue(form.apply("plastic", "plate").alternatives().isEmpty());
+        assertEquals(rl.apply("minecraft:stick"), form.apply("wooden", "rod").canonical().orElseThrow());
+        assertTrue(form.apply("wooden", "rod").alternatives().isEmpty());
+
+        assertEquals(1, form.apply("gold", "plate").alternatives().size());
+        assertEquals(1, form.apply("aluminum", "ingot").alternatives().size());
+        assertEquals(1, form.apply("osmium", "raw_block").alternatives().size());
+    }
+
     private static void assertResolved(ResourceLocation expected, PolicyPrecedence source, ResolvedForm actual) {
         assertEquals(expected, actual.canonical().orElseThrow(), actual.reasonKey());
         assertEquals(source, actual.source(), actual.reasonKey());
