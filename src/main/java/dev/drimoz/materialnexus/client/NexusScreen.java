@@ -647,8 +647,8 @@ public final class NexusScreen extends Screen {
         }
         // MNX-058: the saved choices of this material (or form) back to default.
         List<MaterialDetailPayload.FormView> saved = d.forms().stream()
-                .filter(v -> v.resolved().source() == dev.drimoz.materialnexus.core.policy.PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE
-                        && PendingChanges.get(v.material(), v.form()).isEmpty()).toList();
+                .filter(v -> (v.resolved().source() == dev.drimoz.materialnexus.core.policy.PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE
+                        || v.resolved().ignoredOverride().isPresent()) && PendingChanges.get(v.material(), v.form()).isEmpty()).toList();
         if (!saved.isEmpty() && tab != Tab.PROCESS) {
             Component reset = Component.translatable("screen.materialnexus.reset.here", saved.size());
             int rw = font.width(reset) + 12;

@@ -44,7 +44,7 @@ final class PolicyHandler {
         // An unknown preset id (removed datapack, forged packet) is simply ignored.
         java.util.Optional<com.google.gson.JsonObject> preset = overlay(player, request);
         if (preset == null) return;
-        List<PolicyEditor.Entry> entries = PolicyEditor.preview(SnapshotManager.current(), request.changes());
+        List<PolicyEditor.Entry> entries = PolicyEditor.preview(SnapshotManager.current(), request.changes(), savedChoices());
         List<PackContent.Effect> proposed;
         List<PackContent.Effect> current;
         List<CreatedItems.Entry> creations = creations(request);
@@ -214,6 +214,16 @@ final class PolicyHandler {
         return explicit;
     }
 
+    /** The forms with a choice written in the policy files (MNX-060); empty when they cannot be read. */
+    static java.util.Set<MaterialForm> savedChoices() {
+        try {
+            return PolicyFiles.load(MnxPaths.policies()).explicitProviders().keySet();
+        } catch (IOException | RuntimeException e) {
+            LOGGER.warn("Could not read the saved choices", e);
+            return java.util.Set.of();
+        }
+    }
+
     private static java.util.Set<MaterialForm> resets(List<PolicyEditor.Entry> entries) {
         java.util.Set<MaterialForm> out = new java.util.HashSet<>();
         for (PolicyEditor.Entry e : entries) {
@@ -255,6 +265,25 @@ final class PolicyHandler {
         reload(player, success, dataChanged);
     }
 
+    /**
+     * MNX-060: NeoForge sends tags and recipes to players right after OnDatapackSyncEvent; when another mod's listener
+     * throws there (seen: IE arc recycling reading a Silent Gear ingredient), they never leave, and the client keeps the
+     * old pack until a restart. Sends them, and the unified items (our own listener may have been skipped too).
+     */
+    private static void resync(MinecraftServer server) {
+        var players = server.getPlayerList();
+        players.broadcastAll(new net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket(
+                net.minecraft.tags.TagNetworkSerialization.serializeTagsToNetwork(server.registries())));
+        var recipes = new net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket(server.getRecipeManager().getOrderedRecipes());
+        var unified = new UnifiedItemsPayload(dev.drimoz.materialnexus.conversion.ItemConversions.alternatives(),
+                dev.drimoz.materialnexus.conversion.ItemConversions.mapping());
+        for (ServerPlayer p : players.getPlayers()) {
+            p.connection.send(recipes);
+            p.getRecipeBook().sendInitialRecipeBook(p);
+            PacketDistributor.sendToPlayer(p, unified);
+        }
+    }
+
     private static void reload(ServerPlayer player, Component success, boolean regenerateAfter) {
         MinecraftServer server = player.server;
         server.reloadResources(server.getPackRepository().getSelectedIds()).whenComplete((ignored, error) -> server.execute(() -> {
@@ -275,6 +304,7 @@ final class PolicyHandler {
             // nothing happened, and still treat the changes as applied.
             if (error != null) {
                 LOGGER.error("A reload listener failed after Material Nexus applied its changes", error);
+                resync(server);
                 Throwable cause = error.getCause() != null ? error.getCause() : error;
                 player.sendSystemMessage(Component.translatable("message.materialnexus.reload_failed", cause.toString()));
             } else {

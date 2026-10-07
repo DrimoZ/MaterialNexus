@@ -38,6 +38,21 @@ public final class PolicyEditor {
      * discovered member of that material/form is reported invalid, never written.
      */
     public static List<Entry> preview(ResolvedSnapshot snapshot, List<CanonicalChange> changes) {
+        java.util.Set<dev.drimoz.materialnexus.core.domain.MaterialForm> saved = new java.util.HashSet<>();
+        snapshot.materials().forEach((material, resolved) -> resolved.forms().forEach((form, f) -> {
+            if (f.source() == dev.drimoz.materialnexus.core.policy.PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE || f.ignoredOverride().isPresent()) {
+                saved.add(new dev.drimoz.materialnexus.core.domain.MaterialForm(material, form));
+            }
+        }));
+        return preview(snapshot, changes, saved);
+    }
+
+    /**
+     * {@code saved}: the forms with a choice written in the policy files (MNX-060), the only ones a reset may target;
+     * that includes choices the resolver ignores (item no longer in the form, material gone).
+     */
+    public static List<Entry> preview(ResolvedSnapshot snapshot, List<CanonicalChange> changes,
+                                      java.util.Set<dev.drimoz.materialnexus.core.domain.MaterialForm> saved) {
         Map<String, CanonicalChange> byKey = new LinkedHashMap<>();
         for (CanonicalChange change : changes) byKey.put(change.material() + "/" + change.form(), change);
 
@@ -49,7 +64,7 @@ public final class PolicyEditor {
                     .flatMap(forms -> form.map(forms::get));
             // A reset is valid only where a choice is saved; anything else must be a discovered member of that material/form.
             boolean valid = change.reset()
-                    ? current.map(f -> f.source() == dev.drimoz.materialnexus.core.policy.PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE).orElse(false)
+                    ? material.isPresent() && form.isPresent() && saved.contains(new dev.drimoz.materialnexus.core.domain.MaterialForm(material.get(), form.get()))
                     : material.isPresent() && form.isPresent() && snapshot.discovered()
                     .providers(material.get(), form.get()).stream()
                     .anyMatch(p -> p.resource().equals(change.provider()));

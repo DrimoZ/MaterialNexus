@@ -30,13 +30,9 @@ public record SuggestionsPayload(List<CanonicalChange> changes) implements Custo
 
     @Override public Type<SuggestionsPayload> type() { return TYPE; }
 
-    /** MNX-058: every saved choice, as "back to default" changes. */
-    public static SuggestionsPayload saved(ResolvedSnapshot snapshot) {
-        List<CanonicalChange> changes = new ArrayList<>();
-        snapshot.materials().forEach((material, resolved) -> resolved.forms().forEach((form, f) -> {
-            if (f.source() == PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE) changes.add(new CanonicalChange(material.name(), form.name(), CanonicalChange.RESET));
-        }));
-        return new SuggestionsPayload(changes);
+    /** MNX-058: every choice written in the policy files (MNX-060: even ignored ones), as "back to default" changes. */
+    public static SuggestionsPayload saved(java.util.Set<dev.drimoz.materialnexus.core.domain.MaterialForm> saved) {
+        return new SuggestionsPayload(saved.stream().map(k -> new CanonicalChange(k.material().name(), k.form().name(), CanonicalChange.RESET)).toList());
     }
 
     public static SuggestionsPayload of(ResolvedSnapshot snapshot) {

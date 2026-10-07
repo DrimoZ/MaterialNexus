@@ -105,7 +105,7 @@ public final class MnxNetwork {
         });
         registrar.playToServer(SuggestionsRequest.TYPE, SuggestionsRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
-            if (player != null) PacketDistributor.sendToPlayer(player, req.saved() ? SuggestionsPayload.saved(SnapshotManager.current())
+            if (player != null) PacketDistributor.sendToPlayer(player, req.saved() ? SuggestionsPayload.saved(PolicyHandler.savedChoices())
                     : SuggestionsPayload.of(SnapshotManager.current()));
         });
     }

@@ -155,7 +155,7 @@ final class DetailTable {
         Component recipes = Component.translatable("screen.materialnexus.open_recipes");
         int rx = x + width - font.width(recipes) - 6;
         // MNX-058: a saved choice can be put back to default (pending, like any choice); clicking again cancels.
-        if (!readOnly && f.source() == PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE) {
+        if (!readOnly && (f.source() == PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE || f.ignoredOverride().isPresent())) {
             boolean resetting = status == Ui.Status.RESET;
             int bx = rx - 16;
             boolean overR = mx >= bx && mx < bx + 12 && my >= top + 7 && my < top + 19;

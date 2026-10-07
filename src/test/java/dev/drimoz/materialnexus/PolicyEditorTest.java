@@ -72,5 +72,13 @@ class PolicyEditorTest {
         PolicyEditor.apply(policies, resets);
         assertNull(PolicyFiles.load(policies).explicitProviders().get(tinIngot));
         assertTrue(Files.readString(existing).contains("keep me"));
+
+        // MNX-060: a written choice the resolver ignores (item no longer in the form) can be reset too.
+        Files.writeString(existing, "{\"material\":\"tin\",\"forms\":{\"ingot\":{\"preferred_provider\":\"ghost:tin_ingot\"}}}");
+        var ignored = PolicyEditor.preview(saved, List.of(new CanonicalChange("tin", "ingot", CanonicalChange.RESET)),
+                PolicyFiles.load(policies).explicitProviders().keySet());
+        assertTrue(ignored.getFirst().valid());
+        PolicyEditor.apply(policies, ignored);
+        assertTrue(PolicyFiles.load(policies).explicitProviders().isEmpty());
     }
 }
