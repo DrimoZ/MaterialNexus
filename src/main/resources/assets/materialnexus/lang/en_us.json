@@ -50,6 +50,7 @@
   "screen.materialnexus.tab.process": "Process",
   "screen.materialnexus.process.title": "How %s is made, for every material",
   "screen.materialnexus.process.undecided": "%1$s materials still have several %2$s items: rules add recipes, they do not unify. Choose in Forms (Unify form).",
+  "screen.materialnexus.process.more": "%1$s-%2$s of %3$s (scroll)",
   "screen.materialnexus.process.loading": "Reading the pack's recipes...",
   "screen.materialnexus.process.none": "No rule: recipes stay as the mods made them.",
   "screen.materialnexus.process.route": "%1$s: %2$s × %3$s → %4$s × %5$s",

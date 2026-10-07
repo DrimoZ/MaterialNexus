@@ -40,16 +40,28 @@ public final class GeneratedPack {
     private GeneratedPack() { }
 
     public static void onAddPackFinders(AddPackFindersEvent event) {
+        Path items = MnxPaths.root().resolve("created_items");
+        if (event.getPackType() == PackType.CLIENT_RESOURCES) {
+            // MNX-039: the created items' models live in the same pack, so the client loads it as a resource pack too.
+            try {
+                if (!isOurs(items)) return;
+                write(items, createdItemFiles(), new JsonArray());
+            } catch (IOException e) {
+                LOGGER.error("Could not prepare the Material Nexus created items pack", e);
+                return;
+            }
+            add(event, ITEMS_PACK_ID, items, PackType.CLIENT_RESOURCES);
+            return;
+        }
         if (event.getPackType() != PackType.SERVER_DATA) return;
         Path dir = MnxPaths.generated();
-        Path items = MnxPaths.root().resolve("created_items");
         try {
             if (!isOurs(dir) || !isOurs(items)) {
                 LOGGER.warn("{} or {} exists but was not created by Material Nexus; it is left untouched and not loaded", dir, items);
                 return;
             }
             if (!Files.exists(dir.resolve(MARKER))) write(dir, Map.of(), new JsonArray());
-            write(items, createdItemTags(), new JsonArray());
+            write(items, createdItemFiles(), new JsonArray());
         } catch (IOException e) {
             LOGGER.error("Could not prepare the Material Nexus generated pack", e);
             return;
@@ -65,9 +77,17 @@ public final class GeneratedPack {
         }
     }
 
-    /** One convention tag file per created item's tag; the items are registered, so plain values. */
-    private static Map<String, JsonElement> createdItemTags() {
+    /**
+     * One convention tag file per created item's tag (the items are registered, so plain values), and one item model
+     * per item, parented to its form's template: the game finds a model for every item and logs no warning.
+     */
+    private static Map<String, JsonElement> createdItemFiles() {
         Map<String, JsonObject> files = new java.util.TreeMap<>();
+        for (var item : dev.drimoz.materialnexus.registry.MnxItems.CREATED) {
+            JsonObject model = new JsonObject();
+            model.addProperty("parent", "materialnexus:item/template_" + item.get().entry().form().name());
+            files.put("assets/" + item.getId().getNamespace() + "/models/item/" + item.getId().getPath() + ".json", model);
+        }
         for (var item : dev.drimoz.materialnexus.registry.MnxItems.CREATED) {
             var tag = item.get().entry().tag();
             files.computeIfAbsent("data/" + tag.getNamespace() + "/tags/item/" + tag.getPath() + ".json", p -> {
@@ -81,8 +101,12 @@ public final class GeneratedPack {
     }
 
     private static void add(AddPackFindersEvent event, String id, Path dir) {
+        add(event, id, dir, PackType.SERVER_DATA);
+    }
+
+    private static void add(AddPackFindersEvent event, String id, Path dir, PackType type) {
         var info = new PackLocationInfo(id, Component.translatable("materialnexus.pack.generated"), PackSource.BUILT_IN, Optional.empty());
-        Pack pack = Pack.readMetaAndCreate(info, new PathPackResources.PathResourcesSupplier(dir), PackType.SERVER_DATA,
+        Pack pack = Pack.readMetaAndCreate(info, new PathPackResources.PathResourcesSupplier(dir), type,
                 new PackSelectionConfig(true, Pack.Position.TOP, false));
         if (pack != null) event.addRepositorySource(consumer -> consumer.accept(pack));
     }
@@ -130,6 +154,11 @@ public final class GeneratedPack {
         JsonObject pack = new JsonObject();
         pack.add("description", description);
         pack.addProperty("pack_format", SharedConstants.getCurrentVersion().getPackVersion(PackType.SERVER_DATA));
+        // The created items pack is also a resource pack, whose format number differs.
+        JsonArray supported = new JsonArray();
+        supported.add(0);
+        supported.add(1000);
+        pack.add("supported_formats", supported);
         JsonObject root = new JsonObject();
         root.add("pack", pack);
         return root;

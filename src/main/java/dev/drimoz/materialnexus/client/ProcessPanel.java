@@ -28,13 +28,32 @@ final class ProcessPanel {
     private int x, y, width, height;
     /** Materials of this form whose duplicates are still only suggested: a rule adds recipes, it does not unify items. */
     private int undecided;
+    /** First example shown: the list scrolls with the mouse wheel. */
+    private int firstExample;
 
     ProcessPanel(boolean readOnly, Runnable refresh) {
         this.readOnly = readOnly;
         this.refresh = refresh;
     }
 
-    void accept(ProcessPayload payload) { this.payload = payload; }
+    void accept(ProcessPayload payload) {
+        this.payload = payload;
+        this.firstExample = 0;
+    }
+
+    /** Wheel over the panel: scrolls the existing routes; true if it moved (the screen then rebuilds its buttons). */
+    boolean scroll(double delta) {
+        if (payload == null) return false;
+        int max = Math.max(0, addable().size() - visibleExamples());
+        int next = Math.clamp(firstExample - (int) Math.signum(delta), 0, max);
+        if (next == firstExample) return false;
+        firstExample = next;
+        return true;
+    }
+
+    private int visibleExamples() {
+        return Math.max(0, (y + height - (examplesTop() + 12)) / ROW);
+    }
 
     void undecided(int count) { this.undecided = count; }
 
@@ -105,10 +124,10 @@ final class ProcessPanel {
         }
         List<ProcessRules.Route> examples = addable();
         int ey = examplesTop() + 12;
-        // ponytail: no scrolling, examples that do not fit are cut; the server sends the 24 most common.
-        for (int i = 0; i < examples.size() && ey + i * ROW + 14 <= y + height; i++) {
-            ProcessRules.Route e = examples.get(i);
-            add.accept(small("+", x + width - 16, ey + i * ROW, () -> edit(r -> {
+        firstExample = Math.clamp(firstExample, 0, Math.max(0, examples.size() - visibleExamples()));
+        for (int row = 0; row < visibleExamples() && firstExample + row < examples.size(); row++) {
+            ProcessRules.Route e = examples.get(firstExample + row);
+            add.accept(small("+", x + width - 16, ey + row * ROW, () -> edit(r -> {
                 List<ProcessRules.Route> routes = new ArrayList<>(r.routes());
                 routes.add(e);
                 return new ProcessRules.Rule(routes, r.exclusive(), r.enforceRatio());
@@ -141,8 +160,12 @@ final class ProcessPanel {
         g.drawString(font, Component.translatable(examples.isEmpty() ? "screen.materialnexus.process.no_examples" : "screen.materialnexus.process.examples"),
                 x, examplesTop(), 0xAAAAAA);
         int ey = examplesTop() + 12;
-        for (int i = 0; i < examples.size() && ey + i * ROW + 14 <= y + height; i++) {
-            g.drawString(font, font.plainSubstrByWidth(line(examples.get(i)).getString(), width - 22), x + 6, ey + i * ROW + 4, 0x88AAFF);
+        for (int row = 0; row < visibleExamples() && firstExample + row < examples.size(); row++) {
+            g.drawString(font, font.plainSubstrByWidth(line(examples.get(firstExample + row)).getString(), width - 22), x + 6, ey + row * ROW + 4, 0x88AAFF);
+        }
+        if (examples.size() > visibleExamples()) {
+            g.drawString(font, Component.translatable("screen.materialnexus.process.more", firstExample + 1,
+                    Math.min(examples.size(), firstExample + visibleExamples()), examples.size()), x + width - 120, examplesTop(), 0x777777);
         }
     }
 

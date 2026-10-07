@@ -5,12 +5,10 @@ import dev.drimoz.materialnexus.MaterialNexus;
 import dev.drimoz.materialnexus.item.CreatedItem;
 import dev.drimoz.materialnexus.registry.MnxItems;
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.resources.model.ModelResourceLocation;
 import net.minecraft.resources.ResourceLocation;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.client.event.ModelEvent;
 import net.neoforged.neoforge.client.event.RegisterColorHandlersEvent;
 
 import java.io.InputStream;
@@ -18,8 +16,8 @@ import java.util.HashMap;
 import java.util.Map;
 
 /**
- * Created items (MNX-039) need no asset files: each one uses its form's grayscale template model, tinted with the
- * material colour (from {@code items.json}, else the average colour of the material's ingot texture).
+ * Created items (MNX-039) are drawn with their form's grayscale template (models written in the created items pack),
+ * tinted with the material colour (from {@code items.json}, else the average colour of the material's ingot texture).
  */
 @EventBusSubscriber(modid = MaterialNexus.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
 public final class CreatedItemsClient {
@@ -27,23 +25,6 @@ public final class CreatedItemsClient {
     private static final Map<ResourceLocation, Integer> COLORS = new HashMap<>();
 
     private CreatedItemsClient() { }
-
-    private static ModelResourceLocation template(String form) {
-        return ModelResourceLocation.standalone(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "item/template_" + form));
-    }
-
-    @SubscribeEvent
-    public static void registerTemplates(ModelEvent.RegisterAdditional event) {
-        dev.drimoz.materialnexus.item.CreatedItems.FORMS.forEach(form -> event.register(template(form.name())));
-    }
-
-    @SubscribeEvent
-    public static void useTemplates(ModelEvent.ModifyBakingResult event) {
-        for (var item : MnxItems.CREATED) {
-            var model = event.getModels().get(template(item.get().entry().form().name()));
-            if (model != null) event.getModels().put(ModelResourceLocation.inventory(item.getId()), model);
-        }
-    }
 
     @SubscribeEvent
     public static void registerColors(RegisterColorHandlersEvent.Item event) {

@@ -50,6 +50,7 @@
   "screen.materialnexus.tab.process": "Procédés",
   "screen.materialnexus.process.title": "Fabrication de : %s, pour tous les matériaux",
   "screen.materialnexus.process.undecided": "%1$s matériaux ont encore plusieurs items de type %2$s : les règles ajoutent des recettes, elles n'unifient pas. Choisissez dans Formes (Unifier la forme).",
+  "screen.materialnexus.process.more": "%1$s-%2$s sur %3$s (molette)",
   "screen.materialnexus.process.loading": "Lecture des recettes du pack...",
   "screen.materialnexus.process.none": "Aucune règle : les recettes restent celles des mods.",
   "screen.materialnexus.process.route": "%1$s : %2$s × %3$s → %4$s × %5$s",

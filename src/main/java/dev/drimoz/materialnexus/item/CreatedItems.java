@@ -36,20 +36,24 @@ public final class CreatedItems {
     public static final String FILE = "items.json";
     /** Forms with a template texture; anything else would be an invisible item. */
     public static final Set<FormId> FORMS = Set.of(new FormId("ingot"), new FormId("nugget"), new FormId("dust"), new FormId("plate"),
-            new FormId("rod"), new FormId("gear"), new FormId("wire"));
+            new FormId("rod"), new FormId("gear"), new FormId("wire"), new FormId("double_ingot"), new FormId("large_plate"),
+            new FormId("bolt"), new FormId("ring"), new FormId("tiny_dust"), new FormId("gem"));
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final FormId INGOT = new FormId("ingot");
     private static final FormId GEM = new FormId("gem");
     private static final FormId WIRE = new FormId("wire");
+    private static final FormId DOUBLE_INGOT = new FormId("double_ingot");
 
     /**
      * Forms that can be created for a material having {@code present}: templated, missing, and for a gem material
-     * (a gem is the ingot of non-metals: coal, quartz, diamond...) no ingot and no wire, which are metal forms.
+     * (a gem is the ingot of non-metals: coal, quartz, diamond...) no ingot, double ingot or wire, which are metal
+     * forms; for a metal (it has an ingot), no gem.
      */
     public static List<FormId> creatable(Set<FormId> present) {
         return FORMS.stream()
                 .filter(f -> !present.contains(f))
-                .filter(f -> !(present.contains(GEM) && (f.equals(INGOT) || f.equals(WIRE))))
+                .filter(f -> !(present.contains(GEM) && (f.equals(INGOT) || f.equals(WIRE) || f.equals(DOUBLE_INGOT))))
+                .filter(f -> !(present.contains(INGOT) && f.equals(GEM)))
                 .sorted(java.util.Comparator.comparing(FormId::name))
                 .toList();
     }

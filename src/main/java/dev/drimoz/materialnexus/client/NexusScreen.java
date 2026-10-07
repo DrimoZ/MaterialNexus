@@ -266,6 +266,7 @@ public final class NexusScreen extends Screen {
         if (mouseX >= panelX && mouseY >= panelY) {
             if (tab == Tab.FORMS) forms.scroll(scrollY);
             if (tab == Tab.RECIPES) recipes.scroll(scrollY);
+            if (tab == Tab.PROCESS && process.scroll(scrollY)) rebuildWidgets();
             return true;
         }
         return super.mouseScrolled(mouseX, mouseY, scrollX, scrollY);
