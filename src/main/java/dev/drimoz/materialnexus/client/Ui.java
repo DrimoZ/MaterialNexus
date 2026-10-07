@@ -26,7 +26,7 @@ final class Ui {
     /** Status of one material/form, from what decides it most. */
     enum Status {
         PENDING("pending", ACCENT), UNIFIED("unified", SUCCESS), SUGGESTION("suggestion", WARNING),
-        SINGLE("single", NEUTRAL), NOTHING("nothing", NEUTRAL), ABSENT("absent", 0xFF3A3A44);
+        SINGLE("single", NEUTRAL), RESET("reset", WARNING), NOTHING("nothing", NEUTRAL), ABSENT("absent", 0xFF3A3A44);
 
         final String key;
         final int color;

@@ -16,7 +16,7 @@ import java.util.Map;
  * Preview as a side panel of the main screen (MNX-049): every change grouped by kind (choices, tags, recipes,
  * process recipes, items, data, undone), each group folded to its count until opened. Apply / Close at the bottom.
  */
-final class PreviewDrawer {
+final class PreviewDrawer implements Drawer {
     private static final int LINE = 11;
     /** Effect kinds in reading order; unknown kinds go last under their own name. */
     private static final List<String> ORDER = List.of("tag_remove", "item_conversion", "conversion_recipe", "recipe_rewrite",
@@ -62,21 +62,26 @@ final class PreviewDrawer {
                 || PendingChanges.size() > 0;
     }
 
-    void layout(int x, int y, int width, int height) {
+    @Override
+    public void layout(int x, int y, int width, int height) {
         this.x = x; this.y = y; this.width = width; this.height = height;
     }
 
-    boolean contains(double mx, double my) { return mx >= x && mx < x + width && my >= y && my < y + height; }
+    @Override
+    public boolean contains(double mx, double my) { return mx >= x && mx < x + width && my >= y && my < y + height; }
 
-    void scroll(double delta) {
+    @Override
+    public void scroll(double delta) {
         scroll = Math.max(0, scroll - delta * LINE * 3);
     }
 
-    boolean click(double mx, double my, int button) {
+    @Override
+    public boolean click(double mx, double my, int button) {
         return hits.click(mx, my, button) || contains(mx, my);
     }
 
-    void render(GuiGraphics g, Font font, int mx, int my) {
+    @Override
+    public void render(GuiGraphics g, Font font, int mx, int my) {
         hits.clear();
         g.fill(x, y, x + width, y + height, 0xFF141418);
         g.fill(x, y, x + 1, y + height, Ui.ACCENT);

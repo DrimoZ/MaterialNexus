@@ -1,5 +1,7 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.datapack.CanonicalChange;
+
 import dev.drimoz.materialnexus.core.domain.FormId;
 import dev.drimoz.materialnexus.core.policy.PolicyPrecedence;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
@@ -68,7 +70,8 @@ final class DetailTable {
 
     static Ui.Status status(MaterialDetailPayload.FormView view) {
         ResolvedForm f = view.resolved();
-        if (PendingChanges.get(view.material(), view.form()).isPresent()) return Ui.Status.PENDING;
+        Optional<ResourceLocation> pending = PendingChanges.get(view.material(), view.form());
+        if (pending.isPresent()) return pending.get().equals(CanonicalChange.RESET) ? Ui.Status.RESET : Ui.Status.PENDING;
         if (f.alternatives().isEmpty()) return f.canonical().isPresent() ? Ui.Status.SINGLE : Ui.Status.NOTHING;
         return f.source() == PolicyPrecedence.DEFAULT ? Ui.Status.SUGGESTION : Ui.Status.UNIFIED;
     }
@@ -106,7 +109,7 @@ final class DetailTable {
         Ui.Status status = status(view);
         Ui.pill(g, font, status.label(), x + LABEL, top + 7, status.color);
 
-        Optional<ResourceLocation> pending = PendingChanges.get(material, view.form());
+        Optional<ResourceLocation> pending = PendingChanges.get(material, view.form()).filter(p -> !p.equals(CanonicalChange.RESET));
         boolean decided = f.source() != PolicyPrecedence.DEFAULT && !f.alternatives().isEmpty();
         Component why = Component.translatable(f.reasonKey(), f.reasonArgs().toArray());
         int sx = x + LABEL + STATUS + 4;
@@ -151,6 +154,17 @@ final class DetailTable {
 
         Component recipes = Component.translatable("screen.materialnexus.open_recipes");
         int rx = x + width - font.width(recipes) - 6;
+        // MNX-058: a saved choice can be put back to default (pending, like any choice); clicking again cancels.
+        if (!readOnly && f.source() == PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE) {
+            boolean resetting = status == Ui.Status.RESET;
+            int bx = rx - 16;
+            boolean overR = mx >= bx && mx < bx + 12 && my >= top + 7 && my < top + 19;
+            g.drawString(font, "↺", bx + 2, top + 9, resetting ? Ui.WARNING : overR ? Ui.TEXT : Ui.FAINT, false);
+            hits.add(bx, top + 7, 12, 12, () -> {
+                if (resetting) PendingChanges.clear(material, view.form());
+                else PendingChanges.set(material, view.form(), CanonicalChange.RESET);
+            }, null, List.of(Component.translatable(resetting ? "screen.materialnexus.reset.cancel" : "screen.materialnexus.reset.row")));
+        }
         boolean over = mx >= rx && my >= top && my < top + ROW && mx < x + width;
         g.drawString(font, recipes, rx, top + 9, over ? Ui.TEXT : 0x88AAFF, false);
         hits.add(rx, top, x + width - rx, ROW, () -> openRecipes.accept(material, view.form()), null, List.of());

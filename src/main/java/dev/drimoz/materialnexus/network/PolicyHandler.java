@@ -49,7 +49,7 @@ final class PolicyHandler {
         List<PackContent.Effect> current;
         List<CreatedItems.Entry> creations = creations(request);
         try {
-            ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies(), preset).withExplicit(explicitChoices(entries))
+            ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies(), preset).withExplicit(explicitChoices(entries)).withoutExplicit(resets(entries))
                     .withProcesses(processes(request));
             current = PackContent.readManifest(MnxPaths.generated());
             proposed = packContent(player.server, policy, current).effects();
@@ -207,9 +207,21 @@ final class PolicyHandler {
     private static Map<MaterialForm, ResourceLocation> explicitChoices(List<PolicyEditor.Entry> entries) {
         Map<MaterialForm, ResourceLocation> explicit = new HashMap<>();
         for (PolicyEditor.Entry e : entries) {
-            if (e.valid()) explicit.put(new MaterialForm(new MaterialId(e.material()), new FormId(e.form())), e.to());
+            if (e.valid() && !e.to().equals(dev.drimoz.materialnexus.datapack.CanonicalChange.RESET)) {
+                explicit.put(new MaterialForm(new MaterialId(e.material()), new FormId(e.form())), e.to());
+            }
         }
         return explicit;
+    }
+
+    private static java.util.Set<MaterialForm> resets(List<PolicyEditor.Entry> entries) {
+        java.util.Set<MaterialForm> out = new java.util.HashSet<>();
+        for (PolicyEditor.Entry e : entries) {
+            if (e.valid() && e.to().equals(dev.drimoz.materialnexus.datapack.CanonicalChange.RESET)) {
+                out.add(new MaterialForm(new MaterialId(e.material()), new FormId(e.form())));
+            }
+        }
+        return out;
     }
 
     private static void writeAndReload(ServerPlayer player, PolicyWrite write, Component success) {

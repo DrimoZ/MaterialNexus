@@ -47,7 +47,10 @@ public final class PolicyEditor {
             Optional<FormId> form = FormId.read(change.form()).result();
             Optional<ResolvedForm> current = material.map(snapshot.materials()::get).map(ResolvedMaterial::forms)
                     .flatMap(forms -> form.map(forms::get));
-            boolean valid = material.isPresent() && form.isPresent() && snapshot.discovered()
+            // A reset is valid only where a choice is saved; anything else must be a discovered member of that material/form.
+            boolean valid = change.reset()
+                    ? current.map(f -> f.source() == dev.drimoz.materialnexus.core.policy.PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE).orElse(false)
+                    : material.isPresent() && form.isPresent() && snapshot.discovered()
                     .providers(material.get(), form.get()).stream()
                     .anyMatch(p -> p.resource().equals(change.provider()));
             entries.add(new Entry(change.material(), change.form(), current.flatMap(ResolvedForm::canonical), change.provider(), valid));
@@ -100,11 +103,21 @@ public final class PolicyEditor {
         for (Entry e : entries) if (e.valid()) byMaterial.computeIfAbsent(e.material(), m -> new ArrayList<>()).add(e);
 
         for (var group : byMaterial.entrySet()) {
+            boolean onlyResets = group.getValue().stream().allMatch(e -> e.to().equals(CanonicalChange.RESET));
+            if (onlyResets && !fileByMaterial.containsKey(group.getKey())) continue;
             Path file = fileByMaterial.computeIfAbsent(group.getKey(), m -> freeFileName(materialsDir, m, fileByMaterial));
             JsonObject root = Files.exists(file) ? JsonParser.parseString(Files.readString(file, StandardCharsets.UTF_8)).getAsJsonObject() : new JsonObject();
             root.addProperty("material", group.getKey());
             JsonObject forms = child(root, "forms");
-            for (Entry e : group.getValue()) child(forms, e.form()).addProperty("preferred_provider", e.to().toString());
+            for (Entry e : group.getValue()) {
+                if (!e.to().equals(CanonicalChange.RESET)) {
+                    child(forms, e.form()).addProperty("preferred_provider", e.to().toString());
+                } else if (forms.get(e.form()) instanceof JsonObject saved) {
+                    // MNX-058: back to default; the form's other fields (priority, process) stay.
+                    saved.remove("preferred_provider");
+                    if (saved.isEmpty()) forms.remove(e.form());
+                }
+            }
             Files.writeString(file, new GsonBuilder().setPrettyPrinting().create().toJson(root), StandardCharsets.UTF_8);
         }
     }

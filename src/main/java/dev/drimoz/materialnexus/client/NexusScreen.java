@@ -64,7 +64,7 @@ public final class NexusScreen extends Screen {
     private MaterialDetailPayload detail;
     private String recipesOnArrival;
     private MaterialSidebar list;
-    private PreviewDrawer drawer;
+    private Drawer drawer;
     private int contentX, contentY, contentW, contentH;
 
     /** MNX-056: the latest applies and reverts, newest first (lines of history.jsonl). */
@@ -160,6 +160,7 @@ public final class NexusScreen extends Screen {
             case "forms_tab" -> { tab = Tab.FORMS; rebuildWidgets(); }
             case "triage" -> { PendingChanges.clear(); startTriage(); }
             case "presets" -> go(View.PRESETS);
+            case "pending" -> { PendingChanges.set("copper", "ingot", dev.drimoz.materialnexus.datapack.CanonicalChange.RESET); togglePending(); }
             case "priority" -> { if (totals != null) savePriority(new java.util.ArrayList<>(totals.mods().subList(0, Math.min(3, totals.mods().size())))); }
             default -> go(View.HOME);
         }
@@ -230,6 +231,11 @@ public final class NexusScreen extends Screen {
         layoutDrawer();
     }
 
+    private void togglePending() {
+        drawer = drawer instanceof PendingDrawer ? null : new PendingDrawer(this::preview, () -> drawer = null);
+        layoutDrawer();
+    }
+
     private void layoutDrawer() {
         if (drawer == null) return;
         int w = Math.max(220, width * 9 / 20);
@@ -281,6 +287,12 @@ public final class NexusScreen extends Screen {
         revert.active = canRevert;
         addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.home.matrix"), b -> go(View.FORMS))
                 .bounds(bx + 176, by + 24, 170, 20).build());
+        // MNX-058: every saved choice and pack-wide setting back to default, as pending changes (Preview shows it all).
+        Button reset = addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.reset.all"), b -> {
+            PacketDistributor.sendToServer(SuggestionsRequest.SAVED);
+            PendingChanges.resetSettings();
+        }).bounds(bx, by + 48, 170, 20).build());
+        reset.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("screen.materialnexus.reset.all.tooltip")));
     }
 
     private int listWidth() { return Math.clamp(width / 5, 110, 170); }
@@ -388,10 +400,18 @@ public final class NexusScreen extends Screen {
         if (pending == 0) {
             g.drawString(font, Component.translatable("screen.materialnexus.pending.none"), 8, y, Ui.FAINT, false);
         } else {
-            g.fill(8, y, 11, y + 8, Ui.ACCENT);
-            g.drawString(font, Component.translatable("screen.materialnexus.pending.count", pending, PendingChanges.all().size(),
+            // MNX-058: the summary opens the list of pending changes, where each one can be discarded.
+            Component summary = Component.translatable("screen.materialnexus.pending.count", pending, PendingChanges.all().size(),
                     PendingChanges.processes().size(), PendingChanges.creations().size(), PendingChanges.data().size(),
-                    PendingChanges.globalLines().size()), 16, y, Ui.TEXT, false);
+                    PendingChanges.globalLines().size());
+            Component review = Component.translatable("screen.materialnexus.pending.review");
+            int sw = font.width(summary) + 12 + font.width(review);
+            boolean over = mx >= 4 && mx < 20 + sw && my >= y - 4 && my < y + 12;
+            if (over) g.fill(4, y - 4, 20 + sw, y + 12, 0x18FFFFFF);
+            g.fill(8, y, 11, y + 8, Ui.ACCENT);
+            g.drawString(font, summary, 16, y, Ui.TEXT, false);
+            g.drawString(font, review, 28 + font.width(summary), y, over ? Ui.TEXT : 0x88AAFF, false);
+            hits.add(4, y - 4, 16 + sw, 16, this::togglePending, null, List.of());
         }
         int bx = width - 8;
         bx = bottomButton(g, mx, my, bx, Component.translatable("screen.materialnexus.preview_short"), Ui.ACCENT, this::preview);
@@ -422,7 +442,7 @@ public final class NexusScreen extends Screen {
             card(g, x + cw + 6, y + 16, cw, Component.translatable("screen.materialnexus.home.unified"), totals.unified(), Ui.SUCCESS);
             card(g, x + 2 * (cw + 6), y + 16, cw, Component.translatable("screen.materialnexus.home.aside"), totals.setAside(), Ui.NEUTRAL);
         }
-        int ty = contentY + 140;
+        int ty = contentY + 164;
         boolean wide = contentW > 640;
         int tipWidth = wide ? 370 : contentW - 24;
         for (String key : List.of("home.tip1", "home.tip2", "home.tip3")) {
@@ -597,10 +617,41 @@ public final class NexusScreen extends Screen {
         long todo = d.forms().stream().filter(v -> DetailTable.status(v) == Ui.Status.SUGGESTION).count();
         g.drawString(font, Component.translatable(d.byForm() ? "screen.materialnexus.header.form" : "screen.materialnexus.header.material",
                 d.forms().size(), todo), x + font.width(name) + 8, contentY + 5, Ui.MUTED, false);
-        if (readOnly || todo == 0 || tab == Tab.PROCESS) return;
+        if (readOnly) return;
+        int ux = width - 8;
+        // MNX-058: discard what is pending for this material (or this form) only.
+        String m = d.byForm() ? null : d.material();
+        String f = d.byForm() ? d.material() : null;
+        int pending = PendingChanges.countFor(m, f);
+        if (pending > 0) {
+            Component discard = Component.translatable("screen.materialnexus.discard_here", pending);
+            int dw = font.width(discard) + 12;
+            ux -= dw;
+            boolean overD = mx >= ux && mx < ux + dw && my >= contentY + 2 && my < contentY + 16;
+            g.fill(ux, contentY + 2, ux + dw, contentY + 16, (Ui.NEUTRAL & 0x00FFFFFF) | (overD ? 0xF0000000 : 0x90000000));
+            g.drawString(font, discard, ux + 6, contentY + 5, Ui.TEXT, false);
+            hits.add(ux, contentY + 2, dw, 14, () -> PendingChanges.clearFor(m, f), null, List.of());
+            ux -= 4;
+        }
+        // MNX-058: the saved choices of this material (or form) back to default.
+        List<MaterialDetailPayload.FormView> saved = d.forms().stream()
+                .filter(v -> v.resolved().source() == dev.drimoz.materialnexus.core.policy.PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE
+                        && PendingChanges.get(v.material(), v.form()).isEmpty()).toList();
+        if (!saved.isEmpty() && tab != Tab.PROCESS) {
+            Component reset = Component.translatable("screen.materialnexus.reset.here", saved.size());
+            int rw = font.width(reset) + 12;
+            ux -= rw;
+            boolean overR = mx >= ux && mx < ux + rw && my >= contentY + 2 && my < contentY + 16;
+            g.fill(ux, contentY + 2, ux + rw, contentY + 16, (Ui.NEUTRAL & 0x00FFFFFF) | (overR ? 0xF0000000 : 0x90000000));
+            g.drawString(font, reset, ux + 6, contentY + 5, Ui.TEXT, false);
+            hits.add(ux, contentY + 2, rw, 14, () -> saved.forEach(v -> PendingChanges.set(v.material(), v.form(),
+                    dev.drimoz.materialnexus.datapack.CanonicalChange.RESET)), null, List.of(Component.translatable("screen.materialnexus.reset.here.tooltip")));
+            ux -= 4;
+        }
+        if (todo == 0 || tab == Tab.PROCESS) return;
         Component unify = Component.translatable(d.byForm() ? "screen.materialnexus.unify_form" : "screen.materialnexus.unify_material");
         int w = font.width(unify) + 12;
-        int ux = width - 8 - w;
+        ux -= w;
         boolean over = mx >= ux && mx < ux + w && my >= contentY + 2 && my < contentY + 16;
         g.fill(ux, contentY + 2, ux + w, contentY + 16, (Ui.WARNING & 0x00FFFFFF) | (over ? 0x90000000 : 0x50000000));
         g.drawString(font, unify, ux + 6, contentY + 5, Ui.TEXT, false);

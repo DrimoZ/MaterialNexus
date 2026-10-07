@@ -13,7 +13,7 @@ import net.neoforged.neoforge.network.handling.IPayloadContext;
  * Client handler bodies call {@link ClientHooks}, so client classes never load on a dedicated server.
  */
 public final class MnxNetwork {
-    private static final String VERSION = "8";
+    private static final String VERSION = "9";
 
     private MnxNetwork() { }
 
@@ -105,7 +105,8 @@ public final class MnxNetwork {
         });
         registrar.playToServer(SuggestionsRequest.TYPE, SuggestionsRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
-            if (player != null) PacketDistributor.sendToPlayer(player, SuggestionsPayload.of(SnapshotManager.current()));
+            if (player != null) PacketDistributor.sendToPlayer(player, req.saved() ? SuggestionsPayload.saved(SnapshotManager.current())
+                    : SuggestionsPayload.of(SnapshotManager.current()));
         });
     }
 

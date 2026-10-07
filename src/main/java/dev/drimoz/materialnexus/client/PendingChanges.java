@@ -50,6 +50,9 @@ final class PendingChanges {
 
     static void clearData(String kind, String id) { DATA.remove(kind + "|" + id); }
 
+    /** Drops one data edit by its "kind|id" key (MNX-058). */
+    static void clearData(String key) { DATA.remove(key); }
+
     static Map<String, Optional<String>> data() { return Map.copyOf(DATA); }
 
     /** Items to create for missing forms (MNX-039), as "material/form". Toggles. */
@@ -60,6 +63,29 @@ final class PendingChanges {
     }
 
     static List<String> creations() { return List.copyOf(CREATIONS); }
+
+    /** Drops one item creation by its "material/form" key (MNX-058). */
+    static void toggleCreation(String key) {
+        if (!CREATIONS.remove(key)) CREATIONS.add(key);
+    }
+
+    /** MNX-058: pending choices and items to create of a material, or of a form when {@code material} is null. */
+    static int countFor(String material, String form) {
+        return (int) (CHANGES.values().stream().filter(c -> matches(c.material(), c.form(), material, form)).count()
+                + CREATIONS.stream().filter(k -> matches(k.split("/", 2)[0], k.split("/", 2)[1], material, form)).count()
+                + (material == null && PROCESSES.containsKey(form) ? 1 : 0));
+    }
+
+    /** MNX-058: drops what {@link #countFor} counts. */
+    static void clearFor(String material, String form) {
+        CHANGES.values().removeIf(c -> matches(c.material(), c.form(), material, form));
+        CREATIONS.removeIf(k -> matches(k.split("/", 2)[0], k.split("/", 2)[1], material, form));
+        if (material == null) PROCESSES.remove(form);
+    }
+
+    private static boolean matches(String m, String f, String material, String form) {
+        return material != null ? m.equals(material) : f.equals(form);
+    }
 
     static Optional<ProcessRules.Rule> process(String form) { return Optional.ofNullable(PROCESSES.get(form)); }
 
@@ -94,6 +120,39 @@ final class PendingChanges {
     }
 
     static boolean globalChanged(String field) { return GLOBAL_PATCH.has(field); }
+
+    /** MNX-058 "everything back to default": empty mod priority, not-same list, conversion recipes and process rules. */
+    static void resetSettings() {
+        for (String field : List.of("mod_priority", "not_same", "conversion_recipes")) setGlobal(field, new com.google.gson.JsonArray());
+        if (baseGlobal.get("processes") instanceof com.google.gson.JsonObject rules) {
+            rules.keySet().forEach(form -> PROCESSES.put(form, new ProcessRules.Rule(List.of(), false, false)));
+        }
+    }
+
+    /** MNX-058: each pending global.json edit in words, with what drops it (one line per not_same item). */
+    static List<Map.Entry<net.minecraft.network.chat.Component, Runnable>> globalEdits() {
+        List<Map.Entry<net.minecraft.network.chat.Component, Runnable>> out = new java.util.ArrayList<>();
+        for (String field : List.copyOf(GLOBAL_PATCH.keySet())) {
+            if (!field.equals("not_same")) {
+                net.minecraft.network.chat.Component text = net.minecraft.network.chat.Component.translatableWithFallback(
+                        "screen.materialnexus.presets.field." + field, field);
+                out.add(Map.entry(text, () -> GLOBAL_PATCH.remove(field)));
+                continue;
+            }
+            com.google.gson.JsonArray before = baseGlobal.get(field) instanceof com.google.gson.JsonArray a ? a : new com.google.gson.JsonArray();
+            com.google.gson.JsonArray after = GLOBAL_PATCH.getAsJsonArray(field);
+            List<String> changed = new java.util.ArrayList<>();
+            after.forEach(e -> { if (!before.contains(e)) changed.add(e.getAsString()); });
+            before.forEach(e -> { if (!after.contains(e)) changed.add(e.getAsString()); });
+            for (String item : changed) {
+                ResourceLocation id = ResourceLocation.tryParse(item);
+                if (id == null) continue;
+                String key = notSame(id) ? "screen.materialnexus.preview_not_same" : "screen.materialnexus.preview_same_again";
+                out.add(Map.entry(net.minecraft.network.chat.Component.translatable(key, Names.stack(id).getHoverName()), () -> toggleNotSame(id)));
+            }
+        }
+        return out;
+    }
 
     /** "Not the same item" (MNX-050), as it will be after Apply. */
     static boolean notSame(ResourceLocation item) {

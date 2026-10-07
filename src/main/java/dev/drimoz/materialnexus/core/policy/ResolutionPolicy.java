@@ -85,6 +85,14 @@ public record ResolutionPolicy(
     }
 
     /** This policy plus extra explicit choices, used to preview pending GUI changes before they are written. */
+    /** The policy without these explicit choices (MNX-058: back to default, previewed). */
+    public ResolutionPolicy withoutExplicit(java.util.Set<MaterialForm> forms) {
+        Map<MaterialForm, ResourceLocation> kept = new HashMap<>(explicitProviders);
+        kept.keySet().removeAll(forms);
+        return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, kept,
+                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes, notSame);
+    }
+
     public ResolutionPolicy withExplicit(Map<MaterialForm, ResourceLocation> extra) {
         Map<MaterialForm, ResourceLocation> merged = new HashMap<>(explicitProviders);
         merged.putAll(extra);

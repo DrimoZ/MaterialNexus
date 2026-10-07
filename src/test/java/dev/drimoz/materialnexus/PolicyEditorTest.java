@@ -63,5 +63,14 @@ class PolicyEditorTest {
         assertEquals("{\"material\":\"tin\",\"mod_priority\":[\"thermal\"],\"note\":\"keep me\"}", Files.readString(existing));
         PolicyEditor.revert(policies);
         assertEquals(MEK, PolicyFiles.load(policies).explicitProviders().get(tinIngot));
+
+        // MNX-058: back to default removes only the saved choice; valid only where a choice is saved.
+        var saved = new ResolvedSnapshot(2, Instant.EPOCH, discovered, CanonicalResolver.resolve(discovered, PolicyFiles.load(policies)));
+        List<PolicyEditor.Entry> resets = PolicyEditor.preview(saved, List.of(
+                new CanonicalChange("tin", "ingot", CanonicalChange.RESET), new CanonicalChange("tin", "plate", CanonicalChange.RESET)));
+        assertEquals(List.of(true, false), resets.stream().map(PolicyEditor.Entry::valid).toList());
+        PolicyEditor.apply(policies, resets);
+        assertNull(PolicyFiles.load(policies).explicitProviders().get(tinIngot));
+        assertTrue(Files.readString(existing).contains("keep me"));
     }
 }

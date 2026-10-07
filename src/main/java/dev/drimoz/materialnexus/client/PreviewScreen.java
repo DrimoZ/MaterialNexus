@@ -88,6 +88,9 @@ public final class PreviewScreen extends Screen {
         }
         Component from = e.from().map(id -> (Component) Component.literal(id.toString()))
                 .orElse(Component.translatable("screen.materialnexus.none"));
+        if (e.to().equals(dev.drimoz.materialnexus.datapack.CanonicalChange.RESET)) {
+            return Component.translatable("screen.materialnexus.preview_reset", material, form, from);
+        }
         return Component.translatable("screen.materialnexus.preview_line", material, form, from, e.to().toString());
     }
 
