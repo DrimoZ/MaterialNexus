@@ -123,6 +123,11 @@ dependencies {
     testRuntimeOnly "org.junit.platform:junit-platform-launcher"
 }
 
+// MNX-039: created items are read at startup, so the GameTest run gets its items.json before launch.
+tasks.matching { it.name == 'runGameTestServer' }.configureEach {
+    doFirst { copy { from 'src/gametest-fixtures'; into 'run-gametest' } }
+}
+
 tasks.named('test', Test) {
     useJUnitPlatform()
 }

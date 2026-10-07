@@ -36,6 +36,8 @@ public final class PackContent {
     public static final String CONVERSION = "conversion_recipe";
     /** Alternatives the server swaps for the canonical item when the game touches them (MNX-028). */
     public static final String ITEM_CONVERSION = "item_conversion";
+    /** Preview only: an item created for a missing form (MNX-039), {@code target} the item, {@code item} the tag it joins. */
+    public static final String ITEM_CREATE = "item_create";
     /** Informational: a domain left to Almost Unified ({@code target} = materialnexus:&lt;domain&gt;). Generates no file. */
     public static final String ALMOST_UNIFIED = "almost_unified";
     private static final ResourceLocation AU_ID = ResourceLocation.fromNamespaceAndPath(AlmostUnified.MOD_ID, "owner");

@@ -98,7 +98,7 @@ public final class NexusScreen extends Screen {
             }).bounds(width - 216, 3, 104, 18).build());
             revert.active = canRevert;
             preview = addRenderableWidget(Button.builder(Component.empty(),
-                    b -> PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), false, java.util.Optional.empty(), PendingChanges.processes()))).bounds(width - 108, 3, 102, 18).build());
+                    b -> PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), false, java.util.Optional.empty(), PendingChanges.processes(), PendingChanges.creations()))).bounds(width - 108, 3, 102, 18).build());
         }
 
         int half = (sideW - 14) / 2;

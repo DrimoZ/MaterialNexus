@@ -15,11 +15,11 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Client to server: pending canonical choices and process rule edits (form name → rule, MNX-036), either to
- * preview or (with {@code apply}) to write.
+ * Client to server: pending canonical choices, process rule edits (form name → rule, MNX-036) and items to create
+ * ("material/form", MNX-039), either to preview or (with {@code apply}) to write.
  */
 public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.util.Optional<ResourceLocation> preset,
-                             java.util.Map<String, ProcessRules.Rule> processes)
+                             java.util.Map<String, ProcessRules.Rule> processes, List<String> creations)
         implements CustomPacketPayload {
     public static final Type<PreviewRequest> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "preview_request"));
@@ -29,10 +29,11 @@ public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.
     public PreviewRequest {
         changes = List.copyOf(changes);
         processes = java.util.Map.copyOf(processes);
+        creations = List.copyOf(creations);
     }
 
     public PreviewRequest(List<CanonicalChange> changes, boolean apply) {
-        this(changes, apply, java.util.Optional.empty(), java.util.Map.of());
+        this(changes, apply, java.util.Optional.empty(), java.util.Map.of(), List.of());
     }
 
     private static final int MAX_RULES = 256;
@@ -78,6 +79,7 @@ public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.
         buf.writeBoolean(req.apply());
         buf.writeOptional(req.preset(), FriendlyByteBuf::writeResourceLocation);
         buf.writeMap(req.processes(), (b, form) -> b.writeUtf(form, NexusQueries.MAX_QUERY), PreviewRequest::writeRule);
+        buf.writeCollection(req.creations(), (b, c) -> b.writeUtf(c, NexusQueries.MAX_QUERY * 2));
     }
 
     private static PreviewRequest read(FriendlyByteBuf buf) {
@@ -97,6 +99,10 @@ public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.
             if (FormId.read(form).result().isEmpty()) throw new DecoderException("Bad form: " + form);
             processes.put(form, readRule(buf));
         }
-        return new PreviewRequest(changes, apply, preset, processes);
+        int creations = buf.readVarInt();
+        if (creations < 0 || creations > MAX_RULES) throw new DecoderException("Too many items to create: " + creations);
+        List<String> created = new ArrayList<>(creations);
+        for (int i = 0; i < creations; i++) created.add(buf.readUtf(NexusQueries.MAX_QUERY * 2));
+        return new PreviewRequest(changes, apply, preset, processes, created);
     }
 }

@@ -158,6 +158,21 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /**
+     * MNX-039: an item listed in items.json (fixture: netherite rod) is registered at startup, joins its convention tag
+     * through the created-items pack, and discovery sees it as netherite's rod.
+     */
+    @GameTest(template = "empty")
+    public static void createdItemIsRegisteredTaggedAndDiscovered(GameTestHelper helper) {
+        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "netherite_rod");
+        helper.assertTrue(net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(id), "netherite_rod should be registered");
+        var tag = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, ResourceLocation.parse("c:rods/netherite"));
+        helper.assertTrue(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(id)).is(tag), "netherite_rod should be in #c:rods/netherite");
+        var providers = SnapshotManager.current().discovered().providers(new MaterialId("netherite"), new FormId("rod"));
+        helper.assertTrue(providers.stream().anyMatch(p -> p.resource().equals(id)), "discovery should see the netherite rod, got " + providers);
+        helper.succeed();
+    }
+
     /** MNX-028: an applied alternative becomes the canonical item when it enters the world or a container is converted. */
     @GameTest(template = "empty")
     public static void unifiedItemsAreConvertedWhenTouched(GameTestHelper helper) {

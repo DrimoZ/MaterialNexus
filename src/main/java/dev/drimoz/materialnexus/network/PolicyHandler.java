@@ -15,6 +15,7 @@ import dev.drimoz.materialnexus.datapack.PolicyFiles;
 import dev.drimoz.materialnexus.datapack.RecipeRewrites;
 import dev.drimoz.materialnexus.datapack.RecipeSources;
 import dev.drimoz.materialnexus.integration.RecipeFormats;
+import dev.drimoz.materialnexus.item.CreatedItems;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.server.MinecraftServer;
@@ -45,6 +46,7 @@ final class PolicyHandler {
         List<PolicyEditor.Entry> entries = PolicyEditor.preview(SnapshotManager.current(), request.changes());
         List<PackContent.Effect> proposed;
         List<PackContent.Effect> current;
+        List<CreatedItems.Entry> creations = creations(request);
         try {
             ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies(), preset).withExplicit(explicitChoices(entries))
                     .withProcesses(processes(request));
@@ -55,7 +57,9 @@ final class PolicyHandler {
             player.sendSystemMessage(Component.translatable("message.materialnexus.apply_failed", e.getMessage()));
             return;
         }
-        List<PackContent.Effect> added = proposed.stream().filter(e -> !current.contains(e)).toList();
+        List<PackContent.Effect> added = new java.util.ArrayList<>(proposed.stream().filter(e -> !current.contains(e)).toList());
+        // Created items are not pack content (their tags come with the item, after the restart): listed for review only.
+        creations.forEach(c -> added.add(new PackContent.Effect(PackContent.ITEM_CREATE, c.id(), c.tag())));
         List<PackContent.Effect> removed = current.stream().filter(e -> !proposed.contains(e)).toList();
         boolean valid = entries.stream().anyMatch(PolicyEditor.Entry::valid);
 
@@ -63,14 +67,17 @@ final class PolicyHandler {
             PacketDistributor.sendToPlayer(player, new PreviewPayload(entries, added, removed, request.preset().filter(id -> preset.isPresent())));
             return;
         }
-        if (!valid && preset.isEmpty() && request.processes().isEmpty() && added.isEmpty() && removed.isEmpty()) return;
+        if (!valid && preset.isEmpty() && request.processes().isEmpty() && creations.isEmpty() && added.isEmpty() && removed.isEmpty()) return;
         // With no valid choice, apply only regenerates the pack from the policy as written (e.g. edited by hand).
         writeAndReload(player, () -> {
                     if (valid || preset.isPresent() || !request.processes().isEmpty()) {
                         PolicyEditor.apply(MnxPaths.policies(), entries, preset, processes(request));
                     }
+                    // Not part of the policy backup: an item registered after a restart cannot be reverted by a reload.
+                    if (!creations.isEmpty()) CreatedItems.add(itemsFile(), creations);
                 },
-                Component.translatable("message.materialnexus.applied", added.size() + removed.size()));
+                creations.isEmpty() ? Component.translatable("message.materialnexus.applied", added.size() + removed.size())
+                        : Component.translatable("message.materialnexus.applied_restart", added.size() + removed.size()));
     }
 
     /** The form's process rule as written, plus the routes already found in recipes (examples are read on demand). */
@@ -98,6 +105,23 @@ final class PolicyHandler {
     }
 
     /** The whole generated pack for a policy: tags and conversions, then the recipes they imply. */
+    private static java.nio.file.Path itemsFile() {
+        return MnxPaths.root().resolve(CreatedItems.FILE);
+    }
+
+    /** "material/form" requests from the client, kept only when discovery confirms the form is missing (MNX-039). */
+    private static List<CreatedItems.Entry> creations(PreviewRequest request) {
+        var snapshot = SnapshotManager.current();
+        List<CreatedItems.Entry> valid = new java.util.ArrayList<>();
+        for (String c : request.creations()) {
+            String[] parts = c.split("/", 2);
+            if (parts.length != 2) continue;
+            var material = dev.drimoz.materialnexus.core.domain.MaterialId.read(parts[0]).result().map(snapshot.materials()::get).orElse(null);
+            CreatedItems.validate(snapshot.discovered(), material, parts[0], parts[1]).ifPresent(valid::add);
+        }
+        return valid;
+    }
+
     private static PackContent.Content packContent(MinecraftServer server, ResolutionPolicy policy, List<PackContent.Effect> applied) {
         boolean auPresent = net.neoforged.fml.ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID);
         var resolved = CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy);

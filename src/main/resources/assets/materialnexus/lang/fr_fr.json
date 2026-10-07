@@ -1,5 +1,11 @@
 {
   "item.materialnexus.nexus_terminal": "Terminal Nexus",
+  "item.materialnexus.created": "%2$s de %1$s",
+  "screen.materialnexus.create.title": "Créer une forme manquante",
+  "screen.materialnexus.create.hint": "Un nouvel item Material Nexus, teinté à la couleur du matériau. Redémarrage du jeu nécessaire après Appliquer.",
+  "screen.materialnexus.create.tooltip": "Crée %s (redémarrage nécessaire, non annulé par Revert)",
+  "screen.materialnexus.effect.item_create": "nouvel item %1$s dans #%2$s (après redémarrage)",
+  "message.materialnexus.applied_restart": "Material Nexus a appliqué %s changements. Redémarrez le jeu pour enregistrer les nouveaux items.",
   "materialnexus.pack.generated": "Données générées par Material Nexus (ne pas modifier)",
   "screen.materialnexus.title": "Material Nexus",
   "screen.materialnexus.presets": "Presets",

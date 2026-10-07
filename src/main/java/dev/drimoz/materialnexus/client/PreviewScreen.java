@@ -27,7 +27,7 @@ public final class PreviewScreen extends Screen {
 
     private boolean hasChanges() {
         return preview.entries().stream().anyMatch(PolicyEditor.Entry::valid) || !preview.added().isEmpty() || !preview.removed().isEmpty()
-                || !PendingChanges.processes().isEmpty();
+                || !PendingChanges.processes().isEmpty() || !PendingChanges.creations().isEmpty();
     }
 
     @Override
@@ -51,7 +51,7 @@ public final class PreviewScreen extends Screen {
     }
 
     private void apply() {
-        PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), true, preview.preset(), PendingChanges.processes()));
+        PacketDistributor.sendToServer(new PreviewRequest(PendingChanges.all(), true, preview.preset(), PendingChanges.processes(), PendingChanges.creations()));
         // The server reopens Material Nexus once the reload has finished; pending choices are kept until then.
         minecraft.setScreen(null);
     }
@@ -96,6 +96,7 @@ public final class PreviewScreen extends Screen {
             case dev.drimoz.materialnexus.datapack.ProcessPlanner.PROCESS -> processLine(e);
             case dev.drimoz.materialnexus.datapack.ProcessPlanner.DISABLE -> Component.translatable("screen.materialnexus.effect.process_disable", e.target().toString(), e.item().toString());
             case dev.drimoz.materialnexus.datapack.ProcessPlanner.UNSUPPORTED -> Component.translatable("screen.materialnexus.effect.process_unsupported", e.target().toString(), e.item().toString());
+            case PackContent.ITEM_CREATE -> Component.translatable("screen.materialnexus.effect.item_create", e.target().toString(), e.item().toString());
             case PackContent.ALMOST_UNIFIED -> Component.translatable("screen.materialnexus.effect.almost_unified",
                     Component.translatable("materialnexus.au_domain." + e.target().getPath()));
             default -> Component.translatable("screen.materialnexus.effect.conversion", e.item().toString(), e.target().toString());

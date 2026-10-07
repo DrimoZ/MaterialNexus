@@ -134,3 +134,13 @@ Consequences, made visible rather than hidden:
 **Consequences:** balance-affecting, so rules exist only in the policy (`processes` in `global.json`, per-material `process` overrides) and every generated or disabled recipe is listed in Preview (ADR-003). Process recipes are not an Almost Unified domain. A rule disabling a recipe wins over a unification rewrite of it. Machines with no example recipe for that form need a template (not implemented yet).
 
 **Rejected:** per-machine Java writers (closed to pack authors); templates first (a file to write per machine before anything works).
+
+## ADR-019 - Items for missing forms are registered at startup from config
+
+**Decision:** Material Nexus can create an item for a form a material lacks (a netherite rod), for the forms that have a template texture (ingot, nugget, dust, plate, rod, gear, wire). The list lives in `config/materialnexus/items.json`; each entry becomes `materialnexus:<material>_<form>`, registered at startup, named from the material and form, drawn with the form's grayscale template tinted with the material colour (`color`, or the average colour of the `color_from` item's texture). A small pack rebuilt from the registered items at every pack scan (`config/materialnexus/created_items`) puts each one in its convention tag, so discovery sees it as that material's form; recipes then come from process rules (ADR-018), never automatically.
+
+**Why:** registries are frozen after startup; an item cannot appear on /reload. Templates plus a tint need no asset per item and work for any material.
+
+**Consequences:** creating an item needs a restart after Apply; Revert does not remove it (the registry cannot change on a reload). On a server, every client needs the same `items.json` (ship it with the modpack), or the registries will not match. Removing an entry deletes that item from every world that has it.
+
+**Rejected:** registering items lazily or per world (impossible after the registry freeze); per-item asset files (a resource pack to maintain for every material).

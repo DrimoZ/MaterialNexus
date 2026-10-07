@@ -13,6 +13,7 @@ import java.util.Optional;
 final class PendingChanges {
     private static final Map<String, CanonicalChange> CHANGES = new LinkedHashMap<>();
     private static final Map<String, ProcessRules.Rule> PROCESSES = new LinkedHashMap<>();
+    private static final java.util.Set<String> CREATIONS = new java.util.TreeSet<>();
 
     private PendingChanges() { }
 
@@ -31,12 +32,22 @@ final class PendingChanges {
 
     static List<CanonicalChange> all() { return List.copyOf(CHANGES.values()); }
 
-    static int size() { return CHANGES.size() + PROCESSES.size(); }
+    static int size() { return CHANGES.size() + PROCESSES.size() + CREATIONS.size(); }
 
     static void clear() {
         CHANGES.clear();
         PROCESSES.clear();
+        CREATIONS.clear();
     }
+
+    /** Items to create for missing forms (MNX-039), as "material/form". Toggles. */
+    static boolean creating(String material, String form) { return CREATIONS.contains(material + "/" + form); }
+
+    static void toggleCreation(String material, String form) {
+        if (!CREATIONS.remove(material + "/" + form)) CREATIONS.add(material + "/" + form);
+    }
+
+    static List<String> creations() { return List.copyOf(CREATIONS); }
 
     static Optional<ProcessRules.Rule> process(String form) { return Optional.ofNullable(PROCESSES.get(form)); }
 

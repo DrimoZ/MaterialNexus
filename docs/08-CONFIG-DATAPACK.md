@@ -109,6 +109,14 @@ The manifest lists every effect. On reload, discovery puts back the tag members 
 
 In `global.json`, per form for every material. A material file can override it for one form with `"forms": {"rod": {"process": {...}}}`; `"routes": []` switches the rule off for that material. Ratios are 1..64. Each generated recipe is `materialnexus:process/<form>/<material>/<input>/<in>/<out>/<machine>`. Edited from the GUI in the form view, "Process" tab.
 
+## Created items (MNX-039, ADR-019)
+
+```json
+{ "items": [ { "material": "netherite", "form": "rod", "color_from": "minecraft:netherite_ingot" } ] }
+```
+
+`config/materialnexus/items.json`, written by the GUI ("Create a missing form" on a material) or by hand. Forms: ingot, nugget, dust, plate, rod, gear, wire. Optional `"color": "#4D494D"` instead of `color_from`. Read at startup only: restart after a change, ship it to clients, and never remove an entry from a running world unless its items may disappear. A resource pack can replace the templates (`materialnexus:item/template/<form>`).
+
 ## Recipe formats (ADR-016)
 
 To let Material Nexus rewrite another mod's recipes, add a file to any datapack (or KubeJS data):

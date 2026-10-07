@@ -31,6 +31,8 @@ import java.util.stream.Stream;
  */
 public final class GeneratedPack {
     public static final String PACK_ID = "materialnexus_generated";
+    /** Tags of the items created for missing forms (MNX-039), rebuilt from the registered items at every pack scan. */
+    public static final String ITEMS_PACK_ID = "materialnexus_items";
     public static final String MARKER = "_GENERATED_DO_NOT_EDIT";
     public static final String MANIFEST = "manifest.json";
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -40,17 +42,39 @@ public final class GeneratedPack {
     public static void onAddPackFinders(AddPackFindersEvent event) {
         if (event.getPackType() != PackType.SERVER_DATA) return;
         Path dir = MnxPaths.generated();
+        Path items = MnxPaths.root().resolve("created_items");
         try {
-            if (!isOurs(dir)) {
-                LOGGER.warn("{} exists but was not created by Material Nexus; it is left untouched and not loaded", dir);
+            if (!isOurs(dir) || !isOurs(items)) {
+                LOGGER.warn("{} or {} exists but was not created by Material Nexus; it is left untouched and not loaded", dir, items);
                 return;
             }
             if (!Files.exists(dir.resolve(MARKER))) write(dir, Map.of(), new JsonArray());
+            write(items, createdItemTags(), new JsonArray());
         } catch (IOException e) {
             LOGGER.error("Could not prepare the Material Nexus generated pack", e);
             return;
         }
-        var info = new PackLocationInfo(PACK_ID, Component.translatable("materialnexus.pack.generated"), PackSource.BUILT_IN, Optional.empty());
+        add(event, PACK_ID, dir);
+        add(event, ITEMS_PACK_ID, items);
+    }
+
+    /** One convention tag file per created item's tag; the items are registered, so plain values. */
+    private static Map<String, JsonElement> createdItemTags() {
+        Map<String, JsonObject> files = new java.util.TreeMap<>();
+        for (var item : dev.drimoz.materialnexus.registry.MnxItems.CREATED) {
+            var tag = item.get().entry().tag();
+            files.computeIfAbsent("data/" + tag.getNamespace() + "/tags/item/" + tag.getPath() + ".json", p -> {
+                JsonObject file = new JsonObject();
+                file.addProperty("replace", false);
+                file.add("values", new JsonArray());
+                return file;
+            }).getAsJsonArray("values").add(item.getId().toString());
+        }
+        return Map.copyOf(files);
+    }
+
+    private static void add(AddPackFindersEvent event, String id, Path dir) {
+        var info = new PackLocationInfo(id, Component.translatable("materialnexus.pack.generated"), PackSource.BUILT_IN, Optional.empty());
         Pack pack = Pack.readMetaAndCreate(info, new PathPackResources.PathResourcesSupplier(dir), PackType.SERVER_DATA,
                 new PackSelectionConfig(true, Pack.Position.TOP, false));
         if (pack != null) event.addRepositorySource(consumer -> consumer.accept(pack));

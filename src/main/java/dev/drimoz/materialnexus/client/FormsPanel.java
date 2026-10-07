@@ -54,7 +54,7 @@ final class FormsPanel {
 
     void scroll(double delta) {
         if (detail == null) return;
-        double max = Math.max(0, detail.forms().size() * CARD - height);
+        double max = Math.max(0, (detail.forms().size() + 1) * CARD - height);
         scroll = Math.max(0, Math.min(max, scroll - delta * 18));
     }
 
@@ -77,6 +77,7 @@ final class FormsPanel {
             renderCard(g, font, view, top, mx, my);
             top += CARD;
         }
+        if (!detail.byForm()) renderCreate(g, font, top, mx, my);
         g.disableScissor();
         hits.stream().filter(h -> h.contains(mx, my) && my >= y && my < y + height && !h.tooltip().isEmpty()).findFirst()
                 .ifPresent(h -> g.renderComponentTooltip(font, h.tooltip(), mx, my));
@@ -130,6 +131,29 @@ final class FormsPanel {
             List<Component> tip = List.of(Names.stack(n.item()).getHoverName(), Component.literal(n.item().toString()).withColor(0x888888),
                     Component.translatable("screen.materialnexus.role.not_unified", Component.translatable(n.reasonKey(), n.reasonArgs().toArray())).withColor(0xCC8888));
             ix = icon(g, n.item(), ix, iy, DIM, tip, () -> choose(material, view.form(), n.item(), f, decided));
+        }
+    }
+
+    /** MNX-039: forms this material lacks and Material Nexus can create (template texture); click to toggle. */
+    private void renderCreate(GuiGraphics g, Font font, int top, int mx, int my) {
+        List<String> missing = dev.drimoz.materialnexus.item.CreatedItems.FORMS.stream().map(f -> f.name())
+                .filter(f -> detail.forms().stream().noneMatch(v -> v.form().equals(f))).sorted().toList();
+        if (missing.isEmpty()) return;
+        String material = detail.material();
+        g.fill(x, top, x + width, top + CARD - 4, 0x33000000);
+        g.drawString(font, Component.translatable("screen.materialnexus.create.title"), x + 6, top + 4, 0xFFFFFF);
+        g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.create.hint").getString(), width - 12), x + 6, top + 15, 0x999999);
+        int cx = x + 6;
+        for (String form : missing) {
+            Component label = Names.form(form);
+            int w = font.width(label) + 8;
+            boolean pending = PendingChanges.creating(material, form);
+            boolean over = mx >= cx && mx < cx + w && my >= top + 27 && my < top + 41;
+            g.fill(cx, top + 27, cx + w, top + 41, pending ? 0xFF2E6B2E : over ? 0xFF3A3A55 : 0xFF2A2A3A);
+            g.drawString(font, label, cx + 4, top + 30, pending ? 0x55FF55 : 0xAAAAFF);
+            hits.add(new Hit(cx, top + 27, w, 14, () -> { if (!readOnly) PendingChanges.toggleCreation(material, form); },
+                    List.of(Component.translatable("screen.materialnexus.create.tooltip", "materialnexus:" + material + "_" + form))));
+            cx += w + 4;
         }
     }
 
