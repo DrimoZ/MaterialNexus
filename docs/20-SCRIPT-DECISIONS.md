@@ -105,8 +105,8 @@ removed in memory, and the recipes scripts created with their script file and li
 
 - Recipe edits are read from KubeJS only (other script tools: tag edits only).
 - A partial replacement (one recipe, for balance) counts as a "for" signal: it is a proposal, reviewed like any other.
-- Tag entries changed in memory by other mods (not scripts) are read as script edits; they rarely touch convention
-  tags.
+- Tag entries changed in memory by other mods (not scripts) are read as script edits. Additions are never evidence
+  and the report only counts them (GregTech CEu adds about 18000 on 1.20.1); a removal by another mod would count.
 - The fields read (`RecipesKubeEvent.originalRecipes`, `addedRecipes`, `KubeRecipe.json/originalJson/changed/removed/
   sourceLine`) are public but not a stable API: checked against KubeJS 2101.7.2; if they change, recipe edits are
   skipped with one warning and tag edits still work.

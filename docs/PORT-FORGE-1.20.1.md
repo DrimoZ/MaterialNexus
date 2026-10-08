@@ -20,6 +20,8 @@ Forge 1.20.1. Behaviour is unchanged: what differs is the game's and the loader'
 | Optional codec fields | `optionalFieldOf` (strict) | `OptionalFields.strict` (1.20.1 DFU `optionalFieldOf` is lenient) |
 | Network | payload registrar, NeoForge splits large payloads | one `SimpleChannel`; local `CustomPacketPayload` / `StreamCodec` / `PacketDistributor` keep every payload as on main; messages over 32000 bytes to the server (1 MB to the client) travel as bounded, ordered parts |
 | KubeJS | 2101 `KubeJSPlugin` / `BindingRegistry` | 2001 `KubeJSPlugin` class / `BindingsEvent` |
+| Script recipe edits (MNX-076) | `beforeRecipeLoading(RecipesKubeEvent…)`, `KubeRecipe` (with `sourceLine`) | `injectRuntimeRecipes(RecipesEventJS…)`, called after scripts, `RecipeJS` (no script line: created recipes have no source) |
+| File tags (MNX-076) | a fresh `TagLoader.loadAndBuild` | `ScriptSources.load` mirrors Forge's `TagLoader.load` then calls `build`: KubeJS 2001 hooks `load` and resets its shared tag context even for a loader of its own |
 
 ## Mod formats (shipped process templates and recipe formats)
 
@@ -43,8 +45,13 @@ Their recipe format files stay (they only name recipe types, harmless when absen
 - `./gradlew runGameTestServer`: 18/18 GameTests green with the dev pack (JEI, Jade, Mekanism, Create, IE, AE2,
   GuideME, Create Crafts & Additions, Create Metallurgy).
 - `./gradlew runClient`: boots to the title screen with the dev pack.
+- `./gradlew runGameTestServer -Pkubejs` (MNX-076/077, big dev pack): the KubeJS bindings and `scriptDecisionsAreRead`
+  pass (Thermal tin ingot and nickel dust decided, placed on the fixture lines). `full_preview_on_the_dev_pack_is_fast`
+  fails with or without KubeJS (about 10 s, limit 5 s): it predates MNX-076 (no decision, no extra preview work) and comes
+  with the big dev pack, to look at separately. GregTech CEu adds about 18000 item tag entries in memory: counted in the
+  report, never evidence.
 - Not verified at runtime: a message large enough to be split (an apply with many in-game data edits); the Material Nexus screens themselves (no dev world on this branch yet), EMI
-  (`-Pemi`), KubeJS (`-Pkubejs`), Almost Unified (`-Pau`).
+  (`-Pemi`), Almost Unified (`-Pau`).
 
 ## Carrying a main ticket over
 

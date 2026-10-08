@@ -19,9 +19,9 @@ import static org.junit.jupiter.api.Assertions.*;
 class ScriptDecisionsTest {
     private static ResourceLocation id(String s) { return ResourceLocation.parse(s); }
 
-    private static final ResourceLocation INGOTS = id("c:ingots/tin");
-    private static final ResourceLocation NUGGETS = id("c:nuggets/tin");
-    private static final ResourceLocation DUSTS = id("c:dusts/tin");
+    private static final ResourceLocation INGOTS = id("forge:ingots/tin");
+    private static final ResourceLocation NUGGETS = id("forge:nuggets/tin");
+    private static final ResourceLocation DUSTS = id("forge:dusts/tin");
     private static final ResourceLocation A_INGOT = id("moda:tin_ingot");
     private static final ResourceLocation B_INGOT = id("modb:tin_ingot");
     private static final ResourceLocation C_INGOT = id("modc:tin_ingot");
