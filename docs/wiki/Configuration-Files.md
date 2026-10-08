@@ -33,7 +33,9 @@ config/materialnexus/
       "enforce_ratio": true
     }
   },
-  "almost_unified": { "tags": "mnx", "output_rewrite": "au", "recipe_disable": "au", "viewer_hiding": "au" }
+  "almost_unified": { "tags": "mnx", "output_rewrite": "au", "recipe_disable": "au", "viewer_hiding": "au" },
+  "add_missing_tags": true,
+  "tag_edits": { "tin/ingot": { "add": ["modx:tin_bar"], "remove": ["mody:tin_ingot"] } }
 }
 ```
 
@@ -45,6 +47,8 @@ config/materialnexus/
 | `exclude` | `material` or `material/form` never unified |
 | `processes` | process rules per form ([Process Rules](Process-Rules)) |
 | `almost_unified` | which domains Material Nexus handles when Almost Unified is installed ([Compatibility](Compatibility#almost-unified)) |
+| `add_missing_tags` | items known as a form by name pattern or alias get its convention tag on Apply, where the pack uses that tag ([FAQ](FAQ)) |
+| `tag_edits` | items put in (`add`) or taken out of (`remove`) a form's convention tag, per `material/form` ([The Screen](The-Screen)) |
 
 Every field is optional.
 

@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Forms removable as data: `"remove_folders": ["sheetmetals"]` in a forms file (`material_nexus/forms`) stops reading a convention tag folder, built-in ones included.
+
 - `/materials report` has a Tags section: items missing their tag (what "Add missing tags" adds), recipes asking for a material tag with no item, recipes still using `forge:` tags.
 
 - Tag edits: Shift + right click an item of a form to take it out of that form's tag (`c:ingots/tin`), or add an item by id in the Data view; written on Apply, listed in Preview, undone the same way.
