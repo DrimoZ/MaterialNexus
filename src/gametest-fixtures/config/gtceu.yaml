@@ -1,0 +1,3 @@
+recipes:
+  # GameTest fixture: the recipe tests expect crafting-table ingot/block recipes, which GregTech removes by default.
+  disableManualCompression: false

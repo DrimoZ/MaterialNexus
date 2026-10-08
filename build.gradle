@@ -127,6 +127,55 @@ dependencies {
         modRuntimeOnly "maven.modrinth:guideme:${guideme_version}"
         modRuntimeOnly "maven.modrinth:createaddition:${createaddition_version}"
         modRuntimeOnly "maven.modrinth:create-metallurgy:${create_metallurgy_version}"
+
+        // A big-pack layer: metal-heavy mods with overlapping copper/tin/lead/silver/nickel/aluminum/steel providers,
+        // their own recipe types and tag habits. Modrinth version ids (version number in the comment); libraries last.
+        [
+            'mekanism-generators'         : 'Th4Czz4N', // 10.4.16.80
+            'mekanism-tools'              : 'VzpFbUpF', // 10.4.16.80
+            'immersivepetroleum'          : 'iOSlao7R', // 4.3.0-36b
+            'extreme-reactors'            : '5A5jbWkI', // 1.20.1-2.0.84
+            'silent-gear'                 : '2Chvw4VA', // 3.6.7
+            'occultism'                   : 'hs5pHmiU', // 1.20.1-1.158.0
+            'gregtechceu-modern'          : 'yLwvjuvy', // 7.5.3
+            'powah'                       : 'xDOvxyqP', // 5.0.11
+            'industrial-foregoing'        : '5XXYqEMK', // 1.20.1-3.5.22
+            'enderio'                     : 'nJnmg29v', // 6.2.18-beta
+            'botania'                     : 'npY4sRWF', // 1.20.1-456
+            'create-new-age'              : '7vnwbouk', // 1.2.0
+            'create-big-cannons'          : 'ZRgu5o3x', // 5.11.4
+            'create-tfmg'                 : 'ZNOx0jhg', // 1.0.2f
+            'ad-astra'                    : '8EwzHQkx', // 1.15.21
+            'tinkers-construct'           : 'Fv0zTUuh', // 3.12.1.231
+            'thermal-foundation'          : '44ilyZbi', // 11.0.6
+            'embers'                      : 'QNWjEwxw', // 1.20.1-1.4.7
+            'applied-mekanistics'         : '9n9p68Qq', // 1.4.3
+            'pneumaticcraft-repressurized': 'ohRZqkHb', // 6.0.23
+            'electrodynamics'             : 'QyRCuKfr', // 1.20.1-1.0.14
+            'nuclearcraft-neoteric'       : 'kefJECnt', // 1.2.36
+            'mystical-agriculture'        : 'EEilTecF', // 7.0.24
+            'railcraft-reborn'            : 'wNOUeJHM', // 1.1.11
+            // Libraries
+            'zerocore'                    : 'OIzaNrPI', // 1.20.1-2.1.45
+            'silent-lib'                  : 'WGt4877n', // 8.0.0
+            'geckolib'                    : 'aC5KMoNg', // 4.8.4
+            'modonomicon'                 : 'J0YtwRxM', // 1.20.1-1.79.3
+            'curios'                      : 'IPQlZkz1', // 5.14.1
+            'smartbrainlib'               : 'YkeJNm33', // 1.15
+            'ldlib'                       : 'YSOP0G6O', // 1.0.52.a
+            'architectury-api'            : architectury_version,
+            'cloth-config'                : 't8TXrZvZ', // 11.1.136
+            'titanium'                    : 'LMqbm4db', // 1.20.1-3.8.35
+            'patchouli'                   : '94dtOLgZ', // 1.20.1-85
+            'rpl'                         : 'PdGBsNte', // 2.1.1
+            'resourceful-lib'             : 'OhsHaCcW', // 2.1.29
+            'resourceful-config'          : 'DERs8u7v', // 2.1.3
+            'botarium'                    : 'O7D6FTfW', // 2.3.4
+            'mantle'                      : '37ccXi7G', // 1.11.117
+            'cofh-core'                   : 'kglS53Hd', // 11.0.2
+            'voltaic'                     : 'gYoxJKWw', // 1.20.1-1.0.13
+            'cucumber'                    : 'xnLznSfT', // 7.0.16
+        ].each { slug, version -> modRuntimeOnly "maven.modrinth:${slug}:${version}" }
     }
 
     testImplementation platform("org.junit:junit-bom:5.10.2")
