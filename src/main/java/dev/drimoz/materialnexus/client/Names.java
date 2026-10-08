@@ -23,6 +23,11 @@ final class Names {
         return BuiltInRegistries.ITEM.getOptional(item).map(ItemStack::new).orElse(ItemStack.EMPTY);
     }
 
+    /** "Tin Ingot (Mekanism)": duplicates usually share their display name (MNX-076). */
+    static Component withMod(ResourceLocation item) {
+        return Component.empty().append(stack(item).getHoverName()).append(" (" + NexusScreen.modName(item.getNamespace()) + ")");
+    }
+
     static String lowerName(Enum<?> value) {
         return value.name().toLowerCase(Locale.ROOT);
     }

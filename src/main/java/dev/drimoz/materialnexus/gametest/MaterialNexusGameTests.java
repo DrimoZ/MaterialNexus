@@ -69,6 +69,27 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /**
+     * MNX-076: the fixture script materialnexus_unify.js replaces Mekanism's tin ingot by MI's in recipes and removes
+     * Mekanism's tin dust from its tag; both decisions are read back (run with -Pkubejs, skipped otherwise).
+     */
+    @GameTest(template = "empty")
+    public static void scriptDecisionsAreRead(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("kubejs") || !ModList.get().isLoaded("mekanism") || !ModList.get().isLoaded("modern_industrialization")) {
+            helper.succeed();
+            return;
+        }
+        var kept = new java.util.HashMap<String, java.util.Optional<ResourceLocation>>();
+        SnapshotManager.current().scriptDecisions().forEach(d -> kept.put(d.key().toString(), d.kept()));
+        helper.assertTrue(kept.getOrDefault("tin/ingot", java.util.Optional.empty())
+                        .equals(java.util.Optional.of(ResourceLocation.fromNamespaceAndPath("modern_industrialization", "tin_ingot"))),
+                "the script's replaceOutput should decide tin/ingot for MI, got " + kept);
+        helper.assertTrue(kept.getOrDefault("tin/dust", java.util.Optional.empty())
+                        .equals(java.util.Optional.of(ResourceLocation.fromNamespaceAndPath("modern_industrialization", "tin_dust"))),
+                "the script's tag removal should decide tin/dust for MI, got " + kept);
+        helper.succeed();
+    }
+
     /** MNX-019: the five shipped presets are loaded with the data. */
     @GameTest(template = "empty")
     public static void shippedPresetsAreLoaded(GameTestHelper helper) {

@@ -47,12 +47,14 @@ final class PolicyHandler {
         List<PolicyEditor.Entry> entries = PolicyEditor.preview(SnapshotManager.current(), request.changes(), savedChoices());
         List<PackContent.Effect> proposed;
         List<PackContent.Effect> current;
+        List<PackContent.Effect> conflicts;
         List<CreatedItems.Entry> creations = creations(request);
         try {
             ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies(), preset).withExplicit(explicitChoices(entries)).withoutExplicit(resets(entries))
                     .withProcesses(processes(request));
             current = PackContent.readManifest(MnxPaths.generated());
             proposed = packContent(player.server, policy, current).effects();
+            conflicts = scriptConflicts(SnapshotManager.current(), policy);
         } catch (IOException | RuntimeException e) {
             LOGGER.error("Material Nexus preview failed", e);
             player.sendSystemMessage(Component.translatable("message.materialnexus.apply_failed", e.getMessage()));
@@ -66,7 +68,10 @@ final class PolicyHandler {
 
         var data = dataEdits(player, request, added, !request.apply());
         if (!request.apply()) {
-            PacketDistributor.sendToPlayer(player, new PreviewPayload(entries, added, removed, request.preset().filter(id -> preset.isPresent() && request.globalPatch().isEmpty())));
+            // MNX-076: warnings only, never written nor counted as something to apply.
+            List<PackContent.Effect> shown = new java.util.ArrayList<>(added);
+            shown.addAll(conflicts);
+            PacketDistributor.sendToPlayer(player, new PreviewPayload(entries, shown, removed, request.preset().filter(id -> preset.isPresent() && request.globalPatch().isEmpty())));
             return;
         }
         if (!valid && preset.isEmpty() && request.processes().isEmpty() && creations.isEmpty() && data.isEmpty() && added.isEmpty() && removed.isEmpty()) return;
@@ -85,6 +90,23 @@ final class PolicyHandler {
                 creations.isEmpty() ? Component.translatable("message.materialnexus.applied", added.size() + removed.size())
                         : Component.translatable("message.materialnexus.applied_restart", added.size() + removed.size()),
                 !data.isEmpty());
+    }
+
+    /**
+     * MNX-076: forms where, with this policy, Material Nexus would unify around another item than the one scripts keep
+     * (ADR-022). Scripts would then rewrite back what Apply rewrites: the two would fight.
+     */
+    private static List<PackContent.Effect> scriptConflicts(dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot snapshot, ResolutionPolicy policy) {
+        if (snapshot.scriptDecisions().isEmpty()) return List.of();
+        var resolved = CanonicalResolver.resolve(snapshot.discovered(), policy);
+        List<PackContent.Effect> conflicts = new java.util.ArrayList<>();
+        for (var decision : snapshot.scriptDecisions()) {
+            if (decision.kept().isEmpty()) continue;
+            java.util.Optional.ofNullable(resolved.get(decision.key().material())).map(m -> m.forms().get(decision.key().form()))
+                    .filter(f -> f.canonical().isPresent() && !f.alternatives().isEmpty() && !f.canonical().equals(decision.kept()))
+                    .ifPresent(f -> conflicts.add(new PackContent.Effect(PackContent.SCRIPT_CONFLICT, decision.kept().get(), f.canonical().get())));
+        }
+        return conflicts;
     }
 
     /** Effect kinds listed in Preview for data edits (MNX-046); they are files of the edits pack, not generated content. */

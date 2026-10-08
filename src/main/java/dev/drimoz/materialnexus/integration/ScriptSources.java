@@ -1,0 +1,77 @@
+package dev.drimoz.materialnexus.integration;
+
+import com.mojang.logging.LogUtils;
+import dev.drimoz.materialnexus.MaterialNexus;
+import dev.drimoz.materialnexus.core.scripts.ScriptChanges;
+import net.minecraft.core.registries.BuiltInRegistries;
+import net.minecraft.core.registries.Registries;
+import net.minecraft.resources.ResourceLocation;
+import net.minecraft.server.packs.resources.ResourceManager;
+import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
+import net.minecraft.tags.TagLoader;
+import net.minecraft.util.profiling.ProfilerFiller;
+import net.neoforged.bus.api.SubscribeEvent;
+import net.neoforged.fml.common.EventBusSubscriber;
+import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import org.slf4j.Logger;
+
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Supplier;
+
+/**
+ * Where scripts' changes are read from at each data load (MNX-076, docs/20), with no script mod class: the item tags as
+ * the data files define them (a fresh vanilla TagLoader, which fires no KubeJS tag event), and the recipe edits the
+ * KubeJS plugin hands over. Both are taken once by discovery, after the reload.
+ */
+@EventBusSubscriber(modid = MaterialNexus.MOD_ID)
+public final class ScriptSources extends SimplePreparableReloadListener<Map<ResourceLocation, Collection<ResourceLocation>>> {
+    private static final Logger LOGGER = LogUtils.getLogger();
+    private static volatile Map<ResourceLocation, Collection<ResourceLocation>> fileTags = Map.of();
+    private static volatile Supplier<List<ScriptChanges.RecipeEdit>> recipes;
+
+    private ScriptSources() { }
+
+    @SubscribeEvent
+    public static void register(AddReloadListenerEvent event) {
+        event.addListener(new ScriptSources());
+    }
+
+    @Override
+    protected Map<ResourceLocation, Collection<ResourceLocation>> prepare(ResourceManager resources, ProfilerFiller profiler) {
+        // ponytail: reads every item tag file a second time per reload (tens of ms); only on reload, never per tick.
+        return new TagLoader<ResourceLocation>(id -> BuiltInRegistries.ITEM.containsKey(id) ? Optional.of(id) : Optional.empty(),
+                Registries.tagsDirPath(Registries.ITEM)).loadAndBuild(resources);
+    }
+
+    @Override
+    protected void apply(Map<ResourceLocation, Collection<ResourceLocation>> tags, ResourceManager resources, ProfilerFiller profiler) {
+        fileTags = Map.copyOf(tags);
+    }
+
+    /** Item tags as the data files of the last load define them, before any script. */
+    public static Map<ResourceLocation, Collection<ResourceLocation>> fileTags() {
+        return fileTags;
+    }
+
+    /** Called by the KubeJS plugin before scripts edit recipes; read after the reload. */
+    public static void recipes(Supplier<List<ScriptChanges.RecipeEdit>> edits) {
+        recipes = edits;
+    }
+
+    /** The recipe edits of the last load, once (nothing kept after); empty without KubeJS or if its fields changed. */
+    public static List<ScriptChanges.RecipeEdit> takeRecipes() {
+        Supplier<List<ScriptChanges.RecipeEdit>> edits = recipes;
+        recipes = null;
+        if (edits == null) return List.of();
+        try {
+            return edits.get();
+        } catch (RuntimeException | LinkageError e) {
+            // ADR-022: KubeJS's fields are public but not a stable API; tag edits still work without them.
+            LOGGER.warn("Material Nexus could not read the recipe edits of KubeJS scripts; only tag edits are used", e);
+            return List.of();
+        }
+    }
+}

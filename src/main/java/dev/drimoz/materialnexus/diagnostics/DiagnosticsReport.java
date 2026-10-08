@@ -63,7 +63,42 @@ public final class DiagnosticsReport {
                     .append(String.join(", ", c.materials())).append(" |\n"));
             out.append('\n');
         }
+        scripts(out, snapshot);
         return out.toString();
+    }
+
+    /** MNX-076: what scripts decide, what they changed in tags, and the recipes they created (docs/20). */
+    private static void scripts(StringBuilder out, ResolvedSnapshot snapshot) {
+        var changes = snapshot.scripts();
+        if (snapshot.scriptDecisions().isEmpty() && changes.tags().isEmpty() && changes.recipes().isEmpty()) return;
+        out.append("## Script changes\n\n")
+                .append("Read at the last data load (tag entries changed in memory; with KubeJS, recipes changed, removed or created). ")
+                .append("A decision is a proposal: keep it in the Scripts view, apply, then the script lines can go.\n\n");
+        if (!snapshot.scriptDecisions().isEmpty()) {
+            out.append("| Form | Scripts keep | Material Nexus keeps | Status | Evidence |\n|---|---|---|---|---|\n");
+            for (var d : snapshot.scriptDecisions()) {
+                var current = snapshot.form(d.key());
+                out.append("| ").append(d.key())
+                        .append(" | ").append(d.kept().map(ResourceLocation::toString).orElse("-"))
+                        .append(" | ").append(current.flatMap(ResolvedForm::canonical).map(ResourceLocation::toString).orElse("-"))
+                        .append(" | ").append(dev.drimoz.materialnexus.core.scripts.ScriptDecisions.status(d, current).name().toLowerCase())
+                        .append(" | ").append(d.evidence().stream().map(e -> e.kind() + " " + e.where() + ": " + e.from() + e.to().map(t -> " -> " + t).orElse(""))
+                                .collect(Collectors.joining("; ")))
+                        .append(" |\n");
+            }
+            out.append('\n');
+        }
+        if (!changes.tags().isEmpty()) {
+            out.append("Tag entries changed in memory: ").append(changes.tags().stream()
+                    .map(t -> (t.added() ? "+" : "-") + t.item() + " in #" + t.tag()).collect(Collectors.joining(", "))).append("\n\n");
+        }
+        var added = changes.addedBySource();
+        if (!added.isEmpty()) {
+            out.append("Recipes created by scripts (not unification; they stay in the scripts):\n\n");
+            added.forEach((source, ids) -> out.append("- `").append(source).append("`: ")
+                    .append(ids.stream().map(ResourceLocation::toString).collect(Collectors.joining(", "))).append('\n'));
+            out.append('\n');
+        }
     }
 
     private static String args(ResolvedForm f) {

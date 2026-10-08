@@ -41,3 +41,4 @@
 | MNX-044 | P2 | Preview performance | Timing GameTest on the dev pack (worst case < 2 s, fails above 5 s) |
 | MNX-045 | P2 | Relations as data | Missing-recipe relations added/removed in material_nexus/forms |
 | MNX-020 | P3 | KubeJS bridge | Optional scripting API, no dependency |
+| MNX-076 | P1 | Decisions found in scripts | Tag edits in memory and KubeJS recipe edits read at load; the item scripts keep per form proposed as a choice; Preview warns on opposite choices (docs/20, ADR-022) |

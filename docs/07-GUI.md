@@ -35,7 +35,12 @@ Diff-like list:
 - tag changes;
 - canonical changes;
 - viewer changes;
-- Almost Unified overlaps.
+- Almost Unified overlaps;
+- forms where Material Nexus would keep another item than the scripts (warning, never written; MNX-076).
+
+### Scripts (MNX-076)
+
+Shown in the navigation rail only when scripts made unification decisions (docs/20). One row per material/form: the item scripts keep, what Material Nexus keeps, the status (recorded / same / differs / undecided) and the evidence (recipe changed, tag entry removed, recipe removed). "Keep" makes the scripts' item a pending choice; "Keep all" does it for every `same` and `differs` row. The Home view links to it with the count. Read-only servers see it without buttons.
 
 Apply writes the policy, regenerates the pack and reloads. "Revert last apply" restores the previous policy. Nothing destructive is applied from a single accidental click.
 

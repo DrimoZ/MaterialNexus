@@ -42,6 +42,8 @@ public final class PackContent {
     public static final String RECIPE_INVALID = "recipe_invalid";
     /** Informational: a domain left to Almost Unified ({@code target} = materialnexus:&lt;domain&gt;). Generates no file. */
     public static final String ALMOST_UNIFIED = "almost_unified";
+    /** Preview only, never written (MNX-076): target, the item scripts keep; item, the one Material Nexus would keep. */
+    public static final String SCRIPT_CONFLICT = "script_conflict";
     private static final ResourceLocation AU_ID = ResourceLocation.fromNamespaceAndPath(AlmostUnified.MOD_ID, "owner");
 
     /** One generated change; for both conversions, {@code target} is the canonical item. */

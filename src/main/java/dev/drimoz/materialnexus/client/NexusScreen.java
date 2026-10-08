@@ -35,7 +35,7 @@ import java.util.Optional;
  * choices stay pending on the client until Preview / Apply.
  */
 public final class NexusScreen extends Screen {
-    private enum View { HOME, MATERIALS, FORMS, TRIAGE, PRESETS, DATA }
+    private enum View { HOME, MATERIALS, FORMS, TRIAGE, PRESETS, DATA, SCRIPTS }
     private enum Tab { FORMS, RECIPES, MISSING, PROCESS }
 
     private static final int TOP = 24;
@@ -51,6 +51,8 @@ public final class NexusScreen extends Screen {
     private final ProcessPanel process;
     private final FormMatrix matrix;
     private final TriagePanel triage;
+    private final ScriptsPanel scripts;
+    private boolean scriptsRequested;
     private boolean triageOnMatrix;
     private final Ui.Hits hits = new Ui.Hits();
 
@@ -86,6 +88,7 @@ public final class NexusScreen extends Screen {
         this.process = new ProcessPanel(readOnly, this::rebuildWidgets);
         this.matrix = new FormMatrix(this::openMaterial, this::openForm);
         this.triage = new TriagePanel(() -> go(View.HOME));
+        this.scripts = new ScriptsPanel(readOnly);
     }
 
     boolean readOnly() { return readOnly; }
@@ -162,6 +165,7 @@ public final class NexusScreen extends Screen {
             case "triage" -> { PendingChanges.clear(); startTriage(); }
             case "presets" -> go(View.PRESETS);
             case "data" -> go(View.DATA);
+            case "scripts" -> go(View.SCRIPTS);
             case "pending" -> { PendingChanges.set("copper", "ingot", dev.drimoz.materialnexus.datapack.CanonicalChange.RESET); togglePending(); }
             case "priority" -> { if (totals != null) savePriority(new java.util.ArrayList<>(totals.mods().subList(0, Math.min(3, totals.mods().size())))); }
             default -> go(View.HOME);
@@ -212,6 +216,10 @@ public final class NexusScreen extends Screen {
 
     void acceptDataRead(dev.drimoz.materialnexus.network.DataReadPayload payload) {
         data.acceptRead(payload);
+    }
+
+    void acceptScripts(dev.drimoz.materialnexus.network.ScriptsPayload payload) {
+        scripts.accept(payload);
     }
 
     void acceptMatrix(MatrixPayload payload) {
@@ -285,6 +293,10 @@ public final class NexusScreen extends Screen {
     protected void init() {
         fitScale();
         if (totals == null) requestList();
+        if (!scriptsRequested) {
+            scriptsRequested = true;
+            PacketDistributor.sendToServer(dev.drimoz.materialnexus.network.ScriptsRequest.INSTANCE);
+        }
         EditBox search = new EditBox(font, width - 136, 4, 130, 16, Component.translatable("screen.materialnexus.search"));
         search.setMaxLength(NexusQueries.MAX_QUERY);
         search.setHint(Component.translatable("screen.materialnexus.search_everywhere"));
@@ -305,7 +317,7 @@ public final class NexusScreen extends Screen {
             case HOME -> initHome();
             case MATERIALS -> initMaterials();
             case FORMS -> initForms();
-            case TRIAGE, PRESETS -> { }
+            case TRIAGE, PRESETS, SCRIPTS -> { }
             case DATA -> data.init(widget -> addRenderableWidget(widget), font, contentX, contentY, contentW, contentH);
         }
         layoutDrawer();
@@ -381,6 +393,7 @@ public final class NexusScreen extends Screen {
             case TRIAGE -> triage.render(g, font, contentX + 16, contentY + 12, contentW - 32, contentH - 20, mx, my);
             case DATA -> data.render(g, font, mx, my);
             case PRESETS -> presets.render(g, font, contentX + 12, contentY + 10, contentW - 24, contentH - 20, mx, my);
+            case SCRIPTS -> scripts.render(g, font, contentX + 12, contentY + 10, contentW - 24, contentH - 20, mx, my);
         }
         renderBottom(g, mx, my);
         for (var widget : renderables) widget.render(g, mx, my, partialTick);
@@ -415,6 +428,8 @@ public final class NexusScreen extends Screen {
         y = navItem(g, mx, my, y, "home", view == View.HOME, () -> go(View.HOME));
         y = navItem(g, mx, my, y, "materials", view == View.MATERIALS, () -> go(View.MATERIALS));
         y = navItem(g, mx, my, y, "forms", view == View.FORMS, () -> { form = null; go(View.FORMS); });
+        // MNX-076: only when scripts decide something; read-only servers see it too.
+        if (!scripts.isEmpty()) y = navItem(g, mx, my, y, "scripts", view == View.SCRIPTS, () -> go(View.SCRIPTS));
         if (readOnly) return;
         y = navItem(g, mx, my, y, "data", view == View.DATA, () -> go(View.DATA));
         navItem(g, mx, my, y, "presets", view == View.PRESETS, () -> go(View.PRESETS));
@@ -489,6 +504,16 @@ public final class NexusScreen extends Screen {
         int ty = contentY + 164;
         boolean wide = contentW > 640;
         int tipWidth = wide ? 370 : contentW - 24;
+        if (scripts.decided() > 0) {
+            // MNX-076: a pack that unified with scripts sees it first, before anything is applied.
+            var lines = font.split(Component.translatable("screen.materialnexus.home.scripts", scripts.decided(), scripts.differing()), tipWidth);
+            int h = lines.size() * 11;
+            boolean over = mx >= x && mx < x + tipWidth && my >= ty - 2 && my < ty + h;
+            g.fill(x - 4, ty - 2, x - 2, ty + h - 2, scripts.differing() > 0 ? Ui.WARNING : Ui.SUCCESS);
+            for (int i = 0; i < lines.size(); i++) g.drawString(font, lines.get(i), x, ty + i * 11, over ? Ui.TEXT : 0x88AAFF, false);
+            hits.add(x, ty - 2, tipWidth, h, () -> go(View.SCRIPTS), null, List.of());
+            ty += h + 5;
+        }
         for (String key : List.of("home.tip1", "home.tip2", "home.tip3")) {
             for (var line : font.split(Component.translatable("screen.materialnexus." + key), tipWidth)) {
                 g.drawString(font, line, x, ty, Ui.MUTED, false);
@@ -799,6 +824,7 @@ public final class NexusScreen extends Screen {
         if (my < TOP || my > height - BOTTOM || mx < contentX) return false;
         if (view == View.TRIAGE) return triage.click(mx, my, button);
         if (view == View.PRESETS && presets.click(mx, my, button)) return true;
+        if (view == View.SCRIPTS) return scripts.click(mx, my, button);
         if (view == View.DATA) return data.click(mx, my, button);
         if (view == View.FORMS && form == null) return matrix.click(mx, my, button);
         if (detail == null) return false;
@@ -816,6 +842,10 @@ public final class NexusScreen extends Screen {
             return true;
         }
         if (view == View.DATA && data.scroll(mx, my, scrollY)) return true;
+        if (view == View.SCRIPTS && mx >= contentX) {
+            scripts.scroll(scrollY);
+            return true;
+        }
         if (view == View.FORMS && form == null && mx >= contentX) {
             matrix.scroll(scrollY);
             return true;

@@ -33,6 +33,17 @@ public final class RecipeSources {
 
     private RecipeSources() { }
 
+    /** Every quoted namespaced id in a recipe's JSON text (MNX-076: what a script edit took out or put in). */
+    public static Set<ResourceLocation> ids(String text) {
+        Set<ResourceLocation> ids = new HashSet<>();
+        var m = QUOTED_ID.matcher(text);
+        while (m.find()) {
+            ResourceLocation id = ResourceLocation.tryParse(m.group(1));
+            if (id != null) ids.add(id);
+        }
+        return ids;
+    }
+
     /** One pass over the text instead of one search per alternative (MNX-044: 178 alternatives × 13k recipes). */
     private static boolean mentions(String text, Set<ResourceLocation> ids) {
         var m = QUOTED_ID.matcher(text);

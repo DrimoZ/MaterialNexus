@@ -30,6 +30,7 @@ public final class MnxNetwork {
         registrar.playToClient(DataReadPayload.TYPE, DataReadPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onDataRead(p));
         registrar.playToClient(MatrixPayload.TYPE, MatrixPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onMatrix(p));
         registrar.playToClient(SuggestionsPayload.TYPE, SuggestionsPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onSuggestions(p));
+        registrar.playToClient(ScriptsPayload.TYPE, ScriptsPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.onScripts(p));
 
         registrar.playToServer(MaterialListRequest.TYPE, MaterialListRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
@@ -111,6 +112,10 @@ public final class MnxNetwork {
             ServerPlayer player = authorized(ctx);
             if (player != null) PacketDistributor.sendToPlayer(player, req.saved() ? SuggestionsPayload.saved(PolicyHandler.savedChoices())
                     : SuggestionsPayload.of(SnapshotManager.current()));
+        });
+        registrar.playToServer(ScriptsRequest.TYPE, ScriptsRequest.STREAM_CODEC, (req, ctx) -> {
+            ServerPlayer player = authorized(ctx);
+            if (player != null) PacketDistributor.sendToPlayer(player, ScriptsPayload.of(SnapshotManager.current()));
         });
     }
 
