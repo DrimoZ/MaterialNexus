@@ -27,6 +27,9 @@ you have read the preview and pressed Apply.
 - **Fills the gaps, on request.** A process rule says how a form is made for every material (an
   ingot gives two rods in the metal press) and writes the missing machine recipes by copying one the
   pack already has. A form a material lacks (a netherite rod) can be created as a new item.
+- **Fixes tags, on request.** An item a mod forgot to tag gets its convention tag, and any item can
+  be put in or taken out of a form's tag (Shift + right click), so recipes asking for the tag accept
+  the right items.
 - **Undoes anything**: discard pending changes one by one, put saved choices back to default,
   revert the last apply, or restore any of the last 20 applied states.
 

@@ -79,6 +79,8 @@ you. Nothing changes until you have seen the preview and pressed Apply.
   recipes that make or use them are rewritten to the kept item (a rewrite that duplicates another
   recipe is disabled instead), and items already in the world become the kept one when the game
   touches them (dropped, in an opened container, at login). Nothing scans the world.
+- **Tags fixed on request**: an item a mod forgot to tag gets its convention tag, and any item can be
+  put in or taken out of a form's tag, so recipes asking for the tag accept the right items.
 - **Recipes it cannot rewrite are named**, never guessed: add a one-file recipe format and they are.
 - **Recipes of many mods** are rewritten from data: Create and its addons, Mekanism, Immersive
   Engineering, Modern Industrialization, Oritech, Occultism, Silent Gear and more.
