@@ -46,6 +46,7 @@ Their recipe format files stay (they only name recipe types, harmless when absen
 - `./gradlew build`: compiles, 32 JUnit tests green (MNX-081); `build/libs/materialnexus-0.1.0+1.20.1.jar` is reobfuscated to SRG.
 - `./gradlew runGameTestServer`: 18/18 GameTests green with the dev pack (JEI, Jade, Mekanism, Create, IE, AE2,
   GuideME, Create Crafts & Additions, Create Metallurgy).
+- After MNX-081, with the big dev pack: 18/19 GameTests green; `full_preview_on_the_dev_pack_is_fast` still fails (6.7 s, limit 5 s), as noted below.
 - `./gradlew runClient`: boots to the title screen with the dev pack.
 - `./gradlew runGameTestServer -Pkubejs` (MNX-076/077, big dev pack): the KubeJS bindings and `scriptDecisionsAreRead`
   pass (Thermal tin ingot and nickel dust decided, placed on the fixture lines). `full_preview_on_the_dev_pack_is_fast`
