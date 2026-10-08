@@ -28,8 +28,8 @@ import java.util.TreeMap;
 /**
  * Forms as data (MNX-040/041), from {@code data/<namespace>/material_nexus/forms/*.json}:
  * {@code {"folders": {"wires": "wire"}, "patterns": {"double_ingot": ["modern_industrialization:{material}_double_ingot"]},
- * "relations": [{"from": "tiny_dust", "to": "dust"}], "remove_relations": [...]}}.
- * Folders add convention tag folders to the built-in ones; patterns find forms mods leave untagged; relations add or
+ * "relations": [{"from": "tiny_dust", "to": "dust"}], "remove_relations": [...], "remove_folders": ["sheetmetals"]}}.
+ * Folders add convention tag folders to the built-in ones (remove_folders drops any, built-in included); patterns find forms mods leave untagged; relations add or
  * remove the conversions checked for missing recipes. Declared data,
  * not a guess: a pattern item only counts when {@code {material}} names a material the tags already know.
  */
@@ -40,7 +40,8 @@ public final class FormPatterns extends SimpleJsonResourceReloadListener {
     private static final Logger LOGGER = LogUtils.getLogger();
     private record FormsFile(Map<String, FormId> folders, Map<FormId, List<String>> patterns,
                              List<dev.drimoz.materialnexus.core.recipe.FamilyRelations.Relation> relations,
-                             List<dev.drimoz.materialnexus.core.recipe.FamilyRelations.Relation> removeRelations) { }
+                             List<dev.drimoz.materialnexus.core.recipe.FamilyRelations.Relation> removeRelations,
+                             List<String> removeFolders) { }
 
     /** {@code {"from": "nugget", "to": "ingot"}}: a recipe should turn one into the other (missing-recipe proposals). */
     private static final Codec<dev.drimoz.materialnexus.core.recipe.FamilyRelations.Relation> RELATION =
@@ -53,7 +54,8 @@ public final class FormPatterns extends SimpleJsonResourceReloadListener {
             Codec.unboundedMap(Codec.STRING, FormId.CODEC).optionalFieldOf("folders", Map.of()).forGetter(FormsFile::folders),
             Codec.unboundedMap(FormId.CODEC, Codec.STRING.listOf()).optionalFieldOf("patterns", Map.of()).forGetter(FormsFile::patterns),
             RELATION.listOf().optionalFieldOf("relations", List.of()).forGetter(FormsFile::relations),
-            RELATION.listOf().optionalFieldOf("remove_relations", List.of()).forGetter(FormsFile::removeRelations)
+            RELATION.listOf().optionalFieldOf("remove_relations", List.of()).forGetter(FormsFile::removeRelations),
+            Codec.STRING.listOf().optionalFieldOf("remove_folders", List.of()).forGetter(FormsFile::removeFolders)
     ).apply(i, FormsFile::new));
     private static volatile Map<FormId, List<String>> patterns = Map.of();
 
@@ -83,7 +85,7 @@ public final class FormPatterns extends SimpleJsonResourceReloadListener {
                 .ifPresent(f -> parsed.put(file, f)));
         Map<String, FormId> folders = new TreeMap<>();
         parsed.values().forEach(f -> folders.putAll(f.folders()));
-        TagDiscovery.setDataFolders(folders);
+        TagDiscovery.setDataFolders(folders, parsed.values().stream().flatMap(f -> f.removeFolders().stream()).toList());
         dev.drimoz.materialnexus.core.recipe.FamilyRelations.setData(
                 parsed.values().stream().flatMap(f -> f.relations().stream()).toList(),
                 parsed.values().stream().flatMap(f -> f.removeRelations().stream()).toList());
