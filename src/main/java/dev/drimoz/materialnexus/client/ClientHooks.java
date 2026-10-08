@@ -49,6 +49,10 @@ public final class ClientHooks {
         if (Minecraft.getInstance().screen instanceof NexusScreen screen) screen.acceptMatrix(payload);
     }
 
+    public static void onScripts(dev.drimoz.materialnexus.network.ScriptsPayload payload) {
+        if (Minecraft.getInstance().screen instanceof NexusScreen screen) screen.acceptScripts(payload);
+    }
+
     public static void onPreview(PreviewPayload payload) {
         Minecraft mc = Minecraft.getInstance();
         if (mc.screen instanceof NexusScreen screen) screen.showPreview(payload);

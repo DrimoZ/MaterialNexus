@@ -115,6 +115,16 @@ The data files Material Nexus works from, editable in game. See
 Ready-made pack-wide settings. Each one shows the settings it sets next to yours. **Use this
 preset** turns them into pending changes. See [Choosing Items](Choosing-Items#presets).
 
+## Scripts
+
+Only there when your scripts already unify something (see
+[Modpacks and Multiplayer](Modpacks-and-Multiplayer#a-pack-that-already-unifies-with-scripts)). One
+row per form: the item your scripts keep, the item Material Nexus keeps, and why (the recipe changed,
+the tag entry removed). **recorded**: your settings already say the same; **same**: Material Nexus
+keeps it too, but only by priority or default; **differs**: it keeps another item; **undecided**: your
+scripts set items aside without keeping one. **Keep** makes the scripts' item a pending choice,
+**Keep all** does it for every *same* and *differs* row.
+
 ## Preview
 
 ![Preview](images/screen_preview.png)

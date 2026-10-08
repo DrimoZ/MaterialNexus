@@ -55,6 +55,12 @@ created by a script has no file to rewrite and is listed as "not handled yet". A
 alternative by item id stops matching once that recipe is rewritten; match by tag, or use
 `MaterialNexus.kept`.
 
+**What your scripts decided is read.** When the game loads, Material Nexus compares the tags your
+data files define with the tags after scripts, and, with KubeJS, reads which recipes the scripts
+replaced, removed or created. It works out which item your scripts keep for each form and offers it
+as a choice, never applies it on its own, and Preview warns when it would keep another item. See
+[Modpacks and Multiplayer](Modpacks-and-Multiplayer#a-pack-that-already-unifies-with-scripts).
+
 ## Recipe formats
 
 Recipes are rewritten for the recipe types a format describes. Shipped formats:

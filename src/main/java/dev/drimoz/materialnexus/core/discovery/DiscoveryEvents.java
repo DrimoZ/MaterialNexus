@@ -7,6 +7,9 @@ import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
 import dev.drimoz.materialnexus.core.resolution.CanonicalResolver;
 import dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot;
 import dev.drimoz.materialnexus.core.resolution.SnapshotManager;
+import dev.drimoz.materialnexus.core.scripts.ScriptChanges;
+import dev.drimoz.materialnexus.core.scripts.ScriptDecisions;
+import dev.drimoz.materialnexus.integration.ScriptSources;
 import dev.drimoz.materialnexus.datapack.MaterialDefinitions;
 import dev.drimoz.materialnexus.datapack.MnxPaths;
 import dev.drimoz.materialnexus.datapack.PackContent;
@@ -45,29 +48,43 @@ public final class DiscoveryEvents {
                             .map(ResourceKey::location)
                             .toList()));
 
+            // MNX-076: what scripts changed in the tags, before both views are completed the same way below.
+            Map<ResourceLocation, List<ResourceLocation>> fileTags = new HashMap<>();
+            ScriptSources.fileTags().forEach((tag, items) -> fileTags.put(tag, new java.util.ArrayList<>(items)));
+            // No file view (listener not run): nothing to compare, rather than every tag entry read as added by a script.
+            ScriptChanges scripts = new ScriptChanges(fileTags.isEmpty() ? List.of() : ScriptChanges.tagEdits(fileTags, tagMembers),
+                    ScriptSources.takeRecipes());
+
             // ADR-010: see the tags as they were before our own removals, or the next apply would undo them.
             List<PackContent.Effect> applied = PackContent.readManifest(MnxPaths.generated()).stream()
                     .filter(e -> BuiltInRegistries.ITEM.containsKey(e.item())).toList();
-            PackContent.restoreRemovedMembers(tagMembers, applied);
-            // MNX-040: forms mods leave untagged (MI double ingots...), from declared item name patterns.
-            dev.drimoz.materialnexus.datapack.FormPatterns.inject(tagMembers, BuiltInRegistries.ITEM.keySet(),
-                    dev.drimoz.materialnexus.datapack.FormPatterns.patterns(),
-                    dev.drimoz.materialnexus.datapack.FormPatterns.knownNames(tagMembers.keySet(), MaterialDefinitions.aliases().keySet()));
-
-            DiscoveredMaterials discovered = TagDiscovery.discover(tagMembers, MaterialDefinitions.aliases());
+            DiscoveredMaterials discovered = discover(tagMembers, applied);
             ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies());
+            // Groups from the file tags: an item a script removed from its tag still belongs to its material/form.
+            var decisions = scripts.equals(ScriptChanges.NONE) ? List.<ScriptDecisions.Decision>of()
+                    : ScriptDecisions.infer(discover(fileTags, applied), scripts);
             ResolvedSnapshot previous = SnapshotManager.current();
             SnapshotManager.swap(new ResolvedSnapshot(previous.generation() + 1, Instant.now(), discovered,
-                    CanonicalResolver.resolve(discovered, policy)));
+                    CanonicalResolver.resolve(discovered, policy), scripts, decisions));
             // In-world conversion follows the applied pack, not the policy files (ADR-015).
             ItemConversions.install(PackContent.itemConversions(applied));
             ItemConversions.setViewerHiding(policy.almostUnified().mnxOwns(dev.drimoz.materialnexus.core.policy.AlmostUnified.Domain.VIEWER_HIDING,
                     net.minecraftforge.fml.ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID)));
-            LOGGER.info("Material Nexus discovered {} materials ({} providers) in {} ms",
-                    discovered.materials().size(), discovered.providerCount(), (System.nanoTime() - start) / 1_000_000);
+            LOGGER.info("Material Nexus discovered {} materials ({} providers) in {} ms; scripts changed {} tag entries and {} recipes, deciding {} forms",
+                    discovered.materials().size(), discovered.providerCount(), (System.nanoTime() - start) / 1_000_000,
+                    scripts.tags().size(), scripts.recipes().size(), decisions.size());
         } catch (IOException | RuntimeException e) {
             // ADR-002: a failed analysis reports and changes nothing.
             LOGGER.error("Material Nexus discovery failed; snapshot left unchanged", e);
         }
+    }
+
+    /** Tags as discovery reads them: our own removals restored (ADR-010), untagged forms injected by name (MNX-040). */
+    private static DiscoveredMaterials discover(Map<ResourceLocation, List<ResourceLocation>> tagMembers, List<PackContent.Effect> applied) {
+        PackContent.restoreRemovedMembers(tagMembers, applied);
+        dev.drimoz.materialnexus.datapack.FormPatterns.inject(tagMembers, BuiltInRegistries.ITEM.keySet(),
+                dev.drimoz.materialnexus.datapack.FormPatterns.patterns(),
+                dev.drimoz.materialnexus.datapack.FormPatterns.knownNames(tagMembers.keySet(), MaterialDefinitions.aliases().keySet()));
+        return TagDiscovery.discover(tagMembers, MaterialDefinitions.aliases());
     }
 }

@@ -40,6 +40,8 @@ final class Describe {
             case "data_reset" -> Component.translatable("screen.materialnexus.effect.data_reset", e.item().getPath(), e.target().toString());
             case "data_invalid" -> Component.translatable("screen.materialnexus.effect.data_invalid", e.item().getPath(), e.target().toString());
             case PackContent.ITEM_CREATE -> Component.translatable("screen.materialnexus.effect.item_create", e.target().toString(), e.item().toString());
+            case PackContent.SCRIPT_CONFLICT -> Component.translatable("screen.materialnexus.effect.script_conflict",
+                    Names.withMod(e.target()), Names.withMod(e.item()));
             case PackContent.ALMOST_UNIFIED -> Component.translatable("screen.materialnexus.effect.almost_unified",
                     Component.translatable("materialnexus.au_domain." + e.target().getPath()));
             default -> Component.translatable("screen.materialnexus.effect.conversion", e.item().toString(), e.target().toString());

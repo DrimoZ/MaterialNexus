@@ -4,6 +4,11 @@
 No. Nothing is unified until you decide and press Apply, after the preview. A fresh install only
 analyses.
 
+**My pack already unifies with KubeJS. Will it undo my scripts?**
+No. It reads what your scripts decided and offers the same choices; Preview warns if it would keep
+another item. Once those choices are applied, the unification lines of your scripts can be deleted
+([Modpacks and Multiplayer](Modpacks-and-Multiplayer#a-pack-that-already-unifies-with-scripts)).
+
 **Is it like Almost Unified?**
 Both unify. Material Nexus is built around a screen and a preview: you see every duplicate, every
 variant set aside and every recipe it would change before anything happens, and you can undo

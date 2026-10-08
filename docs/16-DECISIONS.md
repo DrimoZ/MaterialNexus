@@ -122,6 +122,7 @@ Consequences, made visible rather than hidden:
 - Material Nexus analyzes the final game state (tags after scripts, recipes after scripts) for discovery and for detecting which recipes touch an alternative, so its view matches what players get.
 - It only rewrites recipes that exist as files; a recipe created by a script has no file to override and is listed in Preview as "not handled yet" (fix it in the script, or let in-world conversion handle the items).
 - A script matching an alternative by item id (`replaceOutput('ie:ingot_tin', ...)`) stops matching once that recipe was rewritten to the canonical item; scripts matching by tag are unaffected. Prefer tags in scripts, or unify after scripting.
+- What scripts decided is read and proposed as choices, never applied silently (ADR-022, MNX-076).
 
 **Rejected:** fighting scripts (re-applying after KubeJS, mixins into its events): two tools silently overriding each other is the failure mode this project exists to remove.
 
@@ -162,3 +163,13 @@ Consequences, made visible rather than hidden:
 **Consequences:** this supersedes the "no history" part of ADR-005 for the player's own settings only: nothing about the world, inventories or items is recorded. Data edits (`policies/data`) come back with a restore; created items do not (registry, ADR-019). Copies are small (the policy files only).
 
 **Rejected:** a diff log replayed on demand (fragile against hand edits); unlimited copies.
+
+## ADR-022 - Decisions found in scripts are proposed, never applied
+
+**Decision:** at each data load Material Nexus reads what scripts changed (item tags as the files define them vs the final tags; with KubeJS, the recipes its event removed, changed or added, through the official `beforeRecipeLoading` plugin hook) and deduces, per material/form, which item the scripts keep (docs/20). Those decisions are shown with their evidence (Home, Scripts view, `/materials report`), offered as ordinary pending choices, and Preview warns when Apply would unify around another item. Nothing is applied without the player's choice.
+
+**Why:** a pack that unified by hand before installing Material Nexus must not get the opposite choice by default (two tools fighting, ADR-017); and to delete its scripts the author needs the decision recorded in the policy first.
+
+**Consequences:** read-only, like ADR-017 requires: scripts still have the last word, nothing hooks their events to change them. Groups come from the file tags, so an item scripts removed from a tag is still known. KubeJS fields read are public but not a stable API; a failure skips recipe edits with one warning. Tag edits by other mods in memory read as script edits.
+
+**Rejected:** applying script decisions automatically (a player decision is required, CLAUDE.md); parsing script files (loops and helpers make it unreliable); a mixin recording the calls (fragile, and the plugin hook gives the same result); parsing KubeJS logs.

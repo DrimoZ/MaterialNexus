@@ -19,7 +19,7 @@ import java.util.Map;
 final class PreviewDrawer implements Drawer {
     private static final int LINE = 11;
     /** Effect kinds in reading order; unknown kinds go last under their own name. */
-    private static final List<String> ORDER = List.of("tag_remove", "item_conversion", "conversion_recipe", "recipe_rewrite",
+    private static final List<String> ORDER = List.of("script_conflict", "tag_remove", "item_conversion", "conversion_recipe", "recipe_rewrite",
             "recipe_disable", "process_recipe", "process_disable", "item_create", "data_edit", "data_reset",
             "recipe_unsupported", "process_unsupported", "recipe_invalid", "data_invalid", "almost_unified");
 
@@ -48,7 +48,7 @@ final class PreviewDrawer implements Drawer {
         List<String> kinds = new ArrayList<>(ORDER.stream().filter(byKind::containsKey).toList());
         byKind.keySet().stream().filter(k -> !ORDER.contains(k)).forEach(kinds::add);
         for (String kind : kinds) {
-            int color = kind.endsWith("unsupported") || kind.endsWith("invalid") ? Ui.WARNING : kind.endsWith("disable") ? Ui.DANGER : Ui.SUCCESS;
+            int color = kind.endsWith("unsupported") || kind.endsWith("invalid") || kind.endsWith("conflict") ? Ui.WARNING : kind.endsWith("disable") ? Ui.DANGER : Ui.SUCCESS;
             groups.add(new Group(kind, color, byKind.get(kind)));
         }
         if (!preview.removed().isEmpty()) {
@@ -58,7 +58,9 @@ final class PreviewDrawer implements Drawer {
     }
 
     boolean hasChanges() {
-        return preview.entries().stream().anyMatch(PolicyEditor.Entry::valid) || !preview.added().isEmpty() || !preview.removed().isEmpty()
+        // A script conflict is a warning (MNX-076): alone, it is nothing to apply.
+        return preview.entries().stream().anyMatch(PolicyEditor.Entry::valid)
+                || preview.added().stream().anyMatch(e -> !e.kind().equals(PackContent.SCRIPT_CONFLICT)) || !preview.removed().isEmpty()
                 || PendingChanges.size() > 0;
     }
 
