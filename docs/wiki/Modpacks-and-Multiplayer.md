@@ -41,7 +41,7 @@ Nothing is applied on its own:
    Nexus now does it.
 
 Recipes your scripts create (not unification) stay in your scripts; `/materials report` lists them
-with their file and line. Without KubeJS, tag changes are still read; recipe changes are not.
+with their file and line when KubeJS records it. Without KubeJS, tag changes are still read; recipe changes are not.
 
 ## Updating the pack
 

@@ -89,9 +89,18 @@ public final class DiagnosticsReport {
             }
             out.append('\n');
         }
-        if (!changes.tags().isEmpty()) {
-            out.append("Tag entries changed in memory: ").append(changes.tags().stream()
-                    .map(t -> (t.added() ? "+" : "-") + t.item() + " in #" + t.tag()).collect(Collectors.joining(", "))).append("\n\n");
+        // Removals are evidence and listed; additions are only counted: mods such as GregTech add thousands in memory.
+        var removed = changes.tags().stream().filter(t -> !t.added()).toList();
+        if (!removed.isEmpty()) {
+            out.append("Tag entries removed in memory: ").append(removed.stream()
+                    .map(t -> t.item() + " from #" + t.tag()).collect(Collectors.joining(", "))).append("\n\n");
+        }
+        var addedByMod = changes.tags().stream().filter(dev.drimoz.materialnexus.core.scripts.ScriptChanges.TagEdit::added)
+                .collect(Collectors.groupingBy(t -> t.item().getNamespace(), java.util.TreeMap::new, Collectors.counting()));
+        if (!addedByMod.isEmpty()) {
+            out.append("Tag entries added in memory: ").append(addedByMod.values().stream().mapToLong(Long::longValue).sum()).append(" (items of ")
+                    .append(addedByMod.entrySet().stream().sorted(Map.Entry.<String, Long>comparingByValue().reversed())
+                            .map(e -> e.getKey() + " " + e.getValue()).collect(Collectors.joining(", "))).append(").\n\n");
         }
         var added = changes.addedBySource();
         if (!added.isEmpty()) {
