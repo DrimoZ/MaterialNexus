@@ -153,7 +153,9 @@ Still built in, on purpose: the forms that can be created (they need shipped tex
 
 `/materials report` ends with "Possibly untagged forms": undiscovered items named after a known material, grouped by name shape, to review and declare.
 
-Pattern forms: double_ingot, large_plate, curved_plate, bolt, ring, blade, rotor, drill_head, fine_wire (Modern Industrialization shipped, plus its untagged wires); Remin ores and Oritech small dusts are shipped too. An item matches only if `{material}` names a material some convention tag already knows; the match is shown as "item name pattern" evidence and never added to the game's tags.
+Then **Tags** (MNX-080): items known as a form but missing its tag (what `add_missing_tags` adds), recipes asking for a `forge:<folder>/<material>` tag with no item, and recipes asking for `c:` tags (usually empty on Forge 1.20.1 unless a mod fills them). Read from the recipe files, so recipes made in memory by scripts are not covered.
+
+Pattern forms: double_ingot, large_plate, curved_plate, bolt, ring, blade, rotor, drill_head, fine_wire (Modern Industrialization shipped, plus its untagged wires); Remin ores and Oritech small dusts are shipped too. An item matches only if `{material}` names a material some convention tag already knows; the match is shown as "item name pattern" evidence and added to the game's tags only with `add_missing_tags` (ADR-023).
 
 ## Process templates (MNX-037)
 

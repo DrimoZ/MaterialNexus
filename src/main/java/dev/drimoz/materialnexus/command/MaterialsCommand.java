@@ -33,14 +33,32 @@ public final class MaterialsCommand {
         java.nio.file.Path file = dev.drimoz.materialnexus.datapack.MnxPaths.root().resolve("report.md");
         try {
             java.nio.file.Files.createDirectories(file.getParent());
-            java.nio.file.Files.writeString(file, dev.drimoz.materialnexus.diagnostics.DiagnosticsReport.build(snapshot, missing, untagged),
+            // MNX-080: tags items lack (as "Add missing tags" sees them) and tags recipes ask for in vain.
+            var policy = dev.drimoz.materialnexus.datapack.PolicyFiles.load(dev.drimoz.materialnexus.datapack.MnxPaths.policies());
+            java.util.SortedMap<net.minecraft.resources.ResourceLocation, java.util.TreeSet<net.minecraft.resources.ResourceLocation>> missingTags = new java.util.TreeMap<>();
+            dev.drimoz.materialnexus.datapack.PackContent.missingTags(snapshot.materials(), policy, snapshot.conventionTags(), missingTags);
+            java.nio.file.Files.writeString(file, dev.drimoz.materialnexus.diagnostics.DiagnosticsReport.build(snapshot, missing, untagged,
+                            tagAudit(source.getServer()), missingTags, policy.addMissingTags()),
                     java.nio.charset.StandardCharsets.UTF_8);
-        } catch (java.io.IOException e) {
+        } catch (java.io.IOException | RuntimeException e) {
             source.sendFailure(Component.translatable("message.materialnexus.report_failed", e.getMessage()));
             return 0;
         }
         source.sendSuccess(() -> Component.translatable("message.materialnexus.report_written", file.toString()), false);
         return 1;
+    }
+
+    /** MNX-080: the tags every loaded recipe asks for, from its JSON file (recipes scripts made in memory have none). */
+    private static dev.drimoz.materialnexus.diagnostics.TagAudit.Result tagAudit(net.minecraft.server.MinecraftServer server) {
+        var items = server.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.ITEM);
+        java.util.Map<net.minecraft.resources.ResourceLocation, com.google.gson.JsonElement> recipes = new java.util.HashMap<>();
+        // ponytail: reads every recipe file (~0.5 s on 13k recipes); /materials report only, an explicit command.
+        for (var recipe : server.getRecipeManager().getRecipes()) {
+            dev.drimoz.materialnexus.datapack.RecipeSources.originalJson(server.getResourceManager(), recipe.getId()).ifPresent(json -> recipes.put(recipe.getId(), json));
+        }
+        return dev.drimoz.materialnexus.diagnostics.TagAudit.of(recipes,
+                tag -> items.getTag(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag)).map(t -> t.size() > 0).orElse(false),
+                dev.drimoz.materialnexus.core.discovery.TagDiscovery::isFolder);
     }
 
     /** Item name shapes for known materials that discovery did not find (MNX-041), for the report and the GUI. */

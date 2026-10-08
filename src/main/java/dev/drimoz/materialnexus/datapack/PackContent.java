@@ -207,7 +207,7 @@ public final class PackContent {
      * only for the items unification keeps (the canonical one; every duplicate when the form is not unified): never a
      * variant or an excluded form, never an alternative that is about to leave the tag.
      */
-    private static void missingTags(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy,
+    public static void missingTags(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy,
                                     Map<ResourceLocation, Set<ResourceLocation>> members, SortedMap<ResourceLocation, TreeSet<ResourceLocation>> out) {
         resolved.forEach((material, rm) -> rm.forms().forEach((form, f) -> {
             if (f.canonical().isEmpty() || policy.isExcluded(new dev.drimoz.materialnexus.core.domain.MaterialForm(material, form))) return;

@@ -13,7 +13,9 @@ screen on right click, with the same permission check.
 `report.md` lists, for every material, each form with its items, which is kept and why, what is set
 aside and why, and the conversions no recipe provides. It ends with **Possibly untagged forms**:
 item names that look like a form of a known material but are in no tag, grouped by name shape, to
-review and declare ([Datapack Guide](Datapack-Guide#forms)). It works on a dedicated server too.
+review and declare ([Datapack Guide](Datapack-Guide#forms)), then **Tags**: items missing their tag
+(what **Add missing tags** adds), recipes asking for a material tag nothing is in, and recipes asking
+for `c:` tags (Forge 1.20.1 uses `forge:`). It works on a dedicated server too.
 
 ## Server-side checks
 
