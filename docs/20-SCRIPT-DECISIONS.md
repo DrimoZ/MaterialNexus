@@ -58,6 +58,15 @@ Then:
 
 Every decision carries its evidence (recipe or tag, from, to), so the screen and the report can say where it comes from.
 
+## Where it is written (MNX-077)
+
+KubeJS records a script file and line only for recipes a script creates; `replaceOutput`, `replaceInput`, `remove` and
+tag edits carry none. So, when there are decisions, `kubejs/server_scripts/**/*.js` is searched for the quoted ids
+(`'id'`, `"id"`, `` `id` ``) of the items each decision sets aside, comment lines skipped, at most 5 lines per decision.
+Shown as "seen in unify.js:12" (Scripts view, report): the lines to delete once the choice is applied. An id built in
+code (`'mekanism:ingot_' + metal`) is not found and nothing is shown; nothing is guessed. Rejected: a mixin capturing
+the script line at each call (exact with loops, but fragile and against ADR-022).
+
 ## Status against Material Nexus
 
 Computed against the current resolution, when shown:

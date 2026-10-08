@@ -59,6 +59,18 @@ class ScriptDecisionsTest {
     }
 
     @Test
+    void decisionsArePlacedOnTheScriptLinesNamingTheItemSetAside() {
+        var decisions = ScriptDecisions.infer(TagDiscovery.discover(FILES), new ScriptChanges(List.of(), List.of(changed("moda:smelting/tin", A_INGOT, B_INGOT))));
+        var scripts = Map.of(
+                "unify.js", List.of("// moda:tin_ingot is replaced below: 'moda:tin_ingot'",
+                        "event.replaceOutput({}, 'moda:tin_ingot', 'modb:tin_ingot')",
+                        "event.remove({ output: 'moda:tin_ingot_block' })"),
+                "metals/loop.js", List.of("metals.forEach(m => event.replaceOutput({}, `moda:${m}_ingot`, `modb:${m}_ingot`))"));
+        // The comment, a longer id and an id built in code are not the decision's line.
+        assertEquals(List.of("unify.js:2"), ScriptDecisions.locate(decisions, scripts).get(0).seenIn());
+    }
+
+    @Test
     void ambiguousScriptsDecideNothing() {
         // A replaced by B in one recipe and by C in another: the scripts disagree.
         var disagree = kept(List.of(), List.of(changed("moda:r1", A_INGOT, B_INGOT), changed("moda:r2", A_INGOT, C_INGOT)));

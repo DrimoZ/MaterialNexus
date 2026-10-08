@@ -75,13 +75,14 @@ public final class DiagnosticsReport {
                 .append("Read at the last data load (tag entries changed in memory; with KubeJS, recipes changed, removed or created). ")
                 .append("A decision is a proposal: keep it in the Scripts view, apply, then the script lines can go.\n\n");
         if (!snapshot.scriptDecisions().isEmpty()) {
-            out.append("| Form | Scripts keep | Material Nexus keeps | Status | Evidence |\n|---|---|---|---|---|\n");
+            out.append("| Form | Scripts keep | Material Nexus keeps | Status | Seen in | Evidence |\n|---|---|---|---|---|---|\n");
             for (var d : snapshot.scriptDecisions()) {
                 var current = snapshot.form(d.key());
                 out.append("| ").append(d.key())
                         .append(" | ").append(d.kept().map(ResourceLocation::toString).orElse("-"))
                         .append(" | ").append(current.flatMap(ResolvedForm::canonical).map(ResourceLocation::toString).orElse("-"))
                         .append(" | ").append(dev.drimoz.materialnexus.core.scripts.ScriptDecisions.status(d, current).name().toLowerCase())
+                        .append(" | ").append(d.seenIn().isEmpty() ? "-" : String.join(", ", d.seenIn()))
                         .append(" | ").append(d.evidence().stream().map(e -> e.kind() + " " + e.where() + ": " + e.from() + e.to().map(t -> " -> " + t).orElse(""))
                                 .collect(Collectors.joining("; ")))
                         .append(" |\n");

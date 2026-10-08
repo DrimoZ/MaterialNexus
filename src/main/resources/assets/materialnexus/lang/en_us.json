@@ -227,6 +227,7 @@
   "screen.materialnexus.scripts.status.undecided": "undecided",
   "screen.materialnexus.scripts.current": "Material Nexus keeps %s",
   "screen.materialnexus.scripts.current_none": "Material Nexus keeps none",
+  "screen.materialnexus.scripts.seen_in": "seen in %s",
   "screen.materialnexus.scripts.more": "and %s more (see /materials report)",
   "screen.materialnexus.scripts.evidence.replaced": "%1$s: %2$s replaced by %3$s",
   "screen.materialnexus.scripts.evidence.tag_removed": "#%1$s: %2$s removed",

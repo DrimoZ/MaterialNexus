@@ -63,6 +63,8 @@ public final class DiscoveryEvents {
             // Groups from the file tags: an item a script removed from its tag still belongs to its material/form.
             var decisions = scripts.equals(ScriptChanges.NONE) ? List.<ScriptDecisions.Decision>of()
                     : ScriptDecisions.infer(discover(fileTags, applied), scripts);
+            // MNX-077: where they are written, read only when there is something to place.
+            if (!decisions.isEmpty()) decisions = ScriptDecisions.locate(decisions, ScriptSources.serverScripts());
             ResolvedSnapshot previous = SnapshotManager.current();
             SnapshotManager.swap(new ResolvedSnapshot(previous.generation() + 1, Instant.now(), discovered,
                     CanonicalResolver.resolve(discovered, policy), scripts, decisions));

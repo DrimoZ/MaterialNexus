@@ -42,3 +42,4 @@
 | MNX-045 | P2 | Relations as data | Missing-recipe relations added/removed in material_nexus/forms |
 | MNX-020 | P3 | KubeJS bridge | Optional scripting API, no dependency |
 | MNX-076 | P1 | Decisions found in scripts | Tag edits in memory and KubeJS recipe edits read at load; the item scripts keep per form proposed as a choice; Preview warns on opposite choices (docs/20, ADR-022) |
+| MNX-077 | P1 | Where scripts decide | Each decision placed on the script lines naming its set-aside items ("seen in unify.js:12"), by text search; nothing shown for ids built in code (docs/20) |

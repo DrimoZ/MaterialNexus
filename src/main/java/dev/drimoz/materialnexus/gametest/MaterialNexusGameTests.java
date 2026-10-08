@@ -87,6 +87,11 @@ public final class MaterialNexusGameTests {
         helper.assertTrue(kept.getOrDefault("nickel/dust", java.util.Optional.empty())
                         .equals(java.util.Optional.of(ResourceLocation.fromNamespaceAndPath("thermal", "nickel_dust"))),
                 "the script's tag removal should decide nickel/dust for Thermal, got " + kept);
+        // MNX-077: and both are placed on the fixture's lines.
+        var seen = new java.util.HashMap<String, java.util.List<String>>();
+        SnapshotManager.current().scriptDecisions().forEach(d -> seen.put(d.key().toString(), d.seenIn()));
+        helper.assertTrue(seen.get("tin/ingot").contains("materialnexus_unify.js:4") && seen.get("nickel/dust").contains("materialnexus_unify.js:8"),
+                "decisions should be placed on the fixture's lines, got " + seen);
         helper.succeed();
     }
 
