@@ -118,7 +118,7 @@ public final class RecipeSources {
     }
 
     /** The highest-priority definition of a recipe, skipping the Material Nexus generated pack. */
-    static Optional<JsonObject> originalJson(ResourceManager resources, ResourceLocation id) {
+    public static Optional<JsonObject> originalJson(ResourceManager resources, ResourceLocation id) {
         ResourceLocation file = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "recipe/" + id.getPath() + ".json");
         List<Resource> stack = resources.getResourceStack(file);
         for (int i = stack.size() - 1; i >= 0; i--) {

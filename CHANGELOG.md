@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- `/materials report` has a Tags section: items missing their tag (what "Add missing tags" adds), recipes asking for a material tag with no item, recipes still using `forge:` tags.
+
 - Tag edits: Shift + right click an item of a form to take it out of that form's tag (`c:ingots/tin`), or add an item by id in the Data view; written on Apply, listed in Preview, undone the same way.
 
 - Missing tags: an option (Data view, Untagged forms tab) adds items Material Nexus knows by name pattern or alias to their convention tag (`c:ingots/tin`, and `c:ingots`) on Apply, so recipes asking for the tag accept them. Only where the pack already uses that tag; listed in Preview.

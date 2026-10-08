@@ -22,9 +22,18 @@ public final class DiagnosticsReport {
         return build(snapshot, missing, List.of());
     }
 
-    /** With the untagged-form audit (MNX-041): item name shapes to review, and to declare in material_nexus/forms. */
     public static String build(ResolvedSnapshot snapshot, Map<MaterialId, List<FamilyRelations.Relation>> missing,
                                List<dev.drimoz.materialnexus.datapack.FormPatterns.Candidate> untagged) {
+        return build(snapshot, missing, untagged, TagAudit.Result.NONE, new java.util.TreeMap<>(), false);
+    }
+
+    /**
+     * With the untagged-form audit (MNX-041): item name shapes to review, and to declare in material_nexus/forms. With the
+     * tag audit (MNX-080): tags items lack ({@code missingTags}, what "Add missing tags" writes) and tags recipes ask for in vain.
+     */
+    public static String build(ResolvedSnapshot snapshot, Map<MaterialId, List<FamilyRelations.Relation>> missing,
+                               List<dev.drimoz.materialnexus.datapack.FormPatterns.Candidate> untagged, TagAudit.Result audit,
+                               java.util.SortedMap<ResourceLocation, ? extends java.util.Collection<ResourceLocation>> missingTags, boolean addingMissingTags) {
         StringBuilder out = new StringBuilder();
         long unified = snapshot.materials().values().stream().flatMap(m -> m.forms().values().stream())
                 .filter(f -> f.canonical().isPresent() && !f.alternatives().isEmpty()).count();
@@ -63,6 +72,7 @@ public final class DiagnosticsReport {
                     .append(String.join(", ", c.materials())).append(" |\n"));
             out.append('\n');
         }
+        tags(out, audit, missingTags, addingMissingTags);
         scripts(out, snapshot);
         return out.toString();
     }
@@ -109,5 +119,37 @@ public final class DiagnosticsReport {
     private static String args(List<String> args) {
         List<String> shown = args.stream().filter(a -> !a.isEmpty()).toList();
         return shown.isEmpty() ? "" : " " + String.join(" ", shown);
+    }
+
+    /** MNX-080: tags items lack, recipes asking for a material tag nothing is in, recipes still on forge: tags. */
+    private static void tags(StringBuilder out, TagAudit.Result audit,
+                             java.util.SortedMap<ResourceLocation, ? extends java.util.Collection<ResourceLocation>> missingTags, boolean adding) {
+        if (missingTags.isEmpty() && audit.forge().isEmpty() && audit.emptyMaterial().isEmpty()) return;
+        out.append("## Tags\n\n");
+        if (!missingTags.isEmpty()) {
+            out.append(adding ? "Missing tags, added by \"Add missing tags\" (on):\n\n"
+                    : "Missing tags: items known as a form (name pattern, alias) without its tag. \"Add missing tags\" (Data view, off) would add them:\n\n");
+            missingTags.forEach((tag, items) -> out.append("- `#").append(tag).append("`: ")
+                    .append(items.stream().map(ResourceLocation::toString).collect(Collectors.joining(", "))).append('\n'));
+            out.append('\n');
+        }
+        if (!audit.emptyMaterial().isEmpty()) {
+            out.append("Recipes asking for a material tag with no item (they cannot use that ingredient; add the item to the tag, ")
+                    .append("or create the form):\n\n");
+            audit.emptyMaterial().forEach((tag, recipes) -> out.append("- `#").append(tag).append("`: ").append(list(recipes)).append('\n'));
+            out.append('\n');
+        }
+        if (!audit.forge().isEmpty()) {
+            out.append("Recipes still asking for `forge:` tags (Minecraft 1.21 uses `c:`; such a tag is usually empty):\n\n");
+            audit.forge().forEach((tag, recipes) -> out.append("- `#").append(tag).append("`")
+                    .append(audit.forgeFilled().contains(tag) ? " (has items)" : " (empty)").append(": ").append(list(recipes)).append('\n'));
+            out.append('\n');
+        }
+    }
+
+    /** At most 10 ids, then how many more. */
+    private static String list(java.util.Collection<ResourceLocation> ids) {
+        String shown = ids.stream().limit(10).map(ResourceLocation::toString).collect(Collectors.joining(", "));
+        return ids.size() > 10 ? shown + " (+" + (ids.size() - 10) + ")" : shown;
     }
 }
