@@ -69,10 +69,14 @@ public final class TagDiscovery {
 
     private static volatile Map<String, FormId> folders = BUILT_IN_FOLDERS;
 
-    /** Folders declared by data (MNX-041), on top of the built-in ones; a data folder may remap a built-in one. */
-    public static void setDataFolders(Map<String, FormId> extra) {
+    /**
+     * Folders declared by data (MNX-041), on top of the built-in ones; a data folder may remap a built-in one, and
+     * {@code removed} folders (built-in or declared) are not read at all.
+     */
+    public static void setDataFolders(Map<String, FormId> extra, Collection<String> removed) {
         Map<String, FormId> merged = new HashMap<>(BUILT_IN_FOLDERS);
         merged.putAll(extra);
+        merged.keySet().removeAll(removed);
         folders = Map.copyOf(merged);
     }
 

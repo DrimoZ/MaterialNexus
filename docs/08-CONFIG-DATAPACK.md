@@ -147,7 +147,7 @@ Forms are data too, in `data/<namespace>/material_nexus/forms/*.json`: `folders`
 }
 ```
 
-`"relations": [{"from": "tiny_dust", "to": "dust"}]` and `"remove_relations": [...]` add or remove the conversions checked for missing recipes (built-in: nugget/ingot, ingot/block, raw/raw_block, raw→ingot, dust→ingot, gem/block).
+`"relations": [{"from": "tiny_dust", "to": "dust"}]` and `"remove_relations": [...]` add or remove the conversions checked for missing recipes (built-in: nugget/ingot, ingot/block, raw/raw_block, raw→ingot, dust→ingot, gem/block). `"remove_folders": ["sheetmetals"]` stops reading a folder, built-in ones included.
 
 Still built in, on purpose: the forms that can be created (they need shipped textures and are registered at startup, before any datapack loads), the "no ingot or wire for a gem material" creation rule (the client applies it too), and ore host rocks (an unknown ground already becomes `<ground>_ore`).
 
