@@ -117,6 +117,8 @@ preset** turns them into pending changes. See [Choosing Items](Choosing-Items#pr
 
 ## Scripts
 
+![Scripts](images/screen_scripts.png)
+
 Only there when your scripts already unify something (see
 [Modpacks and Multiplayer](Modpacks-and-Multiplayer#a-pack-that-already-unifies-with-scripts)). One
 row per form: the item your scripts keep, the item Material Nexus keeps, and why (the recipe changed,
