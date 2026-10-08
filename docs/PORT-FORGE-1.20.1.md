@@ -1,6 +1,6 @@
 # Port to Forge 1.20.1
 
-Branch `forge-1.20.1`, from `main` at MNX-074. `main` stays NeoForge 1.21.1; this branch is the same mod for
+Branch `forge-1.20.1`, from `main` at MNX-074, main tickets carried over up to MNX-081. `main` stays NeoForge 1.21.1; this branch is the same mod for
 Forge 1.20.1. Behaviour is unchanged: what differs is the game's and the loader's API and data layout.
 
 ## Target
@@ -22,6 +22,8 @@ Forge 1.20.1. Behaviour is unchanged: what differs is the game's and the loader'
 | KubeJS | 2101 `KubeJSPlugin` / `BindingRegistry` | 2001 `KubeJSPlugin` class / `BindingsEvent` |
 | Script recipe edits (MNX-076) | `beforeRecipeLoading(RecipesKubeEvent…)`, `KubeRecipe` (with `sourceLine`) | `injectRuntimeRecipes(RecipesEventJS…)`, called after scripts, `RecipeJS` (no script line: created recipes have no source) |
 | File tags (MNX-076) | a fresh `TagLoader.loadAndBuild` | `ScriptSources.load` mirrors Forge's `TagLoader.load` then calls `build`: KubeJS 2001 hooks `load` and resets its shared tag context even for a loader of its own |
+| Tag audit (MNX-080) | flags recipes still on `forge:` tags | flags recipes on `c:` tags (`TagAudit.OTHER_NAMESPACE`), usually empty on Forge; record fields keep main's names |
+| Recipes of the manager | `RecipeHolder.id()` | `Recipe.getId()` |
 
 ## Mod formats (shipped process templates and recipe formats)
 
@@ -41,7 +43,7 @@ Their recipe format files stay (they only name recipe types, harmless when absen
 
 ## Status
 
-- `./gradlew build`: compiles, 26 JUnit tests green; `build/libs/materialnexus-0.1.0+1.20.1.jar` is reobfuscated to SRG.
+- `./gradlew build`: compiles, 32 JUnit tests green (MNX-081); `build/libs/materialnexus-0.1.0+1.20.1.jar` is reobfuscated to SRG.
 - `./gradlew runGameTestServer`: 18/18 GameTests green with the dev pack (JEI, Jade, Mekanism, Create, IE, AE2,
   GuideME, Create Crafts & Additions, Create Metallurgy).
 - `./gradlew runClient`: boots to the title screen with the dev pack.
@@ -58,4 +60,6 @@ Their recipe format files stay (they only name recipe types, harmless when absen
 Most code is identical. Watch for: tag namespace and folder names in new data, 1.21-only API (`Math.clamp`,
 `List.getFirst`, `Component.withColor`, `DataResult.getOrThrow()`, `JsonObject.isEmpty()`, item components), new
 payload codecs (`ByteBufCodecs` has no 1.20.1 equivalent: write `StreamCodec.of`), and screen widgets
-(`mouseScrolled` has one delta, `ObjectSelectionList` takes `y0, y1`).
+(`mouseScrolled` has one delta, `ObjectSelectionList` takes `y0, y1`). Also: `MutableComponent.withColor` is `withStyle(s -> s.withColor(...))`, a `listOf().xmap(Set::copyOf, ...)` may need its type
+(`.<Set<ResourceLocation>>xmap`), and user-facing text (lang, wiki, changelog, README, store page) says `forge:ingots/tin`
+where main says `c:ingots/tin`; design notes in `docs/` keep `c:`.
