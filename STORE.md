@@ -114,7 +114,9 @@ Everything is files in `config/materialnexus/`, made to ship with the pack; the
 [wiki](https://github.com/DrimoZ/MaterialNexus/wiki) documents every field. The rules themselves
 (which tags and names make a form, how a mod's recipes store their items, process templates,
 presets) are datapack data, editable in game in the Data view. `/materials report` writes a full
-analysis. KubeJS scripts get a read-only `MaterialNexus` binding to ask which item is kept.
+analysis. KubeJS scripts get a read-only `MaterialNexus` binding to ask which item is kept, and a pack
+that already unifies with scripts sees what they decided, offered as the same choices, with the script
+lines to delete once applied.
 
 ### Compatibility
 
@@ -124,7 +126,7 @@ analysis. KubeJS scripts get a read-only `MaterialNexus` binding to ask which it
 | [JEI](https://www.curseforge.com/minecraft/mc-mods/jei) *(optional)* | alternatives hidden once unified |
 | [EMI](https://www.curseforge.com/minecraft/mc-mods/emi) *(optional)* | alternatives hidden once unified |
 | [Almost Unified](https://www.curseforge.com/minecraft/mc-mods/almost-unified) *(optional)* | each job (tags, recipes, hiding) left to it unless you give it to Material Nexus: never done twice |
-| [KubeJS](https://www.curseforge.com/minecraft/mc-mods/kubejs) *(optional)* | a read-only `MaterialNexus` binding; scripts keep the last word |
+| [KubeJS](https://www.curseforge.com/minecraft/mc-mods/kubejs) *(optional)* | a read-only `MaterialNexus` binding; what scripts already unify is offered as choices; scripts keep the last word |
 
 Needed on the server, and on clients for the screen, the tooltips and created items.
 

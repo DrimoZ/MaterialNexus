@@ -53,7 +53,10 @@ Every integration is optional.
 - **Almost Unified**: each domain (tags, recipe rewriting, recipe removal, viewer hiding) is left to
   it unless `global.json` gives it to Material Nexus, so nothing is done twice.
 - **KubeJS**: a read-only `MaterialNexus` binding (`kept(item)`, `isAlternative(item)`,
-  `canonical(material, form)`...); scripts keep the last word.
+  `canonical(material, form)`...); scripts keep the last word. What scripts already unify is read at
+  load and offered as the same choices, with the script lines that make them, so a pack can move its
+  unification out of its scripts
+  ([details](https://github.com/DrimoZ/MaterialNexus/wiki/Modpacks-and-Multiplayer#a-pack-that-already-unifies-with-scripts)).
 - **Recipes rewritten** for vanilla, Create and its addons, Mekanism, Immersive Engineering, Modern
   Industrialization, Oritech, Occultism, Silent Gear, Ex Deorum and more, through recipe formats that
   are data: any mod can be added with one JSON file.
