@@ -6,6 +6,12 @@ The GUI is a first-class product feature, not a config screen. It ships in V1.
 
 `/materials` or the creative-only "Nexus Terminal" item. Permission level 2, re-checked server-side. Editing targets singleplayer/LAN; dedicated servers get read-only diagnostics (ADR-013).
 
+## Screen size
+
+The layout needs 640x360 GUI pixels. When the player's GUI scale leaves less (the default 854x480 window at Auto gives
+427x240), the screen uses the largest smaller scale that fits, and puts the player's scale back when it closes
+(MNX-075). A window under 640x360 real pixels still gets scale 1, cramped.
+
 ## V1 screens
 
 ### Material list
