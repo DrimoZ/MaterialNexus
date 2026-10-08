@@ -61,6 +61,8 @@ public class Banners {
         screen(shots, out, "screen_presets", "mnx_9_presets", 160, 60, 1010, 540);
         screen(shots, out, "screen_pending", "mnx_10_pending", 1101, 48, 1951, 330);
         screen(shots, out, "screen_data", "mnx_11_data", 160, 48, 1010, 720);
+        // MNX-076: wider, the Keep buttons sit at the right edge (needs -Pkubejs and a script in run-ui/kubejs).
+        if (new File(shots, "mnx_12_scripts.png").exists()) screen(shots, out, "screen_scripts", "mnx_12_scripts", 165, 55, 1985, 540);
     }
 
     /** The top banner: the title large, the logo beside it, on a capture. */
