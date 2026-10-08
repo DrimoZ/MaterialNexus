@@ -80,6 +80,9 @@ public final class CanonicalResolver {
             Optional<MaterialId> elsewhere = elsewhereOf.get(p.resource());
             if (excluded) {
                 notUnified.put(p.resource(), new NotUnified(p.resource(), NOT_UNIFIED + "policy", List.of()));
+            } else if (policy.tagRemoved(key, p.resource())) {
+                // MNX-079: the player took it out of this form's tag; kept in sight so it can be put back.
+                notUnified.put(p.resource(), new NotUnified(p.resource(), NOT_UNIFIED + "tag_removed", List.of()));
             } else if (policy.notSame().contains(p.resource())) {
                 // MNX-050: the pack author said so; stronger than any guess.
                 notUnified.put(p.resource(), new NotUnified(p.resource(), NOT_UNIFIED + "not_same", List.of()));

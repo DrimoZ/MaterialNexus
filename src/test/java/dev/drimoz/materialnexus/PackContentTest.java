@@ -65,14 +65,14 @@ class PackContentTest {
                 ResourceLocation.fromNamespaceAndPath("materialnexus", "pattern/ingots/tin"), List.of(modx),
                 ResourceLocation.fromNamespaceAndPath("materialnexus", "pattern/double_ingots/tin"), List.of(modxDouble));
         var policy = new ResolutionPolicy(List.of(), Map.of(), Map.of(), Map.of(), Set.of(), Set.of(), Set.of(),
-                dev.drimoz.materialnexus.core.policy.AlmostUnified.NONE, dev.drimoz.materialnexus.core.policy.ProcessRules.NONE, Set.of(), true);
+                dev.drimoz.materialnexus.core.policy.AlmostUnified.NONE, dev.drimoz.materialnexus.core.policy.ProcessRules.NONE, Set.of(), true, Map.of());
 
         var discovered = TagDiscovery.discover(before);
         var content = PackContent.generate(CanonicalResolver.resolve(discovered, policy), policy,
                 dev.drimoz.materialnexus.core.policy.AlmostUnified.Ownership.ALL, PackContent.conventionMembers(discovered, before));
         assertEquals(List.of(new PackContent.Effect(PackContent.TAG_ADD, ingots, modx),
                 new PackContent.Effect(PackContent.TAG_ADD, INGOTS_TIN, modx)), content.effects());
-        assertEquals("{\"replace\":false,\"values\":[\"modx:tin_ingot\"]}", content.files().get("data/c/tags/item/ingots/tin.json").toString());
+        assertEquals("{\"replace\":false,\"values\":[{\"id\":\"modx:tin_ingot\",\"required\":false}]}", content.files().get("data/c/tags/item/ingots/tin.json").toString());
 
         // After the reload both tags hold modx; seen without Material Nexus, the same pack comes out again.
         Path pack = root.resolve("generated");
@@ -84,5 +84,30 @@ class PackContentTest {
         var again = TagDiscovery.discover(after);
         assertEquals(content.effects(), PackContent.generate(CanonicalResolver.resolve(again, policy), policy,
                 dev.drimoz.materialnexus.core.policy.AlmostUnified.Ownership.ALL, PackContent.conventionMembers(again, after)).effects());
+    }
+
+    @Test
+    void playerTagEditsAreWrittenSeenByDiscoveryAndStayStable(@TempDir Path root) throws IOException {
+        ResourceLocation modx = ResourceLocation.fromNamespaceAndPath("modx", "tin_ingot");
+        var policy = dev.drimoz.materialnexus.datapack.PolicyFiles.parse(com.google.gson.JsonParser.parseString(
+                "{\"tag_edits\": {\"tin/ingot\": {\"add\": [\"modx:tin_ingot\"], \"remove\": [\"immersiveengineering:ingot_tin\"]}}}"), Map.of());
+        Map<ResourceLocation, List<ResourceLocation>> tags = new HashMap<>(Map.of(INGOTS_TIN, List.of(MEK, IE)));
+        PackContent.addPlayerTags(tags, policy);
+        var resolved = CanonicalResolver.resolve(TagDiscovery.discover(tags), policy);
+        var tin = resolved.get(new dev.drimoz.materialnexus.core.domain.MaterialId("tin")).forms().get(new FormId("ingot"));
+        // Removed: still listed, never unified. Added: an ordinary member.
+        assertTrue(tin.notUnified().stream().anyMatch(n -> n.item().equals(IE) && n.reasonKey().endsWith("tag_removed")));
+        assertTrue(tin.alternatives().contains(modx) || tin.canonical().orElseThrow().equals(modx));
+
+        var content = PackContent.generate(resolved, policy);
+        assertEquals(List.of(new PackContent.Effect(PackContent.TAG_ADD, INGOTS_TIN, modx),
+                new PackContent.Effect(PackContent.TAG_REMOVE, INGOTS_TIN, IE)), content.effects());
+
+        Path pack = root.resolve("generated");
+        GeneratedPack.write(pack, content.files(), PackContent.toJson(content.effects()));
+        Map<ResourceLocation, List<ResourceLocation>> after = new HashMap<>(Map.of(INGOTS_TIN, List.of(MEK, modx)));
+        PackContent.restoreRemovedMembers(after, PackContent.readManifest(pack));
+        PackContent.addPlayerTags(after, policy);
+        assertEquals(content.effects(), PackContent.generate(CanonicalResolver.resolve(TagDiscovery.discover(after), policy), policy).effects());
     }
 }

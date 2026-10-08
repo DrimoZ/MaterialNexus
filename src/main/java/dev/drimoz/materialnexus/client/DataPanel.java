@@ -161,6 +161,41 @@ final class DataPanel {
         }).bounds(x + w - 232, y + h - 22, 220, 18).build();
         tags.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("screen.materialnexus.data.missing_tags.tooltip")));
         add.accept(tags);
+
+        // MNX-079: one item into one form's tag (c:ingots/tin for tin/ingot), pending like any change.
+        int ay = y + h - 44;
+        EditBox item = new EditBox(font, x + 8, ay + 1, 180, 16, Component.empty());
+        item.setHint(Component.translatable("screen.materialnexus.data.tag_add.item"));
+        item.setValue(tagItem);
+        EditBox target = new EditBox(font, x + 192, ay + 1, 100, 16, Component.empty());
+        target.setHint(Component.translatable("screen.materialnexus.data.tag_add.form"));
+        target.setValue(tagForm);
+        Button addTag = Button.builder(Component.translatable("screen.materialnexus.data.tag_add"), b -> {
+            String[] parts = tagForm.strip().toLowerCase(Locale.ROOT).split("/", -1);
+            PendingChanges.addToTag(parts[0], parts[1], ResourceLocation.parse(tagItem.strip().toLowerCase(Locale.ROOT)));
+            tagItem = "";
+            rebuild.run();
+        }).bounds(x + 296, ay, 120, 18).build();
+        addTag.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("screen.materialnexus.data.tag_add.tooltip")));
+        Runnable check = () -> addTag.active = validTagAdd();
+        item.setResponder(v -> { tagItem = v; check.run(); });
+        target.setResponder(v -> { tagForm = v; check.run(); });
+        check.run();
+        add.accept(item);
+        add.accept(target);
+        add.accept(addTag);
+    }
+
+    private String tagItem = "";
+    private String tagForm = "";
+
+    /** A registered item and a material/form whose form has a convention tag folder; the server checks again. */
+    private boolean validTagAdd() {
+        ResourceLocation id = ResourceLocation.tryParse(tagItem.strip().toLowerCase(Locale.ROOT));
+        String[] parts = tagForm.strip().toLowerCase(Locale.ROOT).split("/", -1);
+        return id != null && net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(id) && parts.length == 2
+                && dev.drimoz.materialnexus.core.domain.MaterialId.read(parts[0]).result().isPresent()
+                && dev.drimoz.materialnexus.core.domain.FormId.read(parts[1]).result().isPresent();
     }
 
     // ---- responses -----------------------------------------------------------------------------------------

@@ -58,6 +58,14 @@ Levels map to ADR-006: `global.mod_priority` < material `mod_priority` < form `m
 
 `"add_missing_tags": true` in `global.json` (Data view, **Untagged forms** tab, "Add missing tags"): on Apply, items known as a form by name pattern or alias tag but missing the convention tag get it (`c:ingots/tin`, plus `c:ingots` when the pack has it), only where the pack already uses that tag. Preview lists each addition (`tag_add`). Off by default; nothing is added when Almost Unified owns tags (ADR-023).
 
+## Tag edits (MNX-079)
+
+```json
+{"tag_edits": {"tin/ingot": {"add": ["modx:tin_ingot"], "remove": ["immersiveengineering:ingot_tin"]}}}
+```
+
+Puts items in or takes them out of the form's convention tag (`c:ingots/tin`), on Apply. Shift + right click an item of a form to take it out (or undo); the Data view's **Untagged forms** tab adds one by id. Added items are discovered as members of the form; removed ones stay listed as "taken out of its tag by you", never unified. A bad key fails the policy load with the file named (ADR-024).
+
 ## Not the same item (MNX-050)
 
 `"not_same": ["remin:yellow_amethyst"]` in `global.json`: items never unified with the others of their tags, listed as "marked as not the same". Right click an item in the GUI to (un)mark it; Preview lists the change. An explicit choice of such an item still wins.

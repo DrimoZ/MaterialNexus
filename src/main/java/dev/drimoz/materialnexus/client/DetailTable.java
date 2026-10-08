@@ -121,8 +121,8 @@ final class DetailTable {
                     Component.translatable("materialnexus.source." + Names.lowerName(f.source())),
                     Component.translatable("materialnexus.confidence." + Names.lowerName(f.confidence()))).withColor(0xAAAAAA));
             ResourceLocation k = kept.get();
-            notSameMark(g, k, sx, top + 4);
-            hits.add(sx - 1, top + 3, 20, 20, () -> choose(material, view.form(), k, f, decided), notSame(k), withHint(tip, k));
+            notSameMark(g, material, view.form(), k, sx, top + 4);
+            hits.add(sx - 1, top + 3, 20, 20, () -> choose(material, view.form(), k, f, decided), notSame(material, view.form(), k), withHint(material, view.form(), tip, k));
         }
 
         int ix = sx + 26;
@@ -133,9 +133,9 @@ final class DetailTable {
         for (ResourceLocation item : others) {
             if (ix + 20 > right) break;
             Ui.slot(g, item, ix, top + 4, Ui.NEUTRAL, false);
-            notSameMark(g, item, ix, top + 4);
-            hits.add(ix - 1, top + 3, 20, 20, () -> choose(material, view.form(), item, f, decided), notSame(item),
-                    withHint(itemTip(item, Component.translatable("screen.materialnexus.role.alternative")), item));
+            notSameMark(g, material, view.form(), item, ix, top + 4);
+            hits.add(ix - 1, top + 3, 20, 20, () -> choose(material, view.form(), item, f, decided), notSame(material, view.form(), item),
+                    withHint(material, view.form(), itemTip(item, Component.translatable("screen.materialnexus.role.alternative")), item));
             ix += 21;
         }
         if (!f.notUnified().isEmpty() && ix + 30 < right) {
@@ -147,8 +147,8 @@ final class DetailTable {
             Ui.slot(g, n.item(), ix, top + 4, 0, true);
             List<Component> tip = itemTip(n.item(), Component.translatable("screen.materialnexus.role.not_unified",
                     Component.translatable(n.reasonKey(), n.reasonArgs().toArray())).withColor(0xCC8888));
-            notSameMark(g, n.item(), ix, top + 4);
-            hits.add(ix - 1, top + 3, 20, 20, () -> choose(material, view.form(), n.item(), f, decided), notSame(n.item()), withHint(tip, n.item()));
+            notSameMark(g, material, view.form(), n.item(), ix, top + 4);
+            hits.add(ix - 1, top + 3, 20, 20, () -> choose(material, view.form(), n.item(), f, decided), notSame(material, view.form(), n.item()), withHint(material, view.form(), tip, n.item()));
             ix += 21;
         }
 
@@ -190,12 +190,19 @@ final class DetailTable {
                 List.of(Component.translatable("screen.materialnexus.create.tooltip", "materialnexus:" + material + "_" + form)));
     }
 
-    /** MNX-050: right click marks an item as "not the same" (or unmarks it); a pending mark is a red cross. */
-    private Runnable notSame(ResourceLocation item) {
-        return readOnly ? null : () -> PendingChanges.toggleNotSame(item);
+    /**
+     * MNX-050: right click marks an item as "not the same" (or unmarks it); a pending mark is a red cross. MNX-079: with
+     * Shift, takes it out of this form's tag (or undoes the player's tag edit); a pending tag edit is an orange bar.
+     */
+    private Runnable notSame(String material, String form, ResourceLocation item) {
+        return readOnly ? null : () -> {
+            if (net.minecraft.client.gui.screens.Screen.hasShiftDown()) PendingChanges.toggleTagRemoval(material, form, item);
+            else PendingChanges.toggleNotSame(item);
+        };
     }
 
-    private static void notSameMark(GuiGraphics g, ResourceLocation item, int x, int y) {
+    private static void notSameMark(GuiGraphics g, String material, String form, ResourceLocation item, int x, int y) {
+        if (PendingChanges.globalChanged("tag_edits") && PendingChanges.tagRemoved(material, form, item)) g.fill(x, y + 16, x + 18, y + 18, Ui.WARNING);
         if (!PendingChanges.globalChanged("not_same") || !PendingChanges.notSame(item)) return;
         for (int i = 0; i < 18; i++) {
             g.fill(x + i, y + i, x + i + 1, y + i + 1, Ui.DANGER);
@@ -203,7 +210,7 @@ final class DetailTable {
         }
     }
 
-    private List<Component> withHint(List<Component> tip, ResourceLocation item) {
+    private List<Component> withHint(String material, String form, List<Component> tip, ResourceLocation item) {
         List<Component> out = new ArrayList<>(tip);
         // MNX-052: what helps choose: its mod, and how central it is in the pack's recipes.
         var usage = detail.usage().get(item);
@@ -212,6 +219,8 @@ final class DetailTable {
                 : Component.translatable("screen.materialnexus.usage", mod, usage.produced(), usage.used()).withColor(0x88AACC));
         if (readOnly) return out;
         out.add(Component.translatable(PendingChanges.notSame(item) ? "screen.materialnexus.not_same.unmark" : "screen.materialnexus.not_same.mark").withColor(0x777788));
+        out.add(Component.translatable(PendingChanges.tagRemoved(material, form, item) || PendingChanges.tagAdded(material, form, item)
+                ? "screen.materialnexus.tag_edit.undo" : "screen.materialnexus.tag_edit.remove").withColor(0x777788));
         return out;
     }
 

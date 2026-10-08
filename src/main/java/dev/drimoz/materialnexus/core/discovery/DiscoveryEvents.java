@@ -58,11 +58,11 @@ public final class DiscoveryEvents {
             // ADR-010: see the tags as they were before our own removals, or the next apply would undo them.
             List<PackContent.Effect> applied = PackContent.readManifest(MnxPaths.generated()).stream()
                     .filter(e -> BuiltInRegistries.ITEM.containsKey(e.item())).toList();
-            DiscoveredMaterials discovered = discover(tagMembers, applied);
             ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies());
+            DiscoveredMaterials discovered = discover(tagMembers, applied, policy);
             // Groups from the file tags: an item a script removed from its tag still belongs to its material/form.
             var decisions = scripts.equals(ScriptChanges.NONE) ? List.<ScriptDecisions.Decision>of()
-                    : ScriptDecisions.infer(discover(fileTags, applied), scripts);
+                    : ScriptDecisions.infer(discover(fileTags, applied, policy), scripts);
             // MNX-077: where they are written, read only when there is something to place.
             if (!decisions.isEmpty()) decisions = ScriptDecisions.locate(decisions, ScriptSources.serverScripts());
             ResolvedSnapshot previous = SnapshotManager.current();
@@ -83,9 +83,14 @@ public final class DiscoveryEvents {
         }
     }
 
-    /** Tags as discovery reads them: our own removals restored (ADR-010), untagged forms injected by name (MNX-040). */
-    private static DiscoveredMaterials discover(Map<ResourceLocation, List<ResourceLocation>> tagMembers, List<PackContent.Effect> applied) {
+    /**
+     * Tags as discovery reads them: our own removals restored (ADR-010), the player's tag additions in (MNX-079), untagged
+     * forms injected by name (MNX-040).
+     */
+    private static DiscoveredMaterials discover(Map<ResourceLocation, List<ResourceLocation>> tagMembers, List<PackContent.Effect> applied,
+                                                ResolutionPolicy policy) {
         PackContent.restoreRemovedMembers(tagMembers, applied);
+        PackContent.addPlayerTags(tagMembers, policy);
         dev.drimoz.materialnexus.datapack.FormPatterns.inject(tagMembers, BuiltInRegistries.ITEM.keySet(),
                 dev.drimoz.materialnexus.datapack.FormPatterns.patterns(),
                 dev.drimoz.materialnexus.datapack.FormPatterns.knownNames(tagMembers.keySet(), MaterialDefinitions.aliases().keySet()));

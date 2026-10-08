@@ -179,6 +179,15 @@ public final class PackContent {
                 }
             }
         }));
+        // MNX-079: the player's own edits come last and win over the generated ones.
+        if (ownership.tags()) policy.tagEdits().forEach((key, edit) -> TagDiscovery.conventionTag(key.material(), key.form()).ifPresent(tag -> {
+            additions.computeIfAbsent(tag, t -> new TreeSet<>()).addAll(edit.add());
+            removals.computeIfAbsent(tag, t -> new TreeSet<>()).addAll(edit.remove());
+            additions.get(tag).removeAll(edit.remove());
+            removals.get(tag).removeAll(edit.add());
+        }));
+        additions.values().removeIf(java.util.Collection::isEmpty);
+        removals.values().removeIf(java.util.Collection::isEmpty);
         Set<ResourceLocation> tags = new TreeSet<>(removals.keySet());
         tags.addAll(additions.keySet());
         for (ResourceLocation tag : tags) {
@@ -215,6 +224,18 @@ public final class PackContent {
         }));
     }
 
+    /**
+     * MNX-079: discovery sees the items the player added to a form's tag as members of it (call after
+     * {@link #restoreRemovedMembers}). Removed ones stay: the resolver lists them as taken out of the tag.
+     */
+    public static void addPlayerTags(Map<ResourceLocation, List<ResourceLocation>> tagMembers, ResolutionPolicy policy) {
+        policy.tagEdits().forEach((key, edit) -> TagDiscovery.conventionTag(key.material(), key.form()).ifPresent(tag -> {
+            List<ResourceLocation> members = new ArrayList<>(tagMembers.getOrDefault(tag, List.of()));
+            edit.add().stream().sorted().filter(i -> !members.contains(i)).forEach(members::add);
+            if (!members.isEmpty()) tagMembers.put(tag, members);
+        }));
+    }
+
     /** c:ingots/tin to c:ingots. */
     private static ResourceLocation folderTag(ResourceLocation tag) {
         return ResourceLocation.fromNamespaceAndPath(tag.getNamespace(), tag.getPath().substring(0, tag.getPath().indexOf('/')));
@@ -242,7 +263,13 @@ public final class PackContent {
         JsonObject tag = new JsonObject();
         tag.addProperty("replace", false);
         JsonArray values = new JsonArray();
-        added.forEach(i -> values.add(i.toString()));
+        // Optional entries: an added item whose mod left the pack must not make the whole tag fail to load.
+        added.forEach(i -> {
+            JsonObject entry = new JsonObject();
+            entry.addProperty("id", i.toString());
+            entry.addProperty("required", false);
+            values.add(entry);
+        });
         tag.add("values", values);
         if (!removed.isEmpty()) {
             JsonArray remove = new JsonArray();
