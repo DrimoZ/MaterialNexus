@@ -50,6 +50,8 @@ of its forms are to decide. On the right, the selected material, with three tabs
 
 - **Click** an item to keep it (pending). Click the pending one again to cancel.
 - **Right click** an item to mark it **not the same** as the others (a red cross); again to unmark.
+- **Shift + right click** an item to take it out of this form's tag (`c:ingots/tin`): an orange bar
+  while pending, then listed as "taken out of its tag by you". Again to undo.
 - **Hover** an item: its name, id, mod, how many recipes make and use it, and why it is kept or set
   aside.
 - **↺** at the end of a row with a saved choice: back to default (pending).
@@ -107,6 +109,11 @@ The data files Material Nexus works from, editable in game. See
 - **Untagged forms**: item names that look like a form of a known material but are in no tag
   (`modern_industrialization:{material}_double_ingot`), with the materials they match. Type the form
   and **Declare**: the pattern is added to a pending forms file.
+  **Add missing tags** (on/off): on Apply, items known as a form by their name or an alias tag but
+  missing its tag get it (`c:ingots/tin`, and `c:ingots`), so recipes asking for the tag accept
+  them. Only tags the pack already uses; Preview lists each one.
+  Below the list, type an item id and a form (`tin/ingot`) and **Add to its tag** to put that item
+  in `c:ingots/tin` on Apply.
 
 ## Presets
 

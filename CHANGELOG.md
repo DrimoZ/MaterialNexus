@@ -2,6 +2,12 @@
 
 ## Unreleased
 
+- `/materials report` has a Tags section: items missing their tag (what "Add missing tags" adds), recipes asking for a material tag with no item, recipes still using `forge:` tags.
+
+- Tag edits: Shift + right click an item of a form to take it out of that form's tag (`c:ingots/tin`), or add an item by id in the Data view; written on Apply, listed in Preview, undone the same way.
+
+- Missing tags: an option (Data view, Untagged forms tab) adds items Material Nexus knows by name pattern or alias to their convention tag (`c:ingots/tin`, and `c:ingots`) on Apply, so recipes asking for the tag accept them. Only where the pack already uses that tag; listed in Preview.
+
 - Each script decision says where it is written ("seen in unify.js:12", Scripts view and report), found by searching the scripts for the item ids.
 - Decisions found in scripts: tag entries changed in memory and, with KubeJS, recipes replaced, removed or created by scripts are read at load; the item scripts keep per form is shown (Home, new Scripts view, `/materials report`) and offered as a pending choice. Preview warns when Apply would keep another item. Lets a pack that unified with scripts move to Material Nexus and delete those scripts.
 

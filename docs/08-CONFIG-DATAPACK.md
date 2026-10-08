@@ -54,6 +54,18 @@ Material definitions shipped by mods or datapacks may also live under `data/<nam
 
 Levels map to ADR-006: `global.mod_priority` < material `mod_priority` < form `mod_priority` < form `preferred_provider`. Policy is re-read on every `/reload`; an invalid file fails the analysis with the file named and leaves the previous snapshot active. Action fields (`rewrite_outputs`, tag modes) arrive with their tickets.
 
+## Missing tags (MNX-078)
+
+`"add_missing_tags": true` in `global.json` (Data view, **Untagged forms** tab, "Add missing tags"): on Apply, items known as a form by name pattern or alias tag but missing the convention tag get it (`c:ingots/tin`, plus `c:ingots` when the pack has it), only where the pack already uses that tag. Preview lists each addition (`tag_add`). Off by default; nothing is added when Almost Unified owns tags (ADR-023).
+
+## Tag edits (MNX-079)
+
+```json
+{"tag_edits": {"tin/ingot": {"add": ["modx:tin_ingot"], "remove": ["immersiveengineering:ingot_tin"]}}}
+```
+
+Puts items in or takes them out of the form's convention tag (`c:ingots/tin`), on Apply. Shift + right click an item of a form to take it out (or undo); the Data view's **Untagged forms** tab adds one by id. Added items are discovered as members of the form; removed ones stay listed as "taken out of its tag by you", never unified. A bad key fails the policy load with the file named (ADR-024).
+
 ## Not the same item (MNX-050)
 
 `"not_same": ["remin:yellow_amethyst"]` in `global.json`: items never unified with the others of their tags, listed as "marked as not the same". Right click an item in the GUI to (un)mark it; Preview lists the change. An explicit choice of such an item still wins.
@@ -93,6 +105,7 @@ Only forms unified by a player decision (any policy level; never the "Default" s
 - each alternative is removed from the material convention tag (`c:ingots/tin`) through a NeoForge `remove` entry; it keeps every other tag;
 - for forms listed in `conversion_recipes`, a shapeless 1:1 recipe turns each alternative into the canonical item (`materialnexus:convert/<material>/<form>/...`), so existing stock is never stranded;
 - variants and "not unified" providers are never touched.
+- with `add_missing_tags`, the kept items that lack the convention tag are appended to it (ADR-023).
 
 The manifest lists every effect. On reload, discovery puts back the tag members Material Nexus removed (ADR-010), so the next apply regenerates the same content instead of undoing it. With nothing pending, Preview shows the difference between the policy files and the current pack, which is how hand edits are applied.
 
@@ -134,13 +147,15 @@ Forms are data too, in `data/<namespace>/material_nexus/forms/*.json`: `folders`
 }
 ```
 
-`"relations": [{"from": "tiny_dust", "to": "dust"}]` and `"remove_relations": [...]` add or remove the conversions checked for missing recipes (built-in: nugget/ingot, ingot/block, raw/raw_block, raw→ingot, dust→ingot, gem/block).
+`"relations": [{"from": "tiny_dust", "to": "dust"}]` and `"remove_relations": [...]` add or remove the conversions checked for missing recipes (built-in: nugget/ingot, ingot/block, raw/raw_block, raw→ingot, dust→ingot, gem/block). `"remove_folders": ["sheetmetals"]` stops reading a folder, built-in ones included.
 
 Still built in, on purpose: the forms that can be created (they need shipped textures and are registered at startup, before any datapack loads), the "no ingot or wire for a gem material" creation rule (the client applies it too), and ore host rocks (an unknown ground already becomes `<ground>_ore`).
 
 `/materials report` ends with "Possibly untagged forms": undiscovered items named after a known material, grouped by name shape, to review and declare.
 
-Pattern forms: double_ingot, large_plate, curved_plate, bolt, ring, blade, rotor, drill_head, fine_wire (Modern Industrialization shipped, plus its untagged wires); Remin ores and Oritech small dusts are shipped too. An item matches only if `{material}` names a material some convention tag already knows; the match is shown as "item name pattern" evidence and never added to the game's tags.
+Then **Tags** (MNX-080): items known as a form but missing its tag (what `add_missing_tags` adds), recipes asking for a `c:<folder>/<material>` tag with no item, and recipes still asking for `forge:` tags (empty in 1.21 unless a mod fills them). Read from the recipe files, so recipes made in memory by scripts are not covered.
+
+Pattern forms: double_ingot, large_plate, curved_plate, bolt, ring, blade, rotor, drill_head, fine_wire (Modern Industrialization shipped, plus its untagged wires); Remin ores and Oritech small dusts are shipped too. An item matches only if `{material}` names a material some convention tag already knows; the match is shown as "item name pattern" evidence and added to the game's tags only with `add_missing_tags` (ADR-023).
 
 ## Process templates (MNX-037)
 

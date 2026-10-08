@@ -22,6 +22,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 import java.util.TreeSet;
@@ -33,6 +34,8 @@ import java.util.TreeSet;
  */
 public final class PackContent {
     public static final String TAG_REMOVE = "tag_remove";
+    /** MNX-078: an item known as a form gets the convention tag it lacks ({@code target} the tag). */
+    public static final String TAG_ADD = "tag_add";
     public static final String CONVERSION = "conversion_recipe";
     /** Alternatives the server swaps for the canonical item when the game touches them (MNX-028). */
     public static final String ITEM_CONVERSION = "item_conversion";
@@ -73,8 +76,14 @@ public final class PackContent {
      * Unified installed, domains left to it generate nothing and are noted (ADR-012).
      */
     public static Content full(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy, boolean auPresent, RecipePlanner recipes) {
+        return full(resolved, policy, auPresent, recipes, Map.of());
+    }
+
+    /** {@code conventionTags}: see {@link #conventionMembers}, for the tags added under {@code add_missing_tags}. */
+    public static Content full(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy, boolean auPresent, RecipePlanner recipes,
+                               Map<ResourceLocation, Set<ResourceLocation>> conventionTags) {
         AlmostUnified.Ownership ownership = policy.almostUnified().ownership(auPresent);
-        Content base = generate(resolved, policy, ownership);
+        Content base = generate(resolved, policy, ownership, conventionTags);
         List<Effect> effects = new ArrayList<>(base.effects());
         Map<String, JsonElement> files = new TreeMap<>(base.files());
         if (auPresent) {
@@ -144,7 +153,14 @@ public final class PackContent {
     }
 
     public static Content generate(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy, AlmostUnified.Ownership ownership) {
+        return generate(resolved, policy, ownership, Map.of());
+    }
+
+    public static Content generate(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy, AlmostUnified.Ownership ownership,
+                                   Map<ResourceLocation, Set<ResourceLocation>> conventionTags) {
         SortedMap<ResourceLocation, TreeSet<ResourceLocation>> removals = new TreeMap<>();
+        SortedMap<ResourceLocation, TreeSet<ResourceLocation>> additions = new TreeMap<>();
+        if (policy.addMissingTags() && ownership.tags()) missingTags(resolved, policy, conventionTags, additions);
         Map<String, JsonElement> files = new TreeMap<>();
         List<Effect> effects = new ArrayList<>();
         resolved.forEach((material, rm) -> rm.forms().forEach((form, f) -> {
@@ -163,22 +179,103 @@ public final class PackContent {
                 }
             }
         }));
-        removals.forEach((tag, items) -> {
-            files.put("data/" + tag.getNamespace() + "/tags/item/" + tag.getPath() + ".json", tagRemoval(items));
-            items.forEach(item -> effects.add(new Effect(TAG_REMOVE, tag, item)));
-        });
+        // MNX-079: the player's own edits come last and win over the generated ones.
+        if (ownership.tags()) policy.tagEdits().forEach((key, edit) -> TagDiscovery.conventionTag(key.material(), key.form()).ifPresent(tag -> {
+            additions.computeIfAbsent(tag, t -> new TreeSet<>()).addAll(edit.add());
+            removals.computeIfAbsent(tag, t -> new TreeSet<>()).addAll(edit.remove());
+            additions.get(tag).removeAll(edit.remove());
+            removals.get(tag).removeAll(edit.add());
+        }));
+        additions.values().removeIf(java.util.Collection::isEmpty);
+        removals.values().removeIf(java.util.Collection::isEmpty);
+        Set<ResourceLocation> tags = new TreeSet<>(removals.keySet());
+        tags.addAll(additions.keySet());
+        for (ResourceLocation tag : tags) {
+            Collection<ResourceLocation> removed = removals.getOrDefault(tag, new TreeSet<>());
+            Collection<ResourceLocation> added = additions.getOrDefault(tag, new TreeSet<>());
+            files.put("data/" + tag.getNamespace() + "/tags/item/" + tag.getPath() + ".json", tagFile(added, removed));
+            removed.forEach(item -> effects.add(new Effect(TAG_REMOVE, tag, item)));
+            added.forEach(item -> effects.add(new Effect(TAG_ADD, tag, item)));
+        }
         effects.sort(ORDER);
         return new Content(files, List.copyOf(effects));
     }
 
-    /** NeoForge tag file that only removes: the item keeps every other tag it has. */
-    private static JsonObject tagRemoval(Collection<ResourceLocation> items) {
+    /**
+     * MNX-078 (ADR-023): the items of each form that lack its convention tag, and its folder tag when the pack has one
+     * (c:ingots/tin, c:ingots). Only where the pack already uses that convention (the tag or its folder tag exists),
+     * only for the items unification keeps (the canonical one; every duplicate when the form is not unified): never a
+     * variant or an excluded form, never an alternative that is about to leave the tag.
+     */
+    public static void missingTags(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy,
+                                    Map<ResourceLocation, Set<ResourceLocation>> members, SortedMap<ResourceLocation, TreeSet<ResourceLocation>> out) {
+        resolved.forEach((material, rm) -> rm.forms().forEach((form, f) -> {
+            if (f.canonical().isEmpty() || policy.isExcluded(new dev.drimoz.materialnexus.core.domain.MaterialForm(material, form))) return;
+            var tag = TagDiscovery.conventionTag(material, form);
+            if (tag.isEmpty()) return;
+            ResourceLocation folder = folderTag(tag.get());
+            if (!members.containsKey(tag.get()) && !members.containsKey(folder)) return;
+            List<ResourceLocation> items = new ArrayList<>(List.of(f.canonical().get()));
+            if (!isUnified(f)) items.addAll(f.alternatives());
+            for (ResourceLocation item : items) {
+                if (!members.getOrDefault(tag.get(), Set.of()).contains(item)) out.computeIfAbsent(tag.get(), t -> new TreeSet<>()).add(item);
+                if (members.containsKey(folder) && !members.get(folder).contains(item)) out.computeIfAbsent(folder, t -> new TreeSet<>()).add(item);
+            }
+        }));
+    }
+
+    /**
+     * MNX-079: discovery sees the items the player added to a form's tag as members of it (call after
+     * {@link #restoreRemovedMembers}). Removed ones stay: the resolver lists them as taken out of the tag.
+     */
+    public static void addPlayerTags(Map<ResourceLocation, List<ResourceLocation>> tagMembers, ResolutionPolicy policy) {
+        policy.tagEdits().forEach((key, edit) -> TagDiscovery.conventionTag(key.material(), key.form()).ifPresent(tag -> {
+            List<ResourceLocation> members = new ArrayList<>(tagMembers.getOrDefault(tag, List.of()));
+            edit.add().stream().sorted().filter(i -> !members.contains(i)).forEach(members::add);
+            if (!members.isEmpty()) tagMembers.put(tag, members);
+        }));
+    }
+
+    /** c:ingots/tin to c:ingots. */
+    private static ResourceLocation folderTag(ResourceLocation tag) {
+        return ResourceLocation.fromNamespaceAndPath(tag.getNamespace(), tag.getPath().substring(0, tag.getPath().indexOf('/')));
+    }
+
+    /**
+     * What {@link #missingTags} reads: the members of each discovered form's convention tag and folder tag, as they are
+     * without Material Nexus (call after {@link #restoreRemovedMembers}). A tag the game does not have is absent.
+     */
+    public static Map<ResourceLocation, Set<ResourceLocation>> conventionMembers(
+            dev.drimoz.materialnexus.core.discovery.DiscoveredMaterials discovered, Map<ResourceLocation, ? extends Collection<ResourceLocation>> tagMembers) {
+        Map<ResourceLocation, Set<ResourceLocation>> out = new java.util.HashMap<>();
+        discovered.materials().forEach((material, forms) -> forms.keySet().forEach(form ->
+                TagDiscovery.conventionTag(material, form).ifPresent(tag -> {
+                    for (ResourceLocation t : List.of(tag, folderTag(tag))) {
+                        Collection<ResourceLocation> m = tagMembers.get(t);
+                        if (m != null && !m.isEmpty()) out.put(t, Set.copyOf(m));
+                    }
+                })));
+        return Map.copyOf(out);
+    }
+
+    /** NeoForge tag file that appends and removes: the items keep every other tag they have. */
+    private static JsonObject tagFile(Collection<ResourceLocation> added, Collection<ResourceLocation> removed) {
         JsonObject tag = new JsonObject();
         tag.addProperty("replace", false);
-        tag.add("values", new JsonArray());
-        JsonArray remove = new JsonArray();
-        items.forEach(i -> remove.add(i.toString()));
-        tag.add("remove", remove);
+        JsonArray values = new JsonArray();
+        // Optional entries: an added item whose mod left the pack must not make the whole tag fail to load.
+        added.forEach(i -> {
+            JsonObject entry = new JsonObject();
+            entry.addProperty("id", i.toString());
+            entry.addProperty("required", false);
+            values.add(entry);
+        });
+        tag.add("values", values);
+        if (!removed.isEmpty()) {
+            JsonArray remove = new JsonArray();
+            removed.forEach(i -> remove.add(i.toString()));
+            tag.add("remove", remove);
+        }
         return tag;
     }
 
@@ -227,14 +324,18 @@ public final class PackContent {
 
     /**
      * ADR-010 for tags: put back the members Material Nexus itself removed, so discovery keeps
-     * seeing the pre-MNX state and the next apply regenerates the same removals.
+     * seeing the pre-MNX state and the next apply regenerates the same removals. The members it added (MNX-078) are
+     * taken out the same way; a tag left with no member is dropped, as it did not exist.
      */
     public static void restoreRemovedMembers(Map<ResourceLocation, List<ResourceLocation>> tagMembers, List<Effect> effects) {
         for (Effect e : effects) {
-            if (!e.kind().equals(TAG_REMOVE)) continue;
+            boolean removed = e.kind().equals(TAG_REMOVE);
+            if (!removed && !e.kind().equals(TAG_ADD)) continue;
             List<ResourceLocation> members = new ArrayList<>(tagMembers.getOrDefault(e.target(), List.of()));
-            if (!members.contains(e.item())) members.add(e.item());
-            tagMembers.put(e.target(), members);
+            if (removed && !members.contains(e.item())) members.add(e.item());
+            if (!removed) members.remove(e.item());
+            if (members.isEmpty()) tagMembers.remove(e.target());
+            else tagMembers.put(e.target(), members);
         }
     }
 }

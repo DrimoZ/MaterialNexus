@@ -115,7 +115,9 @@ final class PendingChanges {
 
     /** Replaces a whole field; setting it back to the written value drops the pending change. */
     static void setGlobal(String field, com.google.gson.JsonElement value) {
-        if (value.equals(baseGlobal.get(field)) || (value.isJsonArray() && value.getAsJsonArray().isEmpty() && !baseGlobal.has(field))) GLOBAL_PATCH.remove(field);
+        boolean empty = value.isJsonArray() && value.getAsJsonArray().isEmpty() || value.isJsonObject() && value.getAsJsonObject().isEmpty()
+                || value.equals(new com.google.gson.JsonPrimitive(false));
+        if (value.equals(baseGlobal.get(field)) || (empty && !baseGlobal.has(field))) GLOBAL_PATCH.remove(field);
         else GLOBAL_PATCH.add(field, value);
     }
 
@@ -127,6 +129,8 @@ final class PendingChanges {
      */
     static void resetSettings() {
         for (String field : List.of("not_same", "conversion_recipes")) setGlobal(field, new com.google.gson.JsonArray());
+        setGlobal("add_missing_tags", new com.google.gson.JsonPrimitive(false));
+        setGlobal("tag_edits", new com.google.gson.JsonObject());
         if (baseGlobal.get("processes") instanceof com.google.gson.JsonObject rules) {
             rules.keySet().forEach(form -> PROCESSES.put(form, new ProcessRules.Rule(List.of(), false, false)));
         }
@@ -199,4 +203,41 @@ final class PendingChanges {
     }
 
     private static String key(String material, String form) { return material + "/" + form; }
+
+    // ---- tag edits (MNX-079): global.json "tag_edits": {"tin/ingot": {"add": [...], "remove": [...]}} ----
+
+    private static boolean tagListed(String material, String form, String list, ResourceLocation item) {
+        return global("tag_edits") instanceof com.google.gson.JsonObject edits && edits.get(material + "/" + form) instanceof com.google.gson.JsonObject edit
+                && edit.get(list) instanceof com.google.gson.JsonArray a && a.contains(new com.google.gson.JsonPrimitive(item.toString()));
+    }
+
+    static boolean tagRemoved(String material, String form, ResourceLocation item) { return tagListed(material, form, "remove", item); }
+
+    static boolean tagAdded(String material, String form, ResourceLocation item) { return tagListed(material, form, "add", item); }
+
+    /** Puts the item in or out of one list of the form's edit; empty lists and edits are dropped. */
+    private static void toggleTagEdit(String material, String form, String list, ResourceLocation item) {
+        com.google.gson.JsonObject edits = global("tag_edits") instanceof com.google.gson.JsonObject o ? o.deepCopy() : new com.google.gson.JsonObject();
+        String key = material + "/" + form;
+        com.google.gson.JsonObject edit = edits.get(key) instanceof com.google.gson.JsonObject o ? o : new com.google.gson.JsonObject();
+        com.google.gson.JsonArray items = edit.get(list) instanceof com.google.gson.JsonArray a ? a : new com.google.gson.JsonArray();
+        com.google.gson.JsonPrimitive id = new com.google.gson.JsonPrimitive(item.toString());
+        if (!items.remove(id)) items.add(id);
+        if (items.isEmpty()) edit.remove(list);
+        else edit.add(list, items);
+        if (edit.isEmpty()) edits.remove(key);
+        else edits.add(key, edit);
+        setGlobal("tag_edits", edits);
+    }
+
+    /** Shift + right click: undoes an addition, else takes the item out of the form's tag (or puts it back). */
+    static void toggleTagRemoval(String material, String form, ResourceLocation item) {
+        toggleTagEdit(material, form, tagAdded(material, form, item) ? "add" : "remove", item);
+    }
+
+    /** Data view: puts an item in a form's tag (pending); a pending removal of it is cancelled instead. */
+    static void addToTag(String material, String form, ResourceLocation item) {
+        if (tagRemoved(material, form, item)) toggleTagEdit(material, form, "remove", item);
+        else if (!tagAdded(material, form, item)) toggleTagEdit(material, form, "add", item);
+    }
 }

@@ -14,6 +14,7 @@ import java.util.Set;
  * Pack-author intent: canonical selection, one field per precedence level (ADR-006), exclusions
  * (ADR-014), the forms for which unification also generates 1:1 conversion recipes, and the
  * arbitration with Almost Unified (ADR-012), and process rules (MNX-036). Mod priorities are namespaces, strongest first.
+ * {@code addMissingTags}: items known as a form but missing its convention tag get it on Apply (MNX-078, ADR-023).
  */
 public record ResolutionPolicy(
         List<String> globalModPriority,
@@ -25,7 +26,17 @@ public record ResolutionPolicy(
         Set<FormId> conversionRecipeForms,
         AlmostUnified almostUnified,
         ProcessRules processes,
-        Set<ResourceLocation> notSame) {
+        Set<ResourceLocation> notSame,
+        boolean addMissingTags,
+        Map<MaterialForm, TagEdit> tagEdits) {
+    /** MNX-079: items the player adds to or removes from a form's convention tag. */
+    public record TagEdit(Set<ResourceLocation> add, Set<ResourceLocation> remove) {
+        public TagEdit {
+            add = Set.copyOf(add);
+            remove = Set.copyOf(remove);
+        }
+    }
+
     public static final ResolutionPolicy NONE = new ResolutionPolicy(List.of(), Map.of(), Map.of(), Map.of());
 
     public ResolutionPolicy {
@@ -37,6 +48,15 @@ public record ResolutionPolicy(
         excludedForms = Set.copyOf(excludedForms);
         conversionRecipeForms = Set.copyOf(conversionRecipeForms);
         notSame = Set.copyOf(notSame);
+        tagEdits = Map.copyOf(tagEdits);
+    }
+
+    public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
+                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, ResourceLocation> explicitProviders,
+                            Set<MaterialId> excludedMaterials, Set<MaterialForm> excludedForms, Set<FormId> conversionRecipeForms,
+                            AlmostUnified almostUnified, ProcessRules processes, Set<ResourceLocation> notSame) {
+        this(globalModPriority, materialModPriority, formModPriority, explicitProviders, excludedMaterials, excludedForms,
+                conversionRecipeForms, almostUnified, processes, notSame, false, Map.of());
     }
 
     /** Without items marked "not the same" (MNX-050). */
@@ -74,6 +94,12 @@ public record ResolutionPolicy(
         this(globalModPriority, materialModPriority, formModPriority, explicitProviders, Set.of(), Set.of());
     }
 
+    /** True when the player took this item out of the form's tag (MNX-079). */
+    public boolean tagRemoved(MaterialForm key, ResourceLocation item) {
+        TagEdit edit = tagEdits.get(key);
+        return edit != null && edit.remove().contains(item);
+    }
+
     public boolean isExcluded(MaterialForm key) {
         return excludedMaterials.contains(key.material()) || excludedForms.contains(key);
     }
@@ -81,7 +107,7 @@ public record ResolutionPolicy(
     /** This policy with pending process rule edits (MNX-036). */
     public ResolutionPolicy withProcesses(Map<FormId, ProcessRules.Rule> edits) {
         return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, explicitProviders,
-                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes.withForms(edits), notSame);
+                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes.withForms(edits), notSame, addMissingTags, tagEdits);
     }
 
     /** This policy plus extra explicit choices, used to preview pending GUI changes before they are written. */
@@ -90,13 +116,13 @@ public record ResolutionPolicy(
         Map<MaterialForm, ResourceLocation> kept = new HashMap<>(explicitProviders);
         kept.keySet().removeAll(forms);
         return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, kept,
-                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes, notSame);
+                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes, notSame, addMissingTags, tagEdits);
     }
 
     public ResolutionPolicy withExplicit(Map<MaterialForm, ResourceLocation> extra) {
         Map<MaterialForm, ResourceLocation> merged = new HashMap<>(explicitProviders);
         merged.putAll(extra);
         return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, merged,
-                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes, notSame);
+                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes, notSame, addMissingTags, tagEdits);
     }
 }

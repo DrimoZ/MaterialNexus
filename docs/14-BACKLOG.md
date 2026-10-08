@@ -43,3 +43,7 @@
 | MNX-020 | P3 | KubeJS bridge | Optional scripting API, no dependency |
 | MNX-076 | P1 | Decisions found in scripts | Tag edits in memory and KubeJS recipe edits read at load; the item scripts keep per form proposed as a choice; Preview warns on opposite choices (docs/20, ADR-022) |
 | MNX-077 | P1 | Where scripts decide | Each decision placed on the script lines naming its set-aside items ("seen in unify.js:12"), by text search; nothing shown for ids built in code (docs/20) |
+| MNX-078 | P1 | Missing tags | `add_missing_tags`: items known by name pattern or alias get their convention tag (and folder tag) on Apply, where the pack uses it (ADR-023) |
+| MNX-079 | P1 | Tag edits | `tag_edits` per material/form: Shift + right click takes an item out of its form tag, Data view adds one by id; discovery and resolution follow (ADR-024) |
+| MNX-080 | P2 | Tag diagnostics | `/materials report` "Tags": tags items lack (what Add missing tags writes), recipes asking for an empty material tag, recipes still on `forge:` tags |
+| MNX-081 | P2 | Forms removable as data | `remove_folders` in material_nexus/forms: a folder (built-in or declared) is no longer read |

@@ -68,16 +68,40 @@ public final class PolicyFiles {
         ).apply(i, MaterialPolicy::new));
     }
 
+    /** {@code {"add": ["modx:tin_ingot"], "remove": ["ie:ingot_tin"]}} (MNX-079). */
+    private static final Codec<ResolutionPolicy.TagEdit> TAG_EDIT = RecordCodecBuilder.create(i -> i.group(
+            ResourceLocation.CODEC.listOf().xmap(Set::copyOf, List::copyOf).optionalFieldOf("add", Set.of()).forGetter(ResolutionPolicy.TagEdit::add),
+            ResourceLocation.CODEC.listOf().xmap(Set::copyOf, List::copyOf).optionalFieldOf("remove", Set.of()).forGetter(ResolutionPolicy.TagEdit::remove)
+    ).apply(i, ResolutionPolicy.TagEdit::new));
+
+    /** {@code "tag_edits": {"tin/ingot": {...}}}: keyed like {@code exclude} entries, one form each. */
+    private static Map<MaterialForm, ResolutionPolicy.TagEdit> tagEdits(Map<String, ResolutionPolicy.TagEdit> raw) {
+        Map<MaterialForm, ResolutionPolicy.TagEdit> edits = new HashMap<>();
+        raw.forEach((key, edit) -> {
+            String[] parts = key.split("/", -1);
+            var material = MaterialId.read(parts[0]).result();
+            var form = parts.length == 2 ? FormId.read(parts[1]).result() : Optional.<FormId>empty();
+            if (material.isEmpty() || form.isEmpty()) {
+                throw new IllegalArgumentException("Invalid policy file " + GLOBAL_FILE + ": bad tag_edits entry '" + key + "' (expected material/form)");
+            }
+            edits.put(new MaterialForm(material.get(), form.get()), edit);
+        });
+        return edits;
+    }
+
     /** Unknown fields are ignored so later sections (e.g. almost_unified) do not break older readers. */
     private record GlobalPolicy(List<String> modPriority, List<String> exclude, List<String> conversionRecipes,
-                                Map<String, String> almostUnified, Map<FormId, ProcessRules.Rule> processes, List<ResourceLocation> notSame) {
+                                Map<String, String> almostUnified, Map<FormId, ProcessRules.Rule> processes, List<ResourceLocation> notSame,
+                                boolean addMissingTags, Map<String, ResolutionPolicy.TagEdit> tagEdits) {
         static final Codec<GlobalPolicy> CODEC = RecordCodecBuilder.create(i -> i.group(
                 Codec.STRING.listOf().optionalFieldOf("mod_priority", List.of()).forGetter(GlobalPolicy::modPriority),
                 Codec.STRING.listOf().optionalFieldOf("exclude", List.of()).forGetter(GlobalPolicy::exclude),
                 Codec.STRING.listOf().optionalFieldOf("conversion_recipes", List.of()).forGetter(GlobalPolicy::conversionRecipes),
                 Codec.unboundedMap(Codec.STRING, Codec.STRING).optionalFieldOf("almost_unified", Map.of()).forGetter(GlobalPolicy::almostUnified),
                 Codec.unboundedMap(FormId.CODEC, PROCESS).optionalFieldOf("processes", Map.of()).forGetter(GlobalPolicy::processes),
-                ResourceLocation.CODEC.listOf().optionalFieldOf("not_same", List.of()).forGetter(GlobalPolicy::notSame)
+                ResourceLocation.CODEC.listOf().optionalFieldOf("not_same", List.of()).forGetter(GlobalPolicy::notSame),
+                Codec.BOOL.optionalFieldOf("add_missing_tags", false).forGetter(GlobalPolicy::addMissingTags),
+                Codec.unboundedMap(Codec.STRING, TAG_EDIT).optionalFieldOf("tag_edits", Map.of()).forGetter(GlobalPolicy::tagEdits)
         ).apply(i, GlobalPolicy::new));
     }
 
@@ -165,7 +189,7 @@ public final class PolicyFiles {
         }
         return new ResolutionPolicy(globalPolicy.modPriority(), materialPriority, formPriority, explicit, excludedMaterials, excludedForms,
                 conversionForms, almostUnified(globalPolicy.almostUnified()), new ProcessRules(globalPolicy.processes(), processOverrides),
-                new HashSet<>(globalPolicy.notSame()));
+                new HashSet<>(globalPolicy.notSame()), globalPolicy.addMissingTags(), tagEdits(globalPolicy.tagEdits()));
     }
 
     private static <T> T decode(Codec<T> codec, JsonElement json, String file) {
