@@ -254,8 +254,36 @@ public final class NexusScreen extends Screen {
 
     // ---- widgets -------------------------------------------------------------------------------------------
 
+    /** Smallest room the layout works in, in GUI pixels (MNX-075). */
+    static final int MIN_WIDTH = 640;
+    static final int MIN_HEIGHT = 360;
+
+    /**
+     * MNX-075: the player's GUI scale can leave too little room (the default 854x480 window at Auto is 427x240), so this
+     * screen takes the largest scale that still gives {@link #MIN_WIDTH} x {@link #MIN_HEIGHT}, never larger than the
+     * player's. Runs on every init, which a window resize also triggers after the game has put the player's scale back.
+     */
+    private void fitScale() {
+        var window = minecraft.getWindow();
+        int scale = window.calculateScale(minecraft.options.guiScale().get(), minecraft.isEnforceUnicode());
+        while (scale > 1 && (window.getWidth() / scale < MIN_WIDTH || window.getHeight() / scale < MIN_HEIGHT)) scale--;
+        if (scale == window.getGuiScale()) return;
+        window.setGuiScale(scale);
+        width = window.getGuiScaledWidth();
+        height = window.getGuiScaledHeight();
+    }
+
+    /** Back to the player's scale before the next screen (or the HUD) lays itself out. */
+    @Override
+    public void removed() {
+        var window = minecraft.getWindow();
+        window.setGuiScale(window.calculateScale(minecraft.options.guiScale().get(), minecraft.isEnforceUnicode()));
+        super.removed();
+    }
+
     @Override
     protected void init() {
+        fitScale();
         if (totals == null) requestList();
         EditBox search = new EditBox(font, width - 136, 4, 130, 16, Component.translatable("screen.materialnexus.search"));
         search.setMaxLength(NexusQueries.MAX_QUERY);
