@@ -60,4 +60,35 @@ class PackContentTest {
         var again = PackContent.generate(CanonicalResolver.resolve(TagDiscovery.discover(afterReload), policy), policy);
         assertEquals(content.effects(), again.effects());
     }
+
+    @Test
+    void missingTagsAreAddedOnlyWhereThePackUsesThemAndStayStable(@TempDir Path root) throws IOException {
+        ResourceLocation ingots = ResourceLocation.fromNamespaceAndPath("forge", "ingots");
+        ResourceLocation modx = ResourceLocation.fromNamespaceAndPath("modx", "tin_ingot");
+        ResourceLocation modxDouble = ResourceLocation.fromNamespaceAndPath("modx", "tin_double_ingot");
+        // modx items are only known by name pattern; nobody uses forge:double_ingots, so that form gets no tag.
+        Map<ResourceLocation, List<ResourceLocation>> before = Map.of(INGOTS_TIN, List.of(MEK), ingots, List.of(MEK),
+                ResourceLocation.fromNamespaceAndPath("materialnexus", "pattern/ingots/tin"), List.of(modx),
+                ResourceLocation.fromNamespaceAndPath("materialnexus", "pattern/double_ingots/tin"), List.of(modxDouble));
+        var policy = new ResolutionPolicy(List.of(), Map.of(), Map.of(), Map.of(), Set.of(), Set.of(), Set.of(),
+                dev.drimoz.materialnexus.core.policy.AlmostUnified.NONE, dev.drimoz.materialnexus.core.policy.ProcessRules.NONE, Set.of(), true);
+
+        var discovered = TagDiscovery.discover(before);
+        var content = PackContent.generate(CanonicalResolver.resolve(discovered, policy), policy,
+                dev.drimoz.materialnexus.core.policy.AlmostUnified.Ownership.ALL, PackContent.conventionMembers(discovered, before));
+        assertEquals(List.of(new PackContent.Effect(PackContent.TAG_ADD, ingots, modx),
+                new PackContent.Effect(PackContent.TAG_ADD, INGOTS_TIN, modx)), content.effects());
+        assertEquals("{\"replace\":false,\"values\":[\"modx:tin_ingot\"]}", content.files().get("data/forge/tags/items/ingots/tin.json").toString());
+
+        // After the reload both tags hold modx; seen without Material Nexus, the same pack comes out again.
+        Path pack = root.resolve("generated");
+        GeneratedPack.write(pack, content.files(), PackContent.toJson(content.effects()));
+        Map<ResourceLocation, List<ResourceLocation>> after = new HashMap<>(before);
+        after.put(INGOTS_TIN, List.of(MEK, modx));
+        after.put(ingots, List.of(MEK, modx));
+        PackContent.restoreRemovedMembers(after, PackContent.readManifest(pack));
+        var again = TagDiscovery.discover(after);
+        assertEquals(content.effects(), PackContent.generate(CanonicalResolver.resolve(again, policy), policy,
+                dev.drimoz.materialnexus.core.policy.AlmostUnified.Ownership.ALL, PackContent.conventionMembers(again, after)).effects());
+    }
 }

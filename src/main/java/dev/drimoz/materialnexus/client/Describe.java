@@ -28,6 +28,7 @@ final class Describe {
     static Component describe(PackContent.Effect e) {
         return switch (e.kind()) {
             case PackContent.TAG_REMOVE -> Component.translatable("screen.materialnexus.effect.tag_remove", e.target().toString(), e.item().toString());
+            case PackContent.TAG_ADD -> Component.translatable("screen.materialnexus.effect.tag_add", e.target().toString(), e.item().toString());
             case PackContent.ITEM_CONVERSION -> Component.translatable("screen.materialnexus.effect.item_conversion", e.item().toString(), e.target().toString());
             case RecipeRewrites.REWRITE -> Component.translatable("screen.materialnexus.effect.recipe_rewrite", e.target().toString(), e.item().toString());
             case RecipeRewrites.DISABLE -> Component.translatable("screen.materialnexus.effect.recipe_disable", e.target().toString());

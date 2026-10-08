@@ -200,7 +200,8 @@ final class PolicyHandler {
         var resolved = CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy);
         RecipeFormats formats = RecipeFormats.load(server.getResourceManager());
         PackContent.Content content = PackContent.full(resolved, policy, auPresent, (conversions, ownership) -> RecipeRewrites.plan(
-                RecipeSources.collect(server, conversions, formats, RecipeRewrites.overridden(applied)), conversions, formats, ownership));
+                RecipeSources.collect(server, conversions, formats, RecipeRewrites.overridden(applied)), conversions, formats, ownership),
+                SnapshotManager.current().conventionTags());
         if (!policy.processes().isEmpty()) {
             var items = server.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.ITEM);
             content = PackContent.withProcesses(content, dev.drimoz.materialnexus.datapack.ProcessPlanner.plan(

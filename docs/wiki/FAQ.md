@@ -45,3 +45,8 @@ required.
 
 **Fabric?**
 No.
+
+**A mod's ingot has no `forge:ingots/...` tag, so recipes refuse it. Do I need a script?**
+No. Once Material Nexus recognises it (declare its name pattern in the Data view's **Untagged
+forms** tab), turn on **Add missing tags** there and Apply: the item joins `forge:ingots/<material>`
+and `forge:ingots`. Preview lists every tag added.

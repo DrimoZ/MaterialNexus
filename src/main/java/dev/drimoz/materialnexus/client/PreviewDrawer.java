@@ -19,7 +19,7 @@ import java.util.Map;
 final class PreviewDrawer implements Drawer {
     private static final int LINE = 11;
     /** Effect kinds in reading order; unknown kinds go last under their own name. */
-    private static final List<String> ORDER = List.of("script_conflict", "tag_remove", "item_conversion", "conversion_recipe", "recipe_rewrite",
+    private static final List<String> ORDER = List.of("script_conflict", "tag_add", "tag_remove", "item_conversion", "conversion_recipe", "recipe_rewrite",
             "recipe_disable", "process_recipe", "process_disable", "item_create", "data_edit", "data_reset",
             "recipe_unsupported", "process_unsupported", "recipe_invalid", "data_invalid", "almost_unified");
 
