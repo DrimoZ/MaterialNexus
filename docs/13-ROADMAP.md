@@ -63,4 +63,5 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [ ] full apply history (only if a real need appears)
 - [x] KubeJS optional API (read-only bindings, MNX-067)
 - [x] decisions found in scripts proposed as choices (MNX-076, docs/20)
+- [x] script lines of each decision shown ("seen in", MNX-077)
 - [ ] documentation/wiki

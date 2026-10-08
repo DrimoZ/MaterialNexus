@@ -120,6 +120,12 @@ final class ScriptsPanel {
                     List.of(Names.stack(item).getHoverName(), Component.literal(item.toString()).withColor(0x888888))));
         }
         int ly = y + 25;
+        if (!r.seenIn().isEmpty()) {
+            // MNX-077: the script lines to delete once the choice is applied.
+            Component seen = Component.translatable("screen.materialnexus.scripts.seen_in", String.join(", ", r.seenIn()));
+            g.drawString(font, font.plainSubstrByWidth(seen.getString(), w - 30), x + 26, ly, 0x88AAFF, false);
+            ly += LINE + 1;
+        }
         for (ScriptDecisions.Evidence e : r.evidence()) {
             g.drawString(font, font.plainSubstrByWidth(evidence(e).getString(), w - 30), x + 26, ly, Ui.MUTED, false);
             ly += LINE;

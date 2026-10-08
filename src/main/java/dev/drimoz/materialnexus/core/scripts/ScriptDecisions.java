@@ -28,12 +28,46 @@ public final class ScriptDecisions {
     /** {@code where}: the recipe or tag; {@code from}: the item set aside; {@code to}: the item put in its place. */
     public record Evidence(String kind, ResourceLocation where, ResourceLocation from, Optional<ResourceLocation> to) { }
 
-    /** {@code kept} is empty when scripts only set items aside, or disagree. */
-    public record Decision(MaterialForm key, Optional<ResourceLocation> kept, List<ResourceLocation> setAside, List<Evidence> evidence) {
+    /**
+     * {@code kept} is empty when scripts only set items aside, or disagree. {@code seenIn}: script lines naming an item
+     * set aside ("unify.js:12"), found by text search (MNX-077); empty when ids are built in code.
+     */
+    public record Decision(MaterialForm key, Optional<ResourceLocation> kept, List<ResourceLocation> setAside, List<Evidence> evidence,
+                           List<String> seenIn) {
         public Decision {
             setAside = List.copyOf(setAside);
             evidence = List.copyOf(evidence);
+            seenIn = List.copyOf(seenIn);
         }
+
+        public Decision(MaterialForm key, Optional<ResourceLocation> kept, List<ResourceLocation> setAside, List<Evidence> evidence) {
+            this(key, kept, setAside, evidence, List.of());
+        }
+    }
+
+    /** Lines kept per decision: enough to find the script part, not a listing of it. */
+    static final int MAX_SEEN_IN = 5;
+
+    /**
+     * MNX-077: where each decision is written, as far as a text search can tell. KubeJS records no source line for
+     * replacements, removals or tag edits, so the script files ({@code path -> lines}) are searched for the quoted ids
+     * of the items set aside; comment lines are skipped. An id built in code is not found, and nothing is guessed.
+     */
+    public static List<Decision> locate(List<Decision> decisions, java.util.Map<String, List<String>> scripts) {
+        if (scripts.isEmpty()) return decisions;
+        return decisions.stream().map(d -> {
+            List<String> seen = new ArrayList<>();
+            new java.util.TreeMap<>(scripts).forEach((file, lines) -> {
+                for (int i = 0; i < lines.size() && seen.size() < MAX_SEEN_IN; i++) {
+                    String line = lines.get(i).strip();
+                    if (line.startsWith("//") || line.startsWith("*")) continue;
+                    if (d.setAside().stream().anyMatch(id -> line.contains("'" + id + "'") || line.contains("\"" + id + "\"") || line.contains("`" + id + "`"))) {
+                        seen.add(file + ":" + (i + 1));
+                    }
+                }
+            });
+            return new Decision(d.key(), d.kept(), d.setAside(), d.evidence(), seen);
+        }).toList();
     }
 
     /** Against what Material Nexus keeps now. */

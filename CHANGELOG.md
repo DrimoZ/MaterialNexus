@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Each script decision says where it is written ("seen in unify.js:12", Scripts view and report), found by searching the scripts for the item ids.
 - Decisions found in scripts: tag entries changed in memory and, with KubeJS, recipes replaced, removed or created by scripts are read at load; the item scripts keep per form is shown (Home, new Scripts view, `/materials report`) and offered as a pending choice. Preview warns when Apply would keep another item. Lets a pack that unified with scripts move to Material Nexus and delete those scripts.
 
 ## 0.1.0 - first public version

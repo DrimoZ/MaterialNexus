@@ -36,7 +36,8 @@ Nothing is applied on its own:
    other. Preview warns about every form where Material Nexus would still keep another item than
    your scripts.
 3. Apply. Those forms show as **recorded**: their decision now lives in your settings.
-4. Delete the unification lines of your scripts and `/reload`. Nothing changes in game: Material
+4. Delete the unification lines of your scripts (each row says where: **seen in unify.js:12**,
+   when the item id is written in full) and `/reload`. Nothing changes in game: Material
    Nexus now does it.
 
 Recipes your scripts create (not unification) stay in your scripts; `/materials report` lists them

@@ -22,7 +22,7 @@ public record ScriptsPayload(List<Row> rows, int addedRecipes) implements Custom
     static final int MAX_EVIDENCE = 6;
 
     public record Row(String material, String form, Optional<ResourceLocation> kept, Optional<ResourceLocation> current,
-                      ScriptDecisions.Status status, List<ScriptDecisions.Evidence> evidence, int evidenceCount) { }
+                      ScriptDecisions.Status status, List<ScriptDecisions.Evidence> evidence, int evidenceCount, List<String> seenIn) { }
 
     public static final Type<ScriptsPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "scripts"));
     public static final StreamCodec<FriendlyByteBuf, ScriptsPayload> STREAM_CODEC = StreamCodec.of(ScriptsPayload::write, ScriptsPayload::read);
@@ -35,7 +35,7 @@ public record ScriptsPayload(List<Row> rows, int addedRecipes) implements Custom
         List<Row> rows = snapshot.scriptDecisions().stream().map(d -> {
             Optional<ResolvedForm> current = snapshot.form(d.key());
             return new Row(d.key().material().name(), d.key().form().name(), d.kept(), current.flatMap(ResolvedForm::canonical),
-                    ScriptDecisions.status(d, current), d.evidence().stream().limit(MAX_EVIDENCE).toList(), d.evidence().size());
+                    ScriptDecisions.status(d, current), d.evidence().stream().limit(MAX_EVIDENCE).toList(), d.evidence().size(), d.seenIn());
         }).toList();
         int added = (int) snapshot.scripts().recipes().stream().filter(r -> r.kind() == ScriptChanges.Kind.ADDED).count();
         return new ScriptsPayload(rows, added);
@@ -57,6 +57,7 @@ public record ScriptsPayload(List<Row> rows, int addedRecipes) implements Custom
                 e.writeOptional(ev.to(), FriendlyByteBuf::writeResourceLocation);
             });
             b.writeVarInt(r.evidenceCount());
+            b.writeCollection(r.seenIn(), FriendlyByteBuf::writeUtf);
         });
         buf.writeVarInt(p.addedRecipes());
     }
@@ -67,7 +68,7 @@ public record ScriptsPayload(List<Row> rows, int addedRecipes) implements Custom
                 b.readEnum(ScriptDecisions.Status.class),
                 b.readList(e -> new ScriptDecisions.Evidence(e.readUtf(), e.readResourceLocation(), e.readResourceLocation(),
                         e.readOptional(FriendlyByteBuf::readResourceLocation))),
-                b.readVarInt()));
+                b.readVarInt(), b.readList(FriendlyByteBuf::readUtf)));
         return new ScriptsPayload(rows, buf.readVarInt());
     }
 }

@@ -56,6 +56,28 @@ public final class ScriptSources extends SimplePreparableReloadListener<Map<Reso
         return fileTags;
     }
 
+    /**
+     * MNX-077: KubeJS server scripts as {@code path relative to server_scripts -> lines}, to say where a decision is
+     * written. Read only when there are decisions; empty without the folder. An unreadable file is skipped.
+     */
+    public static Map<String, List<String>> serverScripts() {
+        java.nio.file.Path root = net.neoforged.fml.loading.FMLPaths.GAMEDIR.get().resolve("kubejs").resolve("server_scripts");
+        if (!java.nio.file.Files.isDirectory(root)) return Map.of();
+        Map<String, List<String>> out = new java.util.TreeMap<>();
+        try (var files = java.nio.file.Files.walk(root)) {
+            files.filter(p -> p.toString().endsWith(".js") && java.nio.file.Files.isRegularFile(p)).forEach(p -> {
+                try {
+                    out.put(root.relativize(p).toString().replace('\\', '/'), java.nio.file.Files.readAllLines(p, java.nio.charset.StandardCharsets.UTF_8));
+                } catch (java.io.IOException | java.io.UncheckedIOException e) {
+                    LOGGER.debug("Material Nexus skipped unreadable script {}", p, e);
+                }
+            });
+        } catch (java.io.IOException | java.io.UncheckedIOException e) {
+            LOGGER.warn("Material Nexus could not list KubeJS scripts", e);
+        }
+        return out;
+    }
+
     /** Called by the KubeJS plugin before scripts edit recipes; read after the reload. */
     public static void recipes(Supplier<List<ScriptChanges.RecipeEdit>> edits) {
         recipes = edits;

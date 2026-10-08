@@ -120,7 +120,7 @@ preset** turns them into pending changes. See [Choosing Items](Choosing-Items#pr
 Only there when your scripts already unify something (see
 [Modpacks and Multiplayer](Modpacks-and-Multiplayer#a-pack-that-already-unifies-with-scripts)). One
 row per form: the item your scripts keep, the item Material Nexus keeps, and why (the recipe changed,
-the tag entry removed). **recorded**: your settings already say the same; **same**: Material Nexus
+the tag entry removed), and the script lines naming it (**seen in**). **recorded**: your settings already say the same; **same**: Material Nexus
 keeps it too, but only by priority or default; **differs**: it keeps another item; **undecided**: your
 scripts set items aside without keeping one. **Keep** makes the scripts' item a pending choice,
 **Keep all** does it for every *same* and *differs* row.
