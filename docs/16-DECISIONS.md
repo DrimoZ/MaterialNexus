@@ -173,3 +173,13 @@ Consequences, made visible rather than hidden:
 **Consequences:** read-only, like ADR-017 requires: scripts still have the last word, nothing hooks their events to change them. Groups come from the file tags, so an item scripts removed from a tag is still known. KubeJS fields read are public but not a stable API; a failure skips recipe edits with one warning. Tag edits by other mods in memory read as script edits.
 
 **Rejected:** applying script decisions automatically (a player decision is required, CLAUDE.md); parsing script files (loops and helpers make it unreliable); a mixin recording the calls (fragile, and the plugin hook gives the same result); parsing KubeJS logs.
+
+## ADR-023 - Missing convention tags are added on request, where the pack uses them
+
+**Decision:** with `"add_missing_tags": true` in `global.json` (Data view, Untagged forms tab), Apply adds each item Material Nexus knows as a form but that lacks its convention tag (found by name pattern, or through an alias tag: `c:ingots/aluminium` members join `c:ingots/aluminum`) to that tag, and to the folder tag (`c:ingots`) when the pack has one. Only where the pack already uses the convention (the tag or its folder tag exists), only for the items unification keeps (the canonical one; every duplicate when the form is not unified). Written as appended `values` in the same generated tag file as the removals; each addition is a `tag_add` effect in Preview and the manifest. On reload, discovery takes them back out like the removals (ADR-010).
+
+**Why:** a recipe asking for `#c:ingots/tin` refuses an ingot a mod forgot to tag, although Material Nexus already knows what it is; adding the tag is what pack authors otherwise do by script.
+
+**Consequences:** off by default (a player decision, like every pack change). Nothing is added when Almost Unified owns tags. Variants, items marked not the same and excluded forms never get a tag. Pattern-only forms nobody tags (`c:double_ingots`) stay untagged: no convention is invented. A tag only Material Nexus filled is dropped from the pre-MNX view, as it did not exist.
+
+**Rejected:** a general tag editor (KubeJS does that); creating `forge:` tags (1.21 uses `c:`); creating every material/form tag in advance (empty tags confuse viewers and other mods).

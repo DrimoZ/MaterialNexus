@@ -67,7 +67,9 @@ public final class DiscoveryEvents {
             if (!decisions.isEmpty()) decisions = ScriptDecisions.locate(decisions, ScriptSources.serverScripts());
             ResolvedSnapshot previous = SnapshotManager.current();
             SnapshotManager.swap(new ResolvedSnapshot(previous.generation() + 1, Instant.now(), discovered,
-                    CanonicalResolver.resolve(discovered, policy), scripts, decisions));
+                    CanonicalResolver.resolve(discovered, policy), scripts, decisions,
+                    // tagMembers is now the pre-MNX view (discover restored it): what add_missing_tags compares against.
+                    PackContent.conventionMembers(discovered, tagMembers)));
             // In-world conversion follows the applied pack, not the policy files (ADR-015).
             ItemConversions.install(PackContent.itemConversions(applied));
             ItemConversions.setViewerHiding(policy.almostUnified().mnxOwns(dev.drimoz.materialnexus.core.policy.AlmostUnified.Domain.VIEWER_HIDING,

@@ -70,14 +70,16 @@ public final class PolicyFiles {
 
     /** Unknown fields are ignored so later sections (e.g. almost_unified) do not break older readers. */
     private record GlobalPolicy(List<String> modPriority, List<String> exclude, List<String> conversionRecipes,
-                                Map<String, String> almostUnified, Map<FormId, ProcessRules.Rule> processes, List<ResourceLocation> notSame) {
+                                Map<String, String> almostUnified, Map<FormId, ProcessRules.Rule> processes, List<ResourceLocation> notSame,
+                                boolean addMissingTags) {
         static final Codec<GlobalPolicy> CODEC = RecordCodecBuilder.create(i -> i.group(
                 Codec.STRING.listOf().optionalFieldOf("mod_priority", List.of()).forGetter(GlobalPolicy::modPriority),
                 Codec.STRING.listOf().optionalFieldOf("exclude", List.of()).forGetter(GlobalPolicy::exclude),
                 Codec.STRING.listOf().optionalFieldOf("conversion_recipes", List.of()).forGetter(GlobalPolicy::conversionRecipes),
                 Codec.unboundedMap(Codec.STRING, Codec.STRING).optionalFieldOf("almost_unified", Map.of()).forGetter(GlobalPolicy::almostUnified),
                 Codec.unboundedMap(FormId.CODEC, PROCESS).optionalFieldOf("processes", Map.of()).forGetter(GlobalPolicy::processes),
-                ResourceLocation.CODEC.listOf().optionalFieldOf("not_same", List.of()).forGetter(GlobalPolicy::notSame)
+                ResourceLocation.CODEC.listOf().optionalFieldOf("not_same", List.of()).forGetter(GlobalPolicy::notSame),
+                Codec.BOOL.optionalFieldOf("add_missing_tags", false).forGetter(GlobalPolicy::addMissingTags)
         ).apply(i, GlobalPolicy::new));
     }
 
@@ -165,7 +167,7 @@ public final class PolicyFiles {
         }
         return new ResolutionPolicy(globalPolicy.modPriority(), materialPriority, formPriority, explicit, excludedMaterials, excludedForms,
                 conversionForms, almostUnified(globalPolicy.almostUnified()), new ProcessRules(globalPolicy.processes(), processOverrides),
-                new HashSet<>(globalPolicy.notSame()));
+                new HashSet<>(globalPolicy.notSame()), globalPolicy.addMissingTags());
     }
 
     private static <T> T decode(Codec<T> codec, JsonElement json, String file) {

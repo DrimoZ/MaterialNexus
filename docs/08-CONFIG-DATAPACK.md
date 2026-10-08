@@ -54,6 +54,10 @@ Material definitions shipped by mods or datapacks may also live under `data/<nam
 
 Levels map to ADR-006: `global.mod_priority` < material `mod_priority` < form `mod_priority` < form `preferred_provider`. Policy is re-read on every `/reload`; an invalid file fails the analysis with the file named and leaves the previous snapshot active. Action fields (`rewrite_outputs`, tag modes) arrive with their tickets.
 
+## Missing tags (MNX-078)
+
+`"add_missing_tags": true` in `global.json` (Data view, **Untagged forms** tab, "Add missing tags"): on Apply, items known as a form by name pattern or alias tag but missing the convention tag get it (`c:ingots/tin`, plus `c:ingots` when the pack has it), only where the pack already uses that tag. Preview lists each addition (`tag_add`). Off by default; nothing is added when Almost Unified owns tags (ADR-023).
+
 ## Not the same item (MNX-050)
 
 `"not_same": ["remin:yellow_amethyst"]` in `global.json`: items never unified with the others of their tags, listed as "marked as not the same". Right click an item in the GUI to (un)mark it; Preview lists the change. An explicit choice of such an item still wins.
@@ -93,6 +97,7 @@ Only forms unified by a player decision (any policy level; never the "Default" s
 - each alternative is removed from the material convention tag (`c:ingots/tin`) through a NeoForge `remove` entry; it keeps every other tag;
 - for forms listed in `conversion_recipes`, a shapeless 1:1 recipe turns each alternative into the canonical item (`materialnexus:convert/<material>/<form>/...`), so existing stock is never stranded;
 - variants and "not unified" providers are never touched.
+- with `add_missing_tags`, the kept items that lack the convention tag are appended to it (ADR-023).
 
 The manifest lists every effect. On reload, discovery puts back the tag members Material Nexus removed (ADR-010), so the next apply regenerates the same content instead of undoing it. With nothing pending, Preview shows the difference between the policy files and the current pack, which is how hand edits are applied.
 

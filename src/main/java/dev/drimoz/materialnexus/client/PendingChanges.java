@@ -115,7 +115,8 @@ final class PendingChanges {
 
     /** Replaces a whole field; setting it back to the written value drops the pending change. */
     static void setGlobal(String field, com.google.gson.JsonElement value) {
-        if (value.equals(baseGlobal.get(field)) || (value.isJsonArray() && value.getAsJsonArray().isEmpty() && !baseGlobal.has(field))) GLOBAL_PATCH.remove(field);
+        boolean empty = value.isJsonArray() && value.getAsJsonArray().isEmpty() || value.equals(new com.google.gson.JsonPrimitive(false));
+        if (value.equals(baseGlobal.get(field)) || (empty && !baseGlobal.has(field))) GLOBAL_PATCH.remove(field);
         else GLOBAL_PATCH.add(field, value);
     }
 
@@ -127,6 +128,7 @@ final class PendingChanges {
      */
     static void resetSettings() {
         for (String field : List.of("not_same", "conversion_recipes")) setGlobal(field, new com.google.gson.JsonArray());
+        setGlobal("add_missing_tags", new com.google.gson.JsonPrimitive(false));
         if (baseGlobal.get("processes") instanceof com.google.gson.JsonObject rules) {
             rules.keySet().forEach(form -> PROCESSES.put(form, new ProcessRules.Rule(List.of(), false, false)));
         }

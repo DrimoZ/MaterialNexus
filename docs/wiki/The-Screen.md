@@ -107,6 +107,9 @@ The data files Material Nexus works from, editable in game. See
 - **Untagged forms**: item names that look like a form of a known material but are in no tag
   (`modern_industrialization:{material}_double_ingot`), with the materials they match. Type the form
   and **Declare**: the pattern is added to a pending forms file.
+  **Add missing tags** (on/off): on Apply, items known as a form by their name or an alias tag but
+  missing its tag get it (`c:ingots/tin`, and `c:ingots`), so recipes asking for the tag accept
+  them. Only tags the pack already uses; Preview lists each one.
 
 ## Presets
 

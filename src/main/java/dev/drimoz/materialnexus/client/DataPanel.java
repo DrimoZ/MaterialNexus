@@ -153,6 +153,14 @@ final class DataPanel {
         }
         add.accept(active(Button.builder(Component.literal("<"), b -> { untaggedPage--; rebuild.run(); }).bounds(x + 8, y + h - 22, 20, 18).build(), untaggedPage > 0));
         add.accept(active(Button.builder(Component.literal(">"), b -> { untaggedPage++; rebuild.run(); }).bounds(x + 32, y + h - 22, 20, 18).build(), untaggedPage < pages - 1));
+        // MNX-078: items known as a form (patterns, aliases) get the convention tag they lack, on Apply.
+        boolean on = PendingChanges.global("add_missing_tags") instanceof com.google.gson.JsonPrimitive p && p.isBoolean() && p.getAsBoolean();
+        Button tags = Button.builder(Component.translatable(on ? "screen.materialnexus.data.missing_tags.on" : "screen.materialnexus.data.missing_tags.off"), b -> {
+            PendingChanges.setGlobal("add_missing_tags", new com.google.gson.JsonPrimitive(!on));
+            rebuild.run();
+        }).bounds(x + w - 232, y + h - 22, 220, 18).build();
+        tags.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("screen.materialnexus.data.missing_tags.tooltip")));
+        add.accept(tags);
     }
 
     // ---- responses -----------------------------------------------------------------------------------------

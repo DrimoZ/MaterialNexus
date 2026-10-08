@@ -12,7 +12,8 @@ import java.util.SortedMap;
 
 /**
  * Read-only index of one analysis (ADR-002). Both maps are unmodifiable and sorted. {@code scripts} and
- * {@code scriptDecisions}: what scripts changed in that load and what it decides (MNX-076).
+ * {@code scriptDecisions}: what scripts changed in that load and what it decides (MNX-076). {@code conventionTags}:
+ * the members of the discovered forms' convention tags without Material Nexus (MNX-078, PackContent.conventionMembers).
  */
 public record ResolvedSnapshot(
         long generation,
@@ -20,13 +21,15 @@ public record ResolvedSnapshot(
         DiscoveredMaterials discovered,
         SortedMap<MaterialId, ResolvedMaterial> materials,
         ScriptChanges scripts,
-        List<ScriptDecisions.Decision> scriptDecisions) {
+        List<ScriptDecisions.Decision> scriptDecisions,
+        java.util.Map<net.minecraft.resources.ResourceLocation, java.util.Set<net.minecraft.resources.ResourceLocation>> conventionTags) {
     public ResolvedSnapshot {
         scriptDecisions = List.copyOf(scriptDecisions);
+        conventionTags = java.util.Map.copyOf(conventionTags);
     }
 
     public ResolvedSnapshot(long generation, Instant builtAt, DiscoveredMaterials discovered, SortedMap<MaterialId, ResolvedMaterial> materials) {
-        this(generation, builtAt, discovered, materials, ScriptChanges.NONE, List.of());
+        this(generation, builtAt, discovered, materials, ScriptChanges.NONE, List.of(), java.util.Map.of());
     }
 
     public static ResolvedSnapshot empty() {
