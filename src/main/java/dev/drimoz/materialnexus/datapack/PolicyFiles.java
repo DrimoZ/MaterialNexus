@@ -68,10 +68,31 @@ public final class PolicyFiles {
         ).apply(i, MaterialPolicy::new));
     }
 
+    /** {@code {"add": ["modx:tin_ingot"], "remove": ["ie:ingot_tin"]}} (MNX-079). */
+    private static final Codec<ResolutionPolicy.TagEdit> TAG_EDIT = RecordCodecBuilder.create(i -> i.group(
+            dev.drimoz.materialnexus.core.OptionalFields.strict(ResourceLocation.CODEC.listOf().<Set<ResourceLocation>>xmap(Set::copyOf, List::copyOf), "add", Set.of()).forGetter(ResolutionPolicy.TagEdit::add),
+            dev.drimoz.materialnexus.core.OptionalFields.strict(ResourceLocation.CODEC.listOf().<Set<ResourceLocation>>xmap(Set::copyOf, List::copyOf), "remove", Set.of()).forGetter(ResolutionPolicy.TagEdit::remove)
+    ).apply(i, ResolutionPolicy.TagEdit::new));
+
+    /** {@code "tag_edits": {"tin/ingot": {...}}}: keyed like {@code exclude} entries, one form each. */
+    private static Map<MaterialForm, ResolutionPolicy.TagEdit> tagEdits(Map<String, ResolutionPolicy.TagEdit> raw) {
+        Map<MaterialForm, ResolutionPolicy.TagEdit> edits = new HashMap<>();
+        raw.forEach((key, edit) -> {
+            String[] parts = key.split("/", -1);
+            var material = MaterialId.read(parts[0]).result();
+            var form = parts.length == 2 ? FormId.read(parts[1]).result() : Optional.<FormId>empty();
+            if (material.isEmpty() || form.isEmpty()) {
+                throw new IllegalArgumentException("Invalid policy file " + GLOBAL_FILE + ": bad tag_edits entry '" + key + "' (expected material/form)");
+            }
+            edits.put(new MaterialForm(material.get(), form.get()), edit);
+        });
+        return edits;
+    }
+
     /** Unknown fields are ignored so later sections (e.g. almost_unified) do not break older readers. */
     private record GlobalPolicy(List<String> modPriority, List<String> exclude, List<String> conversionRecipes,
                                 Map<String, String> almostUnified, Map<FormId, ProcessRules.Rule> processes, List<ResourceLocation> notSame,
-                                boolean addMissingTags) {
+                                boolean addMissingTags, Map<String, ResolutionPolicy.TagEdit> tagEdits) {
         static final Codec<GlobalPolicy> CODEC = RecordCodecBuilder.create(i -> i.group(
                 dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.STRING.listOf(), "mod_priority", List.of()).forGetter(GlobalPolicy::modPriority),
                 dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.STRING.listOf(), "exclude", List.of()).forGetter(GlobalPolicy::exclude),
@@ -79,7 +100,8 @@ public final class PolicyFiles {
                 dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.unboundedMap(Codec.STRING, Codec.STRING), "almost_unified", Map.of()).forGetter(GlobalPolicy::almostUnified),
                 dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.unboundedMap(FormId.CODEC, PROCESS), "processes", Map.of()).forGetter(GlobalPolicy::processes),
                 dev.drimoz.materialnexus.core.OptionalFields.strict(ResourceLocation.CODEC.listOf(), "not_same", List.of()).forGetter(GlobalPolicy::notSame),
-                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.BOOL, "add_missing_tags", false).forGetter(GlobalPolicy::addMissingTags)
+                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.BOOL, "add_missing_tags", false).forGetter(GlobalPolicy::addMissingTags),
+                dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.unboundedMap(Codec.STRING, TAG_EDIT), "tag_edits", Map.of()).forGetter(GlobalPolicy::tagEdits)
         ).apply(i, GlobalPolicy::new));
     }
 
@@ -167,7 +189,7 @@ public final class PolicyFiles {
         }
         return new ResolutionPolicy(globalPolicy.modPriority(), materialPriority, formPriority, explicit, excludedMaterials, excludedForms,
                 conversionForms, almostUnified(globalPolicy.almostUnified()), new ProcessRules(globalPolicy.processes(), processOverrides),
-                new HashSet<>(globalPolicy.notSame()), globalPolicy.addMissingTags());
+                new HashSet<>(globalPolicy.notSame()), globalPolicy.addMissingTags(), tagEdits(globalPolicy.tagEdits()));
     }
 
     private static <T> T decode(Codec<T> codec, JsonElement json, String file) {

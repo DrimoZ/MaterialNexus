@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Tag edits: Shift + right click an item of a form to take it out of that form's tag (`forge:ingots/tin`), or add an item by id in the Data view; written on Apply, listed in Preview, undone the same way.
+
 - Missing tags: an option (Data view, Untagged forms tab) adds items Material Nexus knows by name pattern or alias to their convention tag (`forge:ingots/tin`, and `forge:ingots`) on Apply, so recipes asking for the tag accept them. Only where the pack already uses that tag; listed in Preview.
 
 - Each script decision says where it is written ("seen in unify.js:12", Scripts view and report), found by searching the scripts for the item ids.

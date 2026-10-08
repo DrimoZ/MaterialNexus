@@ -183,3 +183,13 @@ Consequences, made visible rather than hidden:
 **Consequences:** off by default (a player decision, like every pack change). Nothing is added when Almost Unified owns tags. Variants, items marked not the same and excluded forms never get a tag. Pattern-only forms nobody tags (`c:double_ingots`) stay untagged: no convention is invented. A tag only Material Nexus filled is dropped from the pre-MNX view, as it did not exist.
 
 **Rejected:** a general tag editor (KubeJS does that); creating `forge:` tags (1.21 uses `c:`); creating every material/form tag in advance (empty tags confuse viewers and other mods).
+
+## ADR-024 - The player edits a form's tag, not any tag
+
+**Decision:** `"tag_edits": {"tin/ingot": {"add": [...], "remove": [...]}}` in `global.json` puts items in or out of that form's convention tag (`c:ingots/tin`), and nothing else. GUI: Shift + right click on an item of a form takes it out (or undoes the edit); the Data view's Untagged forms tab adds an item by id. Apply writes them in the generated tag file (added entries are optional, so an item whose mod left never breaks the tag), after and over the generated additions and removals. Discovery sees added items as members; removed items stay in sight, listed as not unified ("taken out of its tag by you"), so the edit can be undone where it was made.
+
+**Why:** mods forget tags or tag a variant as the base material; fixing one item should not need a script. Keyed by material/form so the edit says what the item is, and the tag follows the folders known to discovery.
+
+**Consequences:** nothing is written when Almost Unified owns tags. A form with no convention tag folder ignores its edits. Removing an item from a tag also keeps it from being unified there; it keeps its other tags (`c:ingots`).
+
+**Rejected:** editing any tag by id (KubeJS does that; ADR-023); hiding removed items (the edit could only be undone by hand in the file).
