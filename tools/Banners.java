@@ -81,7 +81,7 @@ public class Banners {
         text(g, "Material Nexus", x, 52, 6, Color.WHITE);
         text(g, "One copper ingot, not five.", x + 2, 128, 3, new Color(236, 236, 240));
         text(g, "Choose, preview, apply.", x + 2, 172, 2, SUB);
-        text(g, "NeoForge", x + 2, 226, 2, alpha(new Color(220, 220, 220), 220));
+        text(g, "Forge", x + 2, 226, 2, alpha(new Color(220, 220, 220), 220));
         g.dispose();
         ImageIO.write(b, "png", new File(out, "banner.png"));
     }
