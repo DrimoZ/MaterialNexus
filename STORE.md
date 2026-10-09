@@ -175,7 +175,7 @@ not lift them into another project.
 <!-- End of the pasted description. -->
 
 
-## Release checklist: 0.1.0
+## Release checklist: 0.2.0
 
 - [ ] `main` green: `./gradlew test`, `./gradlew runGameTestServer`, `./gradlew runGameTestServer -Pvanilla`
       (and `-Pau`, `-Pkubejs` when those parts changed).
@@ -185,7 +185,7 @@ not lift them into another project.
       `screen_preview.png`, `screen_process.png`.
 - [ ] Paste the summary and the description.
 - [ ] Upload the jar from `gradlew build` (`build/libs`), release type **Beta**,
-      loader NeoForge, with the `## 0.1.0` section of `CHANGELOG.md`.
+      loader NeoForge, with the `## 0.2.0` section of `CHANGELOG.md`.
 - [ ] Optional dependencies: JEI, EMI, Almost Unified, KubeJS.
-- [ ] Tag `v0.1.0`, and add the CurseForge link to the README and to the links above.
+- [ ] Tag `v0.2.0`, and add the CurseForge link to the README and to the links above.
 - [ ] Report upstream: `docs/upstream/immersiveengineering-silentgear-reload.md`.
