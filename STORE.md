@@ -18,7 +18,7 @@ new images; only the gallery screenshots are uploaded by hand (850 px wide at mo
 
 > One line, 256 characters at most, shown under the name in every search result.
 
-Five copper ingots, three tin plates? Choose which item each material keeps, from an in-game screen. Material Nexus cleans the tags, rewrites the recipes and converts the items, and shows you every change before it applies.
+One copper ingot, not five. Unify duplicate ingots, ores and dusts in your modpack: pick the one to keep from an in-game screen, and tags, recipes and items follow. No scripts, full preview before anything changes.
 
 ## Categories
 
