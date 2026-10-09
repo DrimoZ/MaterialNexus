@@ -15,7 +15,7 @@ import java.util.zip.ZipFile;
  *
  * <pre>
  *   ./gradlew runUiShots -Pstore      (the captures: the dev world as a fresh pack sees it, see client/UiShots.java)
- *   java tools/Banners.java run-ui/screenshots run-ui/store-art
+ *   java tools/Banners.java run-ui/screenshots docs/store-art
  * </pre>
  *
  * The screen fills the window (2000 x 1070 at GUI scale 2), so each screen image is a part of it, cut 1:1 so no
