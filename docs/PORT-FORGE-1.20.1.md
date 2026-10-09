@@ -47,6 +47,7 @@ Their recipe format files stay (they only name recipe types, harmless when absen
 - `./gradlew runGameTestServer`: 18/18 GameTests green with the dev pack (JEI, Jade, Mekanism, Create, IE, AE2,
   GuideME, Create Crafts & Additions, Create Metallurgy).
 - After MNX-081, with the big dev pack: 18/19 GameTests green; `full_preview_on_the_dev_pack_is_fast` still fails (6.7 s, limit 5 s), as noted below.
+- 0.2.0 (MNX-083): build and 32 JUnit green; GameTests 19/19 with `-Pvanilla`, 18/19 with the big dev pack (`full_preview_on_the_dev_pack_is_fast` at 15.8 s, limit 5 s, same open issue).
 - `./gradlew runClient`: boots to the title screen with the dev pack.
 - `./gradlew runGameTestServer -Pkubejs` (MNX-076/077, big dev pack): the KubeJS bindings and `scriptDecisionsAreRead`
   pass (Thermal tin ingot and nickel dust decided, placed on the fixture lines). `full_preview_on_the_dev_pack_is_fast`

@@ -1,6 +1,8 @@
 # Changelog
 
-## Unreleased
+## 0.2.0
+
+- New logo.
 
 - Forms removable as data: `"remove_folders": ["sheetmetals"]` in a forms file (`material_nexus/forms`) stops reading a convention tag folder, built-in ones included.
 
