@@ -449,5 +449,9 @@
   "screen.materialnexus.presets.col.preset": "With this preset",
   "screen.materialnexus.presets.unchanged": "unchanged",
   "screen.materialnexus.presets.use_effect": "changes %s settings, to review; nothing is applied yet",
-  "screen.materialnexus.data.invalid": "Not valid JSON, cannot be kept: %s"
+  "screen.materialnexus.data.invalid": "Not valid JSON, cannot be kept: %s",
+  "screen.materialnexus.settings.display": "Display",
+  "screen.materialnexus.settings.show_ids": "Show the technical id under the name of items",
+  "screen.materialnexus.settings.open_groups": "Open the groups “No duplicate” and “Forms that can be created” by default",
+  "screen.materialnexus.settings.reopen": "Reopen the screen where I left it"
 }

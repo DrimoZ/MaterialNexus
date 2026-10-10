@@ -34,6 +34,8 @@ class ScreenUiTest {
     @Test
     void anUnreadableSettingsFileGivesTheDefaults() {
         assertEquals(Theme.PAPER, ScreenSettings.parseTheme("{\"theme\":\"paper\"}"));
+        // A file from before a setting existed keeps what it has and takes the default for the rest.
+        assertEquals(ScreenSettings.Values.DEFAULT.withTheme(Theme.PAPER).withShowIds(false), ScreenSettings.parse("{\"theme\":\"paper\",\"show_ids\":false,\"reopen\":\"yes\"}"));
         for (String bad : new String[] {"", "{}", "[]", "{\"theme\":\"neon\"}", "{\"theme\":3}", "not json"}) {
             assertEquals(Theme.GRAPHITE, ScreenSettings.parseTheme(bad), bad);
         }
