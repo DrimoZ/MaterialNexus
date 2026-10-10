@@ -1,5 +1,8 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.client.ui.Btn;
+import dev.drimoz.materialnexus.client.ui.Field;
+import dev.drimoz.materialnexus.client.ui.Theme;
 import dev.drimoz.materialnexus.core.scripts.ScriptDecisions;
 import dev.drimoz.materialnexus.core.scripts.ScriptDecisions.Status;
 import dev.drimoz.materialnexus.network.ScriptsPayload;
@@ -63,14 +66,14 @@ final class ScriptsPanel {
 
     void render(GuiGraphics g, Font font, int x, int y, int w, int h, int mx, int my) {
         hits.clear();
-        g.drawString(font, Component.translatable("screen.materialnexus.scripts.title"), x, y, Ui.TEXT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.scripts.title"), x, y, Theme.TEXT, false);
         int ty = y + 14;
         for (var line : font.split(Component.translatable("screen.materialnexus.scripts.intro"), Math.min(w, 600))) {
-            g.drawString(font, line, x, ty, Ui.MUTED, false);
+            g.drawString(font, line, x, ty, Theme.MUTED, false);
             ty += 11;
         }
         if (payload == null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x, ty + 6, Ui.MUTED, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x, ty + 6, Theme.MUTED, false);
             return;
         }
         ty += 4;
@@ -78,7 +81,7 @@ final class ScriptsPanel {
             ty = button(g, font, Component.translatable("screen.materialnexus.scripts.keep_all"), x, ty, mx, my, this::keepAll) + 4;
         }
         if (payload.addedRecipes() > 0) {
-            g.drawString(font, Component.translatable("screen.materialnexus.scripts.added", payload.addedRecipes()), x, ty, Ui.FAINT, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.scripts.added", payload.addedRecipes()), x, ty, Theme.FAINT, false);
             ty += 12;
         }
 
@@ -97,41 +100,41 @@ final class ScriptsPanel {
     /** One decision: the kept item, its form, status, what Material Nexus keeps, and why. Returns the y below it. */
     private int row(GuiGraphics g, Font font, ScriptsPayload.Row r, int x, int y, int w, int top, int bottom, int mx, int my) {
         boolean visible = y + 22 > top && y < bottom;
-        g.fill(x, y, x + w, y + 22, 0x0CFFFFFF);
+        g.fill(x, y, x + w, y + 22, Theme.RAISED);
         r.kept().ifPresent(item -> Ui.slot(g, item, x + 2, y + 2, 0, false));
         Component title = Component.translatable("screen.materialnexus.triage.item", Names.material(r.material()), Names.form(r.form()));
-        g.drawString(font, title, x + 26, y + 7, Ui.TEXT, false);
+        g.drawString(font, title, x + 26, y + 7, Theme.TEXT, false);
         int px = x + 32 + font.width(title);
         px += 6 + Ui.pill(g, font, Component.translatable("screen.materialnexus.scripts.status." + Names.lowerName(r.status())), px, y + 5, color(r.status()));
         if (r.status() == Status.DIFFERS) {
             Component current = r.current().map(c -> Component.translatable("screen.materialnexus.scripts.current", Names.withMod(c)))
                     .orElse(Component.translatable("screen.materialnexus.scripts.current_none"));
-            g.drawString(font, current, px, y + 7, Ui.MUTED, false);
+            g.drawString(font, current, px, y + 7, Theme.MUTED, false);
         }
         if (!readOnly && offered(r)) {
             if (pending(r)) {
-                Ui.pill(g, font, Ui.Status.PENDING.label(), x + w - 60, y + 5, Ui.ACCENT);
+                Ui.pill(g, font, Ui.Status.PENDING.label(), x + w - 60, y + 5, Theme.INFO);
             } else if (visible) {
                 button(g, font, Component.translatable("screen.materialnexus.scripts.keep"), x + w - 60, y + 3, mx, my, () -> keep(r));
             }
         }
         if (visible) {
             r.kept().ifPresent(item -> hits.add(x + 2, y + 2, 18, 18, null, null,
-                    List.of(Names.stack(item).getHoverName(), Component.literal(item.toString()).withColor(0x888888))));
+                    List.of(Names.stack(item).getHoverName(), Component.literal(item.toString()).withColor(Theme.TIP_FAINT))));
         }
         int ly = y + 25;
         if (!r.seenIn().isEmpty()) {
             // MNX-077: the script lines to delete once the choice is applied.
             Component seen = Component.translatable("screen.materialnexus.scripts.seen_in", String.join(", ", r.seenIn()));
-            g.drawString(font, font.plainSubstrByWidth(seen.getString(), w - 30), x + 26, ly, 0x88AAFF, false);
+            g.drawString(font, font.plainSubstrByWidth(seen.getString(), w - 30), x + 26, ly, Theme.INFO, false);
             ly += LINE + 1;
         }
         for (ScriptDecisions.Evidence e : r.evidence()) {
-            g.drawString(font, font.plainSubstrByWidth(evidence(e).getString(), w - 30), x + 26, ly, Ui.MUTED, false);
+            g.drawString(font, font.plainSubstrByWidth(evidence(e).getString(), w - 30), x + 26, ly, Theme.MUTED, false);
             ly += LINE;
         }
         if (r.evidenceCount() > r.evidence().size()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.scripts.more", r.evidenceCount() - r.evidence().size()), x + 26, ly, Ui.FAINT, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.scripts.more", r.evidenceCount() - r.evidence().size()), x + 26, ly, Theme.FAINT, false);
             ly += LINE;
         }
         return ly;
@@ -145,18 +148,17 @@ final class ScriptsPanel {
 
     private static int color(Status status) {
         return switch (status) {
-            case RECORDED -> Ui.SUCCESS;
-            case SAME -> Ui.ACCENT;
-            case DIFFERS -> Ui.WARNING;
-            case UNDECIDED -> Ui.NEUTRAL;
+            case RECORDED -> Theme.OK;
+            case SAME -> Theme.INFO;
+            case DIFFERS -> Theme.WARN;
+            case UNDECIDED -> Theme.FAINT;
         };
     }
 
     private int button(GuiGraphics g, Font font, Component label, int bx, int by, int mx, int my, Runnable action) {
         int bw = Math.max(56, font.width(label) + 16);
         boolean over = mx >= bx && mx < bx + bw && my >= by && my < by + 16;
-        g.fill(bx, by, bx + bw, by + 16, over ? 0xFF6AABF6 : Ui.ACCENT);
-        g.drawCenteredString(font, label, bx + bw / 2, by + 4, Ui.TEXT);
+        Ui.button(g, font, label, bx, by, bw, 16, false, over, true);
         hits.add(bx, by, bw, 16, action, null, List.of());
         return by + 16;
     }

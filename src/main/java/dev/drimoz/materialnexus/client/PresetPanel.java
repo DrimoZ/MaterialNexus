@@ -1,5 +1,8 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.client.ui.Btn;
+import dev.drimoz.materialnexus.client.ui.Field;
+import dev.drimoz.materialnexus.client.ui.Theme;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -59,15 +62,15 @@ final class PresetPanel {
 
     void render(GuiGraphics g, Font font, int x, int y, int w, int h, int mx, int my) {
         hits.clear();
-        g.drawString(font, Component.translatable("screen.materialnexus.presets"), x, y, Ui.TEXT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.presets"), x, y, Theme.TEXT, false);
         int ty = y + 14;
         for (var line : font.split(Component.translatable("screen.materialnexus.presets.intro"), Math.min(w, 560))) {
-            g.drawString(font, line, x, ty, Ui.MUTED, false);
+            g.drawString(font, line, x, ty, Theme.MUTED, false);
             ty += 11;
         }
         ty += 8;
         if (presets.isEmpty()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.presets.none"), x, ty, Ui.FAINT, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.presets.none"), x, ty, Theme.FAINT, false);
             return;
         }
 
@@ -77,9 +80,9 @@ final class PresetPanel {
             ResourceLocation id = entry.getKey();
             boolean active = id.equals(selected);
             boolean over = mx >= x && mx < x + listW && my >= ly && my < ly + 22;
-            g.fill(x, ly, x + listW, ly + 22, active ? (Ui.ACCENT & 0x00FFFFFF) | 0x50000000 : over ? 0x18FFFFFF : 0x0CFFFFFF);
-            g.drawString(font, font.plainSubstrByWidth(name(id).getString(), listW - 12), x + 6, ly + 7, active ? Ui.TEXT : Ui.MUTED, false);
-            if (matches(entry.getValue())) g.fill(x + listW - 6, ly + 8, x + listW - 2, ly + 14, Ui.SUCCESS);
+            g.fill(x, ly, x + listW, ly + 22, active ? Theme.SEL : over ? Theme.RAISED : Theme.RAISED);
+            g.drawString(font, font.plainSubstrByWidth(name(id).getString(), listW - 12), x + 6, ly + 7, active ? Theme.TEXT : Theme.MUTED, false);
+            if (matches(entry.getValue())) g.fill(x + listW - 6, ly + 8, x + listW - 2, ly + 14, Theme.OK);
             hits.add(x, ly, listW, 22, () -> selected = id, null, List.of());
             ly += 24;
         }
@@ -88,10 +91,10 @@ final class PresetPanel {
         int dx = x + listW + 16;
         int dw = Math.min(w - listW - 16, 420);
         int dy = ty;
-        g.drawString(font, name(selected), dx, dy, Ui.TEXT, false);
+        g.drawString(font, name(selected), dx, dy, Theme.TEXT, false);
         dy += 13;
         for (var line : font.split(Component.translatableWithFallback("materialnexus.preset." + selected.getPath() + ".desc", ""), dw)) {
-            g.drawString(font, line, dx, dy, Ui.MUTED, false);
+            g.drawString(font, line, dx, dy, Theme.MUTED, false);
             dy += 11;
         }
         dy += 8;
@@ -102,31 +105,30 @@ final class PresetPanel {
 
         dy += 4;
         if (matches(preset)) {
-            g.drawString(font, Component.translatable("screen.materialnexus.presets.in_use"), dx, dy + 4, Ui.SUCCESS, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.presets.in_use"), dx, dy + 4, Theme.OK, false);
         } else {
             Component label = Component.translatable("screen.materialnexus.presets.use");
             int bw = font.width(label) + 20;
             boolean over = mx >= dx && mx < dx + bw && my >= dy && my < dy + 18;
-            g.fill(dx, dy, dx + bw, dy + 18, over ? 0xFF6AABF6 : Ui.ACCENT);
-            g.drawCenteredString(font, label, dx + bw / 2, dy + 5, Ui.TEXT);
+            Ui.button(g, font, label, dx, dy, bw, 18, false, over, true);
             hits.add(dx, dy, bw, 18, () -> use(preset), null, List.of());
-            g.drawString(font, Component.translatable("screen.materialnexus.presets.use_hint"), dx + bw + 8, dy + 5, Ui.FAINT, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.presets.use_hint"), dx + bw + 8, dy + 5, Theme.FAINT, false);
         }
     }
 
     /** One setting of the preset: what it is, the preset's value, and the current one. Returns the y below it. */
     private static int field(GuiGraphics g, Font font, int x, int y, int w, String key, JsonElement value) {
-        g.fill(x, y, x + 2, y + 9, Ui.ACCENT);
-        g.drawString(font, Component.translatableWithFallback("screen.materialnexus.presets.field." + key, key), x + 6, y, Ui.TEXT, false);
+        g.fill(x, y, x + 2, y + 9, Theme.INFO);
+        g.drawString(font, Component.translatableWithFallback("screen.materialnexus.presets.field." + key, key), x + 6, y, Theme.TEXT, false);
         y += 11;
         for (var line : font.split(Component.translatableWithFallback("screen.materialnexus.presets.field." + key + ".desc", ""), w - 6)) {
-            g.drawString(font, line, x + 6, y, Ui.FAINT, false);
+            g.drawString(font, line, x + 6, y, Theme.FAINT, false);
             y += 10;
         }
         y += 2;
         JsonElement now = PendingChanges.global(key);
-        y = valueLine(g, font, x + 6, y, w - 6, Component.translatable("screen.materialnexus.presets.sets"), key, value, Ui.TEXT);
-        if (!same(value, now)) y = valueLine(g, font, x + 6, y, w - 6, Component.translatable("screen.materialnexus.presets.now"), key, now, Ui.MUTED);
+        y = valueLine(g, font, x + 6, y, w - 6, Component.translatable("screen.materialnexus.presets.sets"), key, value, Theme.TEXT);
+        if (!same(value, now)) y = valueLine(g, font, x + 6, y, w - 6, Component.translatable("screen.materialnexus.presets.now"), key, now, Theme.MUTED);
         return y;
     }
 

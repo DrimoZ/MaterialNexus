@@ -1,5 +1,8 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.client.ui.Btn;
+import dev.drimoz.materialnexus.client.ui.Field;
+import dev.drimoz.materialnexus.client.ui.Theme;
 import dev.drimoz.materialnexus.datapack.CanonicalChange;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
@@ -101,10 +104,10 @@ final class PendingDrawer implements Drawer {
     @Override
     public void render(GuiGraphics g, Font font, int mx, int my) {
         hits.clear();
-        g.fill(x, y, x + width, y + height, 0xFF141418);
-        g.fill(x, y, x + 1, y + height, Ui.ACCENT);
-        g.drawString(font, Component.translatable("screen.materialnexus.pending.title"), x + 8, y + 6, Ui.TEXT, false);
-        g.drawString(font, Component.translatable("screen.materialnexus.pending.hint"), x + 8, y + 17, Ui.FAINT, false);
+        g.fill(x, y, x + width, y + height, Theme.SURFACE);
+        g.fill(x, y, x + 1, y + height, Theme.INFO);
+        g.drawString(font, Component.translatable("screen.materialnexus.pending.title"), x + 8, y + 6, Theme.TEXT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.pending.hint"), x + 8, y + 17, Theme.FAINT, false);
 
         int listTop = y + 30;
         int listBottom = y + height - 28;
@@ -113,19 +116,19 @@ final class PendingDrawer implements Drawer {
         boolean inList = my >= listTop && my < listBottom;
         g.enableScissor(x, listTop, x + width, listBottom);
         int ly = listTop - (int) scroll;
-        if (lines.isEmpty()) g.drawString(font, Component.translatable("screen.materialnexus.pending.none"), x + 8, ly, Ui.MUTED, false);
+        if (lines.isEmpty()) g.drawString(font, Component.translatable("screen.materialnexus.pending.none"), x + 8, ly, Theme.MUTED, false);
         for (Line line : lines) {
             if (ly + LINE > listTop && ly < listBottom) {
                 int lx = x + 8 + line.depth() * 10;
                 boolean over = inList && mx >= x && mx < x + width && my >= ly - 1 && my < ly + LINE - 1;
-                if (over) g.fill(x + 1, ly - 2, x + width, ly + LINE - 2, 0x14FFFFFF);
-                if (line.depth() == 0) g.fill(lx, ly, lx + 2, ly + 8, Ui.ACCENT);
+                if (over) g.fill(x + 1, ly - 2, x + width, ly + LINE - 2, Theme.RAISED);
+                if (line.depth() == 0) g.fill(lx, ly, lx + 2, ly + 8, Theme.INFO);
                 int tx = lx + (line.depth() == 0 ? 6 : 0);
                 g.drawString(font, font.plainSubstrByWidth(line.text().getString(), x + width - 24 - tx), tx, ly,
-                        line.group() ? Ui.TEXT : Ui.MUTED, false);
+                        line.group() ? Theme.TEXT : Theme.MUTED, false);
                 int bx = x + width - 18;
                 boolean overX = inList && mx >= bx && mx < bx + 12 && my >= ly - 2 && my < ly + 10;
-                g.drawString(font, "×", bx + 3, ly, overX ? Ui.DANGER : over ? Ui.MUTED : Ui.FAINT, false);
+                g.drawString(font, "×", bx + 3, ly, overX ? Theme.BAD : over ? Theme.MUTED : Theme.FAINT, false);
                 if (inList) {
                     hits.add(bx, ly - 2, 12, 12, line.discard(), null, List.of(Component.translatable(
                             line.group() ? "screen.materialnexus.pending.discard_group" : "screen.materialnexus.pending.discard")));
@@ -137,16 +140,15 @@ final class PendingDrawer implements Drawer {
 
         int by = y + height - 22;
         int bw = (width - 24) / 2;
-        button(g, font, mx, my, x + 8, by, bw, Component.translatable("screen.materialnexus.preview_short"), Ui.ACCENT,
+        button(g, font, mx, my, x + 8, by, bw, Component.translatable("screen.materialnexus.preview_short"), Theme.INFO,
                 lines.isEmpty() ? null : preview);
-        button(g, font, mx, my, x + 16 + bw, by, bw, Component.translatable("screen.materialnexus.pending.close"), Ui.NEUTRAL, close);
+        button(g, font, mx, my, x + 16 + bw, by, bw, Component.translatable("screen.materialnexus.pending.close"), Theme.FAINT, close);
         hits.tooltip(g, font, mx, my);
     }
 
     private void button(GuiGraphics g, Font font, int mx, int my, int bx, int by, int bw, Component label, int color, Runnable action) {
         boolean over = action != null && mx >= bx && mx < bx + bw && my >= by && my < by + 16;
-        g.fill(bx, by, bx + bw, by + 16, (color & 0x00FFFFFF) | (action == null ? 0x30000000 : over ? 0xFF000000 : 0xB0000000));
-        g.drawCenteredString(font, label, bx + bw / 2, by + 4, action == null ? Ui.FAINT : Ui.TEXT);
+        Ui.button(g, font, label, bx, by, bw, 16, color == Theme.INFO, over, action != null);
         if (action != null) hits.add(bx, by, bw, 16, action, null, List.of());
     }
 }
