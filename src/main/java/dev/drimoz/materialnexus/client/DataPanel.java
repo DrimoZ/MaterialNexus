@@ -1,5 +1,8 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.client.ui.Btn;
+import dev.drimoz.materialnexus.client.ui.Field;
+import dev.drimoz.materialnexus.client.ui.Theme;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
@@ -83,23 +86,23 @@ final class DataPanel {
 
     private void initFiles(Consumer<AbstractWidget> add, Font font) {
         int side = side();
-        EditBox search = new EditBox(font, x + 8, y + 64, side - 16, 16, Component.translatable("screen.materialnexus.search"));
+        EditBox search = new Field(font, x + 8, y + 64, side - 16, 16, Component.translatable("screen.materialnexus.search"));
         search.setHint(Component.translatable("screen.materialnexus.data.filter"));
         search.setValue(filter);
         search.setResponder(v -> { filter = v; scroll = 0; });
         add.accept(search);
 
         int by = y + h - 44;
-        add.accept(Button.builder(Component.translatable("screen.materialnexus.data.kind." + newKind.key), b -> {
+        add.accept(Btn.of(Component.translatable("screen.materialnexus.data.kind." + newKind.key), b -> {
             var kinds = EditableData.Kind.values();
             newKind = kinds[(newKind.ordinal() + 1) % kinds.length];
             rebuild.run();
         }).bounds(x + 8, by, 96, 18).build());
-        EditBox id = new EditBox(font, x + 108, by + 1, side - 116, 16, Component.empty());
+        EditBox id = new Field(font, x + 108, by + 1, side - 116, 16, Component.empty());
         id.setValue(newId);
         id.setResponder(v -> newId = v);
         add.accept(id);
-        add.accept(Button.builder(Component.translatable("screen.materialnexus.data.new"), b -> {
+        add.accept(Btn.of(Component.translatable("screen.materialnexus.data.new"), b -> {
             ResourceLocation rl = ResourceLocation.tryParse(newId.strip().toLowerCase(Locale.ROOT));
             if (rl != null) select(new DataListPayload.Item(newKind.key, rl, EditableData.USER_PACK_ID, false));
         }).bounds(x + 8, by + 22, side - 16, 18).build());
@@ -115,18 +118,18 @@ final class DataPanel {
 
         int bx = ex;
         int bw = 130;
-        add.accept(Button.builder(Component.translatable("screen.materialnexus.data.keep"), b -> {
+        add.accept(Btn.of(Component.translatable("screen.materialnexus.data.keep"), b -> {
             if (editor.getValue().equals(loadedText)) PendingChanges.clearData(selected.kind(), key);
             else PendingChanges.setData(selected.kind(), key, Optional.of(editor.getValue()));
             draft = null;
             rebuild.run();
         }).bounds(bx, y + h - 22, bw, 18).build());
-        add.accept(active(Button.builder(Component.translatable("screen.materialnexus.data.discard"), b -> {
+        add.accept(active(Btn.of(Component.translatable("screen.materialnexus.data.discard"), b -> {
             PendingChanges.clearData(selected.kind(), key);
             draft = null;
             rebuild.run();
         }).bounds(bx + bw + 4, y + h - 22, bw, 18).build(), draft != null || PendingChanges.data(selected.kind(), key).isPresent()));
-        Button original = Button.builder(Component.translatable("screen.materialnexus.data.original"), b -> {
+        Button original = Btn.of(Component.translatable("screen.materialnexus.data.original"), b -> {
             PendingChanges.setData(selected.kind(), key, Optional.empty());
             draft = null;
             rebuild.run();
@@ -143,19 +146,19 @@ final class DataPanel {
         int ry = y + 76;
         for (int i = untaggedPage * PAGE; i < Math.min(candidates.size(), (untaggedPage + 1) * PAGE); i++) {
             FormPatterns.Candidate c = candidates.get(i);
-            EditBox form = new EditBox(font, x + w - 258, ry + 2, 120, 16, Component.empty());
+            EditBox form = new Field(font, x + w - 258, ry + 2, 120, 16, Component.empty());
             form.setValue(guessForm(c.pattern()));
             add.accept(form);
             boolean done = isDeclared(c.pattern());
-            add.accept(active(Button.builder(Component.translatable(done ? "screen.materialnexus.data.declared" : "screen.materialnexus.data.declare"),
+            add.accept(active(Btn.of(Component.translatable(done ? "screen.materialnexus.data.declared" : "screen.materialnexus.data.declare"),
                     b -> declare(form.getValue().strip().toLowerCase(Locale.ROOT), c.pattern())).bounds(x + w - 132, ry + 1, 120, 18).build(), !done && declared != null));
             ry += 24;
         }
-        add.accept(active(Button.builder(Component.literal("<"), b -> { untaggedPage--; rebuild.run(); }).bounds(x + 8, y + h - 22, 20, 18).build(), untaggedPage > 0));
-        add.accept(active(Button.builder(Component.literal(">"), b -> { untaggedPage++; rebuild.run(); }).bounds(x + 32, y + h - 22, 20, 18).build(), untaggedPage < pages - 1));
+        add.accept(active(Btn.of(Component.literal("<"), b -> { untaggedPage--; rebuild.run(); }).bounds(x + 8, y + h - 22, 20, 18).build(), untaggedPage > 0));
+        add.accept(active(Btn.of(Component.literal(">"), b -> { untaggedPage++; rebuild.run(); }).bounds(x + 32, y + h - 22, 20, 18).build(), untaggedPage < pages - 1));
         // MNX-078: items known as a form (patterns, aliases) get the convention tag they lack, on Apply.
         boolean on = PendingChanges.global("add_missing_tags") instanceof com.google.gson.JsonPrimitive p && p.isBoolean() && p.getAsBoolean();
-        Button tags = Button.builder(Component.translatable(on ? "screen.materialnexus.data.missing_tags.on" : "screen.materialnexus.data.missing_tags.off"), b -> {
+        Button tags = Btn.of(Component.translatable(on ? "screen.materialnexus.data.missing_tags.on" : "screen.materialnexus.data.missing_tags.off"), b -> {
             PendingChanges.setGlobal("add_missing_tags", new com.google.gson.JsonPrimitive(!on));
             rebuild.run();
         }).bounds(x + w - 232, y + h - 22, 220, 18).build();
@@ -164,13 +167,13 @@ final class DataPanel {
 
         // MNX-079: one item into one form's tag (c:ingots/tin for tin/ingot), pending like any change.
         int ay = y + h - 44;
-        EditBox item = new EditBox(font, x + 8, ay + 1, 180, 16, Component.empty());
+        EditBox item = new Field(font, x + 8, ay + 1, 180, 16, Component.empty());
         item.setHint(Component.translatable("screen.materialnexus.data.tag_add.item"));
         item.setValue(tagItem);
-        EditBox target = new EditBox(font, x + 192, ay + 1, 100, 16, Component.empty());
+        EditBox target = new Field(font, x + 192, ay + 1, 100, 16, Component.empty());
         target.setHint(Component.translatable("screen.materialnexus.data.tag_add.form"));
         target.setValue(tagForm);
-        Button addTag = Button.builder(Component.translatable("screen.materialnexus.data.tag_add"), b -> {
+        Button addTag = Btn.of(Component.translatable("screen.materialnexus.data.tag_add"), b -> {
             String[] parts = tagForm.strip().toLowerCase(Locale.ROOT).split("/", -1);
             PendingChanges.addToTag(parts[0], parts[1], ResourceLocation.parse(tagItem.strip().toLowerCase(Locale.ROOT)));
             tagItem = "";
@@ -245,7 +248,7 @@ final class DataPanel {
 
     void render(GuiGraphics g, Font font, int mx, int my) {
         hits.clear();
-        g.drawString(font, Component.translatable("screen.materialnexus.data_title"), x + 12, y + 6, Ui.TEXT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.data_title"), x + 12, y + 6, Theme.TEXT, false);
         int tx = x + 10;
         int ty = y + 20;
         for (boolean mode : new boolean[] {false, true}) {
@@ -254,8 +257,8 @@ final class DataPanel {
             int tw = font.width(label) + 12;
             boolean active = untagged == mode;
             boolean over = mx >= tx && mx < tx + tw && my >= ty && my < ty + 16;
-            if (active) g.fill(tx, ty + 15, tx + tw, ty + 16, Ui.ACCENT);
-            g.drawString(font, label, tx + 6, ty + 4, active ? Ui.TEXT : over ? 0xCCCCCC : Ui.MUTED, false);
+            if (active) g.fill(tx, ty + 14, tx + tw, ty + 16, Theme.ACCENT);
+            g.drawString(font, label, tx + 6, ty + 4, active ? Theme.TEXT : over ? Theme.MUTED : Theme.MUTED, false);
             hits.add(tx, ty, tw, 16, () -> {
                 untagged = mode;
                 if (mode && declared == null) PacketDistributor.sendToServer(new DataReadRequest(EditableData.Kind.FORMS.key, DECLARED));
@@ -263,11 +266,11 @@ final class DataPanel {
             }, null, List.of());
             tx += tw + 2;
         }
-        g.fill(x + 8, ty + 16, x + w - 8, ty + 17, Ui.LINE);
+        g.fill(x + 8, ty + 16, x + w - 8, ty + 17, Theme.BORDER);
         Component intro = Component.translatable(untagged ? "screen.materialnexus.data.untagged_intro" : "screen.materialnexus.data.intro");
-        g.drawString(font, font.plainSubstrByWidth(intro.getString(), w - 24), x + 12, y + 44, Ui.FAINT, false);
+        g.drawString(font, font.plainSubstrByWidth(intro.getString(), w - 24), x + 12, y + 44, Theme.FAINT, false);
         if (list == null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x + 12, y + 64, Ui.MUTED, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x + 12, y + 64, Theme.MUTED, false);
             return;
         }
         if (untagged) renderUntagged(g, font);
@@ -294,7 +297,7 @@ final class DataPanel {
         int bottom = y + h - 50;
         List<Row> rows = rows();
         scroll = Math.min(scroll, Math.max(0, rows.size() * ROW - (bottom - top)));
-        g.fill(x + side, y + 60, x + side + 1, y + h, Ui.LINE);
+        g.fill(x + side, y + 60, x + side + 1, y + h, Theme.BORDER);
         g.enableScissor(x, top, x + side, bottom);
         int ry = top - (int) scroll;
         for (Row row : rows) {
@@ -302,40 +305,40 @@ final class DataPanel {
                 if (row.item() == null) {
                     long count = list.entries().stream().filter(e -> e.kind().equals(row.kind().key)).count();
                     g.drawString(font, Component.translatable("screen.materialnexus.data.kind." + row.kind().key).getString() + " (" + count + ")",
-                            x + 10, ry + 2, Ui.MUTED, false);
+                            x + 10, ry + 2, Theme.MUTED, false);
                 } else {
                     DataListPayload.Item item = row.item();
                     boolean isSelected = selected != null && selected.kind().equals(item.kind()) && selected.id().equals(item.id());
                     boolean over = my >= top && my < bottom && mx >= x + 4 && mx < x + side - 2 && my >= ry && my < ry + ROW;
-                    if (isSelected) g.fill(x + 4, ry, x + side - 2, ry + ROW, (Ui.ACCENT & 0x00FFFFFF) | 0x50000000);
-                    else if (over) g.fill(x + 4, ry, x + side - 2, ry + ROW, 0x18FFFFFF);
-                    int dot = status(item) == 2 ? Ui.ACCENT : status(item) == 1 ? Ui.SUCCESS : 0;
+                    if (isSelected) g.fill(x + 4, ry, x + side - 2, ry + ROW, Theme.SEL);
+                    else if (over) g.fill(x + 4, ry, x + side - 2, ry + ROW, Theme.RAISED);
+                    int dot = status(item) == 2 ? Theme.INFO : status(item) == 1 ? Theme.OK : 0;
                     if (dot != 0) g.fill(x + 10, ry + 4, x + 14, ry + 8, dot);
                     // The mod's own files are most of the list: their namespace is implied, others show it.
                     String label = item.id().getNamespace().equals(dev.drimoz.materialnexus.MaterialNexus.MOD_ID) ? item.id().getPath()
                             : item.id().getPath() + " · " + item.id().getNamespace();
-                    g.drawString(font, font.plainSubstrByWidth(label, side - 30), x + 18, ry + 2, isSelected ? Ui.TEXT : 0xC8C8D0, false);
+                    g.drawString(font, font.plainSubstrByWidth(label, side - 30), x + 18, ry + 2, isSelected ? Theme.TEXT : Theme.MUTED, false);
                     if (my >= top && my < bottom) {
                         hits.add(x + 4, ry, side - 6, ROW, () -> select(item), null,
-                                List.of(Component.literal(item.id().toString()), Component.translatable("screen.materialnexus.data.source", item.source()).withStyle(s -> s.withColor(0x888888))));
+                                List.of(Component.literal(item.id().toString()), Component.translatable("screen.materialnexus.data.source", item.source()).withColor(Theme.TIP_FAINT)));
                     }
                 }
             }
             ry += ROW;
         }
         g.disableScissor();
-        if (rows.isEmpty()) g.drawString(font, Component.translatable("screen.materialnexus.data.no_match"), x + 10, top + 2, Ui.FAINT, false);
+        if (rows.isEmpty()) g.drawString(font, Component.translatable("screen.materialnexus.data.no_match"), x + 10, top + 2, Theme.FAINT, false);
 
         int ex = x + side + 10;
         if (selected == null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.data.select"), ex, y + 66, Ui.MUTED, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.data.select"), ex, y + 66, Theme.MUTED, false);
             int ky = y + 84;
             for (EditableData.Kind kind : EditableData.Kind.values()) {
-                g.fill(ex, ky, ex + 2, ky + 8, Ui.ACCENT);
-                g.drawString(font, Component.translatable("screen.materialnexus.data.kind." + kind.key), ex + 6, ky, Ui.TEXT, false);
+                g.fill(ex, ky, ex + 2, ky + 8, Theme.INFO);
+                g.drawString(font, Component.translatable("screen.materialnexus.data.kind." + kind.key), ex + 6, ky, Theme.TEXT, false);
                 ky += 11;
                 for (var line : font.split(Component.translatable("screen.materialnexus.data.kind." + kind.key + ".desc"), x + w - ex - 16)) {
-                    g.drawString(font, line, ex + 6, ky, Ui.FAINT, false);
+                    g.drawString(font, line, ex + 6, ky, Theme.FAINT, false);
                     ky += 10;
                 }
                 ky += 6;
@@ -344,12 +347,12 @@ final class DataPanel {
         }
         EditableData.Kind kind = EditableData.Kind.byKey(selected.kind()).orElse(EditableData.Kind.FORMS);
         Component title = Component.translatable("screen.materialnexus.data.kind." + kind.key).copy().append(" · " + selected.id());
-        g.drawString(font, font.plainSubstrByWidth(title.getString(), x + w - ex - 120), ex, y + 64, Ui.TEXT, false);
+        g.drawString(font, font.plainSubstrByWidth(title.getString(), x + w - ex - 120), ex, y + 64, Theme.TEXT, false);
         int s = status(selected);
         Ui.pill(g, font, Component.translatable(s == 2 ? "screen.materialnexus.data.status.pending" : s == 1 ? "screen.materialnexus.data.status.edited"
-                : "screen.materialnexus.data.status.original"), x + w - 8 - pillWidth(font, s), y + 62, s == 2 ? Ui.ACCENT : s == 1 ? Ui.SUCCESS : Ui.NEUTRAL);
+                : "screen.materialnexus.data.status.original"), x + w - 8 - pillWidth(font, s), y + 62, s == 2 ? Theme.INFO : s == 1 ? Theme.OK : Theme.FAINT);
         g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.data.kind." + kind.key + ".desc").getString(), x + w - ex - 8),
-                ex, y + 78, Ui.FAINT, false);
+                ex, y + 78, Theme.FAINT, false);
     }
 
     private static int pillWidth(Font font, int status) {
@@ -367,22 +370,22 @@ final class DataPanel {
     private void renderUntagged(GuiGraphics g, Font font) {
         List<FormPatterns.Candidate> candidates = list.untagged();
         if (candidates.isEmpty()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.data.untagged_none"), x + 12, y + 64, Ui.SUCCESS, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.data.untagged_none"), x + 12, y + 64, Theme.OK, false);
             return;
         }
-        g.drawString(font, Component.translatable("screen.materialnexus.data.col.pattern"), x + 12, y + 62, Ui.FAINT, false);
-        g.drawString(font, Component.translatable("screen.materialnexus.data.col.form"), x + w - 258, y + 62, Ui.FAINT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.data.col.pattern"), x + 12, y + 62, Theme.FAINT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.data.col.form"), x + w - 258, y + 62, Theme.FAINT, false);
         int ry = y + 76;
         for (int i = untaggedPage * PAGE; i < Math.min(candidates.size(), (untaggedPage + 1) * PAGE); i++) {
             FormPatterns.Candidate c = candidates.get(i);
-            g.fill(x + 8, ry + 22, x + w - 8, ry + 23, Ui.LINE);
-            g.drawString(font, font.plainSubstrByWidth(c.pattern(), w - 290), x + 12, ry + 2, Ui.TEXT, false);
+            g.fill(x + 8, ry + 22, x + w - 8, ry + 23, Theme.BORDER);
+            g.drawString(font, font.plainSubstrByWidth(c.pattern(), w - 290), x + 12, ry + 2, Theme.TEXT, false);
             g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.data.materials", c.materials().size(),
-                    String.join(", ", c.materials())).getString(), w - 290), x + 12, ry + 12, Ui.FAINT, false);
+                    String.join(", ", c.materials())).getString(), w - 290), x + 12, ry + 12, Theme.FAINT, false);
             ry += 24;
         }
         int pages = Math.max(1, (candidates.size() + PAGE - 1) / PAGE);
-        g.drawString(font, (untaggedPage + 1) + " / " + pages, x + 60, y + h - 17, Ui.MUTED, false);
+        g.drawString(font, (untaggedPage + 1) + " / " + pages, x + 60, y + h - 17, Theme.MUTED, false);
     }
 
     // ---- untagged forms ------------------------------------------------------------------------------------

@@ -1,5 +1,8 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.client.ui.Btn;
+import dev.drimoz.materialnexus.client.ui.Field;
+import dev.drimoz.materialnexus.client.ui.Theme;
 import dev.drimoz.materialnexus.network.MaterialListPayload;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.GuiGraphics;
@@ -38,8 +41,8 @@ final class MaterialSidebar extends ObjectSelectionList<MaterialSidebar.Entry> {
     protected int getScrollbarPosition() { return x0 + width - 5; }
 
     static int status(MaterialListPayload.Summary s) {
-        if (s.duplicateForms() == 0) return Ui.NEUTRAL;
-        return s.toDecide() > 0 ? Ui.WARNING : Ui.SUCCESS;
+        if (s.duplicateForms() == 0) return Theme.BORDER;
+        return s.toDecide() > 0 ? Theme.WARN : Theme.OK;
     }
 
     final class Entry extends ObjectSelectionList.Entry<Entry> {
@@ -55,14 +58,14 @@ final class MaterialSidebar extends ObjectSelectionList<MaterialSidebar.Entry> {
         public void render(GuiGraphics g, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
             var font = Minecraft.getInstance().font;
             boolean isSelected = summary.material().equals(selected);
-            if (isSelected) g.fill(left - 2, top - 1, left + width, top + height, 0x30FFFFFF);
-            else if (hovering) g.fill(left - 2, top - 1, left + width, top + height, 0x14FFFFFF);
+            if (isSelected) g.fill(left - 2, top - 1, left + width, top + height, Theme.SEL);
+            else if (hovering) g.fill(left - 2, top - 1, left + width, top + height, Theme.RAISED);
             g.fill(left - 2, top - 1, left, top + height, status(summary));
             summary.icon().ifPresent(icon -> g.renderItem(Names.stack(icon), left + 2, top));
             String count = summary.toDecide() > 0 ? String.valueOf(summary.toDecide()) : "";
             int countWidth = font.width(count);
-            g.drawString(font, font.plainSubstrByWidth(name.getString(), width - 26 - countWidth - 6), left + 21, top + 5, Ui.TEXT, false);
-            if (!count.isEmpty()) g.drawString(font, count, left + width - countWidth - 4, top + 5, Ui.WARNING, false);
+            g.drawString(font, font.plainSubstrByWidth(name.getString(), width - 26 - countWidth - 6), left + 21, top + 5, Theme.TEXT, false);
+            if (!count.isEmpty()) g.drawString(font, count, left + width - countWidth - 4, top + 5, Theme.WARN, false);
         }
 
         @Override

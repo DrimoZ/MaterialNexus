@@ -1,5 +1,8 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.client.ui.Btn;
+import dev.drimoz.materialnexus.client.ui.Field;
+import dev.drimoz.materialnexus.client.ui.Theme;
 import dev.drimoz.materialnexus.datapack.PackContent;
 import dev.drimoz.materialnexus.datapack.PolicyEditor;
 import dev.drimoz.materialnexus.network.PreviewPayload;
@@ -42,17 +45,17 @@ final class PreviewDrawer implements Drawer {
         PendingChanges.processes().keySet().stream().sorted()
                 .forEach(form -> choices.add(Component.translatable("screen.materialnexus.preview_process", Names.form(form))));
         choices.addAll(PendingChanges.globalLines());
-        if (!choices.isEmpty()) groups.add(new Group("choices", Ui.ACCENT, choices));
+        if (!choices.isEmpty()) groups.add(new Group("choices", Theme.INFO, choices));
         Map<String, List<Component>> byKind = new LinkedHashMap<>();
         for (PackContent.Effect e : preview.added()) byKind.computeIfAbsent(e.kind(), k -> new ArrayList<>()).add(Describe.describe(e));
         List<String> kinds = new ArrayList<>(ORDER.stream().filter(byKind::containsKey).toList());
         byKind.keySet().stream().filter(k -> !ORDER.contains(k)).forEach(kinds::add);
         for (String kind : kinds) {
-            int color = kind.endsWith("unsupported") || kind.endsWith("invalid") || kind.endsWith("conflict") ? Ui.WARNING : kind.endsWith("disable") ? Ui.DANGER : Ui.SUCCESS;
+            int color = kind.endsWith("unsupported") || kind.endsWith("invalid") || kind.endsWith("conflict") ? Theme.WARN : kind.endsWith("disable") ? Theme.BAD : Theme.OK;
             groups.add(new Group(kind, color, byKind.get(kind)));
         }
         if (!preview.removed().isEmpty()) {
-            groups.add(new Group("removed", Ui.MUTED | 0xFF000000, preview.removed().stream().map(Describe::describe).toList()));
+            groups.add(new Group("removed", Theme.MUTED, preview.removed().stream().map(Describe::describe).toList()));
         }
         if (groups.size() == 1) open.add(groups.get(0).key());
     }
@@ -85,24 +88,24 @@ final class PreviewDrawer implements Drawer {
     @Override
     public void render(GuiGraphics g, Font font, int mx, int my) {
         hits.clear();
-        g.fill(x, y, x + width, y + height, 0xFF141418);
-        g.fill(x, y, x + 1, y + height, Ui.ACCENT);
-        g.drawString(font, Component.translatable("screen.materialnexus.preview_title"), x + 8, y + 6, Ui.TEXT, false);
+        g.fill(x, y, x + width, y + height, Theme.SURFACE);
+        g.fill(x, y, x + 1, y + height, Theme.INFO);
+        g.drawString(font, Component.translatable("screen.materialnexus.preview_title"), x + 8, y + 6, Theme.TEXT, false);
         preview.preset().ifPresent(id -> g.drawString(font, Component.translatable("screen.materialnexus.preview_preset",
-                Component.translatableWithFallback("materialnexus.preset." + id.getPath(), id.getPath())), x + 8, y + 17, 0x88AAFF, false));
+                Component.translatableWithFallback("materialnexus.preset." + id.getPath(), id.getPath())), x + 8, y + 17, Theme.INFO, false));
 
         int listTop = y + 30;
         int listBottom = y + height - 28;
         g.enableScissor(x, listTop, x + width, listBottom);
         int ly = listTop - (int) scroll;
-        if (!hasChanges()) g.drawString(font, Component.translatable("screen.materialnexus.no_changes"), x + 8, ly, Ui.MUTED, false);
+        if (!hasChanges()) g.drawString(font, Component.translatable("screen.materialnexus.no_changes"), x + 8, ly, Theme.MUTED, false);
         for (Group group : groups) {
             boolean expanded = open.contains(group.key());
             boolean over = mx >= x && mx < x + width && my >= ly && my < ly + 14 && my >= listTop && my < listBottom;
-            if (over) g.fill(x + 2, ly, x + width - 2, ly + 14, 0x18FFFFFF);
+            if (over) g.fill(x + 2, ly, x + width - 2, ly + 14, Theme.RAISED);
             g.fill(x + 6, ly + 3, x + 9, ly + 11, group.color());
             Component title = Component.translatable("screen.materialnexus.group." + group.key(), group.lines().size());
-            g.drawString(font, (expanded ? "▾ " : "▸ ") + title.getString(), x + 13, ly + 3, Ui.TEXT, false);
+            g.drawString(font, (expanded ? "▾ " : "▸ ") + title.getString(), x + 13, ly + 3, Theme.TEXT, false);
             String key = group.key();
             if (ly + 14 > listTop && ly < listBottom) {
                 hits.add(x, Math.max(ly, listTop), width, 14, () -> { if (!open.remove(key)) open.add(key); }, null, List.of());
@@ -111,7 +114,7 @@ final class PreviewDrawer implements Drawer {
             if (!expanded) continue;
             for (Component line : group.lines()) {
                 if (ly + LINE > listTop && ly < listBottom) {
-                    g.drawString(font, font.plainSubstrByWidth(line.getString(), width - 24), x + 16, ly, Ui.MUTED, false);
+                    g.drawString(font, font.plainSubstrByWidth(line.getString(), width - 24), x + 16, ly, Theme.MUTED, false);
                 }
                 ly += LINE;
             }
@@ -122,16 +125,15 @@ final class PreviewDrawer implements Drawer {
         g.disableScissor();
 
         int by = y + height - 22;
-        button(g, font, Component.translatable("screen.materialnexus.apply"), x + 8, by, hasChanges() ? Ui.ACCENT : Ui.NEUTRAL, mx, my,
+        button(g, font, Component.translatable("screen.materialnexus.apply"), x + 8, by, hasChanges() ? Theme.INFO : Theme.FAINT, mx, my,
                 hasChanges() ? apply : null);
-        button(g, font, Component.translatable("screen.materialnexus.close"), x + 8 + 90, by, Ui.NEUTRAL, mx, my, close);
+        button(g, font, Component.translatable("screen.materialnexus.close"), x + 8 + 90, by, Theme.FAINT, mx, my, close);
     }
 
     private void button(GuiGraphics g, Font font, Component label, int bx, int by, int color, int mx, int my, Runnable action) {
         int bw = 84;
         boolean over = mx >= bx && mx < bx + bw && my >= by && my < by + 16;
-        g.fill(bx, by, bx + bw, by + 16, over && action != null ? (color & 0x00FFFFFF) | 0xC0000000 : (color & 0x00FFFFFF) | 0x80000000);
-        g.drawCenteredString(font, label, bx + bw / 2, by + 4, Ui.TEXT);
+        Ui.button(g, font, label, bx, by, bw, 16, color == Theme.INFO, over, action != null);
         if (action != null) hits.add(bx, by, bw, 16, action, null, List.of());
     }
 }

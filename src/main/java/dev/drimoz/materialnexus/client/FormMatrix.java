@@ -1,5 +1,8 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.client.ui.Btn;
+import dev.drimoz.materialnexus.client.ui.Field;
+import dev.drimoz.materialnexus.client.ui.Theme;
 import com.mojang.math.Axis;
 import dev.drimoz.materialnexus.network.MatrixPayload;
 import net.minecraft.client.gui.Font;
@@ -66,19 +69,19 @@ final class FormMatrix {
     }
 
     private static int color(int cell, boolean pending) {
-        if (pending) return Ui.ACCENT;
+        if (pending) return Theme.INFO;
         return switch (cell) {
-            case 1 -> Ui.NEUTRAL;
-            case 2 -> Ui.WARNING;
-            case 3 -> Ui.SUCCESS;
-            default -> 0x18FFFFFF;
+            case 1 -> Theme.RAISED;
+            case 2 -> Theme.WARN;
+            case 3 -> Theme.OK;
+            default -> Theme.SURFACE;
         };
     }
 
     void render(GuiGraphics g, Font font, int mx, int my) {
         hits.clear();
         if (data == null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x, y, Ui.MUTED, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x, y, Theme.MUTED, false);
             return;
         }
         List<String> materials = data.materials();
@@ -94,7 +97,7 @@ final class FormMatrix {
             g.pose().pushPose();
             g.pose().translate(cx + 2, y + HEADER - 3, 0);
             g.pose().mulPose(Axis.ZP.rotationDegrees(-90));
-            g.drawString(font, font.plainSubstrByWidth(Names.form(form).getString(), HEADER - 6), 0, 0, over ? Ui.TEXT : Ui.MUTED, false);
+            g.drawString(font, font.plainSubstrByWidth(Names.form(form).getString(), HEADER - 6), 0, 0, over ? Theme.TEXT : Theme.MUTED, false);
             g.pose().popPose();
             hits.add(cx, y, stride, HEADER, () -> openForm.accept(form), null, List.of(Names.form(form)));
         }
@@ -103,8 +106,8 @@ final class FormMatrix {
             String material = materials.get(firstRow + r);
             int ry = y + HEADER + r * ROW;
             boolean rowOver = my >= ry && my < ry + ROW && mx >= x && mx < x + LABEL + cols * stride;
-            if (rowOver) g.fill(x, ry - 1, x + LABEL + cols * stride, ry + ROW, 0x14FFFFFF);
-            g.drawString(font, font.plainSubstrByWidth(Names.material(material).getString(), LABEL - 6), x + 2, ry + 3, rowOver ? Ui.TEXT : Ui.MUTED, false);
+            if (rowOver) g.fill(x, ry - 1, x + LABEL, ry + ROW, Theme.RAISED);
+            g.drawString(font, font.plainSubstrByWidth(Names.material(material).getString(), LABEL - 6), x + 2, ry + 3, rowOver ? Theme.TEXT : Theme.MUTED, false);
             hits.add(x, ry, LABEL, ROW, () -> openMaterial.accept(material), null, List.of());
             for (int c = 0; c < cols; c++) {
                 String form = forms.get(firstCol + c);
@@ -122,12 +125,12 @@ final class FormMatrix {
         int ly = y + HEADER + rows * ROW + 4;
         int lx = x;
         for (Ui.Status s : List.of(Ui.Status.SUGGESTION, Ui.Status.UNIFIED, Ui.Status.SINGLE, Ui.Status.PENDING)) {
-            g.fill(lx, ly + 1, lx + 7, ly + 8, s.color);
-            g.drawString(font, s.label(), lx + 10, ly, Ui.MUTED, false);
+            g.fill(lx, ly + 1, lx + 7, ly + 8, s.color());
+            g.drawString(font, s.label(), lx + 10, ly, Theme.MUTED, false);
             lx += font.width(s.label()) + 20;
         }
         g.drawString(font, Component.translatable("screen.materialnexus.matrix.position", firstRow + 1, firstRow + rows, materials.size(),
-                firstCol + 1, firstCol + cols, forms.size()), lx + 6, ly, Ui.FAINT, false);
+                firstCol + 1, firstCol + cols, forms.size()), lx + 6, ly, Theme.FAINT, false);
         hits.tooltip(g, font, mx, my);
     }
 }

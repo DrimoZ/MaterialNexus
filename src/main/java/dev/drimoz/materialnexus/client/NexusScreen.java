@@ -1,5 +1,10 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.client.ui.Btn;
+import dev.drimoz.materialnexus.client.ui.Field;
+import dev.drimoz.materialnexus.client.ui.Regions;
+import dev.drimoz.materialnexus.client.ui.ScreenSettings;
+import dev.drimoz.materialnexus.client.ui.Theme;
 import dev.drimoz.materialnexus.network.MaterialDetailPayload;
 import dev.drimoz.materialnexus.network.MaterialDetailRequest;
 import dev.drimoz.materialnexus.network.MaterialListPayload;
@@ -35,12 +40,13 @@ import java.util.Optional;
  * choices stay pending on the client until Preview / Apply.
  */
 public final class NexusScreen extends Screen {
-    private enum View { HOME, MATERIALS, FORMS, TRIAGE, PRESETS, DATA, SCRIPTS }
+    private enum View { HOME, MATERIALS, FORMS, TRIAGE, PRESETS, DATA, SCRIPTS, SETTINGS }
     private enum Tab { FORMS, RECIPES, MISSING, PROCESS }
 
-    private static final int TOP = 24;
-    private static final int BOTTOM = 24;
-    private static final int NAV = 78;
+    private static final int TOP = Theme.BAR_TOP;
+    private static final int BOTTOM = Theme.BAR_BOTTOM;
+    /** Width of the navigation rail, from {@link Regions}. */
+    private int nav = 104;
 
     private final boolean readOnly;
     private final boolean canRevert;
@@ -75,6 +81,7 @@ public final class NexusScreen extends Screen {
 
     public NexusScreen(boolean readOnly, boolean canRevert, java.util.Map<ResourceLocation, String> presets, String historyJson) {
         super(Component.translatable("screen.materialnexus.title"));
+        ScreenSettings.load(dev.drimoz.materialnexus.datapack.MnxPaths.root());
         this.readOnly = readOnly;
         this.canRevert = canRevert;
         this.presets = new PresetPanel(presets);
@@ -166,6 +173,7 @@ public final class NexusScreen extends Screen {
             case "presets" -> go(View.PRESETS);
             case "data" -> go(View.DATA);
             case "scripts" -> go(View.SCRIPTS);
+            case "settings" -> go(View.SETTINGS);
             case "pending" -> { PendingChanges.set("copper", "ingot", dev.drimoz.materialnexus.datapack.CanonicalChange.RESET); togglePending(); }
             case "priority" -> { if (totals != null) savePriority(new java.util.ArrayList<>(totals.mods().subList(0, Math.min(3, totals.mods().size())))); }
             default -> go(View.HOME);
@@ -297,7 +305,10 @@ public final class NexusScreen extends Screen {
             scriptsRequested = true;
             PacketDistributor.sendToServer(dev.drimoz.materialnexus.network.ScriptsRequest.INSTANCE);
         }
-        EditBox search = new EditBox(font, width - 136, 4, 130, 16, Component.translatable("screen.materialnexus.search"));
+        Regions regions = Regions.of(width);
+        nav = regions.rail();
+        int searchWidth = width >= Regions.WIDE ? 200 : 132;
+        EditBox search = new Field(font, width - 8 - searchWidth, 3, searchWidth, Theme.CONTROL, Component.translatable("screen.materialnexus.search"));
         search.setMaxLength(NexusQueries.MAX_QUERY);
         search.setHint(Component.translatable("screen.materialnexus.search_everywhere"));
         search.setValue(query);
@@ -309,7 +320,7 @@ public final class NexusScreen extends Screen {
         });
         addRenderableWidget(search);
 
-        contentX = NAV + 1;
+        contentX = nav + 1;
         contentY = TOP;
         contentW = width - contentX;
         contentH = height - TOP - BOTTOM;
@@ -317,7 +328,7 @@ public final class NexusScreen extends Screen {
             case HOME -> initHome();
             case MATERIALS -> initMaterials();
             case FORMS -> initForms();
-            case TRIAGE, PRESETS, SCRIPTS -> { }
+            case TRIAGE, PRESETS, SCRIPTS, SETTINGS -> { }
             case DATA -> data.init(widget -> addRenderableWidget(widget), font, contentX, contentY, contentW, contentH);
         }
         layoutDrawer();
@@ -327,26 +338,26 @@ public final class NexusScreen extends Screen {
         if (readOnly) return;
         int bx = contentX + 12;
         int by = contentY + 82;
-        addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.unify_all"),
+        addRenderableWidget(Btn.of(Component.translatable("screen.materialnexus.unify_all"),
                 b -> PacketDistributor.sendToServer(SuggestionsRequest.INSTANCE)).bounds(bx, by, 170, 20).build());
-        addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.home.review"), b -> startTriage())
+        addRenderableWidget(Btn.of(Component.translatable("screen.materialnexus.home.review"), b -> startTriage())
                 .bounds(bx + 176, by, 170, 20).build());
-        Button revert = addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.revert"), b -> {
+        Button revert = addRenderableWidget(Btn.of(Component.translatable("screen.materialnexus.revert"), b -> {
             PacketDistributor.sendToServer(RevertRequest.INSTANCE);
             minecraft.setScreen(null);
         }).bounds(bx, by + 24, 170, 20).build());
         revert.active = canRevert;
-        addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.home.matrix"), b -> go(View.FORMS))
+        addRenderableWidget(Btn.of(Component.translatable("screen.materialnexus.home.matrix"), b -> go(View.FORMS))
                 .bounds(bx + 176, by + 24, 170, 20).build());
         // MNX-058: every saved choice and pack-wide setting back to default, as pending changes (Preview shows it all).
-        Button reset = addRenderableWidget(Button.builder(Component.translatable("screen.materialnexus.reset.all"), b -> {
+        Button reset = addRenderableWidget(Btn.of(Component.translatable("screen.materialnexus.reset.all"), b -> {
             PacketDistributor.sendToServer(SuggestionsRequest.SAVED);
             PendingChanges.resetSettings();
         }).bounds(bx, by + 48, 170, 20).build());
         reset.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("screen.materialnexus.reset.all.tooltip")));
     }
 
-    private int listWidth() { return net.minecraft.util.Mth.clamp(width / 5, 110, 170); }
+    private int listWidth() { return Regions.of(width).list(); }
 
     private void initMaterials() {
         int lw = listWidth();
@@ -378,12 +389,13 @@ public final class NexusScreen extends Screen {
     @Override
     public void render(GuiGraphics g, int mx, int my, float partialTick) {
         hits.clear();
-        g.fill(0, 0, width, height, Ui.BG);
-        g.fill(0, 0, width, TOP, 0xFF16161C);
-        g.fill(0, TOP - 1, width, TOP, Ui.LINE);
-        g.fill(0, height - BOTTOM, width, height, 0xFF16161C);
-        g.fill(0, height - BOTTOM, width, height - BOTTOM + 1, Ui.LINE);
-        g.fill(NAV, TOP, NAV + 1, height - BOTTOM, Ui.LINE);
+        g.fill(0, 0, width, height, Theme.BG);
+        g.fill(0, 0, width, TOP, Theme.SURFACE);
+        g.fill(0, TOP - 1, width, TOP, Theme.BORDER);
+        g.fill(0, height - BOTTOM, width, height, Theme.SURFACE);
+        g.fill(0, height - BOTTOM, width, height - BOTTOM + 1, Theme.BORDER);
+        g.fill(0, TOP, nav, height - BOTTOM, Theme.SURFACE);
+        g.fill(nav, TOP, nav + 1, height - BOTTOM, Theme.BORDER);
         renderTop(g);
         renderNav(g, mx, my);
         switch (view) {
@@ -394,6 +406,7 @@ public final class NexusScreen extends Screen {
             case DATA -> data.render(g, font, mx, my);
             case PRESETS -> presets.render(g, font, contentX + 12, contentY + 10, contentW - 24, contentH - 20, mx, my);
             case SCRIPTS -> scripts.render(g, font, contentX + 12, contentY + 10, contentW - 24, contentH - 20, mx, my);
+            case SETTINGS -> renderSettings(g, mx, my);
         }
         renderBottom(g, mx, my);
         for (var widget : renderables) widget.render(g, mx, my, partialTick);
@@ -412,94 +425,150 @@ public final class NexusScreen extends Screen {
     @Override
     public void renderBackground(GuiGraphics g) { }
 
+    /** Where the player is, as a path. The pack's counters live in the Overview and as a badge of the rail. */
     private void renderTop(GuiGraphics g) {
-        g.drawString(font, title, 8, 8, Ui.TEXT, false);
-        int px = 14 + font.width(title);
-        if (totals != null) {
-            px += 4 + Ui.pill(g, font, Component.translatable("screen.materialnexus.totals.todo", totals.toDecide()), px, 7, Ui.WARNING);
-            px += 4 + Ui.pill(g, font, Component.translatable("screen.materialnexus.totals.unified", totals.unified(), totals.unified() - totals.byPriority(), totals.byPriority()), px, 7, Ui.SUCCESS);
-            px += 4 + Ui.pill(g, font, Component.translatable("screen.materialnexus.totals.aside", totals.setAside()), px, 7, Ui.NEUTRAL);
-        }
-        if (readOnly) Ui.pill(g, font, Component.translatable("screen.materialnexus.read_only"), px + 6, 7, Ui.DANGER);
+        String here = switch (view) {
+            case MATERIALS -> material == null ? null : Names.material(material).getString();
+            case FORMS -> form == null ? null : Names.form(form).getString();
+            default -> null;
+        };
+        int x = crumb(g, title.getString(), 8, false);
+        x = crumb(g, Component.translatable("screen.materialnexus.nav." + navKey(view)).getString(), x, here == null);
+        if (here != null) x = crumb(g, here, x, true);
+        if (readOnly) g.drawString(font, Component.translatable("screen.materialnexus.read_only"), x + 8, 8, Theme.WARN, false);
+    }
+
+    private int crumb(GuiGraphics g, String text, int x, boolean last) {
+        g.drawString(font, text, x, 8, last ? Theme.TEXT : Theme.MUTED, false);
+        x += font.width(text);
+        if (last) return x;
+        g.drawString(font, " › ", x, 8, Theme.FAINT, false);
+        return x + font.width(" › ");
+    }
+
+    private static String navKey(View view) {
+        return switch (view) {
+            case HOME, TRIAGE -> "home";
+            case MATERIALS -> "materials";
+            case FORMS -> "forms";
+            case SCRIPTS -> "scripts";
+            case DATA -> "data";
+            case PRESETS -> "presets";
+            case SETTINGS -> "settings";
+        };
     }
 
     private void renderNav(GuiGraphics g, int mx, int my) {
-        int y = TOP + 6;
-        y = navItem(g, mx, my, y, "home", view == View.HOME, () -> go(View.HOME));
-        y = navItem(g, mx, my, y, "materials", view == View.MATERIALS, () -> go(View.MATERIALS));
-        y = navItem(g, mx, my, y, "forms", view == View.FORMS, () -> { form = null; go(View.FORMS); });
+        int y = TOP + 8;
+        y = navItem(g, mx, my, y, "home", view == View.HOME || view == View.TRIAGE, 0, () -> go(View.HOME));
+        y = navItem(g, mx, my, y, "materials", view == View.MATERIALS, totals == null ? 0 : totals.toDecide(), () -> go(View.MATERIALS));
+        y = navItem(g, mx, my, y, "forms", view == View.FORMS, 0, () -> { form = null; go(View.FORMS); });
         // MNX-076: only when scripts decide something; read-only servers see it too.
-        if (!scripts.isEmpty()) y = navItem(g, mx, my, y, "scripts", view == View.SCRIPTS, () -> go(View.SCRIPTS));
-        if (readOnly) return;
-        y = navItem(g, mx, my, y, "data", view == View.DATA, () -> go(View.DATA));
-        navItem(g, mx, my, y, "presets", view == View.PRESETS, () -> go(View.PRESETS));
+        if (!scripts.isEmpty()) y = navItem(g, mx, my, y, "scripts", view == View.SCRIPTS, scripts.differing(), () -> go(View.SCRIPTS));
+        if (!readOnly) {
+            g.drawString(font, Component.translatable("screen.materialnexus.nav.advanced"), 12, y + 12, Theme.FAINT, false);
+            y += 24;
+            y = navItem(g, mx, my, y, "data", view == View.DATA, 0, () -> go(View.DATA));
+            navItem(g, mx, my, y, "presets", view == View.PRESETS, 0, () -> go(View.PRESETS));
+        }
+        navItem(g, mx, my, height - BOTTOM - 8 - Theme.CONTROL, "settings", view == View.SETTINGS, 0, () -> go(View.SETTINGS));
     }
 
-    private int navItem(GuiGraphics g, int mx, int my, int y, String key, boolean active, Runnable action) {
-        boolean over = mx >= 4 && mx < NAV - 4 && my >= y && my < y + 16;
-        if (active) g.fill(4, y, NAV - 4, y + 16, (Ui.ACCENT & 0x00FFFFFF) | 0x50000000);
-        else if (over) g.fill(4, y, NAV - 4, y + 16, 0x18FFFFFF);
-        if (active) g.fill(4, y, 6, y + 16, Ui.ACCENT);
-        g.drawString(font, Component.translatable("screen.materialnexus.nav." + key), 10, y + 4, active ? Ui.TEXT : Ui.MUTED, false);
-        hits.add(4, y, NAV - 8, 16, action, null, List.of());
-        return y + 18;
+    /** One entry of the rail; a {@code count} above zero is shown as a badge. Returns the y of the next entry. */
+    private int navItem(GuiGraphics g, int mx, int my, int y, String key, boolean active, int count, Runnable action) {
+        int h = Theme.CONTROL;
+        boolean over = mx >= 4 && mx < nav - 4 && my >= y && my < y + h;
+        if (active) g.fill(4, y, nav - 4, y + h, Theme.SEL);
+        else if (over) g.fill(4, y, nav - 4, y + h, Theme.RAISED);
+        g.drawString(font, Component.translatable("screen.materialnexus.nav." + key), 12, y + 5, active || over ? Theme.TEXT : Theme.MUTED, false);
+        if (count > 0) {
+            String text = String.valueOf(count);
+            int w = font.width(text) + 8;
+            g.fill(nav - 8 - w, y + 3, nav - 8, y + h - 3, active ? Theme.BG : Theme.RAISED);
+            g.drawString(font, text, nav - 4 - w, y + 5, Theme.TEXT, false);
+        }
+        hits.add(4, y, nav - 8, h, action, null, List.of());
+        return y + h + 2;
     }
 
     private void renderBottom(GuiGraphics g, int mx, int my) {
-        int y = height - BOTTOM + 8;
+        int y = height - BOTTOM + 10;
         if (readOnly) {
-            g.drawString(font, Component.translatable("screen.materialnexus.read_only_hint"), 8, y, Ui.MUTED, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.read_only_hint"), 8, y, Theme.MUTED, false);
             return;
         }
         int pending = PendingChanges.size();
         if (pending == 0) {
-            g.drawString(font, Component.translatable("screen.materialnexus.pending.none"), 8, y, Ui.FAINT, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.pending.none"), 8, y, Theme.FAINT, false);
         } else {
             // MNX-058: the summary opens the list of pending changes, where each one can be discarded.
             Component summary = Component.translatable("screen.materialnexus.pending.count", pending, PendingChanges.all().size(),
                     PendingChanges.processes().size(), PendingChanges.creations().size(), PendingChanges.data().size(),
                     PendingChanges.globalLines().size());
-            Component review = Component.translatable("screen.materialnexus.pending.review");
-            int sw = font.width(summary) + 12 + font.width(review);
-            boolean over = mx >= 4 && mx < 20 + sw && my >= y - 4 && my < y + 12;
-            if (over) g.fill(4, y - 4, 20 + sw, y + 12, 0x18FFFFFF);
-            g.fill(8, y, 11, y + 8, Ui.ACCENT);
-            g.drawString(font, summary, 16, y, Ui.TEXT, false);
-            g.drawString(font, review, 28 + font.width(summary), y, over ? Ui.TEXT : 0x88AAFF, false);
-            hits.add(4, y - 4, 16 + sw, 16, this::togglePending, null, List.of());
+            // A ring: chosen, not applied yet.
+            g.renderOutline(8, y, 8, 8, Theme.INFO);
+            g.drawString(font, summary, 22, y, Theme.TEXT, false);
+            bottomButton(g, mx, my, 30 + font.width(summary), Component.translatable("screen.materialnexus.pending.review"), false, this::togglePending);
         }
-        int bx = width - 8;
-        bx = bottomButton(g, mx, my, bx, Component.translatable("screen.materialnexus.preview_short"), Ui.ACCENT, this::preview);
-        bottomButton(g, mx, my, bx, Component.translatable("screen.materialnexus.discard_all"), Ui.NEUTRAL, pending == 0 ? null : () -> {
+        // The one permanent primary action of the screen, with the way back next to it.
+        Component apply = Component.translatable("screen.materialnexus.preview_short");
+        Component discard = Component.translatable("screen.materialnexus.discard_all");
+        int ax = width - 8 - font.width(apply) - 16;
+        bottomButton(g, mx, my, ax, apply, true, this::preview);
+        bottomButton(g, mx, my, ax - 4 - font.width(discard) - 16, discard, false, pending == 0 ? null : () -> {
             PendingChanges.clear();
             drawer = null;
         });
     }
 
-    private int bottomButton(GuiGraphics g, int mx, int my, int right, Component label, int color, Runnable action) {
+    private void bottomButton(GuiGraphics g, int mx, int my, int x, Component label, boolean primary, Runnable action) {
         int w = font.width(label) + 16;
-        int x = right - w;
-        int y = height - BOTTOM + 4;
-        boolean over = action != null && mx >= x && mx < right && my >= y && my < y + 16;
-        g.fill(x, y, right, y + 16, (color & 0x00FFFFFF) | (action == null ? 0x30000000 : over ? 0xD0000000 : 0x90000000));
-        g.drawCenteredString(font, label, x + w / 2, y + 4, action == null ? Ui.FAINT : Ui.TEXT);
-        if (action != null) hits.add(x, y, w, 16, action, null, List.of());
-        return x - 4;
+        int y = height - BOTTOM + 5;
+        boolean over = action != null && mx >= x && mx < x + w && my >= y && my < y + Theme.CONTROL;
+        Ui.button(g, font, label, x, y, w, Theme.CONTROL, primary, over, action != null);
+        if (action != null) hits.add(x, y, w, Theme.CONTROL, action, null, List.of());
+    }
+
+    /** MNX-094: the player's own settings of this screen; they change nothing in the pack and apply at once. */
+    private void renderSettings(GuiGraphics g, int mx, int my) {
+        int x = contentX + 24;
+        int y = contentY + 12;
+        g.drawString(font, Component.translatable("screen.materialnexus.settings.title"), x, y, Theme.TEXT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.settings.hint"), x, y + 12, Theme.MUTED, false);
+        y += 36;
+        g.drawString(font, Component.translatable("screen.materialnexus.settings.theme"), x, y, Theme.MUTED, false);
+        y += 14;
+        for (Theme theme : Theme.values()) {
+            boolean active = theme == Theme.current();
+            boolean over = mx >= x && mx < x + 132 && my >= y && my < y + 58;
+            g.fill(x, y, x + 132, y + 58, active ? Theme.SEL : over ? Theme.RAISED : Theme.SURFACE);
+            if (active) g.renderOutline(x, y, 132, 58, Theme.INFO);
+            // A sample of the theme itself: its ground, text levels, meanings and slot well.
+            g.fill(x + 4, y + 4, x + 128, y + 40, theme.bg);
+            g.drawString(font, "Copper Dust", x + 10, y + 9, theme.text, false);
+            g.drawString(font, "Mekanism", x + 10, y + 22, theme.muted, false);
+            g.fill(x + 84, y + 12, x + 92, y + 20, theme.warn);
+            g.fill(x + 96, y + 12, x + 104, y + 20, theme.ok);
+            g.fill(x + 108, y + 10, x + 120, y + 22, theme.well);
+            g.drawString(font, Component.translatable("screen.materialnexus.theme." + theme.key()), x + 6, y + 46, active ? Theme.TEXT : Theme.MUTED, false);
+            hits.add(x, y, 132, 58, () -> ScreenSettings.setTheme(dev.drimoz.materialnexus.datapack.MnxPaths.root(), theme), null, List.of());
+            x += 140;
+        }
     }
 
     private void renderHome(GuiGraphics g, int mx, int my) {
         int x = contentX + 12;
         int y = contentY + 10;
-        g.drawString(font, Component.translatable("screen.materialnexus.home.title"), x, y, Ui.TEXT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.home.title"), x, y, Theme.TEXT, false);
         if (totals != null) {
             int cw = 124;
-            card(g, x, y + 16, cw, Component.translatable("screen.materialnexus.home.todo"), totals.toDecide(), Ui.WARNING);
-            card(g, x + cw + 6, y + 16, cw, Component.translatable("screen.materialnexus.home.unified"), totals.unified(), Ui.SUCCESS);
+            card(g, x, y + 16, cw, Component.translatable("screen.materialnexus.home.todo"), totals.toDecide(), Theme.WARN);
+            card(g, x + cw + 6, y + 16, cw, Component.translatable("screen.materialnexus.home.unified"), totals.unified(), Theme.OK);
             // MNX-062: unified by the player's choices, or only by the mod priority (which "Reset everything" keeps).
             int sx = x + cw + 6 + 8 + 2 * font.width(String.valueOf(totals.unified())) + 6;
-            g.drawString(font, Component.translatable("screen.materialnexus.home.unified.chosen", totals.unified() - totals.byPriority()), sx, y + 37, Ui.MUTED, false);
-            g.drawString(font, Component.translatable("screen.materialnexus.home.unified.priority", totals.byPriority()), sx, y + 47, Ui.MUTED, false);
-            card(g, x + 2 * (cw + 6), y + 16, cw, Component.translatable("screen.materialnexus.home.aside"), totals.setAside(), Ui.NEUTRAL);
+            g.drawString(font, Component.translatable("screen.materialnexus.home.unified.chosen", totals.unified() - totals.byPriority()), sx, y + 37, Theme.MUTED, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.home.unified.priority", totals.byPriority()), sx, y + 47, Theme.MUTED, false);
+            card(g, x + 2 * (cw + 6), y + 16, cw, Component.translatable("screen.materialnexus.home.aside"), totals.setAside(), Theme.FAINT);
         }
         int ty = contentY + 164;
         boolean wide = contentW > 640;
@@ -509,14 +578,14 @@ public final class NexusScreen extends Screen {
             var lines = font.split(Component.translatable("screen.materialnexus.home.scripts", scripts.decided(), scripts.differing()), tipWidth);
             int h = lines.size() * 11;
             boolean over = mx >= x && mx < x + tipWidth && my >= ty - 2 && my < ty + h;
-            g.fill(x - 4, ty - 2, x - 2, ty + h - 2, scripts.differing() > 0 ? Ui.WARNING : Ui.SUCCESS);
-            for (int i = 0; i < lines.size(); i++) g.drawString(font, lines.get(i), x, ty + i * 11, over ? Ui.TEXT : 0x88AAFF, false);
+            g.fill(x - 4, ty - 2, x - 2, ty + h - 2, scripts.differing() > 0 ? Theme.WARN : Theme.OK);
+            for (int i = 0; i < lines.size(); i++) g.drawString(font, lines.get(i), x, ty + i * 11, over ? Theme.TEXT : Theme.INFO, false);
             hits.add(x, ty - 2, tipWidth, h, () -> go(View.SCRIPTS), null, List.of());
             ty += h + 5;
         }
         for (String key : List.of("home.tip1", "home.tip2", "home.tip3")) {
             for (var line : font.split(Component.translatable("screen.materialnexus." + key), tipWidth)) {
-                g.drawString(font, line, x, ty, Ui.MUTED, false);
+                g.drawString(font, line, x, ty, Theme.MUTED, false);
                 ty += 11;
             }
             ty += 3;
@@ -532,17 +601,17 @@ public final class NexusScreen extends Screen {
      */
     private void renderModPriority(GuiGraphics g, int mx, int my, int x, int y, int w) {
         if (totals == null) return;
-        g.drawString(font, Component.translatable("screen.materialnexus.priority.title"), x, y, Ui.TEXT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.priority.title"), x, y, Theme.TEXT, false);
         // MNX-061: the priority has its own reset, separate from "Reset everything to default".
         if (!readOnly && PendingChanges.global("mod_priority") instanceof com.google.gson.JsonArray current && !current.isEmpty()) {
             Component reset = Component.translatable("screen.materialnexus.priority.reset");
             int rx = x + w - font.width(reset);
             boolean over = mx >= rx && mx < x + w && my >= y - 1 && my < y + 9;
-            g.drawString(font, reset, rx, y, over ? Ui.TEXT : 0x88AAFF, false);
+            g.drawString(font, reset, rx, y, over ? Theme.TEXT : Theme.INFO, false);
             hits.add(rx, y - 1, font.width(reset), 10, () -> PendingChanges.setGlobal("mod_priority", new com.google.gson.JsonArray()), null,
                     List.of(Component.translatable("screen.materialnexus.priority.reset.tooltip")));
         }
-        g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.priority.hint").getString(), w), x, y + 11, Ui.FAINT, false);
+        g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.priority.hint").getString(), w), x, y + 11, Theme.FAINT, false);
         List<String> ranked = new java.util.ArrayList<>();
         if (PendingChanges.global("mod_priority") instanceof com.google.gson.JsonArray a) a.forEach(e -> ranked.add(e.getAsString()));
         List<String> rest = totals.mods().stream().filter(m -> !ranked.contains(m)).toList();
@@ -551,8 +620,8 @@ public final class NexusScreen extends Screen {
         boolean pending = PendingChanges.globalChanged("mod_priority");
         for (int i = 0; i < ranked.size() && ry + 12 < bottom; i++) {
             String mod = ranked.get(i);
-            g.fill(x, ry - 1, x + w, ry + 11, i % 2 == 0 ? 0x14FFFFFF : 0);
-            g.drawString(font, (i + 1) + ". " + modName(mod), x + 4, ry + 1, pending ? 0x88BBFF : Ui.TEXT, false);
+            g.fill(x, ry - 1, x + w, ry + 11, i % 2 == 0 ? Theme.RAISED : 0);
+            g.drawString(font, (i + 1) + ". " + modName(mod), x + 4, ry + 1, pending ? Theme.INFO : Theme.TEXT, false);
             int bx = x + w - 42;
             int index = i;
             if (!readOnly) {
@@ -563,12 +632,12 @@ public final class NexusScreen extends Screen {
             ry += 12;
         }
         if (!rest.isEmpty() && ry + 24 < bottom) {
-            g.drawString(font, Component.translatable("screen.materialnexus.priority.unranked"), x, ry + 4, Ui.FAINT, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.priority.unranked"), x, ry + 4, Theme.FAINT, false);
             ry += 16;
         }
         for (String mod : rest) {
             if (ry + 12 >= bottom) break;
-            g.drawString(font, modName(mod), x + 4, ry + 1, Ui.MUTED, false);
+            g.drawString(font, modName(mod), x + 4, ry + 1, Theme.MUTED, false);
             if (!readOnly) smallButton(g, mx, my, x + w - 14, ry, "+", () -> { ranked.add(mod); savePriority(ranked); });
             ry += 12;
         }
@@ -576,10 +645,10 @@ public final class NexusScreen extends Screen {
 
     /** MNX-056: one line per apply or revert, newest first; returns the y below the list. */
     private int renderHistory(GuiGraphics g, int mx, int my, int x, int y, int w, int max) {
-        g.drawString(font, Component.translatable("screen.materialnexus.history.title"), x, y, Ui.TEXT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.history.title"), x, y, Theme.TEXT, false);
         y += 13;
         if (history.isEmpty()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.history.none"), x, y, Ui.FAINT, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.history.none"), x, y, Theme.FAINT, false);
             return y + 11;
         }
         var format = java.time.format.DateTimeFormatter.ofPattern("dd/MM HH:mm").withZone(java.time.ZoneId.systemDefault());
@@ -595,16 +664,16 @@ public final class NexusScreen extends Screen {
                 default -> Component.translatable("screen.materialnexus.history.apply", when, num(entry, "effects"), num(entry, "choices"),
                         num(entry, "rules"), num(entry, "items"), num(entry, "data"));
             };
-            g.fill(x, y, x + 2, y + 8, kind.equals("apply") ? Ui.SUCCESS : Ui.WARNING);
+            g.fill(x, y, x + 2, y + 8, kind.equals("apply") ? Theme.OK : Theme.WARN);
             // MNX-064: every older entry whose copy is kept can be restored; the newest one is the current state.
             boolean restorable = i > 0 && !readOnly && entry.has("snapshot");
-            g.drawString(font, font.plainSubstrByWidth(line.getString(), w - (restorable ? 20 : 6)), x + 6, y, Ui.MUTED, false);
+            g.drawString(font, font.plainSubstrByWidth(line.getString(), w - (restorable ? 20 : 6)), x + 6, y, Theme.MUTED, false);
             if (restorable) {
                 String id = entry.get("snapshot").getAsString();
                 String date = when;
                 int rx = x + w - 10;
                 boolean over = mx >= rx - 2 && mx < rx + 10 && my >= y - 1 && my < y + 10;
-                g.drawString(font, "↺", rx, y, over ? Ui.TEXT : 0x88AAFF, false);
+                g.drawString(font, "↺", rx, y, over ? Theme.TEXT : Theme.INFO, false);
                 hits.add(rx - 2, y - 1, 12, 11, () -> minecraft.setScreen(new net.minecraft.client.gui.screens.ConfirmScreen(yes -> {
                     if (yes) {
                         PacketDistributor.sendToServer(new dev.drimoz.materialnexus.network.RestoreRequest(id));
@@ -643,8 +712,8 @@ public final class NexusScreen extends Screen {
 
     private int smallButton(GuiGraphics g, int mx, int my, int x, int y, String label, Runnable action) {
         boolean over = mx >= x && mx < x + 12 && my >= y - 1 && my < y + 11;
-        g.fill(x, y - 1, x + 12, y + 11, over ? 0x60FFFFFF : 0x28FFFFFF);
-        g.drawCenteredString(font, label, x + 6, y + 1, Ui.TEXT);
+        g.fill(x, y - 1, x + 12, y + 11, over ? Theme.SEL : Theme.RAISED);
+        g.drawString(font, label, x + 6 - font.width(label) / 2, y + 1, Theme.TEXT, false);
         hits.add(x, y - 1, 12, 12, action, null, List.of());
         return x + 14;
     }
@@ -663,13 +732,13 @@ public final class NexusScreen extends Screen {
     }
 
     private void card(GuiGraphics g, int x, int y, int w, Component label, int value, int color) {
-        g.fill(x, y, x + w, y + 46, 0xFF1C1C24);
+        g.fill(x, y, x + w, y + 46, Theme.SURFACE);
         g.fill(x, y, x + 2, y + 46, color);
-        g.drawString(font, label, x + 8, y + 6, Ui.MUTED, false);
+        g.drawString(font, label, x + 8, y + 6, Theme.MUTED, false);
         g.pose().pushPose();
         g.pose().translate(x + 8, y + 20, 0);
         g.pose().scale(2, 2, 1);
-        g.drawString(font, String.valueOf(value), 0, 0, Ui.TEXT, false);
+        g.drawString(font, String.valueOf(value), 0, 0, Theme.TEXT, false);
         g.pose().popPose();
     }
 
@@ -681,15 +750,15 @@ public final class NexusScreen extends Screen {
             Component label = Component.translatable("screen.materialnexus.filter." + key);
             int w = font.width(label) + 8;
             boolean active = filter == value;
-            g.fill(fx, contentY + 5, fx + w, contentY + 16, active ? (Ui.ACCENT & 0x00FFFFFF) | 0x70000000 : 0x20FFFFFF);
-            g.drawString(font, label, fx + 4, contentY + 7, active ? Ui.TEXT : Ui.MUTED, false);
+            g.fill(fx, contentY + 5, fx + w, contentY + 16, active ? Theme.SEL : Theme.RAISED);
+            g.drawString(font, label, fx + 4, contentY + 7, active ? Theme.TEXT : Theme.MUTED, false);
             hits.add(fx, contentY + 5, w, 11, () -> { filter = value; requestList(); }, null, List.of());
             fx += w + 3;
         }
-        g.fill(contentX + lw + 2, contentY, contentX + lw + 3, height - BOTTOM, Ui.LINE);
+        g.fill(contentX + lw + 2, contentY, contentX + lw + 3, height - BOTTOM, Theme.BORDER);
         int dx = contentX + lw + 6;
         if (material == null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.select_material"), dx + 4, contentY + 10, Ui.MUTED, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.select_material"), dx + 4, contentY + 10, Theme.MUTED, false);
             return;
         }
         renderDetailHeader(g, mx, my, dx, Names.material(material), detail);
@@ -713,15 +782,15 @@ public final class NexusScreen extends Screen {
         if (view == View.FORMS) {
             Component back = Component.translatable("screen.materialnexus.all_forms");
             boolean over = mx >= x && mx < x + font.width(back) && my >= contentY + 4 && my < contentY + 14;
-            g.drawString(font, back, x, contentY + 5, over ? Ui.TEXT : 0x88AAFF, false);
+            g.drawString(font, back, x, contentY + 5, over ? Theme.TEXT : Theme.INFO, false);
             hits.add(x, contentY + 4, font.width(back), 10, () -> { form = null; detail = null; rebuildWidgets(); }, null, List.of());
             x += font.width(back) + 10;
         }
-        g.drawString(font, name, x, contentY + 5, Ui.TEXT, false);
+        g.drawString(font, name, x, contentY + 5, Theme.TEXT, false);
         if (d == null) return;
         long todo = d.forms().stream().filter(v -> DetailTable.status(v) == Ui.Status.SUGGESTION).count();
         g.drawString(font, Component.translatable(d.byForm() ? "screen.materialnexus.header.form" : "screen.materialnexus.header.material",
-                d.forms().size(), todo), x + font.width(name) + 8, contentY + 5, Ui.MUTED, false);
+                d.forms().size(), todo), x + font.width(name) + 8, contentY + 5, Theme.MUTED, false);
         if (readOnly) return;
         int ux = width - 8;
         // MNX-058: discard what is pending for this material (or this form) only.
@@ -733,8 +802,8 @@ public final class NexusScreen extends Screen {
             int dw = font.width(discard) + 12;
             ux -= dw;
             boolean overD = mx >= ux && mx < ux + dw && my >= contentY + 2 && my < contentY + 16;
-            g.fill(ux, contentY + 2, ux + dw, contentY + 16, (Ui.NEUTRAL & 0x00FFFFFF) | (overD ? 0xF0000000 : 0x90000000));
-            g.drawString(font, discard, ux + 6, contentY + 5, Ui.TEXT, false);
+            g.fill(ux, contentY + 2, ux + dw, contentY + 16, overD ? Theme.SEL : Theme.RAISED);
+            g.drawString(font, discard, ux + 6, contentY + 5, Theme.TEXT, false);
             hits.add(ux, contentY + 2, dw, 14, () -> PendingChanges.clearFor(m, f), null, List.of());
             ux -= 4;
         }
@@ -747,8 +816,8 @@ public final class NexusScreen extends Screen {
             int rw = font.width(reset) + 12;
             ux -= rw;
             boolean overR = mx >= ux && mx < ux + rw && my >= contentY + 2 && my < contentY + 16;
-            g.fill(ux, contentY + 2, ux + rw, contentY + 16, (Ui.NEUTRAL & 0x00FFFFFF) | (overR ? 0xF0000000 : 0x90000000));
-            g.drawString(font, reset, ux + 6, contentY + 5, Ui.TEXT, false);
+            g.fill(ux, contentY + 2, ux + rw, contentY + 16, overR ? Theme.SEL : Theme.RAISED);
+            g.drawString(font, reset, ux + 6, contentY + 5, Theme.TEXT, false);
             hits.add(ux, contentY + 2, rw, 14, () -> saved.forEach(v -> PendingChanges.set(v.material(), v.form(),
                     dev.drimoz.materialnexus.datapack.CanonicalChange.RESET)), null, List.of(Component.translatable("screen.materialnexus.reset.here.tooltip")));
             ux -= 4;
@@ -758,8 +827,8 @@ public final class NexusScreen extends Screen {
         int w = font.width(unify) + 12;
         ux -= w;
         boolean over = mx >= ux && mx < ux + w && my >= contentY + 2 && my < contentY + 16;
-        g.fill(ux, contentY + 2, ux + w, contentY + 16, (Ui.WARNING & 0x00FFFFFF) | (over ? 0x90000000 : 0x50000000));
-        g.drawString(font, unify, ux + 6, contentY + 5, Ui.TEXT, false);
+        g.fill(ux, contentY + 2, ux + w, contentY + 16, over ? Theme.SEL : Theme.RAISED);
+        g.drawString(font, unify, ux + 6, contentY + 5, Theme.TEXT, false);
         hits.add(ux, contentY + 2, w, 14, this::acceptSuggestions, null, List.of());
     }
 
@@ -771,17 +840,17 @@ public final class NexusScreen extends Screen {
             int w = font.width(label) + 12;
             boolean active = tab == t;
             boolean over = mx >= tx && mx < tx + w && my >= ty && my < ty + 16;
-            if (active) g.fill(tx, ty + 15, tx + w, ty + 16, Ui.ACCENT);
-            g.drawString(font, label, tx + 6, ty + 4, active ? Ui.TEXT : over ? 0xCCCCCC : Ui.MUTED, false);
+            if (active) g.fill(tx, ty + 14, tx + w, ty + 16, Theme.ACCENT);
+            g.drawString(font, label, tx + 6, ty + 4, active ? Theme.TEXT : over ? Theme.MUTED : Theme.MUTED, false);
             hits.add(tx, ty, w, 16, () -> { tab = t; requestProcess(); rebuildWidgets(); }, null, List.of());
             tx += w + 2;
         }
-        g.fill(dx, ty + 16, width - 6, ty + 17, Ui.LINE);
+        g.fill(dx, ty + 16, width - 6, ty + 17, Theme.BORDER);
     }
 
     private void renderTab(GuiGraphics g, int mx, int my, int dx) {
         if (detail == null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), dx + 4, contentY + 48, Ui.MUTED, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), dx + 4, contentY + 48, Theme.MUTED, false);
             return;
         }
         switch (tab) {
@@ -795,13 +864,13 @@ public final class NexusScreen extends Screen {
     private void renderMissing(GuiGraphics g, int dx) {
         int y = contentY + 48;
         if (detail.missing().isEmpty()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.missing_none"), dx + 4, y, Ui.MUTED, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.missing_none"), dx + 4, y, Theme.MUTED, false);
             return;
         }
-        g.drawString(font, Component.translatable("screen.materialnexus.missing_intro"), dx + 4, y, Ui.MUTED, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.missing_intro"), dx + 4, y, Theme.MUTED, false);
         y += 14;
         for (var r : detail.missing()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.relation", Names.form(r.from().name()), Names.form(r.to().name())), dx + 10, y, Ui.WARNING, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.relation", Names.form(r.from().name()), Names.form(r.to().name())), dx + 10, y, Theme.WARN, false);
             y += 12;
         }
     }

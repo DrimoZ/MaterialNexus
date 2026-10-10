@@ -52,7 +52,9 @@ public final class UiShots {
             // MNX-076: only shown when scripts decide something (-Pkubejs with a script in run-ui/kubejs).
             new Step(1425, "scripts", "", ""),
             new Step(1440, "", "", "mnx_12_scripts"),
-            new Step(1445, "quit", "", ""));
+            new Step(1445, "settings", "", ""),
+            new Step(1460, "", "", "mnx_13_settings"),
+            new Step(1465, "quit", "", ""));
     private static int ticks;
     private static int next;
 

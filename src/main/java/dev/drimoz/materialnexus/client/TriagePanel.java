@@ -1,5 +1,8 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.client.ui.Btn;
+import dev.drimoz.materialnexus.client.ui.Field;
+import dev.drimoz.materialnexus.client.ui.Theme;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
 import dev.drimoz.materialnexus.network.MaterialDetailPayload;
 import dev.drimoz.materialnexus.network.MaterialDetailRequest;
@@ -117,28 +120,28 @@ final class TriagePanel {
 
     void render(GuiGraphics g, Font font, int x, int y, int w, int h, int mx, int my) {
         hits.clear();
-        g.drawString(font, Component.translatable("screen.materialnexus.triage.title"), x, y, Ui.TEXT, false);
-        g.drawString(font, Component.translatable("screen.materialnexus.triage.keys"), x, y + 12, Ui.FAINT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.triage.title"), x, y, Theme.TEXT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.triage.keys"), x, y + 12, Theme.FAINT, false);
         Optional<Item> item = current();
         if (queue.isEmpty() || item.isEmpty()) {
             g.drawString(font, Component.translatable(queue.isEmpty() ? "screen.materialnexus.triage.empty" : "screen.materialnexus.triage.done", queue.size()),
-                    x, y + 40, Ui.SUCCESS, false);
+                    x, y + 40, Theme.OK, false);
             return;
         }
         int done = (int) queue.stream().filter(i -> PendingChanges.get(i.material(), i.form()).isPresent()).count();
-        g.drawString(font, Component.translatable("screen.materialnexus.triage.progress", index + 1, queue.size(), done), x, y + 32, Ui.MUTED, false);
-        g.fill(x, y + 44, x + w, y + 46, 0x30FFFFFF);
-        g.fill(x, y + 44, x + w * done / Math.max(1, queue.size()), y + 46, Ui.ACCENT);
+        g.drawString(font, Component.translatable("screen.materialnexus.triage.progress", index + 1, queue.size(), done), x, y + 32, Theme.MUTED, false);
+        g.fill(x, y + 44, x + w, y + 46, Theme.SEL);
+        g.fill(x, y + 44, x + w * done / Math.max(1, queue.size()), y + 46, Theme.INFO);
 
         g.pose().pushPose();
         g.pose().translate(x, y + 56, 0);
         g.pose().scale(2, 2, 1);
-        g.drawString(font, Component.translatable("screen.materialnexus.triage.item", Names.material(item.get().material()), Names.form(item.get().form())), 0, 0, Ui.TEXT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.triage.item", Names.material(item.get().material()), Names.form(item.get().form())), 0, 0, Theme.TEXT, false);
         g.pose().popPose();
 
         List<ResourceLocation> list = candidates();
         if (list.isEmpty()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x, y + 84, Ui.MUTED, false);
+            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x, y + 84, Theme.MUTED, false);
             return;
         }
         Optional<ResourceLocation> pending = PendingChanges.get(item.get().material(), item.get().form());
@@ -150,24 +153,24 @@ final class TriagePanel {
             boolean notSame = PendingChanges.notSame(candidate);
             int box = 96;
             boolean over = mx >= cx && mx < cx + box && my >= cy && my < cy + 84;
-            g.fill(cx, cy, cx + box, cy + 84, chosen ? 0x5050A0FF : over ? 0x30FFFFFF : 0x18FFFFFF);
-            g.fill(cx, cy, cx + box, cy + 1, chosen ? Ui.ACCENT : i == 0 ? Ui.WARNING : Ui.LINE);
-            g.drawString(font, String.valueOf(i + 1), cx + 4, cy + 4, i == 0 ? Ui.WARNING : Ui.MUTED, false);
+            g.fill(cx, cy, cx + box, cy + 84, chosen ? Theme.mix(Theme.BG, Theme.INFO, 0.3f) : over ? Theme.SEL : Theme.RAISED);
+            g.fill(cx, cy, cx + box, cy + 1, chosen ? Theme.INFO : i == 0 ? Theme.WARN : Theme.BORDER);
+            g.drawString(font, String.valueOf(i + 1), cx + 4, cy + 4, i == 0 ? Theme.WARN : Theme.MUTED, false);
             g.pose().pushPose();
             g.pose().translate(cx + 32, cy + 12, 0);
             g.pose().scale(2, 2, 1);
             g.renderItem(Names.stack(candidate), 0, 0);
             g.pose().popPose();
-            if (notSame) g.drawString(font, Component.translatable("screen.materialnexus.triage.not_same"), cx + 4, cy + 50, Ui.DANGER, false);
-            String mod = net.minecraftforge.fml.ModList.get().getModContainerById(candidate.getNamespace()).map(c -> c.getModInfo().getDisplayName()).orElse(candidate.getNamespace());
-            g.drawString(font, font.plainSubstrByWidth(mod, box - 8), cx + 4, cy + 60, Ui.TEXT, false);
+            if (notSame) g.drawString(font, Component.translatable("screen.materialnexus.triage.not_same"), cx + 4, cy + 50, Theme.BAD, false);
+            String mod = net.neoforged.fml.ModList.get().getModContainerById(candidate.getNamespace()).map(c -> c.getModInfo().getDisplayName()).orElse(candidate.getNamespace());
+            g.drawString(font, font.plainSubstrByWidth(mod, box - 8), cx + 4, cy + 60, Theme.TEXT, false);
             var usage = detail.usage().get(candidate);
             if (usage != null) {
-                g.drawString(font, Component.translatable("screen.materialnexus.triage.usage", usage.produced(), usage.used()), cx + 4, cy + 71, Ui.MUTED, false);
+                g.drawString(font, Component.translatable("screen.materialnexus.triage.usage", usage.produced(), usage.used()), cx + 4, cy + 71, Theme.MUTED, false);
             }
             int n = i;
             hits.add(cx, cy, box, 84, () -> pick(n, false), () -> pick(n, true), List.of(Names.stack(candidate).getHoverName(),
-                    Component.literal(candidate.toString()).withStyle(s -> s.withColor(0x888888))));
+                    Component.literal(candidate.toString()).withColor(Theme.TIP_FAINT)));
             cx += box + 6;
             if (cx + box > x + w) {
                 cx = x;
