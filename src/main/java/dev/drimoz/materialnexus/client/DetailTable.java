@@ -31,7 +31,6 @@ import java.util.function.BiConsumer;
  * Clicking an item in the table still keeps it at once; right click and Shift + right click remain as shortcuts.
  */
 final class DetailTable {
-    private static final int ROW = Theme.ROW_ITEM;
     private static final int HEAD = Theme.ROW_TEXT;
     private static final int GROUP = 20;
     private static final int FOOT = 28;
@@ -134,7 +133,7 @@ final class DetailTable {
         return out;
     }
 
-    private static int height(Line line) { return line instanceof GroupLine ? GROUP : ROW; }
+    private static int height(Line line) { return line instanceof GroupLine ? GROUP : Theme.ROW_ITEM; }
 
     /** The selected row; with none, the first one that matters, so the inspector is never empty. */
     private Optional<MaterialDetailPayload.FormView> selectedView() {
@@ -152,11 +151,11 @@ final class DetailTable {
     void scroll(double mx, double my, double delta) {
         if (detail == null) return;
         if (overInspector(mx, my)) {
-            inspectorScroll = Math.clamp(inspectorScroll - delta * ROW, 0, Math.max(0, inspectorContent));
+            inspectorScroll = Math.clamp(inspectorScroll - delta * Theme.ROW_ITEM, 0, Math.max(0, inspectorContent));
             return;
         }
         int content = lines().stream().mapToInt(DetailTable::height).sum();
-        scroll = Math.clamp(scroll - delta * ROW, 0, Math.max(0, content - (height - HEAD)));
+        scroll = Math.clamp(scroll - delta * Theme.ROW_ITEM, 0, Math.max(0, content - (height - HEAD)));
     }
 
     boolean click(double mx, double my, int button) {
@@ -227,9 +226,12 @@ final class DetailTable {
         ResolvedForm f = view.resolved();
         String material = view.material();
         boolean isSelected = selectedView().map(v -> key(v).equals(key(view))).orElse(false);
-        boolean hover = inTable && my >= top && my < top + ROW && mx >= x && mx < x + width;
-        if (isSelected) g.fill(x, top, x + width, top + ROW, Theme.SEL);
-        else if (hover) g.fill(x, top, x + width, top + ROW, Theme.RAISED);
+        boolean hover = inTable && my >= top && my < top + Theme.ROW_ITEM && mx >= x && mx < x + width;
+        if (isSelected) g.fill(x, top, x + width, top + Theme.ROW_ITEM, Theme.SEL);
+        else if (hover) g.fill(x, top, x + width, top + Theme.ROW_ITEM, Theme.RAISED);
+        // The content keeps its 22 px, centred in a taller row.
+        int rowTop = top;
+        top += Theme.ROW_PAD;
 
         Ui.Status status = status(view);
         Ui.mark(g, status, x + 5, top + 8);
@@ -258,7 +260,7 @@ final class DetailTable {
             sx += 20;
         }
         if (!f.notUnified().isEmpty() && sx + 26 <= right) {
-            g.fill(sx + 2, top + 4, sx + 3, top + ROW - 4, Theme.CTRL);
+            g.fill(sx + 2, top + 4, sx + 3, top + Theme.ROW_ITEM - 4, Theme.CTRL);
             sx += 6;
         }
         for (ResolvedForm.NotUnified n : f.notUnified()) {
@@ -267,7 +269,7 @@ final class DetailTable {
             sx += 20;
         }
         if (hidden > 0) g.drawString(font, "+" + hidden, sx + 2, top + 7, Theme.FAINT, false);
-        if (inTable) tableHits.add(x, top, width, ROW, () -> select(view), null, List.of());
+        if (inTable) tableHits.add(x, rowTop, width, Theme.ROW_ITEM, () -> select(view), null, List.of());
     }
 
     /** One item of a row: click keeps it and selects the row, right click marks it, Shift + right click edits the tag. */
@@ -290,6 +292,7 @@ final class DetailTable {
 
     private void absentRow(GuiGraphics g, Font font, String form, int top, int kx, int mx, int my, boolean inTable) {
         String material = detail.material();
+        top += Theme.ROW_PAD;
         g.drawString(font, font.plainSubstrByWidth(Names.form(form).getString(), labelWidth() - 20), x + 16, top + 7, Theme.MUTED, false);
         if (readOnly) return;
         boolean pending = PendingChanges.creating(material, form);

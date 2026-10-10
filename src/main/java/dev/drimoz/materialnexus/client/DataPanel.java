@@ -40,7 +40,6 @@ final class DataPanel {
     /** Patterns declared from the audit go to this file of the edits pack. */
     static final ResourceLocation DECLARED = ResourceLocation.fromNamespaceAndPath("materialnexus_user", "declared_patterns");
     private static final int ROW = 12;
-    private static final int PAGE = 12;
 
     private record Row(EditableData.Kind kind, DataListPayload.Item item) { }
 
@@ -70,7 +69,10 @@ final class DataPanel {
         return button;
     }
 
-    private int side() { return net.minecraft.util.Mth.clamp(w / 3, 170, 260); }
+    /** MNX-102: as many untagged forms as the height shows, instead of a fixed twelve. */
+    private int page() { return Math.max(4, (h - 76 - 52) / 24); }
+
+    private int side() { return Math.clamp(w / 3, 170, 260); }
 
     // ---- widgets -------------------------------------------------------------------------------------------
 
@@ -148,10 +150,10 @@ final class DataPanel {
 
     private void initUntagged(Consumer<AbstractWidget> add, Font font) {
         List<FormPatterns.Candidate> candidates = list.untagged();
-        int pages = Math.max(1, (candidates.size() + PAGE - 1) / PAGE);
-        untaggedPage = net.minecraft.util.Mth.clamp(untaggedPage, 0, pages - 1);
+        int pages = Math.max(1, (candidates.size() + page() - 1) / page());
+        untaggedPage = Math.clamp(untaggedPage, 0, pages - 1);
         int ry = y + 76;
-        for (int i = untaggedPage * PAGE; i < Math.min(candidates.size(), (untaggedPage + 1) * PAGE); i++) {
+        for (int i = untaggedPage * page(); i < Math.min(candidates.size(), (untaggedPage + 1) * page()); i++) {
             FormPatterns.Candidate c = candidates.get(i);
             EditBox form = new Field(font, x + w - 258, ry + 2, 120, 16, Component.empty());
             form.setValue(guessForm(c.pattern()));
@@ -365,6 +367,25 @@ final class DataPanel {
         String text = draft != null ? draft : PendingChanges.data(selected.kind(), selected.id().toString()).map(t -> t.orElse(loadedText)).orElse(loadedText);
         dev.drimoz.materialnexus.client.ui.Editor.jsonError(text).ifPresent(error -> g.drawString(font,
                 font.plainSubstrByWidth(Component.translatable("screen.materialnexus.data.invalid", error).getString(), x + w - ex - 8), ex, y + h - 36, Theme.BAD, false));
+        // MNX-102: beside the editor when there is room, what this file is for and where it comes from.
+        int hx = ex + 612;
+        if (x + w - hx >= 160) {
+            int hw = x + w - hx - 8;
+            g.fill(hx, y + 92, hx + hw, y + h - 28, Theme.SURFACE);
+            g.drawString(font, Component.translatable("screen.materialnexus.data.help.title").withStyle(net.minecraft.ChatFormatting.BOLD), hx + 8, y + 100, Theme.TEXT, false);
+            int hy = y + 116;
+            for (String helpKey : new String[] {"screen.materialnexus.data.kind." + kind.key + ".desc", "screen.materialnexus.data.help.rules"}) {
+                for (var line : font.split(Component.translatable(helpKey), hw - 16)) {
+                    g.drawString(font, line, hx + 8, hy, Theme.MUTED, false);
+                    hy += 10;
+                }
+                hy += 8;
+            }
+            for (var line : font.split(Component.translatable("screen.materialnexus.data.source", selected.source()), hw - 16)) {
+                g.drawString(font, line, hx + 8, hy, Theme.FAINT, false);
+                hy += 10;
+            }
+        }
     }
 
     private static int pillWidth(Font font, int status) {
@@ -388,7 +409,7 @@ final class DataPanel {
         g.drawString(font, Component.translatable("screen.materialnexus.data.col.pattern"), x + 12, y + 62, Theme.FAINT, false);
         g.drawString(font, Component.translatable("screen.materialnexus.data.col.form"), x + w - 258, y + 62, Theme.FAINT, false);
         int ry = y + 76;
-        for (int i = untaggedPage * PAGE; i < Math.min(candidates.size(), (untaggedPage + 1) * PAGE); i++) {
+        for (int i = untaggedPage * page(); i < Math.min(candidates.size(), (untaggedPage + 1) * page()); i++) {
             FormPatterns.Candidate c = candidates.get(i);
             g.fill(x + 8, ry + 22, x + w - 8, ry + 23, Theme.BORDER);
             g.drawString(font, font.plainSubstrByWidth(c.pattern(), w - 290), x + 12, ry + 2, Theme.TEXT, false);
@@ -396,7 +417,7 @@ final class DataPanel {
                     String.join(", ", c.materials())).getString(), w - 290), x + 12, ry + 12, Theme.FAINT, false);
             ry += 24;
         }
-        int pages = Math.max(1, (candidates.size() + PAGE - 1) / PAGE);
+        int pages = Math.max(1, (candidates.size() + page() - 1) / page());
         g.drawString(font, (untaggedPage + 1) + " / " + pages, x + 60, y + h - 17, Theme.MUTED, false);
     }
 

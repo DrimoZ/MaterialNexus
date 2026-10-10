@@ -19,13 +19,15 @@ public final class ScreenSettings {
      * {@code showIds}: the technical id under an item's name. {@code openGroups}: the groups that ask nothing ("No
      * duplicate", "Forms that can be created") start open. {@code reopen}: the screen reopens where it was left.
      */
-    public record Values(Theme theme, boolean showIds, boolean openGroups, boolean reopen) {
-        public static final Values DEFAULT = new Values(Theme.GRAPHITE, true, false, true);
+    public record Values(Theme theme, boolean showIds, boolean openGroups, boolean reopen, boolean comfortable) {
+        public static final Values DEFAULT = new Values(Theme.GRAPHITE, true, false, true, false);
 
-        public Values withTheme(Theme value) { return new Values(value, showIds, openGroups, reopen); }
-        public Values withShowIds(boolean value) { return new Values(theme, value, openGroups, reopen); }
-        public Values withOpenGroups(boolean value) { return new Values(theme, showIds, value, reopen); }
-        public Values withReopen(boolean value) { return new Values(theme, showIds, openGroups, value); }
+        public Values withTheme(Theme value) { return new Values(value, showIds, openGroups, reopen, comfortable); }
+        public Values withShowIds(boolean value) { return new Values(theme, value, openGroups, reopen, comfortable); }
+        public Values withOpenGroups(boolean value) { return new Values(theme, showIds, value, reopen, comfortable); }
+        public Values withReopen(boolean value) { return new Values(theme, showIds, openGroups, value, comfortable); }
+        /** Taller rows in the main lists. */
+        public Values withComfortable(boolean value) { return new Values(theme, showIds, openGroups, reopen, value); }
     }
 
     private static Values current = Values.DEFAULT;
@@ -43,7 +45,7 @@ public final class ScreenSettings {
                 for (Theme t : Theme.values()) if (t.key().equals(o.get("theme").getAsString())) theme = t;
             }
             return new Values(theme, flag(o, "show_ids", Values.DEFAULT.showIds()), flag(o, "open_groups", Values.DEFAULT.openGroups()),
-                    flag(o, "reopen", Values.DEFAULT.reopen()));
+                    flag(o, "reopen", Values.DEFAULT.reopen()), flag(o, "comfortable", Values.DEFAULT.comfortable()));
         } catch (RuntimeException ignored) {
             return Values.DEFAULT;
         }
@@ -66,17 +68,20 @@ public final class ScreenSettings {
             current = Values.DEFAULT;
         }
         Theme.use(current.theme());
+        Theme.density(current.comfortable());
     }
 
     /** Puts {@code values} in use and remembers them; a failed write only loses the memory. */
     public static void set(Path dir, Values values) {
         current = values;
         Theme.use(values.theme());
+        Theme.density(values.comfortable());
         JsonObject json = new JsonObject();
         json.addProperty("theme", values.theme().key());
         json.addProperty("show_ids", values.showIds());
         json.addProperty("open_groups", values.openGroups());
         json.addProperty("reopen", values.reopen());
+        json.addProperty("comfortable", values.comfortable());
         try {
             Files.createDirectories(dir);
             Files.writeString(dir.resolve(FILE), json + "\n");

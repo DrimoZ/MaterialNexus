@@ -1,25 +1,40 @@
-# 18 — GUI layout (implemented, MNX-009 redesign)
+# 18 — GUI layout (implemented, MNX-094 to MNX-102)
+
+Sizes are GUI pixels. Design and reasons: `22-UI-REDESIGN.md`.
 
 ```text
-┌─────────────────────────────────────────────────────────────────────────────┐
-│ Material Nexus  94 materials      [Unify all suggestions] [Revert] [Preview (N)] │
-├──────────────────┬──────────────────────────────────────────────────────────┤
-│ [search…]        │ Aluminum                                                 │
-│ ● Aluminum       │ [Forms] [Recipes] [Missing]              [Unify material]│
-│   12 forms · 5   │ ┌──────────────────────────────────────────────────────┐ │
-│ ● Copper         │ │ Ingot  Suggestion: click an item…        Recipes ›   │ │
-│ ○ Coal           │ │ No policy: strongest evidence, then alphabetical id  │ │
-│ …                │ │ [MI][IE] [variant…]                                  │ │
-│                  │ └──────────────────────────────────────────────────────┘ │
-│ [<] Page 1/2 [>] │                                                          │
-└──────────────────┴──────────────────────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────┐
+│ Material Nexus › Materials › Copper                       [ Search…        ] │ 24
+├──────────┬────────────────┬──────────────────────────────┬───────────────────┤
+│ Overview │ [All|To d.|Un.]│ Copper   26 forms · 1 to dec.│ Copper · Dust     │
+│ Materials│ ▣ Aluminum     │ Forms  Recipes  Missing      │ ● To decide       │
+│ Forms    │ ▣ Copper     1 │ Form    Kept      Replaced   │ Candidates (3)    │
+│ Scripts  │ ▣ Iron         │ ▾ To decide (1)              │ ┌───────────────┐ │
+│          │ …              │ ● Dust  ▣ Copper… ▣ ▣ | ▣    │ │▣ Copper Dust  │ │
+│ Advanced │                │ ▾ Unified (3)                │ │  Mekanism     │ │
+│ Rule f.  │                │ ✓ Ingot ▣ Copper… ▣          │ │ [Keep] [Not…] │ │
+│ Presets  │                │ ▸ No duplicate (17)          │ └───────────────┘ │
+│          │                │ ▸ Forms that can be cr. (1)  │ Left alone (1)    │
+│ Help     │                │                              │ …                 │
+│ Shortcuts│                │                              ├───────────────────┤
+│ Settings │                │                              │ [See recipes]     │
+├──────────┴────────────────┴──────────────────────────────┴───────────────────┤
+│ ○ 1 not applied yet [View]                    [Discard all] [Review and apply] │ 28
+└──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-- **Sidebar**: server-side search and pages; dot = green (every duplicated form decided), amber (duplicates only suggested), grey (nothing to unify).
-- **Materials / Forms switch** (MNX-035): the sidebar lists forms instead; the right side then shows one card per material for that form (all ingots, all rods…), with the same pending choices, "Unify form" and Preview. "Recipes" on a card jumps back to that material.
-- **Process** (form view, MNX-036): the form's process rule. Routes with in/out ratio buttons and remove; "Only these" (exclusive) and "Enforce ratios" toggles; the routes already existing in the pack's recipes, each addable with +. Edits are pending changes like canonical choices.
-- **Forms**: one card per form; every provider is an icon. Gold border = current canonical, green = pending choice, grey = alternative, dark red = not unified. Clicking an icon makes it the pending canonical (again to cancel). Tooltips give the item, id, role and, for the canonical, Why / source / confidence. "Recipes ›" opens the form's recipe family.
-- **Create a missing form** (material view, last card, MNX-039): the template forms the material lacks; click to mark one for creation (green), then Preview / Apply and restart.
-- **Recipes**: form chips; every loaded recipe producing the form with type and status (canonical, alternative, variant, rewritten, disabled by MNX, not handled yet).
-- **Missing**: missing standard conversions (proposals only, ADR-003).
-- **Top bar**: unify all suggestions, revert last apply, preview with pending count. Read-only sessions (dedicated server) hide editing.
+| GUI width | Rail | List | Table | Inspector |
+|---|---|---|---|---|
+| under 900 | 88 | 148 | the rest | 264, over the table on selection |
+| 960 | 104 | 176 | 416 | 264 |
+| 1280 and more | 104 | 176 | 640 | 360, then a margin |
+
+- **Colours** are roles of the theme in use (`client/ui/Theme`): surfaces, three text levels, and four meanings, each
+  with its shape. Green tick: kept, unified, the main action. Gold dot: to decide. Blue ring: not applied yet. Red
+  cross: switched off, destructive. Item slots sit on a mid-grey well so dark and light items both read.
+- **Sizes**: spacing 2, 4, 8, 12, 16, 24; text row 16, item row 22 (26 in comfortable density), control 18, bars 24 and 28.
+- **One primary button** on screen: "Review and apply" when something waits, "Apply" in the review panel, the sorting
+  button on the Overview when nothing waits.
+- **Widgets**: `client/ui/Btn`, `Field` and `Editor` are the vanilla widgets redrawn (focus, keyboard, narration kept);
+  rows, tabs, switches and steppers are drawn by their panel with `Ui.Hits` click areas.
+- **Read-only sessions** (dedicated server) hide every editing control.

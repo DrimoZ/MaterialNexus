@@ -30,7 +30,15 @@ public enum Theme {
     public static final int TIP_MUTED = 0xAAAAAA, TIP_FAINT = 0x888888, TIP_INFO = 0x88AACC, TIP_BAD = 0xCC8888;
 
     /** Spacing is one of 2, 4, 8, 12, 16, 24; heights are these. */
-    public static final int ROW_TEXT = 16, ROW_ITEM = 22, CONTROL = 18, BAR_TOP = 24, BAR_BOTTOM = 28;
+    public static final int ROW_TEXT = 16, CONTROL = 18, BAR_TOP = 24, BAR_BOTTOM = 28;
+
+    /** Height of a row with an item, and what centres its content in it: 22 and 0 when compact, 26 and 2 when comfortable. */
+    public static int ROW_ITEM = 22, ROW_PAD = 0;
+
+    public static void density(boolean comfortable) {
+        ROW_ITEM = comfortable ? 26 : 22;
+        ROW_PAD = comfortable ? 2 : 0;
+    }
 
     private static Theme current;
 
