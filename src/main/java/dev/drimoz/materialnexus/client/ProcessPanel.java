@@ -1,61 +1,45 @@
 package dev.drimoz.materialnexus.client;
 
-import dev.drimoz.materialnexus.client.ui.Btn;
-import dev.drimoz.materialnexus.client.ui.Field;
 import dev.drimoz.materialnexus.client.ui.Theme;
 import dev.drimoz.materialnexus.core.policy.ProcessRules;
 import dev.drimoz.materialnexus.network.ProcessPayload;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.AbstractWidget;
-import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
+import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.function.Consumer;
+import java.util.Map;
 import java.util.function.UnaryOperator;
 
 /**
- * "Process" tab of a form view (MNX-036): how this form is made, for every material. Routes come from the
- * existing recipes of the pack (each one copyable by construction); ratios, exclusive and enforce are edited as
- * a pending change, written only through Preview / Apply.
+ * "How it's made" tab of a form view (MNX-036, MNX-098): how this form is made, for every material. The routes of the
+ * rule with their quantities, two switches said in plain words with their consequence, and the routes found in the
+ * pack's recipes grouped by machine. Edits are a pending change, written only through Review and apply.
  */
 final class ProcessPanel {
-    private static final int ROW = 16;
+    private static final int ROW = 20;
     private static final ProcessRules.Rule EMPTY = new ProcessRules.Rule(List.of(), false, false);
 
     private final boolean readOnly;
-    private final Runnable refresh;
+    private final Ui.Hits hits = new Ui.Hits();
     private ProcessPayload payload;
     private int x, y, width, height;
     /** Materials of this form whose duplicates are still only suggested: a rule adds recipes, it does not unify items. */
     private int undecided;
-    /** First example shown: the list scrolls with the mouse wheel. */
-    private int firstExample;
+    private double scroll;
+    private int foundTop, foundContent;
 
-    ProcessPanel(boolean readOnly, Runnable refresh) {
+    ProcessPanel(boolean readOnly) {
         this.readOnly = readOnly;
-        this.refresh = refresh;
     }
 
     void accept(ProcessPayload payload) {
         this.payload = payload;
-        this.firstExample = 0;
-    }
-
-    /** Wheel over the panel: scrolls the existing routes; true if it moved (the screen then rebuilds its buttons). */
-    boolean scroll(double delta) {
-        if (payload == null) return false;
-        int max = Math.max(0, addable().size() - visibleExamples());
-        int next = net.minecraft.util.Mth.clamp(firstExample - (int) Math.signum(delta), 0, max);
-        if (next == firstExample) return false;
-        firstExample = next;
-        return true;
-    }
-
-    private int visibleExamples() {
-        return Math.max(0, (y + height - (examplesTop() + 12)) / ROW);
+        this.scroll = 0;
     }
 
     void undecided(int count) { this.undecided = count; }
@@ -63,7 +47,15 @@ final class ProcessPanel {
     boolean shows(String form) { return payload != null && payload.form().equals(form); }
 
     void layout(int x, int y, int width, int height) {
-        this.x = x; this.y = y; this.width = width; this.height = height;
+        this.x = x; this.y = y; this.width = Math.min(width, 720); this.height = height;
+    }
+
+    void scroll(double delta) {
+        scroll = Math.clamp(scroll - delta * ROW, 0, Math.max(0, foundContent - (y + height - foundTop)));
+    }
+
+    boolean click(double mx, double my, int button) {
+        return hits.click(mx, my, button);
     }
 
     private ProcessRules.Rule rule() {
@@ -74,7 +66,6 @@ final class ProcessPanel {
         ProcessRules.Rule next = change.apply(rule());
         if (next.equals(payload.rule().orElse(EMPTY))) PendingChanges.clearProcess(payload.form());
         else PendingChanges.setProcess(payload.form(), next);
-        refresh.run();
     }
 
     private void editRoute(int index, UnaryOperator<ProcessRules.Route> change) {
@@ -90,98 +81,155 @@ final class ProcessPanel {
         return new ProcessRules.Route(r.machine(), r.input(), net.minecraft.util.Mth.clamp(in, 1, 64), net.minecraft.util.Mth.clamp(out, 1, 64));
     }
 
-    private int routesTop() { return y + (undecided > 0 ? 26 : 14); }
-
-    private int optionsTop() { return routesTop() + Math.max(1, rule().routes().size()) * ROW + 4; }
-
-    private int examplesTop() { return optionsTop() + 26; }
-
-    private List<ProcessRules.Route> addable() {
-        return payload.examples().routes().stream().filter(e -> rule().routes().stream()
-                .noneMatch(r -> r.machine().equals(e.machine()) && r.input().equals(e.input()))).toList();
+    /** "modern_industrialization:forge_hammer" reads "Forge hammer": the recipe type is the only name the server has. */
+    private static String machine(ResourceLocation id) {
+        String text = id.getPath().replace('_', ' ').replace('/', ' ');
+        return text.isEmpty() ? id.toString() : Character.toUpperCase(text.charAt(0)) + text.substring(1);
     }
 
-    void init(Consumer<AbstractWidget> add) {
-        if (payload == null || readOnly) return;
-        ProcessRules.Rule rule = rule();
-        int bx = x + width - 5 * 16;
-        for (int i = 0; i < rule.routes().size(); i++) {
-            int index = i;
-            int ry = routesTop() + i * ROW;
-            add.accept(small("-", bx, ry, () -> editRoute(index, r -> ratio(r, r.in() - 1, r.out()))));
-            add.accept(small("+", bx + 16, ry, () -> editRoute(index, r -> ratio(r, r.in() + 1, r.out()))));
-            add.accept(small("-", bx + 32, ry, () -> editRoute(index, r -> ratio(r, r.in(), r.out() - 1))));
-            add.accept(small("+", bx + 48, ry, () -> editRoute(index, r -> ratio(r, r.in(), r.out() + 1))));
-            add.accept(small("×", bx + 64, ry, () -> editRoute(index, null)));
-        }
-        int oy = optionsTop();
-        add.accept(Btn.of(toggle("screen.materialnexus.process.exclusive", rule.exclusive()),
-                b -> edit(r -> new ProcessRules.Rule(r.routes(), !r.exclusive(), r.enforceRatio()))).bounds(x, oy, 150, 18).build());
-        add.accept(Btn.of(toggle("screen.materialnexus.process.enforce", rule.enforceRatio()),
-                b -> edit(r -> new ProcessRules.Rule(r.routes(), r.exclusive(), !r.enforceRatio()))).bounds(x + 154, oy, 150, 18).build());
-        if (PendingChanges.process(payload.form()).isPresent()) {
-            add.accept(Btn.of(Component.translatable("screen.materialnexus.process.reset"), b -> {
-                PendingChanges.clearProcess(payload.form());
-                refresh.run();
-            }).bounds(x + 308, oy, 70, 18).build());
-        }
-        List<ProcessRules.Route> examples = addable();
-        int ey = examplesTop() + 12;
-        firstExample = net.minecraft.util.Mth.clamp(firstExample, 0, Math.max(0, examples.size() - visibleExamples()));
-        for (int row = 0; row < visibleExamples() && firstExample + row < examples.size(); row++) {
-            ProcessRules.Route e = examples.get(firstExample + row);
-            add.accept(small("+", x + width - 16, ey + row * ROW, () -> edit(r -> {
-                List<ProcessRules.Route> routes = new ArrayList<>(r.routes());
-                routes.add(e);
-                return new ProcessRules.Rule(routes, r.exclusive(), r.enforceRatio());
-            })));
-        }
+    private static Component tr(String key, Object... args) {
+        return Component.translatable("screen.materialnexus.process." + key, args);
     }
 
-    void render(GuiGraphics g, Font font) {
+    void render(GuiGraphics g, Font font, int mx, int my) {
+        hits.clear();
         if (payload == null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x, y, Theme.FAINT, false);
+            g.drawString(font, tr("loading"), x, y + 4, Theme.MUTED, false);
             return;
         }
-        boolean pending = PendingChanges.process(payload.form()).isPresent();
-        g.drawString(font, Component.translatable("screen.materialnexus.process.title", Names.form(payload.form())), x, y, pending ? Theme.OK : Theme.TEXT, false);
-        if (undecided > 0) {
-            g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.process.undecided", undecided, Names.form(payload.form())).getString(), width),
-                    x, y + 12, Theme.WARN, false);
-        }
+        Component formName = Names.form(payload.form());
         ProcessRules.Rule rule = rule();
-        int textWidth = width - (readOnly ? 0 : 5 * 16 + 4);
-        if (rule.routes().isEmpty()) g.drawString(font, Component.translatable("screen.materialnexus.process.none"), x + 6, routesTop() + 4, Theme.FAINT, false);
+        boolean pending = PendingChanges.process(payload.form()).isPresent();
+        int cy = y + 4;
+
+        if (pending) {
+            g.renderOutline(x, cy + 1, 6, 6, Theme.INFO);
+            g.drawString(font, tr("changed"), x + 12, cy, Theme.INFO, false);
+            if (!readOnly) button(g, font, tr("cancel"), x + 20 + font.width(tr("changed")), cy - 4, mx, my, () -> PendingChanges.clearProcess(payload.form()));
+        } else {
+            g.drawString(font, rule.routes().isEmpty() ? tr("none") : tr("title", formName), x, cy, Theme.MUTED, false);
+        }
+        cy += 16;
+        if (undecided > 0) {
+            Ui.mark(g, Ui.Status.SUGGESTION, x, cy + 1);
+            for (var line : font.split(tr("undecided", undecided, formName), width - 12)) {
+                g.drawString(font, line, x + 12, cy, Theme.WARN, false);
+                cy += 10;
+            }
+            cy += 6;
+        }
+
+        // The routes of the rule: machine, how much goes in, how much comes out.
+        int inX = x + width - 300;
+        int outX = x + width - 170;
+        g.drawString(font, tr("rule.routes", rule.routes().size()).copy().withStyle(ChatFormatting.BOLD), x, cy + 4, Theme.TEXT, false);
+        if (!rule.routes().isEmpty()) {
+            g.drawString(font, tr("col.in"), inX, cy + 4, Theme.MUTED, false);
+            g.drawString(font, tr("col.out"), outX, cy + 4, Theme.MUTED, false);
+        }
+        cy += 18;
         for (int i = 0; i < rule.routes().size(); i++) {
-            g.drawString(font, font.plainSubstrByWidth(line(rule.routes().get(i)).getString(), textWidth), x + 6, routesTop() + i * ROW + 4, Theme.TEXT, false);
+            ProcessRules.Route route = rule.routes().get(i);
+            int index = i;
+            g.fill(x, cy, x + width, cy + ROW - 2, Theme.SURFACE);
+            String name = machine(route.machine());
+            g.drawString(font, font.plainSubstrByWidth(name, inX - x - 16), x + 6, cy + 5, Theme.TEXT, false);
+            g.drawString(font, font.plainSubstrByWidth(" · " + NexusScreen.modName(route.machine().getNamespace()), inX - x - 16 - font.width(name)),
+                    x + 6 + font.width(name), cy + 5, Theme.MUTED, false);
+            stepper(g, font, inX, cy + 1, route.in(), Names.form(route.input().name()), mx, my,
+                    () -> editRoute(index, r -> ratio(r, r.in() - 1, r.out())), () -> editRoute(index, r -> ratio(r, r.in() + 1, r.out())));
+            stepper(g, font, outX, cy + 1, route.out(), formName, mx, my,
+                    () -> editRoute(index, r -> ratio(r, r.in(), r.out() - 1)), () -> editRoute(index, r -> ratio(r, r.in(), r.out() + 1)));
+            if (!readOnly) {
+                Component remove = tr("remove");
+                button(g, font, remove, x + width - font.width(remove) - 14, cy + 1, mx, my, () -> editRoute(index, null));
+            }
+            cy += ROW;
         }
+        cy += 6;
+
+        // Two switches, each said in plain words with what it does.
+        cy = toggle(g, font, cy, mx, my, rule.exclusive(), tr("exclusive.label"), tr(rule.exclusive() ? "exclusive.on" : "exclusive.off", formName),
+                () -> edit(r -> new ProcessRules.Rule(r.routes(), !r.exclusive(), r.enforceRatio())));
+        cy = toggle(g, font, cy, mx, my, rule.enforceRatio(), tr("enforce.label"), tr(rule.enforceRatio() ? "enforce.on" : "enforce.off"),
+                () -> edit(r -> new ProcessRules.Rule(r.routes(), r.exclusive(), !r.enforceRatio())));
+        cy += 8;
+
+        // What the pack already does, grouped by machine; a variant can be added to the rule.
+        Map<ResourceLocation, List<ProcessRules.Route>> found = new LinkedHashMap<>();
+        for (ProcessRules.Route e : payload.examples().routes()) {
+            if (rule.routes().stream().anyMatch(r -> r.machine().equals(e.machine()) && r.input().equals(e.input()))) continue;
+            found.computeIfAbsent(e.machine(), m -> new ArrayList<>()).add(e);
+        }
+        g.drawString(font, tr("found").copy().withStyle(ChatFormatting.BOLD), x, cy + 4, Theme.TEXT, false);
+        Component count = found.isEmpty() ? tr("no_examples") : tr("found.count", found.size(), found.values().stream().mapToInt(List::size).sum());
+        g.drawString(font, count, x + width - font.width(count), cy + 4, Theme.MUTED, false);
+        cy += 18;
+        foundTop = cy;
+        int bottom = y + height;
+        g.enableScissor(x, foundTop, x + width, bottom);
+        int ly = foundTop - (int) scroll;
+        for (var entry : found.entrySet()) {
+            String name = machine(entry.getKey());
+            if (ly + 16 > foundTop && ly < bottom) {
+                g.drawString(font, name, x + 6, ly + 4, Theme.TEXT, false);
+                g.drawString(font, font.plainSubstrByWidth(" · " + NexusScreen.modName(entry.getKey().getNamespace()) + "   " + entry.getKey(), width - 20 - font.width(name)),
+                        x + 6 + font.width(name), ly + 4, Theme.FAINT, false);
+            }
+            ly += 16;
+            for (ProcessRules.Route e : entry.getValue()) {
+                if (ly + ROW > foundTop && ly < bottom) {
+                    g.drawString(font, tr("variant", e.in(), Names.form(e.input().name()), e.out(), formName), x + 18, ly + 5, Theme.MUTED, false);
+                    if (!readOnly && ly >= foundTop && ly + ROW <= bottom) {
+                        Component add = tr("add");
+                        button(g, font, add, x + width - font.width(add) - 20, ly + 1, mx, my, () -> edit(r -> {
+                            List<ProcessRules.Route> routes = new ArrayList<>(r.routes());
+                            routes.add(e);
+                            return new ProcessRules.Rule(routes, r.exclusive(), r.enforceRatio());
+                        }));
+                    }
+                }
+                ly += ROW;
+            }
+            ly += 4;
+        }
+        g.disableScissor();
+        foundContent = ly + (int) scroll - foundTop;
+        int view = bottom - foundTop;
+        scroll = Math.clamp(scroll, 0, Math.max(0, foundContent - view));
+        if (foundContent > view && view > 0) {
+            int bar = Math.max(12, view * view / foundContent);
+            g.fill(x + width - 4, foundTop, x + width, bottom, Theme.RAISED);
+            int at = (int) (scroll * (view - bar) / (foundContent - view));
+            g.fill(x + width - 4, foundTop + at, x + width, foundTop + at + bar, Theme.CTRL);
+        }
+    }
+
+    private int toggle(GuiGraphics g, Font font, int cy, int mx, int my, boolean on, Component label, Component consequence, Runnable action) {
+        Ui.toggle(g, x, cy + 1, on);
+        g.drawString(font, label, x + 28, cy + 2, Theme.TEXT, false);
+        g.drawString(font, font.plainSubstrByWidth(consequence.getString(), width - 28), x + 28, cy + 13, Theme.MUTED, false);
+        if (!readOnly) hits.add(x, cy, 32 + font.width(label), 24, action, null, List.of());
+        return cy + 28;
+    }
+
+    /** {@code − n +} with what is counted next to it. */
+    private void stepper(GuiGraphics g, Font font, int sx, int sy, int value, Component unit, int mx, int my, Runnable less, Runnable more) {
+        String text = String.valueOf(value);
         if (readOnly) {
-            g.drawString(font, toggle("screen.materialnexus.process.exclusive", rule.exclusive()), x, optionsTop() + 5, Theme.MUTED, false);
-            g.drawString(font, toggle("screen.materialnexus.process.enforce", rule.enforceRatio()), x + 154, optionsTop() + 5, Theme.MUTED, false);
+            g.drawString(font, text + " × " + unit.getString(), sx, sy + 4, Theme.TEXT, false);
+            return;
         }
-        List<ProcessRules.Route> examples = addable();
-        g.drawString(font, Component.translatable(examples.isEmpty() ? "screen.materialnexus.process.no_examples" : "screen.materialnexus.process.examples"),
-                x, examplesTop(), Theme.MUTED, false);
-        int ey = examplesTop() + 12;
-        for (int row = 0; row < visibleExamples() && firstExample + row < examples.size(); row++) {
-            g.drawString(font, font.plainSubstrByWidth(line(examples.get(firstExample + row)).getString(), width - 22), x + 6, ey + row * ROW + 4, Theme.INFO, false);
-        }
-        if (examples.size() > visibleExamples()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.process.more", firstExample + 1,
-                    Math.min(examples.size(), firstExample + visibleExamples()), examples.size()), x + width - 120, examplesTop(), Theme.FAINT, false);
-        }
+        button(g, font, Component.literal("−"), sx, sy, mx, my, less);
+        g.drawString(font, text, sx + 16 + (14 - font.width(text)) / 2, sy + 4, Theme.TEXT, false);
+        button(g, font, Component.literal("+"), sx + 30, sy, mx, my, more);
+        g.drawString(font, font.plainSubstrByWidth(unit.getString(), 76), sx + 50, sy + 4, Theme.MUTED, false);
     }
 
-    private Component line(ProcessRules.Route r) {
-        return Component.translatable("screen.materialnexus.process.route", r.machine().toString(), r.in(), Names.form(r.input().name()),
-                r.out(), Names.form(payload.form()));
-    }
-
-    private static Component toggle(String key, boolean on) {
-        return Component.translatable(key, Component.translatable(on ? "options.on" : "options.off"));
-    }
-
-    private static Button small(String label, int x, int y, Runnable action) {
-        return Btn.of(Component.literal(label), b -> action.run()).bounds(x, y, 15, 14).build();
+    private void button(GuiGraphics g, Font font, Component label, int bx, int by, int mx, int my, Runnable action) {
+        int bw = Math.max(16, font.width(label) + 12);
+        boolean over = mx >= bx && mx < bx + bw && my >= by && my < by + 16;
+        Ui.button(g, font, label, bx, by, bw, 16, false, over, true);
+        hits.add(bx, by, bw, 16, action, null, List.of());
     }
 }

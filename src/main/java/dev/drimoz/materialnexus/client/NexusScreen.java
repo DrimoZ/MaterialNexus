@@ -92,7 +92,7 @@ public final class NexusScreen extends Screen {
         }
         this.table = new DetailTable(readOnly, this::openRecipes);
         this.recipes = new RecipesPanel(f -> PacketDistributor.sendToServer(new RecipeFamilyRequest(material, f)));
-        this.process = new ProcessPanel(readOnly, this::rebuildWidgets);
+        this.process = new ProcessPanel(readOnly);
         this.matrix = new FormMatrix(this::openMaterial, this::openForm);
         this.triage = new TriagePanel(() -> go(View.HOME));
         this.scripts = new ScriptsPanel(readOnly);
@@ -356,7 +356,6 @@ public final class NexusScreen extends Screen {
             return;
         }
         layoutDetail(contentX + 8);
-        if (tab == Tab.PROCESS && process.shows(form)) process.init(this::addRenderableWidget);
     }
 
     private void layoutDetail(int dx) {
@@ -941,7 +940,7 @@ public final class NexusScreen extends Screen {
             case FORMS -> table.render(g, font, mx, my);
             case RECIPES -> recipes.render(g, font, mx, my);
             case MISSING -> renderMissing(g, dx);
-            case PROCESS -> process.render(g, font);
+            case PROCESS -> process.render(g, font, mx, my);
         }
     }
 
@@ -985,7 +984,8 @@ public final class NexusScreen extends Screen {
         return switch (tab) {
             case FORMS -> table.click(mx, my, button);
             case RECIPES -> recipes.click(mx, my);
-            case MISSING, PROCESS -> false;
+            case PROCESS -> process.click(mx, my, button);
+            case MISSING -> false;
         };
     }
 
@@ -1009,7 +1009,7 @@ public final class NexusScreen extends Screen {
             switch (tab) {
                 case FORMS -> table.scroll(mx, my, scrollY);
                 case RECIPES -> recipes.scroll(scrollY);
-                case PROCESS -> { if (process.scroll(scrollY)) rebuildWidgets(); }
+                case PROCESS -> process.scroll(scrollY);
                 case MISSING -> { }
             }
             return true;
