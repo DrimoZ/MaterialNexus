@@ -94,7 +94,7 @@ public final class NexusScreen extends Screen {
         this.recipes = new RecipesPanel(f -> PacketDistributor.sendToServer(new RecipeFamilyRequest(material, f)));
         this.process = new ProcessPanel(readOnly);
         this.matrix = new FormMatrix(this::openMaterial, this::openForm);
-        this.triage = new TriagePanel(() -> go(View.HOME));
+        this.triage = new TriagePanel(() -> go(View.HOME), this::preview);
         this.scripts = new ScriptsPanel(readOnly);
     }
 
