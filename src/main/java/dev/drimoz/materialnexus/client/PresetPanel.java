@@ -1,12 +1,11 @@
 package dev.drimoz.materialnexus.client;
 
-import dev.drimoz.materialnexus.client.ui.Btn;
-import dev.drimoz.materialnexus.client.ui.Field;
-import dev.drimoz.materialnexus.client.ui.Theme;
 import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import dev.drimoz.materialnexus.client.ui.Theme;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -18,9 +17,9 @@ import java.util.Map;
 import java.util.TreeMap;
 
 /**
- * Presets view (MNX-057): a preset is a ready-made set of global.json settings (mod priority, conversion recipes...).
- * Each one is shown next to the current settings, and "Use" turns it into pending global.json edits: the same
- * Preview and apply as any other change, the per-form choices kept and still winning.
+ * Presets view (MNX-057, MNX-099): a preset is a ready-made set of global.json settings (mod priority, conversion
+ * recipes...). The selected one is shown against the current settings, value by value, and "Use" turns it into pending
+ * global.json edits: the same Review and apply as any other change, the per-form choices kept and still winning.
  */
 final class PresetPanel {
     private final Map<ResourceLocation, JsonObject> presets = new TreeMap<>();
@@ -46,6 +45,10 @@ final class PresetPanel {
         return Component.translatableWithFallback("materialnexus.preset." + id.getPath(), id.getPath());
     }
 
+    private static Component tr(String key, Object... args) {
+        return Component.translatable("screen.materialnexus.presets." + key, args);
+    }
+
     /** True when every field the preset sets already has that value (pending edits included). */
     private static boolean matches(JsonObject preset) {
         return preset.entrySet().stream().allMatch(e -> same(e.getValue(), PendingChanges.global(e.getKey())));
@@ -56,96 +59,89 @@ final class PresetPanel {
         return a.equals(b);
     }
 
-    private static void use(JsonObject preset) {
-        preset.entrySet().forEach(e -> PendingChanges.setGlobal(e.getKey(), e.getValue().deepCopy()));
-    }
-
     void render(GuiGraphics g, Font font, int x, int y, int w, int h, int mx, int my) {
         hits.clear();
-        g.drawString(font, Component.translatable("screen.materialnexus.presets"), x, y, Theme.TEXT, false);
-        int ty = y + 14;
-        for (var line : font.split(Component.translatable("screen.materialnexus.presets.intro"), Math.min(w, 560))) {
-            g.drawString(font, line, x, ty, Theme.MUTED, false);
-            ty += 11;
-        }
-        ty += 8;
         if (presets.isEmpty()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.presets.none"), x, ty, Theme.FAINT, false);
+            g.drawString(font, tr("none"), x, y, Theme.MUTED, false);
             return;
         }
-
-        int listW = 170;
-        int ly = ty;
+        // The presets, each with whether it is what the pack uses now.
+        int listWidth = Math.clamp(w / 4, 150, 216);
+        int ly = y;
         for (var entry : presets.entrySet()) {
             ResourceLocation id = entry.getKey();
             boolean active = id.equals(selected);
-            boolean over = mx >= x && mx < x + listW && my >= ly && my < ly + 22;
-            g.fill(x, ly, x + listW, ly + 22, active ? Theme.SEL : over ? Theme.RAISED : Theme.RAISED);
-            g.drawString(font, font.plainSubstrByWidth(name(id).getString(), listW - 12), x + 6, ly + 7, active ? Theme.TEXT : Theme.MUTED, false);
-            if (matches(entry.getValue())) g.fill(x + listW - 6, ly + 8, x + listW - 2, ly + 14, Theme.OK);
-            hits.add(x, ly, listW, 22, () -> selected = id, null, List.of());
+            boolean over = mx >= x && mx < x + listWidth && my >= ly && my < ly + 22;
+            if (active) g.fill(x, ly, x + listWidth, ly + 22, Theme.SEL);
+            else if (over) g.fill(x, ly, x + listWidth, ly + 22, Theme.RAISED);
+            boolean inUse = matches(entry.getValue());
+            if (inUse) Ui.mark(g, Ui.Status.UNIFIED, x + 6, ly + 8);
+            g.drawString(font, font.plainSubstrByWidth(name(id).getString(), listWidth - 24), x + 18, ly + 7, active || over ? Theme.TEXT : Theme.MUTED, false);
+            hits.add(x, ly, listWidth, 22, () -> selected = id, null, List.of());
             ly += 24;
         }
+        g.fill(x + listWidth + 11, y - 10, x + listWidth + 12, y + h + 10, Theme.BORDER);
 
         JsonObject preset = presets.get(selected);
-        int dx = x + listW + 16;
-        int dw = Math.min(w - listW - 16, 420);
-        int dy = ty;
-        g.drawString(font, name(selected), dx, dy, Theme.TEXT, false);
-        dy += 13;
+        int dx = x + listWidth + 24;
+        int dw = Math.min(w - listWidth - 24, 760);
+        int dy = y;
+        g.drawString(font, name(selected).copy().withStyle(ChatFormatting.BOLD), dx, dy, Theme.TEXT, false);
+        dy += 12;
         for (var line : font.split(Component.translatableWithFallback("materialnexus.preset." + selected.getPath() + ".desc", ""), dw)) {
             g.drawString(font, line, dx, dy, Theme.MUTED, false);
-            dy += 11;
+            dy += 10;
         }
-        dy += 8;
-        for (var e : preset.entrySet()) {
-            dy = field(g, font, dx, dy, dw, e.getKey(), e.getValue());
-            dy += 6;
-        }
+        dy += 6;
+        var intro = font.split(tr("intro"), dw - 16);
+        g.fill(dx, dy, dx + dw, dy + intro.size() * 10 + 8, Theme.RAISED);
+        for (int i = 0; i < intro.size(); i++) g.drawString(font, intro.get(i), dx + 8, dy + 4 + i * 10, Theme.TEXT, false);
+        dy += intro.size() * 10 + 16;
 
-        dy += 4;
+        // Value by value: what the pack has now, what the preset would put.
+        int c1 = Math.clamp(dw / 3, 130, 220);
+        int cw = (dw - c1 - 16) / 2;
+        g.drawString(font, tr("col.setting"), dx, dy, Theme.MUTED, false);
+        g.drawString(font, tr("col.now"), dx + c1, dy, Theme.MUTED, false);
+        g.drawString(font, tr("col.preset"), dx + c1 + cw + 16, dy, Theme.MUTED, false);
+        dy += 14;
+        int changed = 0;
+        for (var e : preset.entrySet()) {
+            String key = e.getKey();
+            JsonElement now = PendingChanges.global(key);
+            boolean differs = !same(e.getValue(), now);
+            if (differs) changed++;
+            var title = font.split(Component.translatableWithFallback("screen.materialnexus.presets.field." + key, key), c1 - 8);
+            var help = font.split(Component.translatableWithFallback("screen.materialnexus.presets.field." + key + ".desc", ""), c1 - 8);
+            var current = font.split(describe(key, now), cw);
+            var next = font.split(differs ? describe(key, e.getValue()) : tr("unchanged"), cw - 12);
+            int rows = Math.max(title.size() + help.size(), Math.max(current.size(), next.size()));
+            g.fill(dx, dy, dx + dw, dy + rows * 10 + 8, Theme.SURFACE);
+            int ty = dy + 4;
+            for (var line : title) { g.drawString(font, line, dx + 6, ty, Theme.TEXT, false); ty += 10; }
+            for (var line : help) { g.drawString(font, line, dx + 6, ty, Theme.FAINT, false); ty += 10; }
+            for (int i = 0; i < current.size(); i++) g.drawString(font, current.get(i), dx + c1, dy + 4 + i * 10, Theme.MUTED, false);
+            if (differs) g.renderOutline(dx + c1 + cw + 16, dy + 5, 6, 6, Theme.INFO);
+            for (int i = 0; i < next.size(); i++) g.drawString(font, next.get(i), dx + c1 + cw + 28, dy + 4 + i * 10, differs ? Theme.TEXT : Theme.FAINT, false);
+            dy += rows * 10 + 10;
+        }
+        dy += 6;
         if (matches(preset)) {
-            g.drawString(font, Component.translatable("screen.materialnexus.presets.in_use"), dx, dy + 4, Theme.OK, false);
+            Ui.mark(g, Ui.Status.UNIFIED, dx, dy + 5);
+            g.drawString(font, tr("in_use"), dx + 12, dy + 4, Theme.OK, false);
         } else {
-            Component label = Component.translatable("screen.materialnexus.presets.use");
-            int bw = font.width(label) + 20;
+            Component label = tr("use");
+            int bw = font.width(label) + 16;
             boolean over = mx >= dx && mx < dx + bw && my >= dy && my < dy + 18;
             Ui.button(g, font, label, dx, dy, bw, 18, false, over, true);
-            hits.add(dx, dy, bw, 18, () -> use(preset), null, List.of());
-            g.drawString(font, Component.translatable("screen.materialnexus.presets.use_hint"), dx + bw + 8, dy + 5, Theme.FAINT, false);
+            hits.add(dx, dy, bw, 18, () -> preset.entrySet().forEach(e -> PendingChanges.setGlobal(e.getKey(), e.getValue().deepCopy())), null, List.of());
+            g.drawString(font, font.plainSubstrByWidth(tr("use_effect", changed).getString(), dw - bw - 12), dx + bw + 8, dy + 5, Theme.MUTED, false);
         }
-    }
-
-    /** One setting of the preset: what it is, the preset's value, and the current one. Returns the y below it. */
-    private static int field(GuiGraphics g, Font font, int x, int y, int w, String key, JsonElement value) {
-        g.fill(x, y, x + 2, y + 9, Theme.INFO);
-        g.drawString(font, Component.translatableWithFallback("screen.materialnexus.presets.field." + key, key), x + 6, y, Theme.TEXT, false);
-        y += 11;
-        for (var line : font.split(Component.translatableWithFallback("screen.materialnexus.presets.field." + key + ".desc", ""), w - 6)) {
-            g.drawString(font, line, x + 6, y, Theme.FAINT, false);
-            y += 10;
-        }
-        y += 2;
-        JsonElement now = PendingChanges.global(key);
-        y = valueLine(g, font, x + 6, y, w - 6, Component.translatable("screen.materialnexus.presets.sets"), key, value, Theme.TEXT);
-        if (!same(value, now)) y = valueLine(g, font, x + 6, y, w - 6, Component.translatable("screen.materialnexus.presets.now"), key, now, Theme.MUTED);
-        return y;
-    }
-
-    private static int valueLine(GuiGraphics g, Font font, int x, int y, int w, Component label, String key, JsonElement value, int color) {
-        Component text = Component.literal(label.getString() + " ").append(describe(key, value));
-        for (var line : font.split(text, w)) {
-            g.drawString(font, line, x, y, color, false);
-            y += 10;
-        }
-        return y;
     }
 
     /** A setting's value in words: mod names in order, form names, else the raw JSON. */
     private static Component describe(String key, JsonElement value) {
-        if (value == null || value.isJsonArray() && value.getAsJsonArray().isEmpty()) {
-            return Component.translatable("screen.materialnexus.presets.empty");
-        }
+        if (value == null || value.isJsonArray() && value.getAsJsonArray().isEmpty()) return tr("empty");
         if (value instanceof JsonArray array && array.asList().stream().allMatch(JsonElement::isJsonPrimitive)) {
             List<String> parts = new ArrayList<>();
             for (int i = 0; i < array.size(); i++) {
