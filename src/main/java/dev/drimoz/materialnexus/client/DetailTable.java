@@ -165,7 +165,7 @@ final class DetailTable {
 
     private int labelWidth() { return Math.clamp(width / 5, 96, 132); }
 
-    private int keptWidth() { return Math.clamp(width / 3, 130, 216); }
+    private int keptWidth() { return Math.clamp(width / 4, 120, 170); }
 
     void render(GuiGraphics g, Font font, int mx, int my) {
         tableHits.clear();
@@ -236,15 +236,8 @@ final class DetailTable {
         if (kept.isPresent()) {
             ResourceLocation k = kept.get();
             slot(g, view, k, kx, top + 2, pending.isPresent() ? Theme.INFO : 0, false, decided, inTable);
-            String name = Names.stack(k).getHoverName().getString();
-            String mod = " · " + NexusScreen.modName(k.getNamespace());
-            int room = keptWidth() - 30;
-            String shown = font.plainSubstrByWidth(name, room);
-            g.drawString(font, shown, kx + 24, top + 7, Theme.TEXT, false);
-            int used = font.width(shown);
-            if (shown.length() == name.length() && used + 20 < room) {
-                g.drawString(font, font.plainSubstrByWidth(mod, room - used), kx + 24 + used, top + 7, Theme.MUTED, false);
-            }
+            // The name only: the mod is in the tooltip of the icon and in the inspector.
+            g.drawString(font, font.plainSubstrByWidth(Names.stack(k).getHoverName().getString(), keptWidth() - 30), kx + 24, top + 7, Theme.TEXT, false);
         }
 
         List<ResourceLocation> others = new ArrayList<>();
@@ -279,7 +272,8 @@ final class DetailTable {
         tableHits.add(sx, sy, 18, 18, () -> {
             select(view);
             choose(view.material(), view.form(), item, view.resolved(), decided);
-        }, shortcut(view.material(), view.form(), item), List.of(Names.stack(item).getHoverName(), Component.literal(item.toString()).withColor(Theme.TIP_FAINT)));
+        }, shortcut(view.material(), view.form(), item), List.of(Names.stack(item).getHoverName(), Component.literal(NexusScreen.modName(item.getNamespace())).withColor(Theme.TIP_MUTED),
+                Component.literal(item.toString()).withColor(Theme.TIP_FAINT)));
     }
 
     private void select(MaterialDetailPayload.FormView view) {
