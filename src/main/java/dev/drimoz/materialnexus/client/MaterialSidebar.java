@@ -14,7 +14,6 @@ import java.util.function.Consumer;
  * still to decide. A material with no duplicate is muted. Drawn by the screen, with its own scrollbar.
  */
 final class MaterialSidebar {
-    private static final int ROW = Theme.ROW_ITEM;
 
     private final Consumer<String> onSelect;
     private final Ui.Hits hits = new Ui.Hits();
@@ -47,35 +46,35 @@ final class MaterialSidebar {
 
     boolean scroll(double mx, double my, double delta) {
         if (!contains(mx, my)) return false;
-        scroll = Math.clamp(scroll - delta * ROW, 0, Math.max(0, entries.size() * ROW - height));
+        scroll = Math.clamp(scroll - delta * Theme.ROW_ITEM, 0, Math.max(0, entries.size() * Theme.ROW_ITEM - height));
         return true;
     }
 
     void render(GuiGraphics g, Font font, int mx, int my) {
         hits.clear();
-        int content = entries.size() * ROW;
+        int content = entries.size() * Theme.ROW_ITEM;
         scroll = Math.clamp(scroll, 0, Math.max(0, content - height));
         boolean inside = contains(mx, my);
         int rowWidth = width - (content > height ? 6 : 0);
         g.enableScissor(x, y, x + width, y + height);
         int top = y - (int) scroll;
         for (MaterialListPayload.Summary s : entries) {
-            if (top + ROW > y && top < y + height) {
+            if (top + Theme.ROW_ITEM > y && top < y + height) {
                 boolean isSelected = s.material().equals(selected);
-                boolean hover = inside && my >= top && my < top + ROW && mx < x + rowWidth;
-                if (isSelected) g.fill(x, top, x + rowWidth, top + ROW, Theme.SEL);
-                else if (hover) g.fill(x, top, x + rowWidth, top + ROW, Theme.RAISED);
+                boolean hover = inside && my >= top && my < top + Theme.ROW_ITEM && mx < x + rowWidth;
+                if (isSelected) g.fill(x, top, x + rowWidth, top + Theme.ROW_ITEM, Theme.SEL);
+                else if (hover) g.fill(x, top, x + rowWidth, top + Theme.ROW_ITEM, Theme.RAISED);
                 // The place of the icon is kept even without one, so names stay aligned.
-                if (s.icon().isPresent()) Ui.slot(g, s.icon().get(), x + 6, top + 2, 0, false);
+                if (s.icon().isPresent()) Ui.slot(g, s.icon().get(), x + 6, top + 2 + Theme.ROW_PAD, 0, false);
                 String count = s.toDecide() > 0 ? String.valueOf(s.toDecide()) : "";
                 int countWidth = font.width(count);
                 Component name = Names.material(s.material());
-                g.drawString(font, font.plainSubstrByWidth(name.getString(), rowWidth - 36 - countWidth - 8), x + 30, top + 7,
+                g.drawString(font, font.plainSubstrByWidth(name.getString(), rowWidth - 36 - countWidth - 8), x + 30, top + 7 + Theme.ROW_PAD,
                         isSelected || s.duplicateForms() > 0 ? Theme.TEXT : Theme.MUTED, false);
-                if (!count.isEmpty()) g.drawString(font, count, x + rowWidth - countWidth - 8, top + 7, Theme.WARN, false);
-                if (inside) hits.add(x, top, rowWidth, ROW, () -> { selected = s.material(); onSelect.accept(s.material()); }, null, List.of());
+                if (!count.isEmpty()) g.drawString(font, count, x + rowWidth - countWidth - 8, top + 7 + Theme.ROW_PAD, Theme.WARN, false);
+                if (inside) hits.add(x, top, rowWidth, Theme.ROW_ITEM, () -> { selected = s.material(); onSelect.accept(s.material()); }, null, List.of());
             }
-            top += ROW;
+            top += Theme.ROW_ITEM;
         }
         g.disableScissor();
         if (content > height) {

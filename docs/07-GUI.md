@@ -1,52 +1,91 @@
 # 07 — GUI
 
-The GUI is a first-class product feature, not a config screen. It ships in V1.
+The GUI is a first-class product feature, not a config screen. Its design, the reasons behind it and the measures it
+was checked against are in `22-UI-REDESIGN.md`; this page says what the screen is today.
 
 ## Access
 
-`/materials` or the creative-only "Nexus Terminal" item. Permission level 2, re-checked server-side. Editing targets singleplayer/LAN; dedicated servers get read-only diagnostics (ADR-013).
+`/materials` or the creative-only "Nexus Terminal" item. Permission level 2, re-checked server-side. Editing targets
+singleplayer/LAN; dedicated servers get read-only diagnostics (ADR-013).
 
 ## Screen size
 
 The layout needs 640x360 GUI pixels. When the player's GUI scale leaves less (the default 854x480 window at Auto gives
 427x240), the screen uses the largest smaller scale that fits, and puts the player's scale back when it closes
-(MNX-075). A window under 640x360 real pixels still gets scale 1, cramped.
+(MNX-075). The widths of the regions follow the GUI width (`client/ui/Regions`): rail, list, table and inspector; under
+900 px the inspector is laid over the table.
 
-## V1 screens
+## Shell
 
-### Material list
+- Top bar: where the player is, as a path, and the search.
+- Rail: Overview, Materials (with the number of forms to decide), Forms, Scripts (when scripts decide something);
+  under "Advanced", Rule files and Presets; at the foot, Help (the wiki), Shortcuts and Settings.
+- Bottom bar: what is not applied yet, "View", "Discard all" and "Review and apply". Nothing is written before Apply.
 
-Search, sort and filter by status, mod, form and confidence.
+## Views
 
-### Material detail
+### Overview
 
-Per form: canonical provider, alternatives, policy source, confidence and a `Why?` explanation. The canonical provider can be changed here.
+One sentence on where the pack stands, the one thing to do next, three figures that open the filtered material list,
+the mod priority, the history with Restore, and apart from the rest "Revert last apply" and "Reset everything", each
+behind a confirmation. Just after an apply, a summary is shown there, with the restart notice when items were created.
 
-### Recipe family
+### Materials
 
-Shows every variant, source mod, type, classification and the proposed action (keep, disable, rewrite output — vanilla types only in V1).
+A list of materials and, for the selected one, its forms in foldable groups: to decide, not applied yet, unified, then
+"No duplicate" and "Forms that can be created", folded. Each row shows the kept item and the replaced and left-alone
+ones. The inspector of the selected row gives every candidate its name, mod, use in recipes, the reason it is kept or
+left alone, and its actions as buttons: keep, not the same item, take out of the tag. Clicking an item in the table
+keeps it at once; right click (not the same) and Shift + right click (tag) remain as shortcuts.
 
-### Preview → Apply
+### Recipes (tab of a material)
 
-Diff-like list:
+Every loaded recipe making one form, grouped by what applying does to it. Material Nexus draws no recipe: the selected
+one is drawn by the installed viewer, through `client/RecipeViewer` and its adapter in `client/compat` (JEI today).
+Without a viewer the list stays, without the drawing. A disabled recipe that is applied is no longer loaded, so the
+list is the only place it appears.
 
-- disabled recipes;
-- rewritten recipes;
-- tag changes;
-- canonical changes;
-- viewer changes;
-- Almost Unified overlaps;
-- forms where Material Nexus would keep another item than the scripts (warning, never written; MNX-076).
+### Forms
+
+The materials × forms grid, each cell with a mark as well as a colour, materials without duplicates left out by
+default. A form opens as the same table as Materials (one row per material) and a "How it's made" tab: the routes of
+the form's process rule, two switches said in words, and the routes found in the pack grouped by machine.
+
+### Sort duplicates
+
+Every form to decide, one at a time, as cards with the key that keeps each. Same pending changes as anywhere else.
+
+### Review and apply
+
+One side panel in two steps. "Your changes": what was asked, removable line by line. "Effects on the pack": what
+applying would do, asked from the server when the tab opens, grouped by gravity (to look at, changes, undone):
+
+- recipes disabled, recipe types not handled, script conflicts, Almost Unified overlaps;
+- tags, rewritten recipes, converted and created items, data edits;
+- what is undone from the current pack.
+
+Apply writes the policy, regenerates the pack and reloads; the screen says so until the server reopens it.
 
 ### Scripts (MNX-076)
 
-Shown in the navigation rail only when scripts made unification decisions (docs/20). One row per material/form: the item scripts keep, what Material Nexus keeps, the status (recorded / same / differs / undecided) and the evidence (recipe changed, tag entry removed, recipe removed). "Keep" makes the scripts' item a pending choice; "Keep all" does it for every `same` and `differs` row. The Home view links to it with the count. Read-only servers see it without buttons.
+One row per form the scripts decide: the item they keep, what Material Nexus would keep, and the state (differs, same,
+undecided, recorded). The evidence (script file and line, recipes touched) is in the inspector. "Keep" makes the
+scripts' item a pending choice. Read-only servers see it without buttons.
 
-Apply writes the policy, regenerates the pack and reloads. "Revert last apply" restores the previous policy. Nothing destructive is applied from a single accidental click.
+### Presets
 
-## V2
+The selected preset against the current settings, value by value. "Use this preset" only fills pending changes.
 
-- dashboard with unified / partial / conflict / missing / unsupported counts;
-- recipe editor (explicit inputs, output, conditions, viewer visibility);
-- Loot and JEI/EMI tabs;
-- presets.
+### Rule files
+
+The forms, process template, recipe format, preset and material files, edited as JSON; text that does not read as JSON
+cannot be kept and the reason is shown. "Untagged forms" declares a name pattern as a form.
+
+### Settings
+
+The player's own, client only, in `config/materialnexus/screen.json`: theme (four, Graphite by default), density,
+technical ids, groups open by default, reopening where the screen was left.
+
+## Not there yet
+
+Recipe editor, loot tables, a pivot by mod, free groups (docs/22 section 9.3).
