@@ -390,5 +390,19 @@
   "screen.materialnexus.priority.remove": "Remove",
   "screen.materialnexus.priority.add": "Add",
   "screen.materialnexus.history.current": "current state",
-  "screen.materialnexus.history.restore.button": "Restore"
+  "screen.materialnexus.history.restore.button": "Restore",
+  "screen.materialnexus.review.tab.changes": "Your changes (%s)",
+  "screen.materialnexus.review.tab.effects": "Effects on the pack",
+  "screen.materialnexus.review.tab.effects.count": "Effects on the pack (%s)",
+  "screen.materialnexus.review.changes.hint": "Nothing is written yet. Each line can be removed.",
+  "screen.materialnexus.review.remove": "Remove",
+  "screen.materialnexus.review.remove_all": "Remove all",
+  "screen.materialnexus.review.see_effects": "See the effects",
+  "screen.materialnexus.review.computing": "Working out what this changes in the pack…",
+  "screen.materialnexus.review.section.look": "To look at",
+  "screen.materialnexus.review.section.changes": "Changes",
+  "screen.materialnexus.review.section.undone": "Undone from the current pack",
+  "screen.materialnexus.review.summary": "%1$s effects, of which %2$s recipes disabled",
+  "screen.materialnexus.home.applied": "Applied: %s changes are now in the pack.",
+  "screen.materialnexus.home.applied.restart": "%s items were created: restart the game to see them."
 }

@@ -156,9 +156,17 @@ public final class NexusScreen extends Screen {
         }
     }
 
-    private void preview() {
-        PacketDistributor.sendToServer(PendingChanges.request(false, Optional.empty()));
+    /** MNX-097: one side panel in two steps, what was asked and what it does; {@code effects} opens it on the second. */
+    private void review(boolean effects) {
+        drawer = new ReviewDrawer(effects, () -> PacketDistributor.sendToServer(PendingChanges.request(false, Optional.empty())), preset -> {
+            PacketDistributor.sendToServer(PendingChanges.request(true, preset));
+            // The server reopens Material Nexus once the reload has finished; pending choices are kept until then.
+            minecraft.setScreen(null);
+        }, () -> drawer = null);
+        layoutDrawer();
     }
+
+    private void preview() { review(true); }
 
     /** Dev screenshots only ({@link UiShots}): drive the screen like a player would. */
     void devShow(String which, String arg) {
@@ -249,18 +257,14 @@ public final class NexusScreen extends Screen {
         rebuildWidgets();
     }
 
+    /** The effects the server worked out: shown in the review panel if it is still on that step. */
     void showPreview(PreviewPayload payload) {
-        drawer = new PreviewDrawer(payload, () -> {
-            PacketDistributor.sendToServer(PendingChanges.request(true, payload.preset()));
-            // The server reopens Material Nexus once the reload has finished; pending choices are kept until then.
-            minecraft.setScreen(null);
-        }, () -> drawer = null);
-        layoutDrawer();
+        if (drawer instanceof ReviewDrawer review && review.onEffects()) review.accept(payload);
     }
 
     private void togglePending() {
-        drawer = drawer instanceof PendingDrawer ? null : new PendingDrawer(this::preview, () -> drawer = null);
-        layoutDrawer();
+        if (drawer instanceof ReviewDrawer review && !review.onEffects()) drawer = null;
+        else review(false);
     }
 
     private void layoutDrawer() {
@@ -498,7 +502,7 @@ public final class NexusScreen extends Screen {
         Component apply = Component.translatable("screen.materialnexus.preview_short");
         Component discard = Component.translatable("screen.materialnexus.discard_all");
         int ax = width - 8 - font.width(apply) - 16;
-        bottomButton(g, mx, my, ax, apply, pending > 0, this::preview);
+        bottomButton(g, mx, my, ax, apply, pending > 0 && drawer == null, this::preview);
         bottomButton(g, mx, my, ax - 4 - font.width(discard) - 16, discard, false, pending == 0 ? null : () -> {
             PendingChanges.clear();
             drawer = null;
@@ -584,6 +588,20 @@ public final class NexusScreen extends Screen {
                 tr("home.unified.split", chosen, totals.byPriority()), NexusQueries.UNIFIED);
         figure(g, mx, my, x + 2 * (fw + 8), y, fw, Ui.Status.NOTHING, tr("home.aside"), totals.setAside(), tr("home.aside.hint"), NexusQueries.ALL);
         y += 62;
+
+        // MNX-097: what an apply did is said here, in the screen, when it has just happened; created items need a restart.
+        if (!history.isEmpty() && justApplied(history.getFirst())) {
+            int items = num(history.getFirst(), "items");
+            int h = items > 0 ? 32 : 20;
+            g.fill(x, y, x + lw, y + h, Theme.RAISED);
+            Ui.mark(g, Ui.Status.UNIFIED, x + 8, y + 7);
+            g.drawString(font, tr("home.applied", num(history.getFirst(), "effects")), x + 20, y + 6, Theme.TEXT, false);
+            if (items > 0) {
+                Ui.mark(g, Ui.Status.SUGGESTION, x + 8, y + 19);
+                g.drawString(font, tr("home.applied.restart", items), x + 20, y + 18, Theme.WARN, false);
+            }
+            y += h + 16;
+        }
 
         if (scripts.decided() > 0) {
             // MNX-076: a pack that unified with scripts sees it first, before anything is applied.
@@ -760,6 +778,16 @@ public final class NexusScreen extends Screen {
                 }));
             }
             y += 18;
+        }
+    }
+
+    /** An apply (not a revert or a restore) made in the last two minutes. */
+    private static boolean justApplied(com.google.gson.JsonObject entry) {
+        try {
+            boolean apply = !entry.has("kind") || entry.get("kind").getAsString().equals("apply");
+            return apply && java.time.Duration.between(java.time.Instant.parse(entry.get("at").getAsString()), java.time.Instant.now()).toSeconds() < 120;
+        } catch (RuntimeException e) {
+            return false;
         }
     }
 
