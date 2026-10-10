@@ -87,6 +87,33 @@ final class Ui {
         g.drawString(font, label, x + (w - font.width(label)) / 2, y + (h - 8) / 2, !active ? Theme.FAINT : primary ? Theme.ON : Theme.TEXT, false);
     }
 
+    /**
+     * The shape that goes with a status colour, 6 px: a filled dot for what is to decide, a ring for a choice not applied
+     * yet, a tick for unified. What asks nothing has no mark. Colour is never the only sign.
+     */
+    static void mark(GuiGraphics g, Status status, int x, int y) {
+        switch (status) {
+            case SUGGESTION -> {
+                g.fill(x + 1, y, x + 5, y + 6, Theme.WARN);
+                g.fill(x, y + 1, x + 6, y + 5, Theme.WARN);
+            }
+            case PENDING, RESET -> g.renderOutline(x, y, 6, 6, Theme.INFO);
+            case UNIFIED -> {
+                int[][] tick = {{0, 3}, {1, 4}, {2, 3}, {3, 2}, {4, 1}, {5, 0}};
+                for (int[] p : tick) g.fill(x + p[0], y + p[1], x + p[0] + 1, y + p[1] + 2, Theme.OK);
+            }
+            default -> { }
+        }
+    }
+
+    /** The fold mark of a group: pointing right when folded, down when open. */
+    static void caret(GuiGraphics g, int x, int y, boolean open, int color) {
+        for (int i = 0; i < 3; i++) {
+            if (open) g.fill(x + i, y + 1 + i, x + 5 - i, y + 2 + i, color);
+            else g.fill(x + 1 + i, y + i, x + 2 + i, y + 5 - i, color);
+        }
+    }
+
     /** An 18px item slot on the mid-grey well, with a 1px outline in {@code outline} (0 for none); {@code dim} fades it. */
     static void slot(GuiGraphics g, ResourceLocation item, int x, int y, int outline, boolean dim) {
         if (outline != 0) g.fill(x - 1, y - 1, x + 19, y + 19, outline);

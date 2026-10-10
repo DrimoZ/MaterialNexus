@@ -1,44 +1,64 @@
 package dev.drimoz.materialnexus.client;
 
-import dev.drimoz.materialnexus.client.ui.Btn;
-import dev.drimoz.materialnexus.client.ui.Field;
 import dev.drimoz.materialnexus.client.ui.Theme;
-import dev.drimoz.materialnexus.datapack.CanonicalChange;
-
 import dev.drimoz.materialnexus.core.domain.FormId;
 import dev.drimoz.materialnexus.core.policy.PolicyPrecedence;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
+import dev.drimoz.materialnexus.datapack.CanonicalChange;
 import dev.drimoz.materialnexus.item.CreatedItems;
 import dev.drimoz.materialnexus.network.MaterialDetailPayload;
+import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 import net.minecraft.resources.ResourceLocation;
 
 import java.util.ArrayList;
+import java.util.EnumMap;
+import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiConsumer;
 
 /**
- * The material (or form) detail of the redesigned screen (MNX-049): one row per form (or per material), with its
- * status, the kept item, the alternatives and the variants set aside. Click an item to make it the pending choice
- * (again to cancel); for a material, forms it lacks are listed last with "Create item".
+ * The forms of a material, or the materials of a form (MNX-095, docs/22 section 6.3). On the left a table in groups:
+ * what is to decide first, what asks nothing folded. On the right the inspector of the selected row: every candidate
+ * with its name, its mod, its use in recipes and why it is kept or left alone, and each action as a labelled button.
+ * Clicking an item in the table still keeps it at once; right click and Shift + right click remain as shortcuts.
  */
 final class DetailTable {
-    private static final int ROW = 26;
-    private static final int HEAD = 13;
-    private static final int LABEL = 112;
-    private static final int STATUS = 112;
+    private static final int ROW = Theme.ROW_ITEM;
+    private static final int HEAD = Theme.ROW_TEXT;
+    private static final int GROUP = 20;
+    private static final int FOOT = 28;
+
+    private enum Group { TODO, PENDING, UNIFIED, SINGLE, CREATABLE }
+
+    /** Folded groups, kept while the game runs: what asks nothing starts folded. */
+    private static final Set<Group> FOLDED = EnumSet.of(Group.SINGLE, Group.CREATABLE);
+
+    private sealed interface Line permits GroupLine, FormLine, AbsentLine { }
+    private record GroupLine(Group group, int count) implements Line { }
+    private record FormLine(MaterialDetailPayload.FormView view) implements Line { }
+    private record AbsentLine(String form) implements Line { }
 
     private final boolean readOnly;
     private final BiConsumer<String, String> openRecipes;
-    private final Ui.Hits hits = new Ui.Hits();
+    private final Ui.Hits tableHits = new Ui.Hits();
+    private final Ui.Hits inspectorHits = new Ui.Hits();
     private MaterialDetailPayload detail;
     private int x, y, width, height;
-    private double scroll;
+    private int ix, iy, iw, ih;
+    private boolean overlay;
+    /** Under the wide layout the inspector covers the table: it opens on a selection and can be closed. */
+    private boolean inspectorOpen;
+    private String selected;
+    private double scroll, inspectorScroll;
+    private int inspectorContent;
 
     DetailTable(boolean readOnly, BiConsumer<String, String> openRecipes) {
         this.readOnly = readOnly;
@@ -46,29 +66,20 @@ final class DetailTable {
     }
 
     void show(MaterialDetailPayload detail) {
-        if (this.detail == null || !this.detail.material().equals(detail.material()) || this.detail.byForm() != detail.byForm()) scroll = 0;
+        if (this.detail == null || !this.detail.material().equals(detail.material()) || this.detail.byForm() != detail.byForm()) {
+            scroll = 0;
+            inspectorScroll = 0;
+            selected = null;
+            inspectorOpen = false;
+        }
         this.detail = detail;
     }
 
-    void layout(int x, int y, int width, int height) {
+    /** The table, and the inspector beside it or, when {@code overlay}, over its right part. */
+    void layout(int x, int y, int width, int height, int ix, int iy, int iw, int ih, boolean overlay) {
         this.x = x; this.y = y; this.width = width; this.height = height;
-    }
-
-    private List<String> creatable() {
-        if (detail == null || detail.byForm()) return List.of();
-        Set<FormId> present = new HashSet<>();
-        detail.forms().forEach(v -> present.add(new FormId(v.form())));
-        return CreatedItems.creatable(present).stream().map(FormId::name).toList();
-    }
-
-    void scroll(double delta) {
-        if (detail == null) return;
-        double max = Math.max(0, HEAD + (detail.forms().size() + creatable().size()) * ROW - height);
-        scroll = Math.clamp(scroll - delta * ROW, 0, max);
-    }
-
-    boolean click(double mx, double my, int button) {
-        return my >= y && my < y + height && hits.click(mx, my, button);
+        this.ix = ix; this.iy = iy; this.iw = iw; this.ih = ih;
+        this.overlay = overlay;
     }
 
     static Ui.Status status(MaterialDetailPayload.FormView view) {
@@ -79,132 +90,230 @@ final class DetailTable {
         return f.source() == PolicyPrecedence.DEFAULT ? Ui.Status.SUGGESTION : Ui.Status.UNIFIED;
     }
 
-    void render(GuiGraphics g, Font font, int mx, int my) {
-        hits.clear();
-        if (detail == null) return;
-        g.drawString(font, Component.translatable(detail.byForm() ? "screen.materialnexus.col.material" : "screen.materialnexus.col.form"), x + 4, y + 2, Theme.FAINT, false);
-        g.drawString(font, Component.translatable("screen.materialnexus.col.status"), x + LABEL, y + 2, Theme.FAINT, false);
-        g.drawString(font, Component.translatable("screen.materialnexus.col.kept"), x + LABEL + STATUS, y + 2, Theme.FAINT, false);
-        g.drawString(font, Component.translatable("screen.materialnexus.col.others"), x + LABEL + STATUS + 30, y + 2, Theme.FAINT, false);
-        g.enableScissor(x, y + HEAD, x + width, y + height);
-        int top = y + HEAD - (int) scroll;
-        for (MaterialDetailPayload.FormView view : detail.forms()) {
-            if (top + ROW > y + HEAD && top < y + height) row(g, font, view, top, mx, my);
-            top += ROW;
-        }
-        for (String form : creatable()) {
-            if (top + ROW > y + HEAD && top < y + height) absentRow(g, font, form, top, mx, my);
-            top += ROW;
-        }
-        g.disableScissor();
-        if (my >= y + HEAD && my < y + height) hits.tooltip(g, font, mx, my);
+    private static Group group(Ui.Status status) {
+        return switch (status) {
+            case SUGGESTION -> Group.TODO;
+            case PENDING, RESET -> Group.PENDING;
+            case UNIFIED -> Group.UNIFIED;
+            case SINGLE, NOTHING, ABSENT -> Group.SINGLE;
+        };
     }
 
-    private void row(GuiGraphics g, Font font, MaterialDetailPayload.FormView view, int top, int mx, int my) {
+    private static String key(MaterialDetailPayload.FormView view) { return view.material() + "/" + view.form(); }
+
+    private List<String> creatable() {
+        if (detail == null || detail.byForm()) return List.of();
+        Set<FormId> present = new HashSet<>();
+        detail.forms().forEach(v -> present.add(new FormId(v.form())));
+        return CreatedItems.creatable(present).stream().map(FormId::name).toList();
+    }
+
+    private Map<Group, List<MaterialDetailPayload.FormView>> grouped() {
+        Map<Group, List<MaterialDetailPayload.FormView>> by = new EnumMap<>(Group.class);
+        for (MaterialDetailPayload.FormView view : detail.forms()) by.computeIfAbsent(group(status(view)), g -> new ArrayList<>()).add(view);
+        return by;
+    }
+
+    private List<Line> lines() {
+        List<Line> out = new ArrayList<>();
+        grouped().forEach((group, views) -> {
+            out.add(new GroupLine(group, views.size()));
+            if (!FOLDED.contains(group)) views.forEach(v -> out.add(new FormLine(v)));
+        });
+        List<String> absent = creatable();
+        if (!absent.isEmpty()) {
+            out.add(new GroupLine(Group.CREATABLE, absent.size()));
+            if (!FOLDED.contains(Group.CREATABLE)) absent.forEach(f -> out.add(new AbsentLine(f)));
+        }
+        return out;
+    }
+
+    private static int height(Line line) { return line instanceof GroupLine ? GROUP : ROW; }
+
+    /** The selected row; with none, the first one that matters, so the inspector is never empty. */
+    private Optional<MaterialDetailPayload.FormView> selectedView() {
+        Optional<MaterialDetailPayload.FormView> found = detail.forms().stream().filter(v -> key(v).equals(selected)).findFirst();
+        if (found.isPresent()) return found;
+        return grouped().values().stream().findFirst().map(List::getFirst);
+    }
+
+    private boolean inspectorShown() { return !overlay || inspectorOpen; }
+
+    private boolean overInspector(double mx, double my) {
+        return inspectorShown() && mx >= ix && mx < ix + iw && my >= iy && my < iy + ih;
+    }
+
+    void scroll(double mx, double my, double delta) {
+        if (detail == null) return;
+        if (overInspector(mx, my)) {
+            inspectorScroll = Math.clamp(inspectorScroll - delta * ROW, 0, Math.max(0, inspectorContent));
+            return;
+        }
+        int content = lines().stream().mapToInt(DetailTable::height).sum();
+        scroll = Math.clamp(scroll - delta * ROW, 0, Math.max(0, content - (height - HEAD)));
+    }
+
+    boolean click(double mx, double my, int button) {
+        if (overInspector(mx, my)) {
+            inspectorHits.click(mx, my, button);
+            return true;
+        }
+        return my >= y + HEAD && my < y + height && tableHits.click(mx, my, button);
+    }
+
+    // ---- table ---------------------------------------------------------------------------------------------
+
+    private int labelWidth() { return Math.clamp(width / 5, 96, 132); }
+
+    private int keptWidth() { return Math.clamp(width / 3, 130, 216); }
+
+    void render(GuiGraphics g, Font font, int mx, int my) {
+        tableHits.clear();
+        inspectorHits.clear();
+        if (detail == null) return;
+        int kx = x + labelWidth();
+        int ox = kx + keptWidth();
+        g.drawString(font, Component.translatable(detail.byForm() ? "screen.materialnexus.col.material" : "screen.materialnexus.col.form"), x + 16, y + 4, Theme.MUTED, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.col.kept"), kx, y + 4, Theme.MUTED, false);
+        g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.col.others").getString(), x + width - ox - 8), ox, y + 4, Theme.MUTED, false);
+
+        List<Line> lines = lines();
+        int content = lines.stream().mapToInt(DetailTable::height).sum();
+        int view = height - HEAD;
+        scroll = Math.clamp(scroll, 0, Math.max(0, content - view));
+        boolean inTable = !overInspector(mx, my) && my >= y + HEAD && my < y + height;
+        g.enableScissor(x, y + HEAD, x + width, y + height);
+        int top = y + HEAD - (int) scroll;
+        for (Line line : lines) {
+            int h = height(line);
+            if (top + h > y + HEAD && top < y + height) {
+                switch (line) {
+                    case GroupLine group -> groupRow(g, font, group, top, mx, my, inTable);
+                    case FormLine form -> formRow(g, font, form.view(), top, kx, ox, mx, my, inTable);
+                    case AbsentLine absent -> absentRow(g, font, absent.form(), top, kx, mx, my, inTable);
+                }
+            }
+            top += h;
+        }
+        g.disableScissor();
+        if (content > view) {
+            g.fill(x + width - 4, y + HEAD, x + width, y + height, Theme.RAISED);
+            int bar = Math.max(12, view * view / content);
+            int at = (int) (scroll * (view - bar) / (content - view));
+            g.fill(x + width - 4, y + HEAD + at, x + width, y + HEAD + at + bar, Theme.CTRL);
+        }
+        if (inspectorShown()) renderInspector(g, font, mx, my);
+        if (overInspector(mx, my)) inspectorHits.tooltip(g, font, mx, my);
+        else if (inTable) tableHits.tooltip(g, font, mx, my);
+    }
+
+    private void groupRow(GuiGraphics g, Font font, GroupLine line, int top, int mx, int my, boolean inTable) {
+        boolean folded = FOLDED.contains(line.group());
+        boolean hover = inTable && my >= top && my < top + GROUP && mx >= x && mx < x + width;
+        Component title = Component.translatable("screen.materialnexus.rows." + Names.lowerName(line.group()), line.count());
+        Ui.caret(g, x + 5, top + 9, !folded, Theme.MUTED);
+        g.drawString(font, title, x + 16, top + 8, hover ? Theme.TEXT : Theme.MUTED, false);
+        Group group = line.group();
+        if (inTable) tableHits.add(x, top, width, GROUP, () -> { if (!FOLDED.remove(group)) FOLDED.add(group); }, null, List.of());
+    }
+
+    private void formRow(GuiGraphics g, Font font, MaterialDetailPayload.FormView view, int top, int kx, int ox, int mx, int my, boolean inTable) {
         ResolvedForm f = view.resolved();
         String material = view.material();
-        boolean hover = my >= top && my < top + ROW && mx >= x && mx < x + width;
-        g.fill(x, top + ROW - 1, x + width, top + ROW, Theme.BORDER);
-        if (hover) g.fill(x, top, x + width, top + ROW - 1, Theme.RAISED);
-        Component label = detail.byForm() ? Names.material(material) : Names.form(view.form());
-        g.drawString(font, font.plainSubstrByWidth(label.getString(), LABEL - 8), x + 4, top + 9, Theme.TEXT, false);
+        boolean isSelected = selectedView().map(v -> key(v).equals(key(view))).orElse(false);
+        boolean hover = inTable && my >= top && my < top + ROW && mx >= x && mx < x + width;
+        if (isSelected) g.fill(x, top, x + width, top + ROW, Theme.SEL);
+        else if (hover) g.fill(x, top, x + width, top + ROW, Theme.RAISED);
 
         Ui.Status status = status(view);
-        Ui.pill(g, font, status.label(), x + LABEL, top + 7, status.color());
+        Ui.mark(g, status, x + 5, top + 8);
+        Component label = detail.byForm() ? Names.material(material) : Names.form(view.form());
+        g.drawString(font, font.plainSubstrByWidth(label.getString(), labelWidth() - 20), x + 16, top + 7, Theme.TEXT, false);
 
         Optional<ResourceLocation> pending = PendingChanges.get(material, view.form()).filter(p -> !p.equals(CanonicalChange.RESET));
         boolean decided = f.source() != PolicyPrecedence.DEFAULT && !f.alternatives().isEmpty();
-        Component why = Component.translatable(f.reasonKey(), f.reasonArgs().toArray());
-        int sx = x + LABEL + STATUS + 4;
         Optional<ResourceLocation> kept = pending.or(f::canonical);
         if (kept.isPresent()) {
-            Ui.slot(g, kept.get(), sx, top + 4, status.color(), false);
-            List<Component> tip = itemTip(kept.get(), Component.translatable(pending.isPresent() ? "screen.materialnexus.role.pending" : "screen.materialnexus.role.canonical"));
-            tip.add(Component.translatable("screen.materialnexus.why", why,
-                    Component.translatable("materialnexus.source." + Names.lowerName(f.source())),
-                    Component.translatable("materialnexus.confidence." + Names.lowerName(f.confidence()))).withColor(Theme.TIP_MUTED));
             ResourceLocation k = kept.get();
-            notSameMark(g, material, view.form(), k, sx, top + 4);
-            hits.add(sx - 1, top + 3, 20, 20, () -> choose(material, view.form(), k, f, decided), notSame(material, view.form(), k), withHint(material, view.form(), tip, k));
+            slot(g, view, k, kx, top + 2, pending.isPresent() ? Theme.INFO : 0, false, decided, inTable);
+            String name = Names.stack(k).getHoverName().getString();
+            String mod = " · " + NexusScreen.modName(k.getNamespace());
+            int room = keptWidth() - 30;
+            String shown = font.plainSubstrByWidth(name, room);
+            g.drawString(font, shown, kx + 24, top + 7, Theme.TEXT, false);
+            int used = font.width(shown);
+            if (shown.length() == name.length() && used + 20 < room) {
+                g.drawString(font, font.plainSubstrByWidth(mod, room - used), kx + 24 + used, top + 7, Theme.MUTED, false);
+            }
         }
 
-        int ix = sx + 26;
         List<ResourceLocation> others = new ArrayList<>();
         f.canonical().filter(c -> !c.equals(kept.orElse(null))).ifPresent(others::add);
         f.alternatives().stream().filter(a -> !a.equals(kept.orElse(null))).forEach(others::add);
-        int right = x + width - 64;
+        int sx = ox;
+        int right = x + width - 28;
+        int hidden = 0;
         for (ResourceLocation item : others) {
-            if (ix + 20 > right) break;
-            Ui.slot(g, item, ix, top + 4, Theme.CTRL, false);
-            notSameMark(g, material, view.form(), item, ix, top + 4);
-            hits.add(ix - 1, top + 3, 20, 20, () -> choose(material, view.form(), item, f, decided), notSame(material, view.form(), item),
-                    withHint(material, view.form(), itemTip(item, Component.translatable("screen.materialnexus.role.alternative")), item));
-            ix += 21;
+            if (sx + 18 > right) { hidden++; continue; }
+            slot(g, view, item, sx, top + 2, 0, false, decided, inTable);
+            sx += 20;
         }
-        if (!f.notUnified().isEmpty() && ix + 30 < right) {
-            ix += 4;
-            g.fill(ix - 3, top + 6, ix - 2, top + 20, Theme.BORDER);
+        if (!f.notUnified().isEmpty() && sx + 26 <= right) {
+            g.fill(sx + 2, top + 4, sx + 3, top + ROW - 4, Theme.CTRL);
+            sx += 6;
         }
         for (ResolvedForm.NotUnified n : f.notUnified()) {
-            if (ix + 20 > right) break;
-            Ui.slot(g, n.item(), ix, top + 4, 0, true);
-            List<Component> tip = itemTip(n.item(), Component.translatable("screen.materialnexus.role.not_unified",
-                    Component.translatable(n.reasonKey(), n.reasonArgs().toArray())).withColor(Theme.TIP_BAD));
-            notSameMark(g, material, view.form(), n.item(), ix, top + 4);
-            hits.add(ix - 1, top + 3, 20, 20, () -> choose(material, view.form(), n.item(), f, decided), notSame(material, view.form(), n.item()), withHint(material, view.form(), tip, n.item()));
-            ix += 21;
+            if (sx + 18 > right) { hidden++; continue; }
+            slot(g, view, n.item(), sx, top + 2, 0, true, decided, inTable);
+            sx += 20;
         }
-
-        Component recipes = Component.translatable("screen.materialnexus.open_recipes");
-        int rx = x + width - font.width(recipes) - 6;
-        // MNX-058: a saved choice can be put back to default (pending, like any choice); clicking again cancels.
-        if (!readOnly && (f.source() == PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE || f.ignoredOverride().isPresent())) {
-            boolean resetting = status == Ui.Status.RESET;
-            int bx = rx - 16;
-            boolean overR = mx >= bx && mx < bx + 12 && my >= top + 7 && my < top + 19;
-            g.drawString(font, "↺", bx + 2, top + 9, resetting ? Theme.WARN : overR ? Theme.TEXT : Theme.FAINT, false);
-            hits.add(bx, top + 7, 12, 12, () -> {
-                if (resetting) PendingChanges.clear(material, view.form());
-                else PendingChanges.set(material, view.form(), CanonicalChange.RESET);
-            }, null, List.of(Component.translatable(resetting ? "screen.materialnexus.reset.cancel" : "screen.materialnexus.reset.row")));
-        }
-        boolean over = mx >= rx && my >= top && my < top + ROW && mx < x + width;
-        g.drawString(font, recipes, rx, top + 9, over ? Theme.TEXT : Theme.INFO, false);
-        hits.add(rx, top, x + width - rx, ROW, () -> openRecipes.accept(material, view.form()), null, List.of());
+        if (hidden > 0) g.drawString(font, "+" + hidden, sx + 2, top + 7, Theme.FAINT, false);
+        if (inTable) tableHits.add(x, top, width, ROW, () -> select(view), null, List.of());
     }
 
-    private void absentRow(GuiGraphics g, Font font, String form, int top, int mx, int my) {
+    /** One item of a row: click keeps it and selects the row, right click marks it, Shift + right click edits the tag. */
+    private void slot(GuiGraphics g, MaterialDetailPayload.FormView view, ResourceLocation item, int sx, int sy, int outline, boolean dim, boolean decided, boolean inTable) {
+        Ui.slot(g, item, sx, sy, outline, dim);
+        marks(g, view.material(), view.form(), item, sx, sy);
+        if (!inTable) return;
+        tableHits.add(sx, sy, 18, 18, () -> {
+            select(view);
+            choose(view.material(), view.form(), item, view.resolved(), decided);
+        }, shortcut(view.material(), view.form(), item), List.of(Names.stack(item).getHoverName(), Component.literal(item.toString()).withColor(Theme.TIP_FAINT)));
+    }
+
+    private void select(MaterialDetailPayload.FormView view) {
+        if (!key(view).equals(selected)) inspectorScroll = 0;
+        selected = key(view);
+        inspectorOpen = true;
+    }
+
+    private void absentRow(GuiGraphics g, Font font, String form, int top, int kx, int mx, int my, boolean inTable) {
         String material = detail.material();
-        g.fill(x, top + ROW - 1, x + width, top + ROW, Theme.BORDER);
-        g.drawString(font, Names.form(form), x + 4, top + 9, Theme.FAINT, false);
-        Ui.pill(g, font, Ui.Status.ABSENT.label(), x + LABEL, top + 7, Ui.Status.ABSENT.color());
-        int sx = x + LABEL + STATUS + 4;
-        g.fill(sx, top + 4, sx + 18, top + 22, Theme.CTRL);
-        g.fill(sx + 1, top + 5, sx + 17, top + 21, Theme.SURFACE);
+        g.drawString(font, font.plainSubstrByWidth(Names.form(form).getString(), labelWidth() - 20), x + 16, top + 7, Theme.MUTED, false);
         if (readOnly) return;
         boolean pending = PendingChanges.creating(material, form);
         Component label = Component.translatable(pending ? "screen.materialnexus.create.pending" : "screen.materialnexus.create.button");
-        int bx = sx + 26;
-        int bw = font.width(label) + 10;
-        boolean over = mx >= bx && mx < bx + bw && my >= top + 6 && my < top + 20;
-        g.fill(bx, top + 6, bx + bw, top + 20, pending ? Theme.mix(Theme.BG, Theme.OK, 0.3f) : over ? Theme.SEL : Theme.RAISED);
-        g.drawString(font, label, bx + 5, top + 9, pending ? Theme.OK : Theme.INFO, false);
-        hits.add(bx, top + 6, bw, 14, () -> PendingChanges.toggleCreation(material, form), null,
-                List.of(Component.translatable("screen.materialnexus.create.tooltip", "materialnexus:" + material + "_" + form)));
+        int bw = font.width(label) + 12;
+        boolean over = inTable && mx >= kx && mx < kx + bw && my >= top + 3 && my < top + 19;
+        if (pending) g.renderOutline(x + 5, top + 8, 6, 6, Theme.INFO);
+        Ui.button(g, font, label, kx, top + 3, bw, 16, false, over, true);
+        if (inTable) {
+            tableHits.add(kx, top + 3, bw, 16, () -> PendingChanges.toggleCreation(material, form), null,
+                    List.of(Component.translatable("screen.materialnexus.create.tooltip", "materialnexus:" + material + "_" + form)));
+        }
     }
 
-    /**
-     * MNX-050: right click marks an item as "not the same" (or unmarks it); a pending mark is a red cross. MNX-079: with
-     * Shift, takes it out of this form's tag (or undoes the player's tag edit); a pending tag edit is an orange bar.
-     */
-    private Runnable notSame(String material, String form, ResourceLocation item) {
+    /** MNX-050, MNX-079: right click marks an item "not the same", with Shift it takes it out of this form's tag. */
+    private Runnable shortcut(String material, String form, ResourceLocation item) {
         return readOnly ? null : () -> {
-            if (net.minecraft.client.gui.screens.Screen.hasShiftDown()) PendingChanges.toggleTagRemoval(material, form, item);
+            if (Screen.hasShiftDown()) PendingChanges.toggleTagRemoval(material, form, item);
             else PendingChanges.toggleNotSame(item);
         };
     }
 
-    private static void notSameMark(GuiGraphics g, String material, String form, ResourceLocation item, int x, int y) {
+    /** A pending "not the same" is a cross over the item, a pending tag edit a bar under it. */
+    private static void marks(GuiGraphics g, String material, String form, ResourceLocation item, int x, int y) {
         if (PendingChanges.globalChanged("tag_edits") && PendingChanges.tagRemoved(material, form, item)) g.fill(x, y + 16, x + 18, y + 18, Theme.WARN);
         if (!PendingChanges.globalChanged("not_same") || !PendingChanges.notSame(item)) return;
         for (int i = 0; i < 18; i++) {
@@ -213,31 +322,174 @@ final class DetailTable {
         }
     }
 
-    private List<Component> withHint(String material, String form, List<Component> tip, ResourceLocation item) {
-        List<Component> out = new ArrayList<>(tip);
-        // MNX-052: what helps choose: its mod, and how central it is in the pack's recipes.
-        var usage = detail.usage().get(item);
-        String mod = net.neoforged.fml.ModList.get().getModContainerById(item.getNamespace()).map(c -> c.getModInfo().getDisplayName()).orElse(item.getNamespace());
-        out.add(usage == null ? Component.translatable("screen.materialnexus.usage.mod", mod).withColor(Theme.TIP_INFO)
-                : Component.translatable("screen.materialnexus.usage", mod, usage.produced(), usage.used()).withColor(Theme.TIP_INFO));
-        if (readOnly) return out;
-        out.add(Component.translatable(PendingChanges.notSame(item) ? "screen.materialnexus.not_same.unmark" : "screen.materialnexus.not_same.mark").withColor(Theme.TIP_FAINT));
-        out.add(Component.translatable(PendingChanges.tagRemoved(material, form, item) || PendingChanges.tagAdded(material, form, item)
-                ? "screen.materialnexus.tag_edit.undo" : "screen.materialnexus.tag_edit.remove").withColor(Theme.TIP_FAINT));
-        return out;
-    }
-
-    private static List<Component> itemTip(ResourceLocation item, Component role) {
-        return new ArrayList<>(List.of(Names.stack(item).getHoverName(), Component.literal(item.toString()).withColor(Theme.TIP_FAINT),
-                role.copy().withColor(Theme.TIP_MUTED)));
-    }
-
-    /** Pick an item as the pending canonical; picking the pending one again, or the already decided one, cancels. */
+    /** Pick an item as the pending kept one; picking the pending one again, or the already decided one, cancels. */
     private void choose(String material, String form, ResourceLocation item, ResolvedForm f, boolean decided) {
         if (readOnly) return;
         boolean samePending = PendingChanges.get(material, form).map(item::equals).orElse(false);
         boolean alreadyDecided = decided && f.canonical().map(item::equals).orElse(false);
         if (samePending || alreadyDecided) PendingChanges.clear(material, form);
         else PendingChanges.set(material, form, item);
+    }
+
+    // ---- inspector -----------------------------------------------------------------------------------------
+
+    private void renderInspector(GuiGraphics g, Font font, int mx, int my) {
+        g.fill(ix, iy, ix + iw, iy + ih, Theme.BG);
+        g.fill(ix, iy, ix + 1, iy + ih, Theme.BORDER);
+        Optional<MaterialDetailPayload.FormView> shown = selectedView();
+        if (shown.isEmpty()) {
+            g.drawString(font, Component.translatable("screen.materialnexus.insp.none"), ix + 12, iy + 10, Theme.MUTED, false);
+            return;
+        }
+        MaterialDetailPayload.FormView view = shown.get();
+        ResolvedForm f = view.resolved();
+        String material = view.material();
+        String form = view.form();
+        int left = ix + 12;
+        int inner = iw - 24;
+
+        g.drawString(font, Component.translatable("screen.materialnexus.triage.item", Names.material(material), Names.form(form)).withStyle(ChatFormatting.BOLD),
+                left, iy + 8, Theme.TEXT, false);
+        if (overlay) {
+            Component close = Component.translatable("screen.materialnexus.close");
+            int cw = font.width(close) + 12;
+            boolean over = mx >= ix + iw - 8 - cw && mx < ix + iw - 8 && my >= iy + 4 && my < iy + 20;
+            Ui.button(g, font, close, ix + iw - 8 - cw, iy + 4, cw, 16, false, over, true);
+            inspectorHits.add(ix + iw - 8 - cw, iy + 4, cw, 16, () -> inspectorOpen = false, null, List.of());
+        }
+        Ui.Status status = status(view);
+        Ui.mark(g, status, left, iy + 23);
+        g.drawString(font, status.label(), left + 12, iy + 22, status.color(), false);
+
+        int bodyTop = iy + 36;
+        int bodyBottom = iy + ih - FOOT;
+        g.enableScissor(ix + 1, bodyTop, ix + iw, bodyBottom);
+        int cy = bodyTop - (int) inspectorScroll;
+        Component why = Component.translatable("screen.materialnexus.why", Component.translatable(f.reasonKey(), f.reasonArgs().toArray()),
+                Component.translatable("materialnexus.source." + Names.lowerName(f.source())),
+                Component.translatable("materialnexus.confidence." + Names.lowerName(f.confidence())));
+        for (var line : font.split(why, inner)) {
+            g.drawString(font, line, left, cy, Theme.MUTED, false);
+            cy += 10;
+        }
+        cy += 6;
+
+        Optional<ResourceLocation> pending = PendingChanges.get(material, form).filter(p -> !p.equals(CanonicalChange.RESET));
+        boolean decided = f.source() != PolicyPrecedence.DEFAULT && !f.alternatives().isEmpty();
+        Optional<ResourceLocation> kept = pending.or(f::canonical);
+        List<ResourceLocation> candidates = new ArrayList<>();
+        kept.ifPresent(candidates::add);
+        f.canonical().filter(c -> !candidates.contains(c)).ifPresent(candidates::add);
+        f.alternatives().stream().filter(a -> !candidates.contains(a)).forEach(candidates::add);
+
+        g.drawString(font, Component.translatable("screen.materialnexus.insp.candidates", candidates.size()), left, cy, Theme.MUTED, false);
+        cy += 12;
+        for (ResourceLocation item : candidates) {
+            boolean isKept = kept.map(item::equals).orElse(false);
+            Component tag = !isKept ? Component.empty() : pending.isPresent() ? Ui.Status.PENDING.label()
+                    : status == Ui.Status.SUGGESTION ? Component.translatable("screen.materialnexus.insp.suggested") : Component.translatable("screen.materialnexus.col.kept");
+            int tagColor = !isKept ? 0 : pending.isPresent() ? Theme.INFO : status == Ui.Status.SUGGESTION ? Theme.WARN : Theme.OK;
+            // The kept item needs no button, unless it is only suggested (confirm it) or not applied yet (cancel it).
+            boolean offerKeep = !isKept || pending.isPresent() || status == Ui.Status.SUGGESTION;
+            cy = card(g, font, view, item, null, tag, tagColor, isKept && pending.isPresent(), offerKeep, decided, cy, mx, my, bodyTop, bodyBottom) + 4;
+        }
+        if (!f.notUnified().isEmpty()) {
+            cy += 4;
+            g.drawString(font, Component.translatable("screen.materialnexus.insp.left_alone", f.notUnified().size()), left, cy, Theme.MUTED, false);
+            cy += 12;
+            for (ResolvedForm.NotUnified n : f.notUnified()) {
+                Component reason = Component.translatable(n.reasonKey(), n.reasonArgs().toArray());
+                cy = card(g, font, view, n.item(), reason, Component.empty(), 0, false, true, decided, cy, mx, my, bodyTop, bodyBottom) + 4;
+            }
+        }
+        g.disableScissor();
+        inspectorContent = cy + (int) inspectorScroll - bodyBottom;
+
+        // Footer: what concerns the whole row.
+        g.fill(ix + 1, bodyBottom, ix + iw, bodyBottom + 1, Theme.BORDER);
+        int bx = action(g, font, Component.translatable("screen.materialnexus.insp.recipes"), left, bodyBottom + 6, mx, my, () -> openRecipes.accept(material, form));
+        if (!readOnly && (f.source() == PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE || f.ignoredOverride().isPresent())) {
+            boolean resetting = status == Ui.Status.RESET;
+            action(g, font, Component.translatable(resetting ? "screen.materialnexus.reset.cancel" : "screen.materialnexus.insp.reset"), bx, bodyBottom + 6, mx, my, () -> {
+                if (resetting) PendingChanges.clear(material, form);
+                else PendingChanges.set(material, form, CanonicalChange.RESET);
+            });
+        }
+    }
+
+    /** One candidate: who it is, how central it is, why it is where it is, and what can be done with it. Returns the y below. */
+    private int card(GuiGraphics g, Font font, MaterialDetailPayload.FormView view, ResourceLocation item, Component reason, Component tag, int tagColor,
+                     boolean isPending, boolean offerKeep, boolean decided, int top, int mx, int my, int clipTop, int clipBottom) {
+        String material = view.material();
+        String form = view.form();
+        int left = ix + 12;
+        int right = ix + iw - 12;
+        int tx = left + 32;
+        int textWidth = right - tx - 8;
+        List<net.minecraft.util.FormattedCharSequence> reasonLines = reason == null ? List.of() : font.split(reason, textWidth);
+
+        List<Component> labels = new ArrayList<>();
+        List<Runnable> actions = new ArrayList<>();
+        if (!readOnly && offerKeep) {
+            labels.add(Component.translatable(isPending ? "screen.materialnexus.insp.cancel" : "screen.materialnexus.insp.keep"));
+            actions.add(() -> choose(material, form, item, view.resolved(), decided));
+        }
+        if (!readOnly) {
+            labels.add(Component.translatable(PendingChanges.notSame(item) ? "screen.materialnexus.insp.not_same.undo" : "screen.materialnexus.insp.not_same"));
+            actions.add(() -> PendingChanges.toggleNotSame(item));
+            boolean edited = PendingChanges.tagRemoved(material, form, item) || PendingChanges.tagAdded(material, form, item);
+            labels.add(Component.translatable(edited ? "screen.materialnexus.insp.tag_undo" : "screen.materialnexus.insp.tag_remove"));
+            actions.add(() -> PendingChanges.toggleTagRemoval(material, form, item));
+        }
+        // Buttons flow and wrap inside the card.
+        int rows = labels.isEmpty() ? 0 : 1;
+        int fx = tx;
+        for (Component label : labels) {
+            int bw = font.width(label) + 12;
+            if (fx > tx && fx + bw > right - 8) { rows++; fx = tx; }
+            fx += bw + 4;
+        }
+        int h = 8 + 40 + reasonLines.size() * 10 + (rows == 0 ? 0 : 4 + rows * 18) + 6;
+
+        g.fill(left, top, right, top + h, Theme.SURFACE);
+        Ui.slot(g, item, left + 8, top + 8, isPending ? Theme.INFO : 0, reason != null);
+        marks(g, material, form, item, left + 8, top + 8);
+        int tagWidth = font.width(tag);
+        String name = font.plainSubstrByWidth(Names.stack(item).getHoverName().getString(), textWidth - tagWidth - 12);
+        g.drawString(font, Component.literal(name).withStyle(ChatFormatting.BOLD), tx, top + 8, Theme.TEXT, false);
+        if (tagWidth > 0) g.drawString(font, tag, right - 8 - tagWidth, top + 8, tagColor, false);
+        var usage = detail.usage().get(item);
+        String mod = NexusScreen.modName(item.getNamespace());
+        g.drawString(font, font.plainSubstrByWidth(mod, textWidth), tx, top + 18, Theme.MUTED, false);
+        if (usage != null) {
+            g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.insp.usage", usage.produced(), usage.used()).getString(), textWidth),
+                    tx, top + 28, Theme.MUTED, false);
+        }
+        g.drawString(font, font.plainSubstrByWidth(item.toString(), textWidth), tx, top + 38, Theme.FAINT, false);
+        int ly = top + 48;
+        for (var line : reasonLines) {
+            g.drawString(font, line, tx, ly, Theme.MUTED, false);
+            ly += 10;
+        }
+        int bx = tx;
+        int by = ly + 4;
+        for (int i = 0; i < labels.size(); i++) {
+            int bw = font.width(labels.get(i)) + 12;
+            if (bx > tx && bx + bw > right - 8) { bx = tx; by += 18; }
+            boolean visible = by >= clipTop && by + 16 <= clipBottom;
+            boolean over = visible && mx >= bx && mx < bx + bw && my >= by && my < by + 16;
+            Ui.button(g, font, labels.get(i), bx, by, bw, 16, false, over, true);
+            if (visible) inspectorHits.add(bx, by, bw, 16, actions.get(i), null, List.of());
+            bx += bw + 4;
+        }
+        return top + h;
+    }
+
+    private int action(GuiGraphics g, Font font, Component label, int bx, int by, int mx, int my, Runnable run) {
+        int bw = font.width(label) + 12;
+        boolean over = mx >= bx && mx < bx + bw && my >= by && my < by + 16;
+        Ui.button(g, font, label, bx, by, bw, 16, false, over, true);
+        inspectorHits.add(bx, by, bw, 16, run, null, List.of());
+        return bx + bw + 4;
     }
 }
