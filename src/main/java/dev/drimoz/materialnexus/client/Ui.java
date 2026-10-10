@@ -106,6 +106,12 @@ final class Ui {
         }
     }
 
+    /** A switch, 20 by 10: the knob on the right and the accent colour when on. */
+    static void toggle(GuiGraphics g, int x, int y, boolean on) {
+        g.fill(x, y, x + 20, y + 10, on ? Theme.ACCENT : Theme.CTRL);
+        g.fill(on ? x + 12 : x + 2, y + 2, on ? x + 18 : x + 8, y + 8, Theme.BG);
+    }
+
     /** The fold mark of a group: pointing right when folded, down when open. */
     static void caret(GuiGraphics g, int x, int y, boolean open, int color) {
         for (int i = 0; i < 3; i++) {
