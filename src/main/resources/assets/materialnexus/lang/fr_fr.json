@@ -449,5 +449,9 @@
   "screen.materialnexus.presets.col.preset": "Avec ce préréglage",
   "screen.materialnexus.presets.unchanged": "inchangé",
   "screen.materialnexus.presets.use_effect": "change %s réglages, à vérifier ; rien n’est appliqué pour l’instant",
-  "screen.materialnexus.data.invalid": "JSON invalide, ne peut pas être gardé : %s"
+  "screen.materialnexus.data.invalid": "JSON invalide, ne peut pas être gardé : %s",
+  "screen.materialnexus.settings.display": "Affichage",
+  "screen.materialnexus.settings.show_ids": "Montrer l’identifiant technique sous le nom des items",
+  "screen.materialnexus.settings.open_groups": "Ouvrir par défaut les groupes « Sans doublon » et « Formes créables »",
+  "screen.materialnexus.settings.reopen": "Rouvrir l’écran là où je l’ai laissé"
 }

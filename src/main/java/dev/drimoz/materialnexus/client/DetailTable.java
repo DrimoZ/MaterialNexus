@@ -38,8 +38,14 @@ final class DetailTable {
 
     private enum Group { TODO, PENDING, UNIFIED, SINGLE, CREATABLE }
 
-    /** Folded groups, kept while the game runs: what asks nothing starts folded. */
-    private static final Set<Group> FOLDED = EnumSet.of(Group.SINGLE, Group.CREATABLE);
+    /** Groups the player folded or opened by hand, kept while the game runs. */
+    private static final Set<Group> TOGGLED = EnumSet.noneOf(Group.class);
+
+    /** What asks nothing starts folded, unless the player set these groups to start open (MNX-101). */
+    private static boolean folded(Group group) {
+        boolean byDefault = (group == Group.SINGLE || group == Group.CREATABLE) && !dev.drimoz.materialnexus.client.ui.ScreenSettings.get().openGroups();
+        return byDefault != TOGGLED.contains(group);
+    }
 
     private sealed interface Line permits GroupLine, FormLine, AbsentLine { }
     private record GroupLine(Group group, int count) implements Line { }
@@ -118,12 +124,12 @@ final class DetailTable {
         List<Line> out = new ArrayList<>();
         grouped().forEach((group, views) -> {
             out.add(new GroupLine(group, views.size()));
-            if (!FOLDED.contains(group)) views.forEach(v -> out.add(new FormLine(v)));
+            if (!folded(group)) views.forEach(v -> out.add(new FormLine(v)));
         });
         List<String> absent = creatable();
         if (!absent.isEmpty()) {
             out.add(new GroupLine(Group.CREATABLE, absent.size()));
-            if (!FOLDED.contains(Group.CREATABLE)) absent.forEach(f -> out.add(new AbsentLine(f)));
+            if (!folded(Group.CREATABLE)) absent.forEach(f -> out.add(new AbsentLine(f)));
         }
         return out;
     }
@@ -208,13 +214,13 @@ final class DetailTable {
     }
 
     private void groupRow(GuiGraphics g, Font font, GroupLine line, int top, int mx, int my, boolean inTable) {
-        boolean folded = FOLDED.contains(line.group());
+        boolean folded = folded(line.group());
         boolean hover = inTable && my >= top && my < top + GROUP && mx >= x && mx < x + width;
         Component title = Component.translatable("screen.materialnexus.rows." + Names.lowerName(line.group()), line.count());
         Ui.caret(g, x + 5, top + 9, !folded, Theme.MUTED);
         g.drawString(font, title, x + 16, top + 8, hover ? Theme.TEXT : Theme.MUTED, false);
         Group group = line.group();
-        if (inTable) tableHits.add(x, top, width, GROUP, () -> { if (!FOLDED.remove(group)) FOLDED.add(group); }, null, List.of());
+        if (inTable) tableHits.add(x, top, width, GROUP, () -> { if (!TOGGLED.remove(group)) TOGGLED.add(group); }, null, List.of());
     }
 
     private void formRow(GuiGraphics g, Font font, MaterialDetailPayload.FormView view, int top, int kx, int ox, int mx, int my, boolean inTable) {
@@ -443,7 +449,9 @@ final class DetailTable {
             if (fx > tx && fx + bw > right - 8) { rows++; fx = tx; }
             fx += bw + 4;
         }
-        int h = 8 + 40 + reasonLines.size() * 10 + (rows == 0 ? 0 : 4 + rows * 18) + 6;
+        // MNX-101: the technical id is a setting; most players only need the name and the mod.
+        int idLine = dev.drimoz.materialnexus.client.ui.ScreenSettings.get().showIds() ? 10 : 0;
+        int h = 8 + 30 + idLine + reasonLines.size() * 10 + (rows == 0 ? 0 : 4 + rows * 18) + 6;
 
         g.fill(left, top, right, top + h, Theme.SURFACE);
         Ui.slot(g, item, left + 8, top + 8, isPending ? Theme.INFO : 0, reason != null);
@@ -459,8 +467,8 @@ final class DetailTable {
             g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.insp.usage", usage.produced(), usage.used()).getString(), textWidth),
                     tx, top + 28, Theme.MUTED, false);
         }
-        g.drawString(font, font.plainSubstrByWidth(item.toString(), textWidth), tx, top + 38, Theme.FAINT, false);
-        int ly = top + 48;
+        if (idLine > 0) g.drawString(font, font.plainSubstrByWidth(item.toString(), textWidth), tx, top + 38, Theme.FAINT, false);
+        int ly = top + 38 + idLine;
         for (var line : reasonLines) {
             g.drawString(font, line, tx, ly, Theme.MUTED, false);
             ly += 10;
