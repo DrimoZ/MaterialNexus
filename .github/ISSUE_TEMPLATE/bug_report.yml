@@ -1,0 +1,70 @@
+name: Bug report
+description: A crash, an error, or something that does not behave as the wiki says.
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Check [Troubleshooting](https://github.com/DrimoZ/MaterialNexus/wiki/Troubleshooting) first.
+        An item that is not detected or is unified the wrong way has its own template.
+  - type: textarea
+    id: what
+    attributes:
+      label: What happened
+      description: What you did, what you expected, what you got.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open the screen with /materials
+        2. ...
+    validations:
+      required: true
+  - type: input
+    id: mod_version
+    attributes:
+      label: Material Nexus version
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: input
+    id: neoforge_version
+    attributes:
+      label: NeoForge version
+      placeholder: "21.1.248"
+    validations:
+      required: true
+  - type: dropdown
+    id: side
+    attributes:
+      label: Where
+      options:
+        - Singleplayer
+        - Dedicated server
+        - Client connected to a dedicated server
+    validations:
+      required: true
+  - type: input
+    id: pack
+    attributes:
+      label: Modpack or mod list
+      description: Pack name and version, or a link to the mod list.
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: >
+        Link to `logs/latest.log` (and the crash report if there is one) on mclo.gs or a gist.
+        Do not paste the log here.
+    validations:
+      required: true
+  - type: textarea
+    id: config
+    attributes:
+      label: Report and rule files
+      description: >
+        If the bug involves what is unified: `config/materialnexus/report.md` (written by
+        `/materials report`) and the files of `config/materialnexus/` you changed.
