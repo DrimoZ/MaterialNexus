@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Wiki
+    url: https://github.com/DrimoZ/MaterialNexus/wiki
+    about: Getting started, the screen, configuration files, datapacks.
+  - name: Troubleshooting and FAQ
+    url: https://github.com/DrimoZ/MaterialNexus/wiki/Troubleshooting
+    about: Common problems and their fix. Read this before opening an issue.
