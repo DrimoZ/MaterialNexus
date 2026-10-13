@@ -176,6 +176,10 @@ public final class NexusScreen extends Screen {
 
     void devShow(String which, String arg) {
         switch (which) {
+            case "click" -> {
+                int[] at = java.util.Arrays.stream(arg.split(",")).mapToInt(Integer::parseInt).toArray();
+                mouseClicked(at[0], at[1], 0);
+            }
             case "mouse" -> devMouse = arg.isEmpty() ? null : java.util.Arrays.stream(arg.split(",")).mapToInt(Integer::parseInt).toArray();
             case "material" -> openMaterial(arg);
             case "matrix" -> { form = null; go(View.FORMS); }
