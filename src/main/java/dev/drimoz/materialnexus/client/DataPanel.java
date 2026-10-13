@@ -70,7 +70,7 @@ final class DataPanel {
     }
 
     /** MNX-102: as many untagged forms as the height shows, instead of a fixed twelve. */
-    private int page() { return Math.max(4, (h - 76 - 52) / 24); }
+    private int page() { return Math.max(4, (h - 76 - 74) / 24); }
 
     private int side() { return Math.clamp(w / 3, 170, 260); }
 
@@ -196,6 +196,48 @@ final class DataPanel {
         add.accept(item);
         add.accept(target);
         add.accept(addTag);
+
+        // MNX-092: a tag folder mods use that no form reads yet (c:coils/<material>), declared as a form without writing JSON.
+        int fy = y + h - 66;
+        EditBox folder = new Field(font, x + 8, fy + 1, 180, 16, Component.empty());
+        folder.setHint(Component.translatable("screen.materialnexus.data.folder_add.folder"));
+        folder.setValue(folderName);
+        EditBox folderTo = new Field(font, x + 192, fy + 1, 100, 16, Component.empty());
+        folderTo.setHint(Component.translatable("screen.materialnexus.data.folder_add.form"));
+        folderTo.setValue(folderForm);
+        Button addFolder = Btn.of(Component.translatable("screen.materialnexus.data.folder_add"), b -> {
+            declareFolder(folderName.strip().toLowerCase(Locale.ROOT), folderForm.strip().toLowerCase(Locale.ROOT));
+            folderName = "";
+            folderForm = "";
+            rebuild.run();
+        }).bounds(x + 296, fy, 120, 18).build();
+        addFolder.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("screen.materialnexus.data.folder_add.tooltip")));
+        Runnable checkFolder = () -> addFolder.active = validFolder();
+        folder.setResponder(v -> { folderName = v; checkFolder.run(); });
+        folderTo.setResponder(v -> { folderForm = v; checkFolder.run(); });
+        checkFolder.run();
+        add.accept(folder);
+        add.accept(folderTo);
+        add.accept(addFolder);
+    }
+
+    private String folderName = "";
+    private String folderForm = "";
+
+    /** One tag path segment and a form name; the declared file must have arrived. */
+    private boolean validFolder() {
+        return declared != null && folderName.strip().toLowerCase(Locale.ROOT).matches("[a-z0-9_]+")
+                && dev.drimoz.materialnexus.core.domain.FormId.read(folderForm.strip().toLowerCase(Locale.ROOT)).result().isPresent();
+    }
+
+    /** Adds the folder to the pending declared file: read as that form from the next Apply. */
+    private void declareFolder(String folder, String form) {
+        if (declared == null) return;
+        JsonObject folders = declared.get("folders") instanceof JsonObject f ? f : new JsonObject();
+        folders.addProperty(folder, form);
+        declared.add("folders", folders);
+        PendingChanges.setData(EditableData.Kind.FORMS.key, DECLARED.toString(),
+                Optional.of(new GsonBuilder().setPrettyPrinting().create().toJson(declared)));
     }
 
     private String tagItem = "";
