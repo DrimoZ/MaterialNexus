@@ -68,6 +68,8 @@ Puts items in or takes them out of the form's convention tag (`c:ingots/tin`), o
 
 ## Not the same item (MNX-050)
 
+`"same": ["projectred_core:electrotine_ingot"]` in `global.json` (MNX-086): the opposite mark, for an item the resolver set aside on a guess (its name, its mod, a more specific tag). It becomes a candidate again; "It is the same item" on its card in the GUI. `not_same` wins when an item is in both.
+
 `"not_same": ["remin:yellow_amethyst"]` in `global.json`: items never unified with the others of their tags, listed as "marked as not the same". Right click an item in the GUI to (un)mark it; Preview lists the change. An explicit choice of such an item still wins.
 
 ## Global policy: Almost Unified arbitration

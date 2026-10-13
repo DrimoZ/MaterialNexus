@@ -29,9 +29,9 @@ import java.util.stream.Collectors;
  * <p>Only interchangeable candidates are unified. A tag means "usable as", not "the same item", so
  * providers are first sorted out (ADR-014): several items of one mod are variants of each other; an
  * item also tagged as a more specific material belongs there; an item named as a variant (Remin's
- * yellow_amethyst tagged as amethyst) or after another material (vanilla quartz tagged as milky
- * quartz) is set aside when a plainly named one exists (MNX-047); excluded materials/forms are left
- * alone. Nothing is removed from any tag: those providers are listed, explained, and untouched.
+ * yellow_amethyst tagged as amethyst) or after another material it also belongs to (vanilla quartz
+ * tagged as milky quartz) is set aside when a plainly named one exists (MNX-047); excluded
+ * materials/forms are left alone. These are guesses: an item the player marked "same" skips them (MNX-086). Nothing is removed from any tag: those providers are listed, explained, and untouched.
  */
 public final class CanonicalResolver {
     private static final String VANILLA = "minecraft";
@@ -45,7 +45,10 @@ public final class CanonicalResolver {
 
     public static SortedMap<MaterialId, ResolvedMaterial> resolve(DiscoveredMaterials discovered, ResolutionPolicy policy) {
         Specificity specificity = new Specificity(discovered);
-        java.util.Set<String> names = discovered.materials().keySet().stream().map(MaterialId::name).collect(Collectors.toSet());
+        // MNX-086: the materials each item is tagged as, in any form.
+        Map<ResourceLocation, java.util.Set<String>> names = new HashMap<>();
+        discovered.materials().forEach((material, forms) -> forms.values().forEach(list -> list.forEach(
+                p -> names.computeIfAbsent(p.resource(), r -> new java.util.HashSet<>()).add(material.name()))));
         // The words of a material's vanilla items name it too: lazuli for lapis.
         Map<MaterialId, java.util.Set<String>> vanillaWords = new HashMap<>();
         discovered.materials().forEach((material, forms) -> forms.values().forEach(list -> list.stream()
@@ -64,7 +67,7 @@ public final class CanonicalResolver {
     }
 
     private static ResolvedForm resolveForm(MaterialForm key, List<Provider> providers, ResolutionPolicy policy, Specificity specificity,
-                                            java.util.Set<String> names, java.util.Set<String> vanillaWords) {
+                                            Map<ResourceLocation, java.util.Set<String>> names, java.util.Set<String> vanillaWords) {
         ResourceLocation explicit = policy.explicitProviders().get(key);
         boolean excluded = policy.isExcluded(key);
         Map<ResourceLocation, Optional<MaterialId>> elsewhereOf = new HashMap<>();
@@ -86,6 +89,9 @@ public final class CanonicalResolver {
             } else if (policy.notSame().contains(p.resource())) {
                 // MNX-050: the pack author said so; stronger than any guess.
                 notUnified.put(p.resource(), new NotUnified(p.resource(), NOT_UNIFIED + "not_same", List.of()));
+            } else if (policy.same().contains(p.resource())) {
+                // MNX-086: the player's word against the guesses below.
+                candidates.add(p);
             } else if (elsewhere.isPresent()) {
                 // Checked first: "belongs to steel" explains an umbrella tag better than "several items of one mod".
                 notUnified.put(p.resource(), new NotUnified(p.resource(), NOT_UNIFIED + "more_specific", List.of(elsewhere.get().name())));
@@ -98,7 +104,10 @@ public final class CanonicalResolver {
 
         // MNX-047: tags say "usable as", names say what the item is. Only when a plainly named candidate exists.
         Map<ResourceLocation, String[]> oddNames = new HashMap<>();
-        for (Provider p : candidates) Names.odd(p.resource(), key, names, vanillaWords).ifPresent(why -> oddNames.put(p.resource(), why));
+        for (Provider p : candidates) {
+            if (policy.same().contains(p.resource())) continue;
+            Names.odd(p.resource(), key, names.getOrDefault(p.resource(), java.util.Set.of()), vanillaWords).ifPresent(why -> oddNames.put(p.resource(), why));
+        }
         if (!oddNames.isEmpty() && oddNames.size() < candidates.size()) {
             candidates.removeIf(p -> {
                 String[] why = oddNames.get(p.resource());
@@ -177,14 +186,15 @@ public final class CanonicalResolver {
 
         /**
          * Why an item does not look like plain {@code key}: {@code [reason, word]}, or empty. "names_other": once form
-         * words are removed it names another known material (minecraft:quartz as milky quartz). "named_variant": a word
+         * words are removed it names another material it is tagged as, in any form (minecraft:quartz as milky quartz; MNX-086:
+         * not ProjectRed's electrotine_ingot, tagged as electrotine alloy only). "named_variant": a word
          * is left that is neither a form word nor the material (yellow_amethyst); vanilla ids are the reference names
          * and never count as variants. Words close to the material's (golden for gold, aluminium for aluminum) are fine.
          */
-        static Optional<String[]> odd(ResourceLocation item, MaterialForm key, java.util.Set<String> materials, java.util.Set<String> vanillaWords) {
+        static Optional<String[]> odd(ResourceLocation item, MaterialForm key, java.util.Set<String> memberOf, java.util.Set<String> vanillaWords) {
             List<String> words = words(item);
             String rest = String.join("_", words);
-            if (!rest.isEmpty() && !rest.equals(key.material().name()) && materials.contains(rest)) return Optional.of(new String[] {"names_other", rest});
+            if (!rest.isEmpty() && !rest.equals(key.material().name()) && memberOf.contains(rest)) return Optional.of(new String[] {"names_other", rest});
             if (item.getNamespace().equals(VANILLA)) return Optional.empty();
             List<String> own = new ArrayList<>(List.of(key.material().name().split("_")));
             own.addAll(vanillaWords);
