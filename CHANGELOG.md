@@ -1,6 +1,28 @@
 # Changelog
 
-## Unreleased
+## 0.3.0
+
+- The screen is redesigned. A path at the top, a menu on the left (Overview, Materials, Forms, then Rule files and Presets under Advanced) and one bar at the bottom for what is not applied yet. Four themes.
+
+- Overview: one sentence for the state of the pack, one main action, three figures that open the filtered list, the mod priority with labelled buttons. Reverting and resetting sit apart and ask for confirmation.
+
+- Materials: the forms of a material in groups that fold (To decide, Not applied yet, Unified, No duplicate, Forms that can be created), and an inspector listing every item of a form with its name, its mod, how many recipes make and use it, why it is kept or left alone, and its actions as buttons.
+
+- Review and apply is one panel in two steps: your changes, removable line by line, then the effects on the pack, grouped by what needs a look first.
+
+- Recipes are drawn by the installed viewer, JEI or EMI: in the inspector, and next to the pointer on a recipe row or on a route of How it's made. The list is grouped by what applying does, and a replaced item is struck through next to the kept one.
+
+- Forms grid, Sort duplicates, Scripts and Presets redrawn: a mark in every cell of the grid, candidate cards with their key while sorting, one row per script decision with its evidence, a preset shown next to your settings.
+
+- Rule files (formerly Data): a JSON error is shown with its line and the edit cannot be kept until it reads. A tag folder no form reads yet (`forge:coils/<material>`) can be declared as a form from the Untagged forms tab.
+
+- An item is only "named after" a material it is tagged as, and a guess can be overruled: **It is the same item** makes an item left alone a candidate again (`same` in `global.json`).
+
+- A created item is drawn with `config/materialnexus/textures/<material>_<form>.png` when the file is there, nothing to declare.
+
+- `/materials report` ranks the recipe types no format covers by the recipes naming a material item, so the mods worth a format are known.
+
+- Screen settings: technical id under item names, groups open by default, reopening where the screen was left, and a smooth font (IBM Plex Sans; the game font stays the default).
 
 - Thermal Series: its machine recipes (press, pulverizer, smelter, sawmill, centrifuge, insolator...) are rewritten like the others, and process rules can write press (plate, gear), pulverizer and smelter recipes. Tinkers' Construct needs nothing: its casting recipes give the item of a tag, so they follow the kept item once the tag is cleaned.
 
