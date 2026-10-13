@@ -42,7 +42,7 @@ Your edits are decoded before being written, and the history keeps them.
 
 Built-in folders: ores, raw_materials, storage_blocks, ingots, nuggets, gems, dusts, tiny_dusts,
 dirty_dusts, clumps, shards, crystals, plates, sheetmetals, rods, gears, wires, double_ingots,
-large_plates, curved_plates, bolts, rings, blades, rotors, drill_heads, fine_wires. Built-in
+large_plates, double_plates, curved_plates, bolts, rings, blades, rotors, drill_heads, fine_wires. Built-in
 relations: nugget and ingot, ingot and block, raw and raw block, raw to ingot, dust to ingot, gem and
 block. Shipped pattern files: Modern Industrialization, Oritech, Realistic Minerals.
 

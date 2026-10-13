@@ -25,9 +25,9 @@ press gives two rods...) or your own datapack.
 
 ## Forms that can be created
 
-23 item forms have a template: blade, bolt, clump, crystal, curved plate, dirty dust, double ingot,
-drill head, dust, fine wire, gear, gem, ingot, large plate, nugget, plate, raw, ring, rod, rotor,
-shard, tiny dust, wire. Blocks and ores cannot be created (they would need a block, not an item).
+24 item forms have a template: blade, bolt, clump, crystal, curved plate, dirty dust, double ingot,
+double plate, drill head, dust, fine wire, gear, gem, ingot, large plate, nugget, plate, raw, ring,
+rod, rotor, shard, tiny dust, wire. Blocks and ores cannot be created (they would need a block, not an item).
 
 A material with a gem (coal, quartz, diamond) gets no ingot, double ingot, wire or raw ore: those
 are metal forms. A material with an ingot gets no gem.
@@ -78,3 +78,5 @@ Only the template, on its own layer, is ever tinted: your texture or model keeps
   cannot join.
 - A resource pack can also replace a template for every material at once:
   `assets/materialnexus/textures/item/template/<form>.png` (grayscale, tinted by the game).
+- The mod ships one such pack, off by default: **Material Nexus: soft item templates** in the
+  resource pack screen draws the templates with less contrast.
