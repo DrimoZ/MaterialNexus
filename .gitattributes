@@ -6,3 +6,4 @@ gradlew.bat text eol=crlf
 *.jar binary
 *.png binary
 *.nbt binary
+graphify-out/graph.json merge=graphify
