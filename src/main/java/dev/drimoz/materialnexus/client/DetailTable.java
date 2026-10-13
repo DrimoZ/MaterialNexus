@@ -420,6 +420,10 @@ final class DetailTable {
         }
     }
 
+    /** Reasons that are guesses of the resolver, which "same item after all" overrules (MNX-086). */
+    private static final java.util.Set<String> GUESSES = java.util.Set.of("materialnexus.not_unified.names_other", "materialnexus.not_unified.named_variant",
+            "materialnexus.not_unified.same_mod", "materialnexus.not_unified.more_specific");
+
     /** One candidate: who it is, how central it is, why it is where it is, and what can be done with it. Returns the y below. */
     private int card(GuiGraphics g, Font font, MaterialDetailPayload.FormView view, ResourceLocation item, Component reason, Component tag, int tagColor,
                      boolean isPending, boolean offerKeep, boolean decided, int top, int mx, int my, int clipTop, int clipBottom) {
@@ -438,8 +442,15 @@ final class DetailTable {
             actions.add(() -> choose(material, form, item, view.resolved(), decided));
         }
         if (!readOnly) {
-            labels.add(Component.translatable(PendingChanges.notSame(item) ? "screen.materialnexus.insp.not_same.undo" : "screen.materialnexus.insp.not_same"));
-            actions.add(() -> PendingChanges.toggleNotSame(item));
+            // MNX-086: an item set aside on a guess, or forced back in, gets the opposite mark offered.
+            boolean guess = view.resolved().notUnified().stream().anyMatch(n -> n.item().equals(item) && GUESSES.contains(n.reasonKey()));
+            if (guess || PendingChanges.same(item)) {
+                labels.add(Component.translatable(PendingChanges.same(item) ? "screen.materialnexus.insp.same.undo" : "screen.materialnexus.insp.same"));
+                actions.add(() -> PendingChanges.toggleSame(item));
+            } else {
+                labels.add(Component.translatable(PendingChanges.notSame(item) ? "screen.materialnexus.insp.not_same.undo" : "screen.materialnexus.insp.not_same"));
+                actions.add(() -> PendingChanges.toggleNotSame(item));
+            }
             boolean edited = PendingChanges.tagRemoved(material, form, item) || PendingChanges.tagAdded(material, form, item);
             labels.add(Component.translatable(edited ? "screen.materialnexus.insp.tag_undo" : "screen.materialnexus.insp.tag_remove"));
             actions.add(() -> PendingChanges.toggleTagRemoval(material, form, item));
