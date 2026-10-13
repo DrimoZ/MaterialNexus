@@ -447,6 +447,7 @@ public final class NexusScreen extends Screen {
         String here = switch (view) {
             case MATERIALS -> material == null ? null : Names.material(material).getString();
             case FORMS -> form == null ? null : Names.form(form).getString();
+            case TRIAGE -> Component.translatable("screen.materialnexus.triage.title").getString();
             default -> null;
         };
         int x = crumb(g, title.getString(), 8, false);

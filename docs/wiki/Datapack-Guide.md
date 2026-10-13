@@ -14,11 +14,11 @@ pack loaded later. Changes apply on `/reload`.
 
 ## Editing in game
 
-![Data](images/screen_data.png)
+![Rule files](images/screen_data.png)
 
-The **Data** view lists every one of these files, grouped by kind, with where the version in use comes
+The **Rule files** view (under Advanced) lists every one of these files, grouped by kind, with where the version in use comes
 from. Editing one saves **your version** in `config/materialnexus/policies/data/` (a datapack named
-`materialnexus_user`, loaded on top), as a pending change; **Back to original** removes your version.
+`materialnexus_user`, loaded on top), as a change to apply; **Back to original** removes your version.
 Your edits are decoded before being written, and the history keeps them.
 
 ## Forms
@@ -46,7 +46,7 @@ large_plates, curved_plates, bolts, rings, blades, rotors, drill_heads, fine_wir
 relations: nugget and ingot, ingot and block, raw and raw block, raw to ingot, dust to ingot, gem and
 block. Shipped pattern files: Modern Industrialization, Oritech, Realistic Minerals.
 
-The **Untagged forms** tab of the Data view and the end of the report list name shapes worth declaring.
+The **Untagged forms** tab of Rule files and the end of the report list name shapes worth declaring.
 
 ## Recipe formats
 

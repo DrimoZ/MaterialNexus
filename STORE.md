@@ -48,7 +48,7 @@ needs operator rights (permission level 2).
 [Commands](https://github.com/DrimoZ/MaterialNexus/wiki/Commands-and-Permissions) ·
 [Report a bug](https://github.com/DrimoZ/MaterialNexus/issues)
 
-![Home](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_home.png)
+![Overview](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_home.png)
 
 ![Finds the duplicates](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/header_find.png)
 
@@ -57,7 +57,7 @@ needs operator rights (permission level 2).
 - **Every form of every material**, read from the convention tags (`forge:ingots/copper`,
   `forge:plates/tin`...) and from item names for the forms mods leave untagged: double ingots, wires,
   large plates.
-- **Variants are set aside, not merged**: an item that only shares a tag (a yellow amethyst, a
+- **Variants are left alone, not merged**: an item that only shares a tag (a yellow amethyst, a
   plastic plate tagged as plates) is recognised by its name and left alone, with the word that gave
   it away.
 - **The whole pack as a grid**: materials against forms, what is to decide, unified or single.
@@ -66,19 +66,21 @@ needs operator rights (permission level 2).
 
 ![One material](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_material.png)
 
-- **Click the item to keep.** Each suggestion says why it was made, and each item which mod it
-  comes from and how many recipes make and use it.
-- **Triage with the keyboard**: every open duplicate, one at a time, 1-9 to keep, shift for "not
+![Every item, with its reasons](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_inspector.png)
+
+- **Click the item to keep, or use its card**: every item with its mod, how many recipes make and
+  use it, and why it is suggested or left alone. Every action is a button, never a hidden gesture.
+- **Sort with the keyboard**: every open duplicate, one at a time, 1-9 to keep, shift for "not
   the same item".
 - **Or rank the mods once**: the first mod in the list wins every duplicate you have not decided.
 
-![Triage](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_triage.png)
+![Sort duplicates](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_triage.png)
 
 ![Mod priority](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_priority.png)
 
-![Preview, then apply](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/header_preview.png)
+![Review, then apply](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/header_preview.png)
 
-![Preview](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_preview.png)
+![Review and apply](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_preview.png)
 
 - **Every change listed first**: tags cleaned, items converted, recipes rewritten or disabled,
   recipes not handled yet.
@@ -91,6 +93,10 @@ needs operator rights (permission level 2).
 - **Recipes it cannot rewrite are named**, never guessed: add a one-file recipe format and they are.
 - **Recipes of many mods** are rewritten from data: Create and its addons, Mekanism, Immersive
   Engineering, Modern Industrialization, Oritech, Occultism, Silent Gear and more.
+- **Recipes drawn by JEI or EMI** inside the screen, grouped by what applying does to them; hover a
+  recipe or a machine route to see it.
+
+![Recipes](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_recipes.png)
 
 ![Fills the gaps](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/header_process.png)
 
@@ -106,9 +112,9 @@ needs operator rights (permission level 2).
 
 ![Always reversible](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/header_control.png)
 
-![Pending changes](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_pending.png)
+![Your changes](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_pending.png)
 
-- **Discard** any pending change, a whole material, or everything.
+- **Discard** any change not applied yet, a whole material, or everything.
 - **Back to default**: one saved choice, a material, or the whole pack.
 - **Revert the last apply**, or restore any of the last 20 applied states from the history.
 - **Presets** for the usual setups (vanilla first, tech pack...), shown next to your settings.
@@ -117,12 +123,12 @@ needs operator rights (permission level 2).
 
 ![For pack makers](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/header_data.png)
 
-![Data](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_data.png)
+![Rule files](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_data.png)
 
 Everything is files in `config/materialnexus/`, made to ship with the pack; the
 [wiki](https://github.com/DrimoZ/MaterialNexus/wiki) documents every field. The rules themselves
 (which tags and names make a form, how a mod's recipes store their items, process templates,
-presets) are datapack data, editable in game in the Data view. `/materials report` writes a full
+presets) are datapack data, editable in game in Rule files. `/materials report` writes a full
 analysis. KubeJS scripts get a read-only `MaterialNexus` binding to ask which item is kept, and a pack
 that already unifies with scripts sees what they decided, offered as the same choices, with the script
 lines to delete once applied.
@@ -144,7 +150,7 @@ Needed on the server, and on clients for the screen, the tooltips and created it
 **Does it change my pack on its own?** No. Nothing is unified until you choose and press Apply,
 after the preview.
 
-**Can I undo?** Yes: discard pending changes, put choices back to default, revert the last apply,
+**Can I undo?** Yes: discard what is not applied yet, put choices back to default, revert the last apply,
 or restore an earlier state from the history.
 
 **Multiplayer?** Decide in singleplayer or LAN, then ship `config/materialnexus/` with the pack. On
@@ -152,7 +158,7 @@ a dedicated server the screen is read-only. If you created items, every client n
 `items.json`.
 
 **Is it like Almost Unified?** Both unify. Material Nexus is built around a screen and a
-preview: you see every duplicate, every variant set aside and every recipe it would change before
+preview: you see every duplicate, every variant left alone and every recipe it would change before
 anything happens, and you can undo anything. It also writes missing machine recipes and creates
 missing items. The two can run together, each doing its own part.
 
@@ -188,8 +194,9 @@ not lift them into another project.
       (and `-Pau`, `-Pkubejs` when those parts changed).
 - [ ] Project avatar: `src/main/resources/logo.png` (from `java tools/GenerateLogo.java`).
 - [ ] Art: generated and pushed on `main`; the description loads it from GitHub.
-- [ ] Gallery: `screen_home.png`, `screen_material.png`, `screen_matrix.png`, `screen_triage.png`,
-      `screen_preview.png`, `screen_process.png`.
+- [ ] Gallery (850 px wide at most): `screen_material.png`, `screen_inspector.png`, `screen_matrix.png`,
+      `screen_priority.png`, `screen_preview.png`, `screen_process.png`. The wider ones (`screen_home.png`,
+      `screen_triage.png`, `screen_recipes.png`...) are for the description only.
 - [ ] Paste the summary and the description.
 - [ ] Upload the jar from `gradlew build` (`build/libs`), release type **Beta**,
       loader Forge, with the `## 0.2.0` section of `CHANGELOG.md`.
