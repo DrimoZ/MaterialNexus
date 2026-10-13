@@ -191,7 +191,7 @@ preset** only fills changes to review. See [Choosing Items](Choosing-Items#prese
 
 At the foot of the rail. **Settings** are yours only, on this computer, and change nothing in the
 pack: theme (Graphite, Workshop, Paper, Midnight), font (the game's or a smooth one), density of
-the lists, the technical id under item names, the folded groups open by default, reopening the
+the lists, how created items are drawn (contrasted or soft), the technical id under item names, the folded groups open by default, reopening the
 screen where you left it. **Shortcuts** lists every mouse and key shortcut; each also has a
 button. **Help** opens this wiki.
 

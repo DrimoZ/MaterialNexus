@@ -111,7 +111,9 @@ public class Banners {
     /** Every template of created items, tinted copper as the game tints them, enlarged without smoothing. */
     static void createdSheet(File out, String name, String title, int cols) throws Exception {
         String lang = Files.readString(Path.of("src/main/resources/assets/materialnexus/lang/en_us.json"));
-        File[] templates = new File(TEMPLATES).listFiles((d, n) -> n.endsWith(".png"));
+        // A template without a form name is not offered yet (sheet, MNX-107).
+        File[] templates = new File(TEMPLATES).listFiles((d, n) -> n.endsWith(".png")
+                && lang.contains("\"materialnexus.form." + n.replace(".png", "") + "\""));
         java.util.Arrays.sort(templates);
         int cell = W / cols, icon = 64, rowH = icon + 36, top = 64;
         int rows = (templates.length + cols - 1) / cols;
