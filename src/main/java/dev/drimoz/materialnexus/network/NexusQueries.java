@@ -121,13 +121,17 @@ public final class NexusQueries {
         return new MaterialListPayload.Totals(toDecide, unified, byPriority, aside, byUse);
     }
 
-    /** The item that stands for a group in lists: its ingot, gem, dust or block, else the first canonical item. */
+    /**
+     * The item that stands for a group in lists: its ingot, gem, dust or block, else the first canonical item. A group
+     * whose items are all left alone has no canonical one: its first item stands for it, so no row is without an icon.
+     */
     private static Optional<net.minecraft.resources.ResourceLocation> icon(Map<String, ResolvedForm> forms) {
         for (String preferred : List.of("ingot", "gem", "dust", "block")) {
             ResolvedForm f = forms.get(preferred);
             if (f != null && f.canonical().isPresent()) return f.canonical();
         }
-        return forms.values().stream().flatMap(f -> f.canonical().stream()).findFirst();
+        return forms.values().stream().flatMap(f -> f.canonical().stream()).findFirst()
+                .or(() -> forms.values().stream().flatMap(f -> f.notUnified().stream()).map(ResolvedForm.NotUnified::item).findFirst());
     }
 
     private static MaterialListPayload.Summary summarize(String name, Map<String, ResolvedForm> group) {

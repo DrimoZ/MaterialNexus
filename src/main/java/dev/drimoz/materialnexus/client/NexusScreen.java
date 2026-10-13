@@ -72,7 +72,7 @@ public final class NexusScreen extends Screen {
     private String form;
     private MaterialDetailPayload detail;
     private String recipesOnArrival;
-    private MaterialSidebar list;
+    private final MaterialSidebar list = new MaterialSidebar(this::openMaterial);
     private Drawer drawer;
     private int contentX, contentY, contentW, contentH;
 
@@ -116,6 +116,7 @@ public final class NexusScreen extends Screen {
         view = View.MATERIALS;
         if (tab == Tab.PROCESS) tab = Tab.FORMS;
         material = name;
+        list.select(name);
         detail = null;
         PacketDistributor.sendToServer(new MaterialDetailRequest(name, false));
         if (page == null) requestList();
@@ -187,7 +188,7 @@ public final class NexusScreen extends Screen {
         totals = payload.totals();
         if (payload.byForm() || !payload.query().equals(query.strip().toLowerCase(Locale.ROOT))) return;
         page = payload;
-        if (list != null) list.show(payload.entries(), material, false);
+        list.show(payload.entries(), material);
         if (view == View.MATERIALS && material == null && !payload.entries().isEmpty()) openMaterial(payload.entries().getFirst().material());
     }
 
@@ -361,9 +362,7 @@ public final class NexusScreen extends Screen {
 
     private void initMaterials() {
         int lw = listWidth();
-        list = addRenderableWidget(new MaterialSidebar(minecraft, lw, contentH - 20, contentY + 20, this::openMaterial));
-        list.setX(contentX);
-        if (page != null) list.show(page.entries(), material, false);
+        list.layout(contentX, contentY + 28, lw, contentH - 28);
         layoutDetail(contentX + lw + 6);
     }
 
@@ -379,7 +378,12 @@ public final class NexusScreen extends Screen {
     private void layoutDetail(int dx) {
         int dw = width - dx - 6;
         int ty = contentY + 44;
-        table.layout(dx, ty, dw, height - BOTTOM - ty - 2);
+        // MNX-095: the table and, beside it, the inspector of the selected row; on a narrow screen the inspector goes over.
+        Regions regions = Regions.of(width);
+        int th = height - BOTTOM - ty;
+        int iw = regions.inspector();
+        int tw = regions.inspectorOverlay() ? dw : Math.min(640, width - dx - iw);
+        table.layout(dx, ty, tw, th, regions.inspectorOverlay() ? width - iw : dx + tw, ty, iw, th, regions.inspectorOverlay());
         recipes.layout(dx, ty, dw, height - BOTTOM - ty - 2);
         process.layout(dx, ty, dw, height - BOTTOM - ty - 2);
     }
@@ -744,17 +748,19 @@ public final class NexusScreen extends Screen {
 
     private void renderMaterials(GuiGraphics g, int mx, int my) {
         int lw = listWidth();
-        int fx = contentX + 4;
+        int fx = contentX + 8;
+        int fw = (lw - 16) / 3;
         for (int value : new int[] {NexusQueries.ALL, NexusQueries.TO_DECIDE, NexusQueries.UNIFIED}) {
             String key = value == NexusQueries.TO_DECIDE ? "todo" : value == NexusQueries.UNIFIED ? "unified" : "all";
             Component label = Component.translatable("screen.materialnexus.filter." + key);
-            int w = font.width(label) + 8;
             boolean active = filter == value;
-            g.fill(fx, contentY + 5, fx + w, contentY + 16, active ? Theme.SEL : Theme.RAISED);
-            g.drawString(font, label, fx + 4, contentY + 7, active ? Theme.TEXT : Theme.MUTED, false);
-            hits.add(fx, contentY + 5, w, 11, () -> { filter = value; requestList(); }, null, List.of());
-            fx += w + 3;
+            String text = font.plainSubstrByWidth(label.getString(), fw - 4);
+            g.fill(fx, contentY + 5, fx + fw, contentY + 5 + Theme.CONTROL, active ? Theme.SEL : Theme.RAISED);
+            g.drawString(font, text, fx + (fw - font.width(text)) / 2, contentY + 10, active ? Theme.TEXT : Theme.MUTED, false);
+            hits.add(fx, contentY + 5, fw, Theme.CONTROL, () -> { filter = value; requestList(); }, null, List.of());
+            fx += fw;
         }
+        list.render(g, font, mx, my);
         g.fill(contentX + lw + 2, contentY, contentX + lw + 3, height - BOTTOM, Theme.BORDER);
         int dx = contentX + lw + 6;
         if (material == null) {
@@ -891,6 +897,7 @@ public final class NexusScreen extends Screen {
         if (super.mouseClicked(mx, my, button)) return true;
         if (hits.click(mx, my, button)) return true;
         if (my < TOP || my > height - BOTTOM || mx < contentX) return false;
+        if (view == View.MATERIALS && list.click(mx, my, button)) return true;
         if (view == View.TRIAGE) return triage.click(mx, my, button);
         if (view == View.PRESETS && presets.click(mx, my, button)) return true;
         if (view == View.SCRIPTS) return scripts.click(mx, my, button);
@@ -910,6 +917,7 @@ public final class NexusScreen extends Screen {
             drawer.scroll(scrollY);
             return true;
         }
+        if (view == View.MATERIALS && list.scroll(mx, my, scrollY)) return true;
         if (view == View.DATA && data.scroll(mx, my, scrollY)) return true;
         if (view == View.SCRIPTS && mx >= contentX) {
             scripts.scroll(scrollY);
@@ -921,7 +929,7 @@ public final class NexusScreen extends Screen {
         }
         if (my >= contentY + 44 && detail != null && mx >= contentX + (view == View.MATERIALS ? listWidth() : 0)) {
             switch (tab) {
-                case FORMS -> table.scroll(scrollY);
+                case FORMS -> table.scroll(mx, my, scrollY);
                 case RECIPES -> recipes.scroll(scrollY);
                 case PROCESS -> { if (process.scroll(scrollY)) rebuildWidgets(); }
                 case MISSING -> { }

@@ -1,85 +1,88 @@
 package dev.drimoz.materialnexus.client;
 
-import dev.drimoz.materialnexus.client.ui.Btn;
-import dev.drimoz.materialnexus.client.ui.Field;
 import dev.drimoz.materialnexus.client.ui.Theme;
 import dev.drimoz.materialnexus.network.MaterialListPayload;
-import net.minecraft.client.Minecraft;
+import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
-import net.minecraft.client.gui.components.ObjectSelectionList;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
 import java.util.function.Consumer;
 
 /**
- * Material (or form) list of the main screen (MNX-049): a status edge (amber: duplicates to decide, green: all
- * decided, grey: nothing to unify), the item that stands for it, its name, and how many forms are still to decide.
+ * Material list of the main screen (MNX-049, MNX-095): the item that stands for it, its name, and how many forms are
+ * still to decide. A material with no duplicate is muted. Drawn by the screen, with its own scrollbar.
  */
-final class MaterialSidebar extends ObjectSelectionList<MaterialSidebar.Entry> {
-    private final Consumer<String> onSelect;
-    private String selected;
+final class MaterialSidebar {
+    private static final int ROW = Theme.ROW_ITEM;
 
-    MaterialSidebar(Minecraft minecraft, int width, int height, int y, Consumer<String> onSelect) {
-        super(minecraft, width, height, y, 20);
+    private final Consumer<String> onSelect;
+    private final Ui.Hits hits = new Ui.Hits();
+    private List<MaterialListPayload.Summary> entries = List.of();
+    private String selected;
+    private int x, y, width, height;
+    private double scroll;
+
+    MaterialSidebar(Consumer<String> onSelect) {
         this.onSelect = onSelect;
     }
 
-    void show(List<MaterialListPayload.Summary> entries, String selectedMaterial, boolean byForm) {
-        selected = selectedMaterial;
-        replaceEntries(entries.stream().map(s -> new Entry(s, byForm)).toList());
-        children().stream().filter(e -> e.summary.material().equals(selected)).findFirst().ifPresent(this::setSelected);
+    void layout(int x, int y, int width, int height) {
+        this.x = x; this.y = y; this.width = width; this.height = height;
     }
 
-    /** The main screen draws its own flat background (MNX-049). */
-    @Override
-    protected void renderListBackground(GuiGraphics g) { }
-
-    @Override
-    protected void renderListSeparators(GuiGraphics g) { }
-
-    @Override
-    public int getRowWidth() { return width - 10; }
-
-    @Override
-    protected int getScrollbarPosition() { return getX() + width - 5; }
-
-    static int status(MaterialListPayload.Summary s) {
-        if (s.duplicateForms() == 0) return Theme.BORDER;
-        return s.toDecide() > 0 ? Theme.WARN : Theme.OK;
+    void show(List<MaterialListPayload.Summary> entries, String selected) {
+        if (!entries.equals(this.entries)) scroll = 0;
+        this.entries = entries;
+        this.selected = selected;
     }
 
-    final class Entry extends ObjectSelectionList.Entry<Entry> {
-        private final MaterialListPayload.Summary summary;
-        private final Component name;
+    void select(String material) { selected = material; }
 
-        Entry(MaterialListPayload.Summary summary, boolean byForm) {
-            this.summary = summary;
-            this.name = byForm ? Names.form(summary.material()) : Names.material(summary.material());
+    private boolean contains(double mx, double my) { return mx >= x && mx < x + width && my >= y && my < y + height; }
+
+    boolean click(double mx, double my, int button) {
+        return contains(mx, my) && hits.click(mx, my, button);
+    }
+
+    boolean scroll(double mx, double my, double delta) {
+        if (!contains(mx, my)) return false;
+        scroll = Math.clamp(scroll - delta * ROW, 0, Math.max(0, entries.size() * ROW - height));
+        return true;
+    }
+
+    void render(GuiGraphics g, Font font, int mx, int my) {
+        hits.clear();
+        int content = entries.size() * ROW;
+        scroll = Math.clamp(scroll, 0, Math.max(0, content - height));
+        boolean inside = contains(mx, my);
+        int rowWidth = width - (content > height ? 6 : 0);
+        g.enableScissor(x, y, x + width, y + height);
+        int top = y - (int) scroll;
+        for (MaterialListPayload.Summary s : entries) {
+            if (top + ROW > y && top < y + height) {
+                boolean isSelected = s.material().equals(selected);
+                boolean hover = inside && my >= top && my < top + ROW && mx < x + rowWidth;
+                if (isSelected) g.fill(x, top, x + rowWidth, top + ROW, Theme.SEL);
+                else if (hover) g.fill(x, top, x + rowWidth, top + ROW, Theme.RAISED);
+                // The place of the icon is kept even without one, so names stay aligned.
+                if (s.icon().isPresent()) Ui.slot(g, s.icon().get(), x + 6, top + 2, 0, false);
+                String count = s.toDecide() > 0 ? String.valueOf(s.toDecide()) : "";
+                int countWidth = font.width(count);
+                Component name = Names.material(s.material());
+                g.drawString(font, font.plainSubstrByWidth(name.getString(), rowWidth - 36 - countWidth - 8), x + 30, top + 7,
+                        isSelected || s.duplicateForms() > 0 ? Theme.TEXT : Theme.MUTED, false);
+                if (!count.isEmpty()) g.drawString(font, count, x + rowWidth - countWidth - 8, top + 7, Theme.WARN, false);
+                if (inside) hits.add(x, top, rowWidth, ROW, () -> { selected = s.material(); onSelect.accept(s.material()); }, null, List.of());
+            }
+            top += ROW;
         }
-
-        @Override
-        public void render(GuiGraphics g, int index, int top, int left, int width, int height, int mouseX, int mouseY, boolean hovering, float partialTick) {
-            var font = Minecraft.getInstance().font;
-            boolean isSelected = summary.material().equals(selected);
-            if (isSelected) g.fill(left - 2, top - 1, left + width, top + height, Theme.SEL);
-            else if (hovering) g.fill(left - 2, top - 1, left + width, top + height, Theme.RAISED);
-            g.fill(left - 2, top - 1, left, top + height, status(summary));
-            summary.icon().ifPresent(icon -> g.renderItem(Names.stack(icon), left + 2, top));
-            String count = summary.toDecide() > 0 ? String.valueOf(summary.toDecide()) : "";
-            int countWidth = font.width(count);
-            g.drawString(font, font.plainSubstrByWidth(name.getString(), width - 26 - countWidth - 6), left + 21, top + 5, Theme.TEXT, false);
-            if (!count.isEmpty()) g.drawString(font, count, left + width - countWidth - 4, top + 5, Theme.WARN, false);
+        g.disableScissor();
+        if (content > height) {
+            g.fill(x + width - 4, y, x + width, y + height, Theme.RAISED);
+            int bar = Math.max(12, height * height / content);
+            int at = (int) (scroll * (height - bar) / (content - height));
+            g.fill(x + width - 4, y + at, x + width, y + at + bar, Theme.CTRL);
         }
-
-        @Override
-        public boolean mouseClicked(double mouseX, double mouseY, int button) {
-            selected = summary.material();
-            onSelect.accept(summary.material());
-            return true;
-        }
-
-        @Override
-        public Component getNarration() { return name; }
     }
 }
