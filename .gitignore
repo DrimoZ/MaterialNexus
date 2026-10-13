@@ -9,8 +9,8 @@ repo/
 *.iml
 .DS_Store
 run-ui/
-# graphify: the graph is committed; its cache, dated snapshots, file timestamps and rebuild lock are not
+# graphify: the graph is committed; its cache, dated snapshots, file timestamps and hidden working files are not
 graphify-out/cache/
 graphify-out/20*/
 graphify-out/manifest.json
-graphify-out/.rebuild.lock
+graphify-out/.*
