@@ -297,6 +297,10 @@ public final class NexusScreen extends Screen {
     /** Back to the player's scale before the next screen (or the HUD) lays itself out. */
     @Override
     public void removed() {
+        // MNX-101: where the player was, for the next opening.
+        lastView = view == View.TRIAGE ? View.HOME : view;
+        lastMaterial = material;
+        lastForm = form;
         var window = minecraft.getWindow();
         window.setGuiScale(window.calculateScale(minecraft.options.guiScale().get(), minecraft.isEnforceUnicode()));
         super.removed();
@@ -305,6 +309,10 @@ public final class NexusScreen extends Screen {
     @Override
     protected void init() {
         fitScale();
+        if (!restored) {
+            restored = true;
+            restore();
+        }
         if (totals == null) requestList();
         if (!scriptsRequested) {
             scriptsRequested = true;
@@ -516,6 +524,29 @@ public final class NexusScreen extends Screen {
         if (action != null) hits.add(x, y, w, Theme.CONTROL, action, null, List.of());
     }
 
+    /** Where the screen was left, kept while the game runs (MNX-101). */
+    private static View lastView;
+    private static String lastMaterial, lastForm;
+    private boolean restored;
+
+    /** Reopens where the player was, when that setting is on; after an apply the Overview and its summary come first. */
+    private void restore() {
+        if (!ScreenSettings.get().reopen() || lastView == null || lastView == View.HOME) return;
+        if (!history.isEmpty() && justApplied(history.getFirst())) return;
+        if (lastView == View.MATERIALS && lastMaterial != null) openMaterial(lastMaterial);
+        else if (lastView == View.FORMS && lastForm != null) openForm(lastForm);
+        else if ((lastView == View.DATA || lastView == View.PRESETS) && readOnly) return;
+        else go(lastView);
+    }
+
+    private int settingToggle(GuiGraphics g, int x, int y, boolean on, String key, java.util.function.UnaryOperator<ScreenSettings.Values> change) {
+        Ui.toggle(g, x, y + 1, on);
+        Component label = tr("settings." + key);
+        g.drawString(font, label, x + 28, y + 2, Theme.TEXT, false);
+        hits.add(x, y - 2, 32 + font.width(label), 16, () -> ScreenSettings.set(dev.drimoz.materialnexus.datapack.MnxPaths.root(), change.apply(ScreenSettings.get())), null, List.of());
+        return y + 18;
+    }
+
     /** MNX-094: the player's own settings of this screen; they change nothing in the pack and apply at once. */
     private void renderSettings(GuiGraphics g, int mx, int my) {
         int x = contentX + 24;
@@ -541,6 +572,15 @@ public final class NexusScreen extends Screen {
             hits.add(x, y, 132, 58, () -> ScreenSettings.setTheme(dev.drimoz.materialnexus.datapack.MnxPaths.root(), theme), null, List.of());
             x += 140;
         }
+        // MNX-101: what the screen shows and how it opens.
+        x = contentX + 24;
+        y += 76;
+        g.drawString(font, tr("settings.display"), x, y, Theme.MUTED, false);
+        y += 16;
+        ScreenSettings.Values now = ScreenSettings.get();
+        y = settingToggle(g, x, y, now.showIds(), "show_ids", v -> v.withShowIds(!v.showIds()));
+        y = settingToggle(g, x, y, now.openGroups(), "open_groups", v -> v.withOpenGroups(!v.openGroups()));
+        settingToggle(g, x, y, now.reopen(), "reopen", v -> v.withReopen(!v.reopen()));
     }
 
     private static Component tr(String key, Object... args) {
