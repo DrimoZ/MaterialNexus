@@ -59,7 +59,7 @@ public final class Btn extends Button {
         };
         if (fill != 0) g.fill(getX(), getY(), getX() + width, getY() + height, fill);
         if (isFocused()) g.renderOutline(getX(), getY(), width, height, Theme.INFO);
-        var font = Minecraft.getInstance().font;
+        var font = UiFont.current();
         g.drawString(font, getMessage(), getX() + (width - font.width(getMessage())) / 2, getY() + (height - 8) / 2, text, false);
     }
 }

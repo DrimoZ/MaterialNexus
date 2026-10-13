@@ -186,6 +186,7 @@ public final class NexusScreen extends Screen {
             case "scripts" -> go(View.SCRIPTS);
             case "settings" -> go(View.SETTINGS);
             case "shortcuts" -> go(View.SHORTCUTS);
+            case "smooth" -> { ScreenSettings.set(dev.drimoz.materialnexus.datapack.MnxPaths.root(), ScreenSettings.get().withSmoothFont(true)); rebuildWidgets(); }
             case "recipes" -> { if (material != null) openRecipes(material, arg); }
             case "pending" -> { PendingChanges.set("copper", "ingot", dev.drimoz.materialnexus.datapack.CanonicalChange.RESET); togglePending(); }
             case "priority" -> { if (totals != null) savePriority(new java.util.ArrayList<>(totals.mods().subList(0, Math.min(3, totals.mods().size())))); }
@@ -313,6 +314,8 @@ public final class NexusScreen extends Screen {
     @Override
     protected void init() {
         fitScale();
+        // MNX-103: every text of the screen is drawn and measured with the font the player chose.
+        font = dev.drimoz.materialnexus.client.ui.UiFont.current();
         if (!restored) {
             restored = true;
             restore();
@@ -634,6 +637,23 @@ public final class NexusScreen extends Screen {
         // MNX-101: what the screen shows and how it opens.
         x = contentX + 24;
         y += 76;
+        g.drawString(font, tr("settings.font"), x, y, Theme.MUTED, false);
+        y += 14;
+        boolean smoothNow = ScreenSettings.get().smoothFont();
+        int fx2 = x;
+        for (boolean value : new boolean[] {false, true}) {
+            Component label = tr(value ? "settings.font.smooth" : "settings.font.game");
+            int bw = font.width(label) + 16;
+            boolean over = mx >= fx2 && mx < fx2 + bw && my >= y && my < y + 18;
+            g.fill(fx2, y, fx2 + bw, y + 18, value == smoothNow ? Theme.SEL : over ? Theme.RAISED : Theme.SURFACE);
+            g.drawString(font, label, fx2 + 8, y + 5, value == smoothNow || over ? Theme.TEXT : Theme.MUTED, false);
+            hits.add(fx2, y, bw, 18, () -> {
+                ScreenSettings.set(dev.drimoz.materialnexus.datapack.MnxPaths.root(), ScreenSettings.get().withSmoothFont(value));
+                rebuildWidgets();
+            }, null, List.of());
+            fx2 += bw;
+        }
+        y += 34;
         g.drawString(font, tr("settings.density"), x, y, Theme.MUTED, false);
         y += 14;
         boolean roomy = ScreenSettings.get().comfortable();
