@@ -69,6 +69,7 @@ public final class GeneratedPack {
      * One convention tag file per created item's tag (the items are registered, so plain values), and one item model
      * per item, parented to its form's template (or using the entry's own texture): the game finds a model for every
      * item and logs no warning. A resource pack above this one can replace any of these models.
+     * MNX-091: a texture dropped as {@code config/materialnexus/textures/<material>_<form>.png} is used with nothing declared.
      */
     private static Map<String, JsonElement> createdItemFiles() {
         Map<String, JsonObject> files = new java.util.TreeMap<>();
@@ -80,6 +81,12 @@ public final class GeneratedPack {
                 model.addProperty("parent", "minecraft:item/generated");
                 JsonObject textures = new JsonObject();
                 textures.addProperty("layer0", entry.texture().get().toString());
+                model.add("textures", textures);
+            } else if (Files.isRegularFile(droppedTexture(item.getId()))) {
+                // Copied into this pack next to the model (createdItemTextures), drawn as it is.
+                model.addProperty("parent", "minecraft:item/generated");
+                JsonObject textures = new JsonObject();
+                textures.addProperty("layer0", item.getId().getNamespace() + ":item/" + item.getId().getPath());
                 model.add("textures", textures);
             } else {
                 model.addProperty("parent", "materialnexus:item/template_" + entry.form().name());
@@ -98,6 +105,22 @@ public final class GeneratedPack {
         return Map.copyOf(files);
     }
 
+    private static Path droppedTexture(net.minecraft.resources.ResourceLocation item) {
+        return MnxPaths.root().resolve("textures").resolve(item.getPath() + ".png");
+    }
+
+    /** MNX-091: pack path to the file the player dropped, for the created items that have one and no texture of their own in items.json. */
+    private static Map<String, Path> createdItemTextures() {
+        Map<String, Path> textures = new java.util.TreeMap<>();
+        for (var item : dev.drimoz.materialnexus.registry.MnxItems.CREATED) {
+            Path dropped = droppedTexture(item.getId());
+            if (item.get().entry().texture().isEmpty() && Files.isRegularFile(dropped)) {
+                textures.put("assets/" + item.getId().getNamespace() + "/textures/item/" + item.getId().getPath() + ".png", dropped);
+            }
+        }
+        return textures;
+    }
+
     /**
      * The created items pack, rewritten only when its content changed: rewriting replaces the folder, which Windows
      * refuses while anything holds a file in it (seen as AccessDeniedException on the rename). If writing fails, the
@@ -110,7 +133,15 @@ public final class GeneratedPack {
                 return false;
             }
             Map<String, JsonElement> files = createdItemFiles();
-            if (!sameContent(items, files)) write(items, files, new JsonArray());
+            Map<String, Path> textures = createdItemTextures();
+            if (!sameContent(items, files, textures)) {
+                write(items, files, new JsonArray());
+                for (var texture : textures.entrySet()) {
+                    Path target = items.resolve(texture.getKey());
+                    Files.createDirectories(target.getParent());
+                    Files.copy(texture.getValue(), target);
+                }
+            }
         } catch (IOException e) {
             LOGGER.error("Could not update the Material Nexus created items pack; using the one on disk", e);
         }
@@ -118,12 +149,16 @@ public final class GeneratedPack {
     }
 
     /** True when {@code dir} holds exactly these data/assets files with this content. */
-    private static boolean sameContent(Path dir, Map<String, JsonElement> files) throws IOException {
+    private static boolean sameContent(Path dir, Map<String, JsonElement> files, Map<String, Path> textures) throws IOException {
         if (!Files.exists(dir.resolve(MARKER))) return false;
         var gson = new GsonBuilder().setPrettyPrinting().create();
         for (var e : files.entrySet()) {
             Path file = dir.resolve(e.getKey());
             if (!Files.isRegularFile(file) || !Files.readString(file, StandardCharsets.UTF_8).equals(gson.toJson(e.getValue()))) return false;
+        }
+        for (var e : textures.entrySet()) {
+            Path file = dir.resolve(e.getKey());
+            if (!Files.isRegularFile(file) || Files.mismatch(file, e.getValue()) != -1) return false;
         }
         long onDisk = 0;
         for (String root : new String[] {"data", "assets"}) {
@@ -133,7 +168,7 @@ public final class GeneratedPack {
                 onDisk += walk.filter(Files::isRegularFile).count();
             }
         }
-        return onDisk == files.size();
+        return onDisk == files.size() + textures.size();
     }
 
     private static void add(AddPackFindersEvent event, String id, Path dir) {
