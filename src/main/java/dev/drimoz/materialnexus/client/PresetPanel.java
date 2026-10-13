@@ -66,7 +66,7 @@ final class PresetPanel {
             return;
         }
         // The presets, each with whether it is what the pack uses now.
-        int listWidth = Math.clamp(w / 4, 150, 216);
+        int listWidth = net.minecraft.util.Mth.clamp(w / 4, 150, 216);
         int ly = y;
         for (var entry : presets.entrySet()) {
             ResourceLocation id = entry.getKey();
@@ -99,7 +99,7 @@ final class PresetPanel {
         dy += intro.size() * 10 + 16;
 
         // Value by value: what the pack has now, what the preset would put.
-        int c1 = Math.clamp(dw / 3, 130, 220);
+        int c1 = net.minecraft.util.Mth.clamp(dw / 3, 130, 220);
         int cw = (dw - c1 - 16) / 2;
         g.drawString(font, tr("col.setting"), dx, dy, Theme.MUTED, false);
         g.drawString(font, tr("col.now"), dx + c1, dy, Theme.MUTED, false);

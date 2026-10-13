@@ -16,7 +16,7 @@ public record Regions(int rail, int list, int table, int inspector, boolean insp
         int left = width - rail - list;
         if (!wide) return new Regions(rail, list, Math.max(0, left), INSPECTOR_MIN, true);
         // 264 at a 960 screen, 360 at 1280: the inspector takes 96 of every 320 px gained.
-        int inspector = Math.clamp(INSPECTOR_MIN + (left - 680) * 96 / 320, INSPECTOR_MIN, INSPECTOR_MAX);
+        int inspector = net.minecraft.util.Mth.clamp(INSPECTOR_MIN + (left - 680) * 96 / 320, INSPECTOR_MIN, INSPECTOR_MAX);
         return new Regions(rail, list, Math.min(TABLE_MAX, left - inspector), inspector, false);
     }
 }

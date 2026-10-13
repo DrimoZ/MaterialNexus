@@ -69,7 +69,7 @@ its actions as buttons:
 - **Not the same item**: never unified with the others.
 - **It is the same item**: on an item left alone on a guess, makes it a candidate again
   ([Choosing Items](Choosing-Items#the-same-item-after-all)).
-- **Take out of the tag**: removes it from this form's tag (`c:ingots/tin`) on Apply.
+- **Take out of the tag**: removes it from this form's tag (`forge:ingots/tin`) on Apply.
 
 At the foot of the inspector: **See recipes**, and **Back to default** for a saved choice.
 
@@ -176,7 +176,7 @@ Under Advanced. The data files Material Nexus works from, editable in game. See
   (`modern_industrialization:{material}_double_ingot`), with the materials they match. Type the form
   and **Declare**. Below the list:
   - **Declare tag folder**: a tag folder no form reads yet (`coils`) becomes a form (`coil`).
-  - **Add to its tag**: an item id and a form (`tin/ingot`) puts that item in `c:ingots/tin`.
+  - **Add to its tag**: an item id and a form (`tin/ingot`) puts that item in `forge:ingots/tin`.
   - **Add missing tags** (on/off): items known as a form by their name or an alias but missing
     its tag get it, where the pack already uses that tag.
 

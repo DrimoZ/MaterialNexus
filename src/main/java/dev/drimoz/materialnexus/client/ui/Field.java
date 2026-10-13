@@ -21,7 +21,7 @@ public final class Field extends EditBox {
 
     @Override
     public void setHint(Component hint) {
-        super.setHint(hint.copy().withColor(Theme.FAINT & 0xFFFFFF));
+        super.setHint(hint.copy().withStyle(s -> s.withColor(Theme.FAINT & 0xFFFFFF)));
     }
 
     @Override

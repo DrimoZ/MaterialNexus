@@ -139,7 +139,7 @@ final class DetailTable {
     private Optional<MaterialDetailPayload.FormView> selectedView() {
         Optional<MaterialDetailPayload.FormView> found = detail.forms().stream().filter(v -> key(v).equals(selected)).findFirst();
         if (found.isPresent()) return found;
-        return grouped().values().stream().findFirst().map(List::getFirst);
+        return grouped().values().stream().findFirst().map(list -> list.get(0));
     }
 
     private boolean inspectorShown() { return !overlay || inspectorOpen; }
@@ -151,11 +151,11 @@ final class DetailTable {
     void scroll(double mx, double my, double delta) {
         if (detail == null) return;
         if (overInspector(mx, my)) {
-            inspectorScroll = Math.clamp(inspectorScroll - delta * Theme.ROW_ITEM, 0, Math.max(0, inspectorContent));
+            inspectorScroll = net.minecraft.util.Mth.clamp(inspectorScroll - delta * Theme.ROW_ITEM, 0, Math.max(0, inspectorContent));
             return;
         }
         int content = lines().stream().mapToInt(DetailTable::height).sum();
-        scroll = Math.clamp(scroll - delta * Theme.ROW_ITEM, 0, Math.max(0, content - (height - HEAD)));
+        scroll = net.minecraft.util.Mth.clamp(scroll - delta * Theme.ROW_ITEM, 0, Math.max(0, content - (height - HEAD)));
     }
 
     boolean click(double mx, double my, int button) {
@@ -168,9 +168,9 @@ final class DetailTable {
 
     // ---- table ---------------------------------------------------------------------------------------------
 
-    private int labelWidth() { return Math.clamp(width / 5, 96, 132); }
+    private int labelWidth() { return net.minecraft.util.Mth.clamp(width / 5, 96, 132); }
 
-    private int keptWidth() { return Math.clamp(width / 4, 120, 170); }
+    private int keptWidth() { return net.minecraft.util.Mth.clamp(width / 4, 120, 170); }
 
     void render(GuiGraphics g, Font font, int mx, int my) {
         tableHits.clear();
@@ -185,18 +185,16 @@ final class DetailTable {
         List<Line> lines = lines();
         int content = lines.stream().mapToInt(DetailTable::height).sum();
         int view = height - HEAD;
-        scroll = Math.clamp(scroll, 0, Math.max(0, content - view));
+        scroll = net.minecraft.util.Mth.clamp(scroll, 0, Math.max(0, content - view));
         boolean inTable = !overInspector(mx, my) && my >= y + HEAD && my < y + height;
         g.enableScissor(x, y + HEAD, x + width, y + height);
         int top = y + HEAD - (int) scroll;
         for (Line line : lines) {
             int h = height(line);
             if (top + h > y + HEAD && top < y + height) {
-                switch (line) {
-                    case GroupLine group -> groupRow(g, font, group, top, mx, my, inTable);
-                    case FormLine form -> formRow(g, font, form.view(), top, kx, ox, mx, my, inTable);
-                    case AbsentLine absent -> absentRow(g, font, absent.form(), top, kx, mx, my, inTable);
-                }
+                if (line instanceof GroupLine group) groupRow(g, font, group, top, mx, my, inTable);
+                else if (line instanceof FormLine form) formRow(g, font, form.view(), top, kx, ox, mx, my, inTable);
+                else if (line instanceof AbsentLine absent) absentRow(g, font, absent.form(), top, kx, mx, my, inTable);
             }
             top += h;
         }
@@ -280,8 +278,8 @@ final class DetailTable {
         tableHits.add(sx, sy, 18, 18, () -> {
             select(view);
             choose(view.material(), view.form(), item, view.resolved(), decided);
-        }, shortcut(view.material(), view.form(), item), List.of(Names.stack(item).getHoverName(), Component.literal(NexusScreen.modName(item.getNamespace())).withColor(Theme.TIP_MUTED),
-                Component.literal(item.toString()).withColor(Theme.TIP_FAINT)));
+        }, shortcut(view.material(), view.form(), item), List.of(Names.stack(item).getHoverName(), Component.literal(NexusScreen.modName(item.getNamespace())).withStyle(s -> s.withColor(Theme.TIP_MUTED)),
+                Component.literal(item.toString()).withStyle(s -> s.withColor(Theme.TIP_FAINT))));
     }
 
     private void select(MaterialDetailPayload.FormView view) {

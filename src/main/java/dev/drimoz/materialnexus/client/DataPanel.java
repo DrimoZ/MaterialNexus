@@ -72,7 +72,7 @@ final class DataPanel {
     /** MNX-102: as many untagged forms as the height shows, instead of a fixed twelve. */
     private int page() { return Math.max(4, (h - 76 - 74) / 24); }
 
-    private int side() { return Math.clamp(w / 3, 170, 260); }
+    private int side() { return net.minecraft.util.Mth.clamp(w / 3, 170, 260); }
 
     // ---- widgets -------------------------------------------------------------------------------------------
 
@@ -151,7 +151,7 @@ final class DataPanel {
     private void initUntagged(Consumer<AbstractWidget> add, Font font) {
         List<FormPatterns.Candidate> candidates = list.untagged();
         int pages = Math.max(1, (candidates.size() + page() - 1) / page());
-        untaggedPage = Math.clamp(untaggedPage, 0, pages - 1);
+        untaggedPage = net.minecraft.util.Mth.clamp(untaggedPage, 0, pages - 1);
         int ry = y + 76;
         for (int i = untaggedPage * page(); i < Math.min(candidates.size(), (untaggedPage + 1) * page()); i++) {
             FormPatterns.Candidate c = candidates.get(i);
@@ -373,7 +373,7 @@ final class DataPanel {
                     g.drawString(font, font.plainSubstrByWidth(label, side - 30), x + 18, ry + 2, isSelected ? Theme.TEXT : Theme.MUTED, false);
                     if (my >= top && my < bottom) {
                         hits.add(x + 4, ry, side - 6, ROW, () -> select(item), null,
-                                List.of(Component.literal(item.id().toString()), Component.translatable("screen.materialnexus.data.source", item.source()).withColor(Theme.TIP_FAINT)));
+                                List.of(Component.literal(item.id().toString()), Component.translatable("screen.materialnexus.data.source", item.source()).withStyle(s -> s.withColor(Theme.TIP_FAINT))));
                     }
                 }
             }

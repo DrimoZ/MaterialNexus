@@ -56,7 +56,7 @@ final class FormMatrix {
         return out;
     }
 
-    private int stride() { return Math.clamp((width - LABEL - 6) / Math.max(1, data.forms().size()), 44, 60); }
+    private int stride() { return net.minecraft.util.Mth.clamp((width - LABEL - 6) / Math.max(1, data.forms().size()), 44, 60); }
 
     private int visibleRows() { return Math.max(1, (height - TOOLBAR - HEADER - 8) / ROW); }
 
@@ -65,8 +65,8 @@ final class FormMatrix {
     void scroll(double delta) {
         if (data == null) return;
         int step = (int) -Math.signum(delta) * 3;
-        if (Screen.hasShiftDown()) firstCol = Math.clamp(firstCol + step, 0, Math.max(0, data.forms().size() - visibleCols()));
-        else firstRow = Math.clamp(firstRow + step, 0, Math.max(0, rows().size() - visibleRows()));
+        if (Screen.hasShiftDown()) firstCol = net.minecraft.util.Mth.clamp(firstCol + step, 0, Math.max(0, data.forms().size() - visibleCols()));
+        else firstRow = net.minecraft.util.Mth.clamp(firstRow + step, 0, Math.max(0, rows().size() - visibleRows()));
     }
 
     boolean click(double mx, double my, int button) {
@@ -82,8 +82,8 @@ final class FormMatrix {
         List<Integer> shown = rows();
         List<String> forms = data.forms();
         int stride = stride();
-        firstRow = Math.clamp(firstRow, 0, Math.max(0, shown.size() - visibleRows()));
-        firstCol = Math.clamp(firstCol, 0, Math.max(0, forms.size() - visibleCols()));
+        firstRow = net.minecraft.util.Mth.clamp(firstRow, 0, Math.max(0, shown.size() - visibleRows()));
+        firstCol = net.minecraft.util.Mth.clamp(firstCol, 0, Math.max(0, forms.size() - visibleCols()));
         int rows = Math.min(visibleRows(), shown.size() - firstRow);
         int cols = Math.min(visibleCols(), forms.size() - firstCol);
 

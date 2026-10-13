@@ -1,6 +1,6 @@
 # Port to Forge 1.20.1
 
-Branch `forge-1.20.1`, from `main` at MNX-074, main tickets carried over up to MNX-081. `main` stays NeoForge 1.21.1; this branch is the same mod for
+Branch `forge-1.20.1`, from `main` at MNX-074, main tickets carried over up to MNX-105. `main` stays NeoForge 1.21.1; this branch is the same mod for
 Forge 1.20.1. Behaviour is unchanged: what differs is the game's and the loader's API and data layout.
 
 ## Target
@@ -54,7 +54,8 @@ Their recipe format files stay (they only name recipe types, harmless when absen
   fails with or without KubeJS (about 10 s, limit 5 s): it predates MNX-076 (no decision, no extra preview work) and comes
   with the big dev pack, to look at separately. GregTech CEu adds about 18000 item tag entries in memory: counted in the
   report, never evidence.
-- Not verified at runtime: a message large enough to be split (an apply with many in-game data edits); the Material Nexus screens themselves (no dev world on this branch yet), EMI
+- MNX-085 to MNX-105 (screen redesign, recipes drawn by the viewer, smooth font, same-item overrule, declared tag folders): 37 JUnit tests green; GameTests 18/19 with the big dev pack (`full_preview_on_the_dev_pack_is_fast`, same open issue); `./gradlew runUiShots` walks the 19 captures (JEI draws the recipes, the smooth font loads). `-Pvanilla` GameTests not rerun: the world left in `run-gametest` comes from the big pack and does not load without it.
+- Not verified at runtime: a message large enough to be split (an apply with many in-game data edits); the screens by hand with the mouse, EMI
   (`-Pemi`), Almost Unified (`-Pau`).
 
 ## Carrying a main ticket over
@@ -63,5 +64,7 @@ Most code is identical. Watch for: tag namespace and folder names in new data, 1
 `List.getFirst`, `Component.withColor`, `DataResult.getOrThrow()`, `JsonObject.isEmpty()`, item components), new
 payload codecs (`ByteBufCodecs` has no 1.20.1 equivalent: write `StreamCodec.of`), and screen widgets
 (`mouseScrolled` has one delta, `ObjectSelectionList` takes `y0, y1`). Also: `MutableComponent.withColor` is `withStyle(s -> s.withColor(...))`, a `listOf().xmap(Set::copyOf, ...)` may need its type
-(`.<Set<ResourceLocation>>xmap`), and user-facing text (lang, wiki, changelog, README, store page) says `forge:ingots/tin`
+(`.<Set<ResourceLocation>>xmap`), Java 17 has no pattern `switch` (use `instanceof`) and no `List::getFirst`, a private game field is
+found by type (`UiFont`: field names are SRG in the shipped jar), JEI categories take the `Recipe` itself (no `RecipeHolder`),
+and user-facing text (lang, wiki, changelog, README, store page) says `forge:ingots/tin`
 where main says `c:ingots/tin`; design notes in `docs/` keep `c:`.

@@ -58,10 +58,10 @@ required.
 **Fabric?**
 No.
 
-**A mod's ingot has no `c:ingots/...` tag, so recipes refuse it. Do I need a script?**
+**A mod's ingot has no `forge:ingots/...` tag, so recipes refuse it. Do I need a script?**
 No. Once Material Nexus recognises it (declare its name pattern in the **Untagged
-forms** tab), turn on **Add missing tags** there and Apply: the item joins `c:ingots/<material>`
-and `c:ingots`. The review lists every tag added.
+forms** tab), turn on **Add missing tags** there and Apply: the item joins `forge:ingots/<material>`
+and `forge:ingots`. The review lists every tag added.
 
 **One item is tagged as the wrong material (or not tagged at all). Can I fix just that item?**
 Yes. Shift + right click it in its form to take it out of that form's tag; to add an item, type its

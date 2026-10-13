@@ -291,7 +291,7 @@
   "screen.materialnexus.presets.field.tag_edits": "Tag edits",
   "screen.materialnexus.presets.field.tag_edits.desc": "Items you put in or took out of a form's tag (forge:ingots/tin for tin/ingot).",
   "screen.materialnexus.presets.field.add_missing_tags": "Add missing tags",
-  "screen.materialnexus.presets.field.add_missing_tags.desc": "Items known as a form (name pattern, alias) but missing its tag get it: c:ingots/tin and c:ingots, where the pack already uses that tag.",
+  "screen.materialnexus.presets.field.add_missing_tags.desc": "Items known as a form (name pattern, alias) but missing its tag get it: forge:ingots/tin and forge:ingots, where the pack already uses that tag.",
   "screen.materialnexus.pending.review": "View",
   "screen.materialnexus.pending.title": "Pending changes",
   "screen.materialnexus.pending.hint": "Nothing is written yet. × discards a change, or a whole group.",

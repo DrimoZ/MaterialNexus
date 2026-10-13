@@ -57,7 +57,7 @@ final class ScriptsPanel {
     }
 
     void scroll(double delta) {
-        scroll = Math.clamp(scroll - delta * ROW, 0, Math.max(0, content - view));
+        scroll = net.minecraft.util.Mth.clamp(scroll - delta * ROW, 0, Math.max(0, content - view));
     }
 
     boolean click(double mx, double my, int button) {
@@ -102,7 +102,7 @@ final class ScriptsPanel {
             selected = ORDER.stream().flatMap(s -> payload.rows().stream().filter(r -> r.status() == s)).findFirst().orElse(null);
         }
 
-        int c2 = x + Math.clamp(tw / 4, 110, 170);
+        int c2 = x + net.minecraft.util.Mth.clamp(tw / 4, 110, 170);
         int c3 = c2 + (tw - (c2 - x) - 100) / 2;
         int c4 = x + tw - 100;
         g.drawString(font, tr("col.form"), x + 16, ty + 4, Theme.MUTED, false);
@@ -125,7 +125,7 @@ final class ScriptsPanel {
         }
         g.disableScissor();
         content = ry + (int) scroll - top;
-        scroll = Math.clamp(scroll, 0, Math.max(0, content - view));
+        scroll = net.minecraft.util.Mth.clamp(scroll, 0, Math.max(0, content - view));
         if (content > view && view > 0) {
             int bar = Math.max(12, view * view / content);
             g.fill(x + tw - 4, top, x + tw, bottom, Theme.RAISED);

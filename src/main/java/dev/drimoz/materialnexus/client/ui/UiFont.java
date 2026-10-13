@@ -4,7 +4,6 @@ import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.font.FontSet;
 import net.minecraft.resources.ResourceLocation;
-import net.neoforged.fml.util.ObfuscationReflectionHelper;
 
 import java.util.function.Function;
 
@@ -24,13 +23,25 @@ public final class UiFont {
         if (!ScreenSettings.get().smoothFont()) return game;
         if (smooth == null) {
             try {
-                Function<ResourceLocation, FontSet> fonts = ObfuscationReflectionHelper.getPrivateValue(Font.class, game, "fonts");
+                Function<ResourceLocation, FontSet> fonts = fonts(game);
                 smooth = new Font(id -> fonts.apply(Minecraft.DEFAULT_FONT.equals(id) ? SMOOTH : id), false);
-            } catch (RuntimeException e) {
+            } catch (ReflectiveOperationException | RuntimeException e) {
                 // The game's font is always there.
                 return game;
             }
         }
         return smooth;
+    }
+
+    /** The font lookup is the only Function field of Font: found by type, the field name being remapped in the shipped jar. */
+    @SuppressWarnings("unchecked")
+    private static Function<ResourceLocation, FontSet> fonts(Font game) throws ReflectiveOperationException {
+        for (java.lang.reflect.Field field : Font.class.getDeclaredFields()) {
+            if (field.getType() == Function.class) {
+                field.setAccessible(true);
+                return (Function<ResourceLocation, FontSet>) field.get(game);
+            }
+        }
+        throw new NoSuchFieldException("Font lookup");
     }
 }

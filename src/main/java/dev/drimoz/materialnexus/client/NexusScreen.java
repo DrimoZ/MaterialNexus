@@ -210,7 +210,7 @@ public final class NexusScreen extends Screen {
         if (payload.byForm() || !payload.query().equals(query.strip().toLowerCase(Locale.ROOT))) return;
         page = payload;
         list.show(payload.entries(), material);
-        if (view == View.MATERIALS && material == null && !payload.entries().isEmpty()) openMaterial(payload.entries().getFirst().material());
+        if (view == View.MATERIALS && material == null && !payload.entries().isEmpty()) openMaterial(payload.entries().get(0).material());
     }
 
     /** MNX-053: the queue is built from the grid, which is requested first if needed. */
@@ -608,7 +608,7 @@ public final class NexusScreen extends Screen {
     /** Reopens where the player was, when that setting is on; after an apply the Overview and its summary come first. */
     private void restore() {
         if (!ScreenSettings.get().reopen() || lastView == null || lastView == View.HOME) return;
-        if (!history.isEmpty() && justApplied(history.getFirst())) return;
+        if (!history.isEmpty() && justApplied(history.get(0))) return;
         if (lastView == View.MATERIALS && lastMaterial != null) openMaterial(lastMaterial);
         else if (lastView == View.FORMS && lastForm != null) openForm(lastForm);
         else if ((lastView == View.DATA || lastView == View.PRESETS) && readOnly) return;
@@ -736,12 +736,12 @@ public final class NexusScreen extends Screen {
         y += 62;
 
         // MNX-097: what an apply did is said here, in the screen, when it has just happened; created items need a restart.
-        if (!history.isEmpty() && justApplied(history.getFirst())) {
-            int items = num(history.getFirst(), "items");
+        if (!history.isEmpty() && justApplied(history.get(0))) {
+            int items = num(history.get(0), "items");
             int h = items > 0 ? 32 : 20;
             g.fill(x, y, x + lw, y + h, Theme.RAISED);
             Ui.mark(g, Ui.Status.UNIFIED, x + 8, y + 7);
-            g.drawString(font, tr("home.applied", num(history.getFirst(), "effects")), x + 20, y + 6, Theme.TEXT, false);
+            g.drawString(font, tr("home.applied", num(history.get(0), "effects")), x + 20, y + 6, Theme.TEXT, false);
             if (items > 0) {
                 Ui.mark(g, Ui.Status.SUGGESTION, x + 8, y + 19);
                 g.drawString(font, tr("home.applied.restart", items), x + 20, y + 18, Theme.WARN, false);

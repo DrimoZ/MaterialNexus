@@ -51,7 +51,7 @@ final class ProcessPanel {
     }
 
     void scroll(double delta) {
-        scroll = Math.clamp(scroll - delta * ROW, 0, Math.max(0, foundContent - (y + height - foundTop)));
+        scroll = net.minecraft.util.Mth.clamp(scroll - delta * ROW, 0, Math.max(0, foundContent - (y + height - foundTop)));
     }
 
     boolean click(double mx, double my, int button) {
@@ -217,7 +217,7 @@ final class ProcessPanel {
         g.disableScissor();
         foundContent = ly + (int) scroll - foundTop;
         int view = bottom - foundTop;
-        scroll = Math.clamp(scroll, 0, Math.max(0, foundContent - view));
+        scroll = net.minecraft.util.Mth.clamp(scroll, 0, Math.max(0, foundContent - view));
         if (foundContent > view && view > 0) {
             int bar = Math.max(12, view * view / foundContent);
             g.fill(x + width - 4, foundTop, x + width, bottom, Theme.RAISED);

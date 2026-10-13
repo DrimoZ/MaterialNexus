@@ -151,9 +151,9 @@ class CanonicalResolverTest {
     void aGuessNeedsMembershipAndThePlayerCanOverruleIt() {
         var rl = (java.util.function.Function<String, ResourceLocation>) ResourceLocation::parse;
         Map<ResourceLocation, List<ResourceLocation>> tags = Map.of(
-                rl.apply("c:dusts/electrotine"), List.of(rl.apply("projectred_core:electrotine_dust")),
-                rl.apply("c:ingots/electrotine_alloy"), List.of(rl.apply("projectred_core:electrotine_ingot"), rl.apply("koynification:electrotine_alloy_ingot")),
-                rl.apply("c:gems/amethyst"), List.of(rl.apply("minecraft:amethyst_shard"), rl.apply("remin:yellow_amethyst")));
+                rl.apply("forge:dusts/electrotine"), List.of(rl.apply("projectred_core:electrotine_dust")),
+                rl.apply("forge:ingots/electrotine_alloy"), List.of(rl.apply("projectred_core:electrotine_ingot"), rl.apply("koynification:electrotine_alloy_ingot")),
+                rl.apply("forge:gems/amethyst"), List.of(rl.apply("minecraft:amethyst_shard"), rl.apply("remin:yellow_amethyst")));
         var discovered = TagDiscovery.discover(tags);
         ResolvedForm alloy = CanonicalResolver.resolve(discovered, ResolutionPolicy.NONE).get(new MaterialId("electrotine_alloy")).forms().get(new FormId("ingot"));
         assertEquals(1, alloy.alternatives().size(), "both ingots are candidates");

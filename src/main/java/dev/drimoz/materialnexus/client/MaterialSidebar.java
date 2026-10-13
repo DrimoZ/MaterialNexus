@@ -24,9 +24,6 @@ final class MaterialSidebar {
 
     MaterialSidebar(Consumer<String> onSelect) {
         this.onSelect = onSelect;
-        // The main screen draws its own flat background (MNX-049).
-        setRenderBackground(false);
-        setRenderTopAndBottom(false);
     }
 
     void layout(int x, int y, int width, int height) {
@@ -49,14 +46,14 @@ final class MaterialSidebar {
 
     boolean scroll(double mx, double my, double delta) {
         if (!contains(mx, my)) return false;
-        scroll = Math.clamp(scroll - delta * Theme.ROW_ITEM, 0, Math.max(0, entries.size() * Theme.ROW_ITEM - height));
+        scroll = net.minecraft.util.Mth.clamp(scroll - delta * Theme.ROW_ITEM, 0, Math.max(0, entries.size() * Theme.ROW_ITEM - height));
         return true;
     }
 
     void render(GuiGraphics g, Font font, int mx, int my) {
         hits.clear();
         int content = entries.size() * Theme.ROW_ITEM;
-        scroll = Math.clamp(scroll, 0, Math.max(0, content - height));
+        scroll = net.minecraft.util.Mth.clamp(scroll, 0, Math.max(0, content - height));
         boolean inside = contains(mx, my);
         int rowWidth = width - (content > height ? 6 : 0);
         g.enableScissor(x, y, x + width, y + height);

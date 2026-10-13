@@ -65,7 +65,7 @@ final class RecipesPanel {
     }
 
     void scroll(double delta) {
-        scroll = Math.clamp(scroll - delta * Theme.ROW_ITEM, 0, Math.max(0, content - view));
+        scroll = net.minecraft.util.Mth.clamp(scroll - delta * Theme.ROW_ITEM, 0, Math.max(0, content - view));
     }
 
     boolean click(double mx, double my) {
@@ -123,7 +123,7 @@ final class RecipesPanel {
         }
 
         boolean wide = width >= 620;
-        int iw = wide ? Math.clamp(width / 3, 240, 340) : 0;
+        int iw = wide ? net.minecraft.util.Mth.clamp(width / 3, 240, 340) : 0;
         int tw = width - iw - (wide ? 12 : 0);
         int bottom = y + height;
         view = bottom - top;
@@ -148,14 +148,14 @@ final class RecipesPanel {
                     g.drawString(font, font.plainSubstrByWidth(Names.withMod(row.output()).getString(), tw / 2 - 12), x + tw / 2, ry + 7 + Theme.ROW_PAD, Theme.MUTED, false);
                     // The selected row is already drawn in the inspector.
                     if (hover && !(wide && row == selected)) hovered = row;
-                    if (inList) hits.add(x, ry, tw - 6, Theme.ROW_ITEM, () -> selected = row, null, List.of(Component.literal(row.recipe().toString()).withColor(Theme.TIP_FAINT)));
+                    if (inList) hits.add(x, ry, tw - 6, Theme.ROW_ITEM, () -> selected = row, null, List.of(Component.literal(row.recipe().toString()).withStyle(s -> s.withColor(Theme.TIP_FAINT))));
                 }
                 ry += Theme.ROW_ITEM;
             }
         }
         g.disableScissor();
         content = ry + (int) scroll - top;
-        scroll = Math.clamp(scroll, 0, Math.max(0, content - view));
+        scroll = net.minecraft.util.Mth.clamp(scroll, 0, Math.max(0, content - view));
         if (content > view && view > 0) {
             int bar = Math.max(12, view * view / content);
             g.fill(x + tw - 4, top, x + tw, bottom, Theme.RAISED);

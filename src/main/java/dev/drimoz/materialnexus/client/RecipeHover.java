@@ -66,7 +66,7 @@ final class RecipeHover {
         int sh = screen == null ? g.guiHeight() : screen.height;
         // Beside the pointer, on the side that has room.
         int x = Math.max(4, mx + 12 + w > sw ? mx - 12 - w : mx + 12);
-        int y = Math.clamp(my + 14, 4, Math.max(4, sh - h - 4));
+        int y = net.minecraft.util.Mth.clamp(my + 14, 4, Math.max(4, sh - h - 4));
         g.pose().pushPose();
         g.pose().translate(0, 0, 400);
         g.fill(x - 1, y - 1, x + w + 1, y + h + 1, Theme.BORDER);

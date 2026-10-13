@@ -103,12 +103,12 @@ public final class MnxJeiPlugin implements IModPlugin {
             return java.util.Optional.empty();
         }
 
-        /** A category takes the recipe holder or the recipe itself; the recipe must be one it has registered. */
-        private <T> java.util.Optional<Layout> in(mezz.jei.api.recipe.category.IRecipeCategory<T> category, net.minecraft.world.item.crafting.RecipeHolder<?> holder,
+        /** The recipe must be one the category has registered. */
+        private <T> java.util.Optional<Layout> in(mezz.jei.api.recipe.category.IRecipeCategory<T> category, net.minecraft.world.item.crafting.Recipe<?> holder,
                                                   mezz.jei.api.recipe.IFocusGroup focus) {
             try {
                 Class<? extends T> type = category.getRecipeType().getRecipeClass();
-                Object candidate = type.isInstance(holder) ? holder : type.isInstance(holder.value()) ? holder.value() : null;
+                Object candidate = type.isInstance(holder) ? holder : null;
                 if (candidate == null) return java.util.Optional.empty();
                 T recipe = type.cast(candidate);
                 var manager = runtime.getRecipeManager();

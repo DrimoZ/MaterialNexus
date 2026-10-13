@@ -155,7 +155,7 @@ final class TriagePanel {
         g.drawString(font, tr("ask", list.size()), x, y + 40, Theme.MUTED, false);
 
         Optional<ResourceLocation> pending = PendingChanges.get(item.get().material(), item.get().form());
-        int cardWidth = Math.clamp((mw - 16) / 3, 150, 232);
+        int cardWidth = net.minecraft.util.Mth.clamp((mw - 16) / 3, 150, 232);
         int cx = x;
         int cy = y + 58;
         for (int i = 0; i < list.size() && i < 9; i++) {
@@ -228,7 +228,7 @@ final class TriagePanel {
         Component label = Component.translatable(notSame ? "screen.materialnexus.insp.not_same.undo" : "screen.materialnexus.triage.not_same");
         if (bx - 4 + font.width(label) + 12 <= cx + cw - 8) button(g, font, label, bx - 4, cy + 88, false, mx, my, () -> pick(n, true));
         hits.add(cx + 8, cy + 8, 36, 36, () -> pick(n, false), () -> pick(n, true), List.of(Names.stack(candidate).getHoverName(),
-                Component.literal(candidate.toString()).withColor(Theme.TIP_FAINT)));
+                Component.literal(candidate.toString()).withStyle(s -> s.withColor(Theme.TIP_FAINT))));
     }
 
     /** The whole queue, so the player sees how much is left and what was skipped. */
@@ -237,7 +237,7 @@ final class TriagePanel {
         g.fill(qx - 12, qy - 12, qx - 11, qy + qh + 8, Theme.BORDER);
         g.drawString(font, tr("queue", queue.size()).copy().withStyle(ChatFormatting.BOLD), qx, qy, Theme.TEXT, false);
         int rows = (qh - 20) / 16;
-        int first = Math.clamp(index - rows / 2, 0, Math.max(0, queue.size() - rows));
+        int first = net.minecraft.util.Mth.clamp(index - rows / 2, 0, Math.max(0, queue.size() - rows));
         for (int i = first; i < Math.min(queue.size(), first + rows); i++) {
             Item it = queue.get(i);
             int ry = qy + 18 + (i - first) * 16;
