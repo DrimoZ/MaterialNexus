@@ -20,10 +20,12 @@ public record RecipeFamilyPayload(String material, String form, List<RecipeFamil
                     b.writeResourceLocation(r.type());
                     b.writeResourceLocation(r.output());
                     b.writeEnum(r.status());
+                    b.writeOptional(r.replaced(), (o, id) -> o.writeResourceLocation(id));
                 });
             },
             buf -> new RecipeFamilyPayload(buf.readUtf(), buf.readUtf(), buf.readList(b -> new RecipeFamilies.Row(
-                    b.readResourceLocation(), b.readResourceLocation(), b.readResourceLocation(), b.readEnum(RecipeFamilies.Status.class)))));
+                    b.readResourceLocation(), b.readResourceLocation(), b.readResourceLocation(), b.readEnum(RecipeFamilies.Status.class),
+                    b.readOptional(o -> o.readResourceLocation())))));
 
     public RecipeFamilyPayload {
         rows = List.copyOf(rows);

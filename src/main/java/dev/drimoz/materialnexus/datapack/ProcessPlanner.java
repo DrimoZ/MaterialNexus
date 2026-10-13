@@ -164,8 +164,15 @@ public final class ProcessPlanner {
      */
     public static List<ProcessRules.Route> examples(List<RecipeRewrites.Source> sources, RecipeFormats formats,
                                                     SortedMap<MaterialId, ResolvedMaterial> resolved, FormId form) {
+        return List.copyOf(samples(sources, formats, resolved, form).keySet());
+    }
+
+    /** {@link #examples} in the same order, each with one recipe that follows it (the smallest id), for the GUI to show (MNX-088). */
+    public static Map<ProcessRules.Route, ResourceLocation> samples(List<RecipeRewrites.Source> sources, RecipeFormats formats,
+                                                                    SortedMap<MaterialId, ResolvedMaterial> resolved, FormId form) {
         Index index = new Index(resolved);
         Map<ProcessRules.Route, Integer> seen = new HashMap<>();
+        Map<ProcessRules.Route, ResourceLocation> sample = new HashMap<>();
         for (RecipeRewrites.Source s : sources) {
             if (s.json().isEmpty()) continue;
             var format = RecipeRewrites.format(s.json().get(), formats);
@@ -177,13 +184,19 @@ public final class ProcessPlanner {
             int out = count(r.output().get());
             r.inputs().stream().map(i -> i.target().form()).distinct().forEach(input -> {
                 int in = inputCount(r, new MaterialForm(material.get(), input));
-                if (in >= 1 && in <= 64 && out >= 1 && out <= 64) seen.merge(new ProcessRules.Route(type, input, in, out), 1, Integer::sum);
+                if (in >= 1 && in <= 64 && out >= 1 && out <= 64) {
+                    ProcessRules.Route route = new ProcessRules.Route(type, input, in, out);
+                    seen.merge(route, 1, Integer::sum);
+                    sample.merge(route, s.id(), (a, b) -> a.compareTo(b) <= 0 ? a : b);
+                }
             });
         }
-        return seen.entrySet().stream()
+        Map<ProcessRules.Route, ResourceLocation> ordered = new java.util.LinkedHashMap<>();
+        seen.entrySet().stream()
                 .sorted(Map.Entry.<ProcessRules.Route, Integer>comparingByValue().reversed()
                         .thenComparing(e -> e.getKey().machine().toString()).thenComparing(e -> e.getKey().input().name()))
-                .limit(24).map(Map.Entry::getKey).toList();
+                .limit(24).forEach(e -> ordered.put(e.getKey(), sample.get(e.getKey())));
+        return ordered;
     }
 
     /** A template filled for this route, kept only if reading it back gives exactly the requested ratio. */

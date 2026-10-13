@@ -147,10 +147,10 @@ final class PolicyHandler {
             ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies());
             RecipeFormats formats = RecipeFormats.load(player.server.getResourceManager());
             var sources = RecipeSources.known(player.server, formats, RecipeRewrites.overridden(PackContent.readManifest(MnxPaths.generated())));
-            var examples = dev.drimoz.materialnexus.datapack.ProcessPlanner.examples(sources, formats,
+            var examples = dev.drimoz.materialnexus.datapack.ProcessPlanner.samples(sources, formats,
                     CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy), form.get());
             PacketDistributor.sendToPlayer(player, new ProcessPayload(formName, java.util.Optional.ofNullable(policy.processes().forms().get(form.get())),
-                    new dev.drimoz.materialnexus.core.policy.ProcessRules.Rule(examples, false, false)));
+                    new dev.drimoz.materialnexus.core.policy.ProcessRules.Rule(java.util.List.copyOf(examples.keySet()), false, false), java.util.List.copyOf(examples.values())));
         } catch (IOException | RuntimeException e) {
             LOGGER.error("Material Nexus process query failed", e);
             player.sendSystemMessage(Component.translatable("message.materialnexus.apply_failed", e.getMessage()));

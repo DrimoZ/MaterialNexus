@@ -465,6 +465,8 @@
   "screen.materialnexus.recipes.group.canonical": "Already make the kept item (%s)",
   "screen.materialnexus.recipes.group.other": "Make a variant, left alone (%s)",
   "screen.materialnexus.recipes.drawn_by": "Drawn by %s",
+  "screen.materialnexus.recipes.replaced": "instead of %s",
+  "screen.materialnexus.process.example": "One recipe of the pack. A rule does the same for every material.",
   "screen.materialnexus.recipes.no_viewer": "Install JEI to see the recipe drawn here.",
   "screen.materialnexus.recipes.not_loaded": "This recipe is disabled, so the game no longer loads it and %s cannot draw it. This list is the only place it appears.",
   "screen.materialnexus.recipes.not_drawable": "%s has no layout for this recipe here.",

@@ -40,7 +40,8 @@ public final class MnxJeiPlugin implements IModPlugin {
         hidden.clear();
         // MNX-088: the Recipes tab asks this adapter to draw recipes the way JEI does.
         viewer = new Viewer(jeiRuntime);
-        RecipeViewer.Slot.current = viewer;
+        // With EMI installed too, EMI is the viewer the player sees: it keeps the slot.
+        if (RecipeViewer.Slot.current == null || RecipeViewer.Slot.current.name().equals(viewer.name())) RecipeViewer.Slot.current = viewer;
         if (!subscribed) {
             UnifiedItemsClient.subscribe(this::apply);
             subscribed = true;
