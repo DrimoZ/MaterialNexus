@@ -12,6 +12,19 @@ the world, and the recipe viewer. Nothing changes until you have read the previe
 [GitHub](https://github.com/DrimoZ/MaterialNexus) ·
 [Report a bug](https://github.com/DrimoZ/MaterialNexus/issues)
 
+## I want to...
+
+| | |
+|---|---|
+| open the screen | `/materials`, or the Nexus Terminal: [Getting Started](Getting-Started#2-open-the-screen) |
+| choose which item is kept | [Choosing Items](Choosing-Items) |
+| unify an item that was set aside | [Choosing Items](Choosing-Items#the-same-item-after-all) |
+| undo something | [Applying Changes](Applying-Changes#undoing) |
+| use my own texture for a created item | [Created Items](Created-Items#your-own-texture-or-model) |
+| handle a mod whose recipes are "not handled yet" | [Compatibility](Compatibility#recipe-formats) |
+| run it on a server | [Modpacks and Multiplayer](Modpacks-and-Multiplayer) |
+| know every command | [Commands and Permissions](Commands-and-Permissions) |
+
 ## What it does
 
 - **Finds every material form** in the pack: from the convention tags (`forge:ingots/copper`,

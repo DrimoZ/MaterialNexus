@@ -40,6 +40,14 @@ plates, a dozen recipes that disagree about them. Material Nexus finds every one
 decide which item is kept, then cleans the tags, rewrites the recipes and converts the items for
 you. Nothing changes until you have seen the preview and pressed Apply.
 
+**Start here:** open a singleplayer world with cheats allowed and run **`/materials`**, or right
+click with the **Nexus Terminal** (creative *Tools & Utilities* tab, with "Operator Items" on). It
+needs operator rights (permission level 2).
+
+[Wiki](https://github.com/DrimoZ/MaterialNexus/wiki) · [Getting Started](https://github.com/DrimoZ/MaterialNexus/wiki/Getting-Started) ·
+[Commands](https://github.com/DrimoZ/MaterialNexus/wiki/Commands-and-Permissions) ·
+[Report a bug](https://github.com/DrimoZ/MaterialNexus/issues)
+
 ![Home](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_home.png)
 
 ![Finds the duplicates](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/header_find.png)
