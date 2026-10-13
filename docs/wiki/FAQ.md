@@ -35,8 +35,9 @@ your choices in the screen, the files in `config/materialnexus/`, or the pack's 
 KubeJS scripts, which run after Material Nexus.
 
 **Can I use my own textures for created items?**
-Yes, without touching the generated pack: a `"texture"` on the entry in `items.json`, a model in a
-resource pack, or a template for every material ([Created Items](Created-Items#your-own-texture-or-model)).
+Yes, without touching the generated pack. The simplest: drop
+`config/materialnexus/textures/<material>_<form>.png` and restart, nothing to declare. Also a `"texture"` on the
+entry in `items.json`, a model in a resource pack, or a template for every material ([Created Items](Created-Items#your-own-texture-or-model)).
 
 **Why is a recipe "not handled yet"?**
 Its type has no recipe format. Add one ([Datapack Guide](Datapack-Guide#recipe-formats)), or let

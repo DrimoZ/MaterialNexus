@@ -50,9 +50,12 @@ read at startup only.
 
 ## Your own texture or model
 
-The tinted template is only the default. Two ways to draw a created item your way:
+The tinted template is only the default. Three ways to draw a created item your way:
 
-- **A texture in `items.json`**: `"texture": "mypack:item/netherite_rod"` on the entry. The item is
+- **A file, nothing else**: drop `config/materialnexus/textures/<material>_<form>.png`
+  (`netherite_rod.png`) and restart. The item is drawn with it, as it is, without tint. No JSON, no
+  resource pack; the file ships with the pack like the rest of `config/materialnexus/`.
+- **A texture in `items.json`**: `"texture": "mypack:item/netherite_rod"` on the entry (it wins over a dropped file). The item is
   drawn with that texture (`assets/mypack/textures/item/netherite_rod.png`, from your resource pack
   or a mod), as it is, without tint.
 - **A model in a resource pack**: `assets/materialnexus/models/item/<material>_<form>.json`
