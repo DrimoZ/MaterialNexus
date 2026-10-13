@@ -50,7 +50,7 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [x] Create (processing recipe outputs and inputs; sequenced assembly unsupported)
 - [x] Mekanism (item outputs and inputs of machine recipes; chemicals untouched)
 - [x] Immersive Engineering (machine recipes incl. nested secondaries)
-- [ ] Thermal (no NeoForge 1.21.1 build: with the 1.20.1 port, MNX-090)
+- [x] Thermal (Forge 1.20.1 only, MNX-090: no NeoForge 1.21.1 build)
 
 ## Phase 5 — V2 / pack author polish
 

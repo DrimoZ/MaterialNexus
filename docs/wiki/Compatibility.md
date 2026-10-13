@@ -73,7 +73,11 @@ Recipes are rewritten for the recipe types a format describes. Shipped formats:
 | Mekanism | crushing, enriching, sawing, injecting, combining, infusing, purifying, crystallizing, compressing, reaction... |
 | Immersive Engineering, Immersive Petroleum | their machines |
 | Modern Industrialization | its machines |
+| Thermal Series | press, pulverizer, smelter, sawmill, centrifuge, insolator, chiller, bottler... |
 | Oritech, Occultism, Silent Gear, Ex Deorum, Extreme Reactors | their machines |
+
+Tinkers' Construct needs no format: its casting recipes give the item of a tag (`forge:ingots/tin`), so they
+follow the kept item once the tag is cleaned.
 
 Any other mod: add a format ([Datapack Guide](Datapack-Guide#recipe-formats)). Its items are still
 unified through tags and in the world in the meantime.

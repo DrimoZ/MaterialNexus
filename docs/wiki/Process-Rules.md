@@ -68,5 +68,6 @@ Shipped templates (used when there is nothing to copy): vanilla shaped and shape
 smelting, blasting, stonecutting; Create pressing, cutting, milling, crushing, compacting; Create
 Crafts & Additions rolling; Create Metallurgy grinding; Immersive Engineering metal press and
 crusher; Modern Industrialization compressor, macerator, wiremill, cutting machine, packer, forge
-hammer; Mekanism crushing and enriching; Oritech pulverizer, grinder and assembler. Any other
+hammer; Mekanism crushing and enriching; Oritech pulverizer, grinder and assembler; Thermal press
+(plate, gear), pulverizer and smelter. Any other
 machine works by example as soon as the pack has one recipe of it for that form.

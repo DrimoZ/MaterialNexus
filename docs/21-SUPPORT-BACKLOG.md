@@ -18,7 +18,7 @@ plays: that port is the next step for this feedback to reach them.
 | MNX-087 | Done: Start block at the top of the store page, "I want to..." table and FAQ entries in the wiki. To do by hand: paste the description on CurseForge and Modrinth. |
 | MNX-088 | Done, differently: recipes are drawn by JEI or EMI (inspector and next to the pointer, Recipes and How it is made), with the replaced item struck next to the kept one. No renderer of our own. |
 | MNX-089 | Done as the UI redesign (MNX-093 to MNX-104, `22-UI-REDESIGN.md`). Still to ask the tester for the three moments they got stuck. |
-| MNX-090 | Partly: `/materials report` ranks the recipe types no format covers. Thermal and Tinkers have no NeoForge 1.21.1 build on Modrinth: they wait for the 1.20.1 port. |
+| MNX-090 | Done on `forge-1.20.1`: `/materials report` ranks the recipe types no format covers; Thermal has its format and templates (press, pulverizer, smelter). Tinkers needs none: its casting results are tags (0 recipes naming a replaced item on the dev pack). Neither has a NeoForge 1.21.1 build on Modrinth. |
 | MNX-091 | Done, differently: `config/materialnexus/textures/<material>_<form>.png` (resource packs are not loaded yet when the models are written). |
 | MNX-092 | Done: "Declare tag folder" in Rule files, Untagged forms. |
 | Free groups | Still parked. |

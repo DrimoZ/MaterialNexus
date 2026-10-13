@@ -1,0 +1,19 @@
+{
+  "machine": "thermal:press",
+  "forms": {
+    "plate": {}
+  },
+  "recipe": {
+    "type": "thermal:press",
+    "ingredient": {
+      "count": "${in}",
+      "${input}": ""
+    },
+    "result": [
+      {
+        "count": "${out}",
+        "item": "${output_item}"
+      }
+    ]
+  }
+}

@@ -224,6 +224,21 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /** MNX-090: with the Thermal format, unifying tin dust on Mekanism's rewrites Thermal's pulverizer recipes. */
+    @GameTest(template = "empty")
+    public static void thermalRecipesAreRewritten(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("thermal") || !ModList.get().isLoaded("mekanism")) { helper.succeed(); return; }
+        var server = helper.getLevel().getServer();
+        var conversions = java.util.Map.of(ResourceLocation.parse("thermal:tin_dust"), ResourceLocation.parse("mekanism:dust_tin"));
+        var formats = RecipeFormats.load(server.getResourceManager());
+        var plan = RecipeRewrites.plan(RecipeSources.collect(server, conversions, formats, java.util.List.of()), conversions, formats);
+        helper.assertTrue(plan.effects().stream().noneMatch(e -> e.kind().equals(RecipeRewrites.UNSUPPORTED) && e.target().getNamespace().equals("thermal")),
+                "thermal recipes should all be handled, got " + plan.effects());
+        helper.assertTrue(plan.effects().stream().anyMatch(e -> e.kind().equals(RecipeRewrites.REWRITE) && e.target().getPath().contains("pulverizer")),
+                "a Thermal pulverizer recipe should be rewritten, got " + plan.effects());
+        helper.succeed();
+    }
+
     /**
      * MNX-044: a worst-case Preview on the dev pack (every suggestion accepted, rules on three forms) stays interactive.
      * Logs each step; fails above 5 s, which is when a recipe index becomes worth its complexity.
