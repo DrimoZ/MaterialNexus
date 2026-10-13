@@ -191,7 +191,9 @@ final class ProcessPanel {
             String name = machine(entry.getKey());
             if (ly + 16 > foundTop && ly < bottom) {
                 g.drawString(font, name, x + 6, ly + 4, Theme.TEXT, false);
-                g.drawString(font, font.plainSubstrByWidth(" · " + NexusScreen.modName(entry.getKey().getNamespace()) + "   " + entry.getKey(), width - 20 - font.width(name)),
+                g.drawString(font, font.plainSubstrByWidth(" · " + NexusScreen.modName(entry.getKey().getNamespace())
+                                // MNX-101: the recipe type id is a technical id, shown with the setting.
+                                + (dev.drimoz.materialnexus.client.ui.ScreenSettings.get().showIds() ? "   " + entry.getKey() : ""), width - 20 - font.width(name)),
                         x + 6 + font.width(name), ly + 4, Theme.FAINT, false);
             }
             ly += 16;

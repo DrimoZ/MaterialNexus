@@ -47,3 +47,11 @@
 | MNX-079 | P1 | Tag edits | `tag_edits` per material/form: Shift + right click takes an item out of its form tag, Data view adds one by id; discovery and resolution follow (ADR-024) |
 | MNX-080 | P2 | Tag diagnostics | `/materials report` "Tags": tags items lack (what Add missing tags writes), recipes asking for an empty material tag, recipes still on `forge:` tags |
 | MNX-081 | P2 | Forms removable as data | `remove_folders` in material_nexus/forms: a folder (built-in or declared) is no longer read |
+| MNX-086 | P0 | Guesses the player can overrule | An item is "named after" a material only when tagged as it; "It is the same item" makes an item left alone on a guess a candidate again |
+| MNX-087 | P0 | Store and wiki entry points | How to open the screen and the links at the top of the store page; wiki home by need |
+| MNX-088 | P1 | Recipes drawn by the viewer | JEI or EMI draws the recipe in the inspector and next to the pointer; no renderer of our own; safe with no viewer |
+| MNX-089 | P1 | Screen legibility | Covered by the UI redesign, MNX-093 to MNX-104 (docs/22) |
+| MNX-090 | P1 | Compat by evidence | `/materials report` ranks unhandled recipe types by recipes naming a material item; Thermal with the 1.20.1 port |
+| MNX-091 | P2 | Texture by file name | `config/materialnexus/textures/<material>_<form>.png` is used for a created item, nothing declared |
+| MNX-092 | P2 | Tag folder as a form | Declared from Rule files, written in the declared patterns file, applied like any change |
+| MNX-093..104 | P1 | UI redesign | Theme roles, shell, tables with inspector, review panel, settings; captures and wiki regenerated (docs/22, docs/07) |

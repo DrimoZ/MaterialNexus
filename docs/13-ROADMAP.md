@@ -50,13 +50,13 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [x] Create (processing recipe outputs and inputs; sequenced assembly unsupported)
 - [x] Mekanism (item outputs and inputs of machine recipes; chemicals untouched)
 - [x] Immersive Engineering (machine recipes incl. nested secondaries)
-- [ ] Thermal
+- [ ] Thermal (no NeoForge 1.21.1 build: with the 1.20.1 port, MNX-090)
 
 ## Phase 5 — V2 / pack author polish
 
 - [ ] recipe editor
-- [ ] dashboard with counts
-- [ ] Loot and JEI/EMI tabs
+- [x] dashboard with counts (the Overview, MNX-096)
+- [ ] Loot tab (recipes are drawn by JEI/EMI in the Recipes tab, MNX-088)
 - [x] presets (data-driven, 5 shipped, applied through Preview / Apply / Revert)
 - [ ] import/export policy
 - [x] diagnostics report (`/materials report` -> config/materialnexus/report.md)
@@ -64,4 +64,4 @@ V1 delivers a usable GUI from the start (decision: grilling session 2026-10-05).
 - [x] KubeJS optional API (read-only bindings, MNX-067)
 - [x] decisions found in scripts proposed as choices (MNX-076, docs/20)
 - [x] script lines of each decision shown ("seen in", MNX-077)
-- [ ] documentation/wiki
+- [x] documentation/wiki (docs/wiki, published to the GitHub wiki)
