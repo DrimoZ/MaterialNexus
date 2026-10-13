@@ -1,0 +1,65 @@
+name: Material or mod compatibility
+description: An item, material, form or recipe of another mod is missed, grouped wrongly or converted wrongly.
+labels: ["compatibility"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Run `/materials report` first and look at **Possibly untagged forms** and **Tags**:
+        an item with no convention tag is usually fixed in a datapack
+        ([Datapack Guide](https://github.com/DrimoZ/MaterialNexus/wiki/Datapack-Guide#forms)).
+  - type: input
+    id: mod
+    attributes:
+      label: Mod involved
+      description: Name and version.
+      placeholder: "Mekanism 10.7.19"
+    validations:
+      required: true
+  - type: dropdown
+    id: kind
+    attributes:
+      label: Kind of problem
+      options:
+        - Item not detected as a form of its material
+        - Items grouped under the wrong material or form
+        - Recipe not rewritten, or rewritten wrongly
+        - Machine or recipe type not recognised
+        - Recipe viewer (JEI / EMI) shows the wrong thing
+        - Conflict with another unifier or script (Almost Unified, KubeJS)
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: items
+    attributes:
+      label: Items, tags or recipes
+      description: Technical ids, one per line.
+      placeholder: |
+        mekanism:ingot_osmium
+        c:ingots/osmium
+        mekanism:processing/osmium/ingot/from_dust_smelting
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected and actual
+    validations:
+      required: true
+  - type: input
+    id: mod_version
+    attributes:
+      label: Material Nexus version
+      placeholder: "0.2.0"
+    validations:
+      required: true
+  - type: textarea
+    id: report
+    attributes:
+      label: Report
+      description: >
+        The section of `config/materialnexus/report.md` about this material, or a link to the
+        whole file.
+    validations:
+      required: true

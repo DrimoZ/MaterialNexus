@@ -40,7 +40,7 @@ import java.util.Optional;
  * choices stay pending on the client until Preview / Apply.
  */
 public final class NexusScreen extends Screen {
-    private enum View { HOME, MATERIALS, FORMS, TRIAGE, PRESETS, DATA, SCRIPTS, SETTINGS }
+    private enum View { HOME, MATERIALS, FORMS, TRIAGE, PRESETS, DATA, SCRIPTS, SETTINGS, SHORTCUTS }
     private enum Tab { FORMS, RECIPES, MISSING, PROCESS }
 
     private static final int TOP = Theme.BAR_TOP;
@@ -161,7 +161,9 @@ public final class NexusScreen extends Screen {
         drawer = new ReviewDrawer(effects, () -> PacketDistributor.sendToServer(PendingChanges.request(false, Optional.empty())), preset -> {
             PacketDistributor.sendToServer(PendingChanges.request(true, preset));
             // The server reopens Material Nexus once the reload has finished; pending choices are kept until then.
-            minecraft.setScreen(null);
+            // MNX-102: until then this screen stays and says what is going on.
+            applying = net.minecraft.Util.getMillis();
+            drawer = null;
         }, () -> drawer = null);
         layoutDrawer();
     }
@@ -183,6 +185,9 @@ public final class NexusScreen extends Screen {
             case "data" -> go(View.DATA);
             case "scripts" -> go(View.SCRIPTS);
             case "settings" -> go(View.SETTINGS);
+            case "shortcuts" -> go(View.SHORTCUTS);
+            case "smooth" -> { ScreenSettings.set(dev.drimoz.materialnexus.datapack.MnxPaths.root(), ScreenSettings.get().withSmoothFont(true)); rebuildWidgets(); }
+            case "recipes" -> { if (material != null) openRecipes(material, arg); }
             case "pending" -> { PendingChanges.set("copper", "ingot", dev.drimoz.materialnexus.datapack.CanonicalChange.RESET); togglePending(); }
             case "priority" -> { if (totals != null) savePriority(new java.util.ArrayList<>(totals.mods().subList(0, Math.min(3, totals.mods().size())))); }
             default -> go(View.HOME);
@@ -309,6 +314,8 @@ public final class NexusScreen extends Screen {
     @Override
     protected void init() {
         fitScale();
+        // MNX-103: every text of the screen is drawn and measured with the font the player chose.
+        font = dev.drimoz.materialnexus.client.ui.UiFont.current();
         if (!restored) {
             restored = true;
             restore();
@@ -341,7 +348,7 @@ public final class NexusScreen extends Screen {
             case HOME -> initHome();
             case MATERIALS -> initMaterials();
             case FORMS -> initForms();
-            case TRIAGE, PRESETS, SCRIPTS, SETTINGS -> { }
+            case TRIAGE, PRESETS, SCRIPTS, SETTINGS, SHORTCUTS -> { }
             case DATA -> data.init(widget -> addRenderableWidget(widget), font, contentX, contentY, contentW, contentH);
         }
         layoutDrawer();
@@ -402,6 +409,7 @@ public final class NexusScreen extends Screen {
             case PRESETS -> presets.render(g, font, contentX + 12, contentY + 10, contentW - 24, contentH - 20, mx, my);
             case SCRIPTS -> scripts.render(g, font, contentX + 12, contentY + 10, contentW - 24, contentH - 20, mx, my);
             case SETTINGS -> renderSettings(g, mx, my);
+            case SHORTCUTS -> renderShortcuts(g);
         }
         renderBottom(g, mx, my);
         for (var widget : renderables) widget.render(g, mx, my, partialTick);
@@ -415,6 +423,7 @@ public final class NexusScreen extends Screen {
         } else {
             hits.tooltip(g, font, mx, my);
         }
+        if (applying > 0) renderApplying(g, mx, my);
     }
 
     @Override
@@ -450,6 +459,7 @@ public final class NexusScreen extends Screen {
             case DATA -> "data";
             case PRESETS -> "presets";
             case SETTINGS -> "settings";
+            case SHORTCUTS -> "shortcuts";
         };
     }
 
@@ -466,7 +476,14 @@ public final class NexusScreen extends Screen {
             y = navItem(g, mx, my, y, "data", view == View.DATA, 0, () -> go(View.DATA));
             navItem(g, mx, my, y, "presets", view == View.PRESETS, 0, () -> go(View.PRESETS));
         }
-        navItem(g, mx, my, height - BOTTOM - 8 - Theme.CONTROL, "settings", view == View.SETTINGS, 0, () -> go(View.SETTINGS));
+        // The foot of the rail: where to learn more, then the settings of the screen.
+        int foot = height - BOTTOM - 8 - Theme.CONTROL;
+        navItem(g, mx, my, foot - 40, "help", false, 0, () -> minecraft.setScreen(new net.minecraft.client.gui.screens.ConfirmLinkScreen(ok -> {
+            if (ok) net.minecraft.Util.getPlatform().openUri(WIKI);
+            minecraft.setScreen(this);
+        }, WIKI, true)));
+        navItem(g, mx, my, foot - 20, "shortcuts", view == View.SHORTCUTS, 0, () -> go(View.SHORTCUTS));
+        navItem(g, mx, my, foot, "settings", view == View.SETTINGS, 0, () -> go(View.SETTINGS));
     }
 
     /** One entry of the rail; a {@code count} above zero is shown as a badge. Returns the y of the next entry. */
@@ -524,6 +541,51 @@ public final class NexusScreen extends Screen {
         if (action != null) hits.add(x, y, w, Theme.CONTROL, action, null, List.of());
     }
 
+    private static final String WIKI = "https://github.com/DrimoZ/MaterialNexus/wiki";
+    /** When Apply was sent, 0 otherwise. */
+    private long applying;
+    private int closeX, closeY, closeW;
+
+    /** MNX-102: applying reloads the game data, which takes a while on a large pack: said here, over the screen. */
+    private void renderApplying(GuiGraphics g, int mx, int my) {
+        g.flush();
+        g.pose().pushPose();
+        g.pose().translate(0, 0, 300);
+        g.fill(0, TOP, width, height, Theme.BG & 0x00FFFFFF | 0xB0000000);
+        int w = 320;
+        int x = (width - w) / 2;
+        int y = (height - 76) / 2;
+        g.fill(x, y, x + w, y + 76, Theme.SURFACE);
+        g.renderOutline(x, y, w, 76, Theme.CTRL);
+        g.drawString(font, tr("applying.title").copy().withStyle(net.minecraft.ChatFormatting.BOLD), x + 12, y + 10, Theme.TEXT, false);
+        var lines = font.split(tr("applying.text"), w - 24);
+        for (int i = 0; i < Math.min(2, lines.size()); i++) g.drawString(font, lines.get(i), x + 12, y + 24 + i * 10, Theme.MUTED, false);
+        int at = (int) ((net.minecraft.Util.getMillis() - applying) / 6 % (w - 24 + 60)) - 60;
+        g.fill(x + 12, y + 48, x + w - 12, y + 50, Theme.RAISED);
+        g.fill(Math.max(x + 12, x + 12 + at), y + 48, Math.min(x + w - 12, x + 12 + at + 60), y + 50, Theme.ACCENT);
+        Component close = tr("applying.close");
+        closeW = font.width(close) + 12;
+        closeX = x + w - 12 - closeW;
+        closeY = y + 54;
+        Ui.button(g, font, close, closeX, closeY, closeW, 16, false, mx >= closeX && mx < closeX + closeW && my >= closeY && my < closeY + 16, true);
+        g.pose().popPose();
+    }
+
+    /** MNX-102: every gesture that has no button of its own, in one place. */
+    private void renderShortcuts(GuiGraphics g) {
+        int x = contentX + 24;
+        int y = contentY + 12;
+        g.drawString(font, tr("shortcuts.title").copy().withStyle(net.minecraft.ChatFormatting.BOLD), x, y, Theme.TEXT, false);
+        g.drawString(font, tr("shortcuts.hint"), x, y + 12, Theme.MUTED, false);
+        y += 34;
+        for (int i = 1; i <= 8; i++) {
+            g.fill(x, y, x + Math.min(560, contentW - 48), y + 18, i % 2 == 1 ? Theme.SURFACE : Theme.BG);
+            g.drawString(font, tr("shortcuts." + i + ".keys"), x + 8, y + 5, Theme.TEXT, false);
+            g.drawString(font, tr("shortcuts." + i + ".what"), x + 200, y + 5, Theme.MUTED, false);
+            y += 18;
+        }
+    }
+
     /** Where the screen was left, kept while the game runs (MNX-101). */
     private static View lastView;
     private static String lastMaterial, lastForm;
@@ -575,6 +637,37 @@ public final class NexusScreen extends Screen {
         // MNX-101: what the screen shows and how it opens.
         x = contentX + 24;
         y += 76;
+        g.drawString(font, tr("settings.font"), x, y, Theme.MUTED, false);
+        y += 14;
+        boolean smoothNow = ScreenSettings.get().smoothFont();
+        int fx2 = x;
+        for (boolean value : new boolean[] {false, true}) {
+            Component label = tr(value ? "settings.font.smooth" : "settings.font.game");
+            int bw = font.width(label) + 16;
+            boolean over = mx >= fx2 && mx < fx2 + bw && my >= y && my < y + 18;
+            g.fill(fx2, y, fx2 + bw, y + 18, value == smoothNow ? Theme.SEL : over ? Theme.RAISED : Theme.SURFACE);
+            g.drawString(font, label, fx2 + 8, y + 5, value == smoothNow || over ? Theme.TEXT : Theme.MUTED, false);
+            hits.add(fx2, y, bw, 18, () -> {
+                ScreenSettings.set(dev.drimoz.materialnexus.datapack.MnxPaths.root(), ScreenSettings.get().withSmoothFont(value));
+                rebuildWidgets();
+            }, null, List.of());
+            fx2 += bw;
+        }
+        y += 34;
+        g.drawString(font, tr("settings.density"), x, y, Theme.MUTED, false);
+        y += 14;
+        boolean roomy = ScreenSettings.get().comfortable();
+        int sx = x;
+        for (boolean value : new boolean[] {false, true}) {
+            Component label = tr(value ? "settings.density.comfortable" : "settings.density.compact");
+            int bw = font.width(label) + 16;
+            boolean over = mx >= sx && mx < sx + bw && my >= y && my < y + 18;
+            g.fill(sx, y, sx + bw, y + 18, value == roomy ? Theme.SEL : over ? Theme.RAISED : Theme.SURFACE);
+            g.drawString(font, label, sx + 8, y + 5, value == roomy || over ? Theme.TEXT : Theme.MUTED, false);
+            hits.add(sx, y, bw, 18, () -> ScreenSettings.set(dev.drimoz.materialnexus.datapack.MnxPaths.root(), ScreenSettings.get().withComfortable(value)), null, List.of());
+            sx += bw;
+        }
+        y += 34;
         g.drawString(font, tr("settings.display"), x, y, Theme.MUTED, false);
         y += 16;
         ScreenSettings.Values now = ScreenSettings.get();
@@ -1010,6 +1103,11 @@ public final class NexusScreen extends Screen {
 
     @Override
     public boolean mouseClicked(double mx, double my, int button) {
+        if (applying > 0) {
+            // Nothing else answers while the pack is being applied; Close leaves the screen, the apply goes on.
+            if (mx >= closeX && mx < closeX + closeW && my >= closeY && my < closeY + 16) minecraft.setScreen(null);
+            return true;
+        }
         if (drawer != null && drawer.contains(mx, my)) return drawer.click(mx, my, button);
         if (super.mouseClicked(mx, my, button)) return true;
         if (hits.click(mx, my, button)) return true;
