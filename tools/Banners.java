@@ -63,7 +63,7 @@ public class Banners {
         screen(shots, out, "screen_recipes", "mnx_18_recipe_hover", 570, 270, 1915, 1000);
         screen(shots, out, "screen_matrix", "mnx_3_matrix", 215, 48, 925, 760);
         screen(shots, out, "screen_triage", "mnx_7_triage", 225, 60, 1340, 420);
-        screen(shots, out, "screen_process", "mnx_17_route_hover", 215, 55, 1065, 820);
+        screen(shots, out, "screen_process", "mnx_17_route_hover", 215, 55, 1065, 890);
         screen(shots, out, "screen_preview", "mnx_6_preview", 1065, 48, 1915, 420);
         screen(shots, out, "screen_presets", "mnx_9_presets", 675, 55, 1915, 540);
         screen(shots, out, "screen_pending", "mnx_10_pending", 1065, 48, 1915, 360);

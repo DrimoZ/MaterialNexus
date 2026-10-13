@@ -33,7 +33,7 @@ public final class UiShots {
             new Step(562, "form", "rod", ""),
             new Step(700, "process", "", ""),
             new Step(800, "", "", "mnx_5_process"),
-            new Step(801, "mouse", "180,278", ""),
+            new Step(801, "mouse", "180,296", ""),
             new Step(803, "", "", "mnx_17_route_hover"),
             new Step(804, "mouse", "", ""),
             new Step(805, "forms_tab", "", ""),
