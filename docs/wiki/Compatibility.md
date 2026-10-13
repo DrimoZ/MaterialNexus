@@ -23,7 +23,7 @@ it, so the two never do the same job twice:
 | `recipe_disable` | disabling recipes that became duplicates |
 | `viewer_hiding` | hiding alternatives in JEI or EMI |
 
-A domain not listed is left to Almost Unified, and Preview says so. Conversion of items in the world,
+A domain not listed is left to Almost Unified, and the review says so. Conversion of items in the world,
 conversion recipes, process rules and created items are not Almost Unified domains and stay with
 Material Nexus. Note that Almost Unified unifies recipe outputs as the game loads, so Material Nexus
 finds fewer recipes to rewrite even in domains given to it.
@@ -58,7 +58,7 @@ alternative by item id stops matching once that recipe is rewritten; match by ta
 **What your scripts decided is read.** When the game loads, Material Nexus compares the tags your
 data files define with the tags after scripts, and, with KubeJS, reads which recipes the scripts
 replaced, removed or created. It works out which item your scripts keep for each form and offers it
-as a choice, never applies it on its own, and Preview warns when it would keep another item. See
+as a choice, never applies it on its own, and the review warns when it would keep another item. See
 [Modpacks and Multiplayer](Modpacks-and-Multiplayer#a-pack-that-already-unifies-with-scripts).
 
 ## Recipe formats

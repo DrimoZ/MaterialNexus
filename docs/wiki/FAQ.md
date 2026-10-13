@@ -5,13 +5,13 @@ No. Nothing is unified until you decide and press Apply, after the preview. A fr
 analyses.
 
 **My pack already unifies with KubeJS. Will it undo my scripts?**
-No. It reads what your scripts decided and offers the same choices; Preview warns if it would keep
+No. It reads what your scripts decided and offers the same choices; the review warns if it would keep
 another item. Once those choices are applied, the unification lines of your scripts can be deleted
 ([Modpacks and Multiplayer](Modpacks-and-Multiplayer#a-pack-that-already-unifies-with-scripts)).
 
 **Is it like Almost Unified?**
 Both unify. Material Nexus is built around a screen and a preview: you see every duplicate, every
-variant set aside and every recipe it would change before anything happens, and you can undo
+variant left alone and every recipe it would change before anything happens, and you can undo
 anything. It also writes missing machine recipes and creates missing items. The two can run together
 ([Compatibility](Compatibility#almost-unified)).
 
@@ -20,11 +20,11 @@ They become the kept item when the game touches them: dropped, in a container a 
 player's inventory at login. Nothing scans the world.
 
 **Can I undo?**
-Yes, at every step: discard pending changes, put choices back to default, revert the last apply, or
+Yes, at every step: discard what is not applied yet, put choices back to default, revert the last apply, or
 restore any of the last 20 applied states from the history.
 
 **Why is an item not unified with the others of its tag?**
-Hover it: it was set aside, and the reason is given (named as a variant, belongs to another material,
+Select its row: it was left alone, and its card gives the reason (named as a variant, belongs to another material,
 several items from the same mod, marked as not the same, excluded). Click it to keep it anyway, or,
 when the reason is only a guess, mark it [the same item after all](Choosing-Items#the-same-item-after-all).
 
@@ -59,10 +59,10 @@ required.
 No.
 
 **A mod's ingot has no `c:ingots/...` tag, so recipes refuse it. Do I need a script?**
-No. Once Material Nexus recognises it (declare its name pattern in the Data view's **Untagged
+No. Once Material Nexus recognises it (declare its name pattern in the **Untagged
 forms** tab), turn on **Add missing tags** there and Apply: the item joins `c:ingots/<material>`
-and `c:ingots`. Preview lists every tag added.
+and `c:ingots`. The review lists every tag added.
 
 **One item is tagged as the wrong material (or not tagged at all). Can I fix just that item?**
 Yes. Shift + right click it in its form to take it out of that form's tag; to add an item, type its
-id and the form (`tin/ingot`) in the Data view's **Untagged forms** tab. Both apply like any change.
+id and the form (`tin/ingot`) in the **Untagged forms** tab. Both apply like any change.

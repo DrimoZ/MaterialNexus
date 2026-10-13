@@ -18,7 +18,8 @@ The wiki must have been initialised once through the web interface: GitHub does 
 wiki repository until a first page exists.
 
 Images are cut from the store captures (`./gradlew runUiShots -Pstore`, then
-`java tools/Banners.java run-ui/screenshots docs/store-art`) and copied into `images/`.
+`java tools/Banners.java run-ui/screenshots docs/store-art`) and copied into `images/`
+(`cp docs/store-art/screen_*.png docs/store-art/banner.png docs/store-art/items_created.png docs/wiki/images/`).
 
 Pages name no game version on purpose: the mod is meant to exist for several, and each download
 says which one it is for.

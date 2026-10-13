@@ -8,7 +8,7 @@ it as a new item.
 ## Creating one
 
 In **Materials**, a form the material does not have is shown as **Absent**. When Material Nexus can
-create it, the row has **Create item**. Click it (it becomes *Creation pending*), then Preview and
+create it, the row has **Create item**. Click it (it becomes *Creation pending*), then Review and
 Apply, then **restart the game**: items can only be registered at startup.
 
 The new item:

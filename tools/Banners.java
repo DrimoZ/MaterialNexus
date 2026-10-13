@@ -40,10 +40,15 @@ public class Banners {
         out.mkdirs();
         loadFont();
 
+        // The Scripts view needs its own run (-Pstore -Pkubejs, a script in run-ui/kubejs): `java tools/Banners.java <shots> <out> scripts`.
+        if (args.length > 2 && args[2].equals("scripts")) {
+            screen(shots, out, "screen_scripts", "mnx_12_scripts", 215, 55, 1915, 540);
+            return;
+        }
         banner(shots, out, "mnx_3_matrix");
-        header(shots, out, "header_find", "mnx_3_matrix", 0.35, "Finds the duplicates", "Tags and item names, variants set aside");
-        header(shots, out, "header_choose", "mnx_2_material", 0.3, "You choose", "Click, triage with 1-9, or rank the mods");
-        header(shots, out, "header_preview", "mnx_6_preview", 0.2, "Preview, then apply", "Every tag and recipe change, before it is written");
+        header(shots, out, "header_find", "mnx_3_matrix", 0.35, "Finds the duplicates", "Tags and item names, variants left alone");
+        header(shots, out, "header_choose", "mnx_2_material", 0.3, "You choose", "Click, sort with 1-9, or rank the mods");
+        header(shots, out, "header_preview", "mnx_6_preview", 0.2, "Review, then apply", "Every tag and recipe change, before it is written");
         header(shots, out, "header_process", "mnx_5_process", 0.3, "Fills the gaps", "Machine recipes by example, items for missing forms");
         header(shots, out, "header_control", "mnx_8_home_preview", 0.2, "Always reversible", "Discard, back to default, any past state");
         header(shots, out, "header_data", "mnx_11_data", 0.3, "For pack makers", "Rules as data, edited in game, KubeJS bindings");
@@ -51,18 +56,18 @@ public class Banners {
         createdSheet(out, "items_created", "Items it can create, tinted per material", 5);
 
         // Parts of the window, 1:1: x0, y0, x1, y1 in the capture.
-        screen(shots, out, "screen_home", "mnx_1_home", 165, 55, 960, 350);
-        screen(shots, out, "screen_priority", "mnx_1_home", 985, 55, 1690, 440);
-        screen(shots, out, "screen_material", "mnx_2_material", 505, 48, 1355, 740);
-        screen(shots, out, "screen_matrix", "mnx_3_matrix", 160, 48, 1010, 720);
-        screen(shots, out, "screen_triage", "mnx_7_triage", 175, 60, 800, 420);
-        screen(shots, out, "screen_process", "mnx_5_process", 165, 55, 1015, 660);
-        screen(shots, out, "screen_preview", "mnx_6_preview", 1101, 48, 1951, 300);
-        screen(shots, out, "screen_presets", "mnx_9_presets", 160, 60, 1010, 540);
-        screen(shots, out, "screen_pending", "mnx_10_pending", 1101, 48, 1951, 330);
-        screen(shots, out, "screen_data", "mnx_11_data", 160, 48, 1010, 720);
-        // MNX-076: wider, the Keep buttons sit at the right edge (needs -Pkubejs and a script in run-ui/kubejs).
-        if (new File(shots, "mnx_12_scripts.png").exists()) screen(shots, out, "screen_scripts", "mnx_12_scripts", 165, 55, 1985, 540);
+        screen(shots, out, "screen_home", "mnx_1_home", 240, 60, 1165, 330);
+        screen(shots, out, "screen_priority", "mnx_1_home", 1180, 60, 1890, 590);
+        screen(shots, out, "screen_material", "mnx_2_material", 570, 48, 1400, 700);
+        screen(shots, out, "screen_inspector", "mnx_2_material", 1400, 130, 1915, 1000);
+        screen(shots, out, "screen_recipes", "mnx_18_recipe_hover", 570, 270, 1915, 1000);
+        screen(shots, out, "screen_matrix", "mnx_3_matrix", 215, 48, 925, 760);
+        screen(shots, out, "screen_triage", "mnx_7_triage", 225, 60, 1340, 420);
+        screen(shots, out, "screen_process", "mnx_17_route_hover", 215, 55, 1065, 820);
+        screen(shots, out, "screen_preview", "mnx_6_preview", 1065, 48, 1915, 420);
+        screen(shots, out, "screen_presets", "mnx_9_presets", 675, 55, 1915, 540);
+        screen(shots, out, "screen_pending", "mnx_10_pending", 1065, 48, 1915, 360);
+        screen(shots, out, "screen_data", "mnx_11_data", 215, 48, 1215, 700);
     }
 
     /** The top banner: the title large, the logo beside it, on a capture. */

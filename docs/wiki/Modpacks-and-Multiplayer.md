@@ -30,10 +30,10 @@ scripts changed when the game loads: tag entries they removed or added, and reci
 removed or created. From that it works out which item the scripts keep for each material and form.
 Nothing is applied on its own:
 
-1. Install it, scripts untouched. The Home view says how many forms your scripts already decide, and
+1. Install it, scripts untouched. The Overview says how many forms your scripts already decide, and
    how many differ from what Material Nexus would keep.
-2. Open **Scripts**, and **Keep all** (or **Keep** row by row). Each one is a pending choice, like any
-   other. Preview warns about every form where Material Nexus would still keep another item than
+2. Open **Scripts**, and **Keep all** (or **Keep this choice** row by row). Each one is a choice to apply, like any
+   other. The review warns about every form where Material Nexus would still keep another item than
    your scripts.
 3. Apply. Those forms show as **recorded**: their decision now lives in your settings.
 4. Delete the unification lines of your scripts (each row says where: **seen in unify.js:12**,
