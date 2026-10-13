@@ -465,6 +465,8 @@
   "screen.materialnexus.recipes.group.canonical": "Fabriquent déjà l’item gardé (%s)",
   "screen.materialnexus.recipes.group.other": "Fabriquent une variante, laissée telle quelle (%s)",
   "screen.materialnexus.recipes.drawn_by": "Dessinée par %s",
+  "screen.materialnexus.recipes.replaced": "à la place de %s",
+  "screen.materialnexus.process.example": "Une recette du pack. Une règle fait de même pour chaque matériau.",
   "screen.materialnexus.recipes.no_viewer": "Installez JEI pour voir la recette dessinée ici.",
   "screen.materialnexus.recipes.not_loaded": "Cette recette est désactivée : le jeu ne la charge plus et %s ne peut pas la dessiner. Cette liste est le seul endroit où elle apparaît.",
   "screen.materialnexus.recipes.not_drawable": "%s n’a pas de dessin pour cette recette ici.",
