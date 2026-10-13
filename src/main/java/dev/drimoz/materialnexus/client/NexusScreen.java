@@ -171,8 +171,12 @@ public final class NexusScreen extends Screen {
     private void preview() { review(true); }
 
     /** Dev screenshots only ({@link UiShots}): drive the screen like a player would. */
+    /** Captures only (UiShots): where the pointer is said to be, to show what a hover draws. */
+    private int[] devMouse;
+
     void devShow(String which, String arg) {
         switch (which) {
+            case "mouse" -> devMouse = arg.isEmpty() ? null : java.util.Arrays.stream(arg.split(",")).mapToInt(Integer::parseInt).toArray();
             case "material" -> openMaterial(arg);
             case "matrix" -> { form = null; go(View.FORMS); }
             case "form" -> openForm(arg);
@@ -390,6 +394,11 @@ public final class NexusScreen extends Screen {
 
     @Override
     public void render(GuiGraphics g, int mx, int my, float partialTick) {
+        if (devMouse == null) draw(g, mx, my, partialTick);
+        else draw(g, devMouse[0], devMouse[1], partialTick);
+    }
+
+    private void draw(GuiGraphics g, int mx, int my, float partialTick) {
         hits.clear();
         g.fill(0, 0, width, height, Theme.BG);
         g.fill(0, 0, width, TOP, Theme.SURFACE);

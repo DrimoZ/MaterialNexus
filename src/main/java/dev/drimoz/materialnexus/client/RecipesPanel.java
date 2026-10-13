@@ -78,8 +78,7 @@ final class RecipesPanel {
 
     /** The viewer's name for the machine when it can lay the recipe out, else the recipe type read as words. */
     private static String machine(RecipeFamilies.Row row) {
-        RecipeViewer viewer = RecipeViewer.Slot.current;
-        Optional<RecipeViewer.Layout> layout = viewer == null ? Optional.empty() : viewer.layout(row.recipe());
+        Optional<RecipeViewer.Layout> layout = RecipeHover.layout(row.recipe());
         if (layout.isPresent()) return layout.get().title().getString();
         String words = row.type().getPath().replace('_', ' ').replace('/', ' ');
         return words.isEmpty() ? row.type().toString() : Character.toUpperCase(words.charAt(0)) + words.substring(1);
@@ -131,6 +130,7 @@ final class RecipesPanel {
         boolean inList = my >= top && my < bottom && mx >= x && mx < x + tw;
         g.enableScissor(x, top, x + tw, bottom);
         int ry = top - (int) scroll;
+        RecipeFamilies.Row hovered = null;
         for (Status status : ORDER) {
             List<RecipeFamilies.Row> rows = family.rows().stream().filter(r -> r.status() == status).toList();
             if (rows.isEmpty()) continue;
@@ -146,6 +146,8 @@ final class RecipesPanel {
                     String name = machine(row);
                     g.drawString(font, font.plainSubstrByWidth(name, tw / 2 - 44), x + 40, ry + 7 + Theme.ROW_PAD, Theme.TEXT, false);
                     g.drawString(font, font.plainSubstrByWidth(Names.withMod(row.output()).getString(), tw / 2 - 12), x + tw / 2, ry + 7 + Theme.ROW_PAD, Theme.MUTED, false);
+                    // The selected row is already drawn in the inspector.
+                    if (hover && !(wide && row == selected)) hovered = row;
                     if (inList) hits.add(x, ry, tw - 6, Theme.ROW_ITEM, () -> selected = row, null, List.of(Component.literal(row.recipe().toString()).withColor(Theme.TIP_FAINT)));
                 }
                 ry += Theme.ROW_ITEM;
@@ -161,27 +163,30 @@ final class RecipesPanel {
             g.fill(x + tw - 4, top + at, x + tw, top + at + bar, Theme.CTRL);
         }
         if (wide && selected != null) inspector(g, font, selected, x + tw + 12, top, iw, bottom - top, mx, my);
-        hits.tooltip(g, font, mx, my);
+        // MNX-088: the hovered recipe next to the pointer; without a viewer, its id as a tooltip.
+        if (hovered == null || !RecipeHover.draw(g, font, hovered.recipe(), dev.drimoz.materialnexus.client.ui.ScreenSettings.get().showIds() ? Component.literal(hovered.recipe().toString()) : null, mx, my)) hits.tooltip(g, font, mx, my);
+    }
+
+    /** The item this form keeps, as it will be after Apply. */
+    private Optional<ResourceLocation> kept() {
+        return detail.forms().stream().filter(v -> v.form().equals(form)).findFirst()
+                .flatMap(v -> PendingChanges.get(v.material(), v.form()).filter(p -> !p.equals(dev.drimoz.materialnexus.datapack.CanonicalChange.RESET))
+                        .or(() -> v.resolved().canonical()));
     }
 
     /** The recipe as the viewer draws it, then what Material Nexus does to it. */
     private void inspector(GuiGraphics g, Font font, RecipeFamilies.Row row, int ix, int iy, int iw, int ih, int mx, int my) {
         g.fill(ix, iy, ix + iw, iy + ih, Theme.SURFACE);
-        int left = ix + 10;
-        int inner = iw - 20;
+        int left = ix + 12;
+        int inner = iw - 24;
         int cy = iy + 8;
         g.drawString(font, Component.literal(font.plainSubstrByWidth(machine(row), inner)).withStyle(ChatFormatting.BOLD), left, cy, Theme.TEXT, false);
-        cy += 14;
+        cy += 16;
         RecipeViewer viewer = RecipeViewer.Slot.current;
-        Optional<RecipeViewer.Layout> layout = viewer == null ? Optional.empty() : viewer.layout(row.recipe());
+        Optional<RecipeViewer.Layout> layout = RecipeHover.layout(row.recipe());
         if (layout.isPresent()) {
-            // Drawn by the viewer itself: same background, slots and tooltips as in its own screen.
-            RecipeViewer.Layout l = layout.get();
-            int lx = ix + Math.max(4, (iw - l.width()) / 2);
-            g.drawString(font, tr("drawn_by", viewer.name()), left, cy, Theme.FAINT, false);
-            cy += 14;
-            l.draw(g, lx, cy, mx, my);
-            cy += l.height() + 10;
+            // Drawn by the viewer itself, on the tray every recipe of the screen sits on.
+            cy += RecipeHover.stage(g, layout.get(), left, cy, mx, my) + 12;
         } else {
             Component why = viewer == null ? tr("no_viewer") : tr(row.status() == Status.DISABLED ? "not_loaded" : "not_drawable", viewer.name());
             for (var line : font.split(why, inner)) {
@@ -196,11 +201,26 @@ final class RecipesPanel {
             cy += 10;
         }
         cy += 6;
-        Ui.slot(g, row.output(), left, cy, 0, false);
-        g.drawString(font, font.plainSubstrByWidth(Names.withMod(row.output()).getString(), inner - 26), left + 24, cy + 5, Theme.MUTED, false);
-        cy += 26;
-        g.drawString(font, font.plainSubstrByWidth(row.recipe().toString(), inner), left, cy, Theme.FAINT, false);
-        g.drawString(font, font.plainSubstrByWidth(row.type().toString(), inner), left, cy + 10, Theme.FAINT, false);
+        // What no viewer shows: the item the recipe made (or still makes), struck, next to the one it makes once applied.
+        Optional<ResourceLocation> before = row.status() == Status.ALTERNATIVE ? Optional.of(row.output()) : row.replaced();
+        Optional<ResourceLocation> after = row.status() == Status.ALTERNATIVE ? kept() : Optional.of(row.output());
+        if (before.isPresent() && after.isPresent() && !before.equals(after)) {
+            Ui.slot(g, before.get(), left, cy, 0, true);
+            g.fill(left, cy + 8, left + 18, cy + 10, Theme.BAD);
+            g.drawString(font, "→", left + 22, cy + 5, Theme.MUTED, false);
+            Ui.slot(g, after.get(), left + 34, cy, 0, false);
+            g.drawString(font, font.plainSubstrByWidth(Names.withMod(after.get()).getString(), inner - 58), left + 58, cy, Theme.TEXT, false);
+            g.drawString(font, font.plainSubstrByWidth(tr("replaced", Names.withMod(before.get())).getString(), inner - 58), left + 58, cy + 10, Theme.MUTED, false);
+        } else {
+            Ui.slot(g, row.output(), left, cy, 0, false);
+            g.drawString(font, font.plainSubstrByWidth(Names.withMod(row.output()).getString(), inner - 26), left + 24, cy + 5, Theme.MUTED, false);
+        }
+        cy += 28;
+        // MNX-101: technical ids are a setting.
+        if (dev.drimoz.materialnexus.client.ui.ScreenSettings.get().showIds()) {
+            g.drawString(font, font.plainSubstrByWidth(row.recipe().toString(), inner), left, cy, Theme.FAINT, false);
+            g.drawString(font, font.plainSubstrByWidth(row.type().toString(), inner), left, cy + 10, Theme.FAINT, false);
+        }
         if (viewer != null) {
             Component open = tr("open", viewer.name());
             int bw = font.width(open) + 12;

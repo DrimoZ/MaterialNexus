@@ -81,8 +81,24 @@ final class ProcessPanel {
         return new ProcessRules.Route(r.machine(), r.input(), Math.clamp(in, 1, 64), Math.clamp(out, 1, 64));
     }
 
-    /** "modern_industrialization:forge_hammer" reads "Forge hammer": the recipe type is the only name the server has. */
-    private static String machine(ResourceLocation id) {
+    /** A recipe of the pack that follows this route, or the same machine and input (MNX-088); null when the server found none. */
+    private ResourceLocation sample(ProcessRules.Route route) {
+        List<ProcessRules.Route> routes = payload.examples().routes();
+        int at = routes.indexOf(route);
+        for (int i = 0; at < 0 && i < routes.size(); i++) {
+            if (routes.get(i).machine().equals(route.machine()) && routes.get(i).input().equals(route.input())) at = i;
+        }
+        return at >= 0 && at < payload.samples().size() ? payload.samples().get(at) : null;
+    }
+
+    /** The viewer's name for the machine when it can draw one of its recipes; else "modern_industrialization:forge_hammer" reads "Forge hammer". */
+    private String machine(ResourceLocation id) {
+        List<ProcessRules.Route> routes = payload.examples().routes();
+        for (int i = 0; i < routes.size() && i < payload.samples().size(); i++) {
+            if (!routes.get(i).machine().equals(id)) continue;
+            var layout = RecipeHover.layout(payload.samples().get(i));
+            if (layout.isPresent()) return layout.get().title().getString();
+        }
         String text = id.getPath().replace('_', ' ').replace('/', ' ');
         return text.isEmpty() ? id.toString() : Character.toUpperCase(text.charAt(0)) + text.substring(1);
     }
@@ -101,6 +117,7 @@ final class ProcessPanel {
         ProcessRules.Rule rule = rule();
         boolean pending = PendingChanges.process(payload.form()).isPresent();
         int cy = y + 4;
+        ResourceLocation hovered = null;
 
         if (pending) {
             g.renderOutline(x, cy + 1, 6, 6, Theme.INFO);
@@ -132,6 +149,7 @@ final class ProcessPanel {
             ProcessRules.Route route = rule.routes().get(i);
             int index = i;
             g.fill(x, cy, x + width, cy + ROW - 2, Theme.SURFACE);
+            if (mx >= x && mx < inX - 8 && my >= cy && my < cy + ROW - 2) hovered = sample(route);
             String name = machine(route.machine());
             g.drawString(font, font.plainSubstrByWidth(name, inX - x - 16), x + 6, cy + 5, Theme.TEXT, false);
             g.drawString(font, font.plainSubstrByWidth(" · " + NexusScreen.modName(route.machine().getNamespace()), inX - x - 16 - font.width(name)),
@@ -179,6 +197,7 @@ final class ProcessPanel {
             ly += 16;
             for (ProcessRules.Route e : entry.getValue()) {
                 if (ly + ROW > foundTop && ly < bottom) {
+                    if (mx >= x + 18 && mx < x + width - 80 && my >= Math.max(ly, foundTop) && my < Math.min(ly + ROW, bottom)) hovered = sample(e);
                     g.drawString(font, tr("variant", e.in(), Names.form(e.input().name()), e.out(), formName), x + 18, ly + 5, Theme.MUTED, false);
                     if (!readOnly && ly >= foundTop && ly + ROW <= bottom) {
                         Component add = tr("add");
@@ -203,6 +222,8 @@ final class ProcessPanel {
             int at = (int) (scroll * (view - bar) / (foundContent - view));
             g.fill(x + width - 4, foundTop + at, x + width, foundTop + at + bar, Theme.CTRL);
         }
+        // MNX-088: a route is a rule for every material; the box shows one real recipe of the pack and says so.
+        if (hovered != null) RecipeHover.draw(g, font, hovered, tr("example"), mx, my);
     }
 
     private int toggle(GuiGraphics g, Font font, int cy, int mx, int my, boolean on, Component label, Component consequence, Runnable action) {

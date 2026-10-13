@@ -27,6 +27,8 @@ public enum Theme {
     public static int BG, SURFACE, RAISED, SEL, BORDER, CTRL, WELL, TEXT, MUTED, FAINT, OK, WARN, BAD, INFO, ON, ACCENT;
 
     /** Text colours inside tooltips (RGB): the vanilla tooltip is dark in every theme, so these do not follow it. */
+    /** The grey inside a vanilla slot, the same in every theme: what a recipe viewer's slots and texts are made to sit on (MNX-088). */
+    public static final int TRAY = 0xFF8B8B8B;
     public static final int TIP_MUTED = 0xAAAAAA, TIP_FAINT = 0x888888, TIP_INFO = 0x88AACC, TIP_BAD = 0xCC8888;
 
     /** Spacing is one of 2, 4, 8, 12, 16, 24; heights are these. */

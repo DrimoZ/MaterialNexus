@@ -22,7 +22,8 @@ import java.util.Set;
 public final class RecipeFamilies {
     public enum Status { CANONICAL, ALTERNATIVE, OTHER, REWRITTEN, DISABLED, UNSUPPORTED }
 
-    public record Row(ResourceLocation recipe, ResourceLocation type, ResourceLocation output, Status status) { }
+    /** {@code replaced}: for a rewritten recipe, the alternative it made before Material Nexus (MNX-088). */
+    public record Row(ResourceLocation recipe, ResourceLocation type, ResourceLocation output, Status status, java.util.Optional<ResourceLocation> replaced) { }
 
     private RecipeFamilies() { }
 
@@ -43,7 +44,7 @@ public final class RecipeFamilies {
         for (PackContent.Effect e : manifest) {
             if (e.kind().equals(RecipeRewrites.REWRITE)) rewritten.add(e.target());
             if (e.kind().equals(RecipeRewrites.DISABLE) && members.contains(e.item())) {
-                rows.add(new Row(e.target(), ResourceLocation.fromNamespaceAndPath("materialnexus", "disabled"), e.item(), Status.DISABLED));
+                rows.add(new Row(e.target(), ResourceLocation.fromNamespaceAndPath("materialnexus", "disabled"), e.item(), Status.DISABLED, java.util.Optional.empty()));
             }
         }
 
@@ -64,7 +65,10 @@ public final class RecipeFamilies {
                         : form.canonical().map(output::equals).orElse(false) ? Status.CANONICAL
                         : alternatives.contains(output) ? (known ? Status.ALTERNATIVE : Status.UNSUPPORTED)
                         : Status.OTHER;
-                rows.add(new Row(holder.id(), type == null ? holder.id() : type, output, status));
+                java.util.Optional<ResourceLocation> replaced = status != Status.REWRITTEN ? java.util.Optional.empty()
+                        : RecipeSources.originalJson(server.getResourceManager(), holder.id()).stream()
+                                .flatMap(json -> RecipeRewrites.outputIds(json, formats).stream()).filter(alternatives::contains).findFirst();
+                rows.add(new Row(holder.id(), type == null ? holder.id() : type, output, status, replaced));
                 break;
             }
         }
