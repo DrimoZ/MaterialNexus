@@ -110,20 +110,27 @@ final class DataPanel {
         if (selected == null) return;
         int ex = x + side + 8;
         String key = selected.id().toString();
-        MultiLineEditBox editor = new MultiLineEditBox(font, ex, y + 92, x + w - ex - 8, h - 92 - 28, Component.empty(), Component.empty());
+        // MNX-100: capped in width (a wide JSON editor is mostly empty), with room under it for what is wrong with the text.
+        MultiLineEditBox editor = new dev.drimoz.materialnexus.client.ui.Editor(font, ex, y + 92, Math.min(x + w - ex - 8, 600), h - 92 - 42);
         editor.setCharacterLimit(EditableData.MAX_TEXT);
         editor.setValue(draft != null ? draft : PendingChanges.data(selected.kind(), key).map(t -> t.orElse(loadedText)).orElse(loadedText));
-        editor.setValueListener(v -> draft = v);
         add.accept(editor);
 
         int bx = ex;
         int bw = 130;
-        add.accept(Btn.of(Component.translatable("screen.materialnexus.data.keep"), b -> {
+        Button keep = Btn.of(Component.translatable("screen.materialnexus.data.keep"), b -> {
             if (editor.getValue().equals(loadedText)) PendingChanges.clearData(selected.kind(), key);
             else PendingChanges.setData(selected.kind(), key, Optional.of(editor.getValue()));
             draft = null;
             rebuild.run();
-        }).bounds(bx, y + h - 22, bw, 18).build());
+        }).bounds(bx, y + h - 22, bw, 18).build();
+        // Text that does not read as JSON cannot be kept: the reason is written under the editor.
+        keep.active = dev.drimoz.materialnexus.client.ui.Editor.jsonError(editor.getValue()).isEmpty();
+        editor.setValueListener(v -> {
+            draft = v;
+            keep.active = dev.drimoz.materialnexus.client.ui.Editor.jsonError(v).isEmpty();
+        });
+        add.accept(keep);
         add.accept(active(Btn.of(Component.translatable("screen.materialnexus.data.discard"), b -> {
             PendingChanges.clearData(selected.kind(), key);
             draft = null;
@@ -133,7 +140,7 @@ final class DataPanel {
             PendingChanges.setData(selected.kind(), key, Optional.empty());
             draft = null;
             rebuild.run();
-        }).bounds(bx + 2 * (bw + 4), y + h - 22, bw, 18).build();
+        }).kind(Btn.Kind.DANGER).bounds(bx + 2 * (bw + 4), y + h - 22, bw, 18).build();
         original.active = selectedEdited;
         original.setTooltip(net.minecraft.client.gui.components.Tooltip.create(Component.translatable("screen.materialnexus.data.original.tooltip")));
         add.accept(original);
@@ -268,7 +275,7 @@ final class DataPanel {
         }
         g.fill(x + 8, ty + 16, x + w - 8, ty + 17, Theme.BORDER);
         Component intro = Component.translatable(untagged ? "screen.materialnexus.data.untagged_intro" : "screen.materialnexus.data.intro");
-        g.drawString(font, font.plainSubstrByWidth(intro.getString(), w - 24), x + 12, y + 44, Theme.FAINT, false);
+        g.drawString(font, font.plainSubstrByWidth(intro.getString(), w - 24), x + 12, y + 44, Theme.MUTED, false);
         if (list == null) {
             g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x + 12, y + 64, Theme.MUTED, false);
             return;
@@ -315,8 +322,10 @@ final class DataPanel {
                     int dot = status(item) == 2 ? Theme.INFO : status(item) == 1 ? Theme.OK : 0;
                     if (dot != 0) g.fill(x + 10, ry + 4, x + 14, ry + 8, dot);
                     // The mod's own files are most of the list: their namespace is implied, others show it.
-                    String label = item.id().getNamespace().equals(dev.drimoz.materialnexus.MaterialNexus.MOD_ID) ? item.id().getPath()
-                            : item.id().getPath() + " · " + item.id().getNamespace();
+                    // Read as words; the full id is in the tooltip and above the editor.
+                    String words = item.id().getPath().replace("_", " ");
+                    String label = item.id().getNamespace().equals(dev.drimoz.materialnexus.MaterialNexus.MOD_ID) ? words
+                            : words + " · " + item.id().getNamespace();
                     g.drawString(font, font.plainSubstrByWidth(label, side - 30), x + 18, ry + 2, isSelected ? Theme.TEXT : Theme.MUTED, false);
                     if (my >= top && my < bottom) {
                         hits.add(x + 4, ry, side - 6, ROW, () -> select(item), null,
@@ -352,7 +361,10 @@ final class DataPanel {
         Ui.pill(g, font, Component.translatable(s == 2 ? "screen.materialnexus.data.status.pending" : s == 1 ? "screen.materialnexus.data.status.edited"
                 : "screen.materialnexus.data.status.original"), x + w - 8 - pillWidth(font, s), y + 62, s == 2 ? Theme.INFO : s == 1 ? Theme.OK : Theme.FAINT);
         g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.data.kind." + kind.key + ".desc").getString(), x + w - ex - 8),
-                ex, y + 78, Theme.FAINT, false);
+                ex, y + 78, Theme.MUTED, false);
+        String text = draft != null ? draft : PendingChanges.data(selected.kind(), selected.id().toString()).map(t -> t.orElse(loadedText)).orElse(loadedText);
+        dev.drimoz.materialnexus.client.ui.Editor.jsonError(text).ifPresent(error -> g.drawString(font,
+                font.plainSubstrByWidth(Component.translatable("screen.materialnexus.data.invalid", error).getString(), x + w - ex - 8), ex, y + h - 36, Theme.BAD, false));
     }
 
     private static int pillWidth(Font font, int status) {

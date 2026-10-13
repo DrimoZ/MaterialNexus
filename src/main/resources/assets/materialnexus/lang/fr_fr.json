@@ -305,7 +305,7 @@
   "screen.materialnexus.reset.here.tooltip": "Chaque choix enregistré affiché ici revient par défaut (en attente jusqu'à Vérifier et appliquer)",
   "screen.materialnexus.reset.all": "Tout remettre par défaut",
   "screen.materialnexus.reset.all.tooltip": "Chaque choix enregistré, les items marqués pas le même, les recettes de conversion et les règles de process reviennent par défaut. La priorité des mods est gardée (elle a son propre reset). En attente jusqu'à Vérifier et appliquer ; Annuler le dernier Apply le défait. Les items créés restent.",
-  "screen.materialnexus.data.intro": "Les fichiers où Material Nexus lit ses règles. Votre modification est enregistrée comme votre version (config/materialnexus/policies/data) et passe avant celle du mod ; Retour à l'original la retire.",
+  "screen.materialnexus.data.intro": "Les fichiers où Material Nexus lit ses règles. Votre version remplace celle du mod ; rien n’est écrit avant l’application.",
   "screen.materialnexus.data.untagged_count": "Formes sans tag (%s)",
   "screen.materialnexus.data.untagged_none": "Chaque item nommé comme une forme est reconnu.",
   "screen.materialnexus.data.tag_add": "Ajouter à son tag",
@@ -448,5 +448,6 @@
   "screen.materialnexus.presets.col.now": "Actuel",
   "screen.materialnexus.presets.col.preset": "Avec ce préréglage",
   "screen.materialnexus.presets.unchanged": "inchangé",
-  "screen.materialnexus.presets.use_effect": "change %s réglages, à vérifier ; rien n’est appliqué pour l’instant"
+  "screen.materialnexus.presets.use_effect": "change %s réglages, à vérifier ; rien n’est appliqué pour l’instant",
+  "screen.materialnexus.data.invalid": "JSON invalide, ne peut pas être gardé : %s"
 }
