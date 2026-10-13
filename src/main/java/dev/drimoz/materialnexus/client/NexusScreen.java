@@ -682,6 +682,28 @@ public final class NexusScreen extends Screen {
             sx += bw;
         }
         y += 34;
+        // MNX-107: the soft templates are a resource pack of the mod; this is the same switch as the game's pack screen.
+        var packs = minecraft.getResourcePackRepository();
+        String softPack = packs.getAvailableIds().stream().filter(id -> id.endsWith("soft_templates")).findFirst().orElse(null);
+        if (softPack != null) {
+            g.drawString(font, tr("settings.templates"), x, y, Theme.MUTED, false);
+            y += 14;
+            boolean softNow = packs.getSelectedIds().contains(softPack);
+            int tx = x;
+            for (boolean value : new boolean[] {false, true}) {
+                Component label = tr(value ? "settings.templates.soft" : "settings.templates.contrasted");
+                int bw = font.width(label) + 16;
+                boolean over = mx >= tx && mx < tx + bw && my >= y && my < y + 18;
+                g.fill(tx, y, tx + bw, y + 18, value == softNow ? Theme.SEL : over ? Theme.RAISED : Theme.SURFACE);
+                g.drawString(font, label, tx + 8, y + 5, value == softNow || over ? Theme.TEXT : Theme.MUTED, false);
+                hits.add(tx, y, bw, 18, () -> {
+                    // Saves the choice with the game's options and reloads the textures.
+                    if (value ? packs.addPack(softPack) : packs.removePack(softPack)) minecraft.options.updateResourcePacks(packs);
+                }, null, List.of());
+                tx += bw;
+            }
+            y += 34;
+        }
         g.drawString(font, tr("settings.display"), x, y, Theme.MUTED, false);
         y += 16;
         ScreenSettings.Values now = ScreenSettings.get();
