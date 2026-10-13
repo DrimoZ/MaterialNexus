@@ -117,6 +117,7 @@ public final class MnxJeiPlugin implements IModPlugin {
                     @Override public int width() { return drawable.getRect().getWidth(); }
                     @Override public int height() { return drawable.getRect().getHeight(); }
                     @Override public net.minecraft.network.chat.Component title() { return category.getTitle(); }
+                    @Override public boolean framed() { return true; }
 
                     @Override
                     public void draw(net.minecraft.client.gui.GuiGraphics g, int x, int y, int mouseX, int mouseY) {

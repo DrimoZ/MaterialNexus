@@ -164,7 +164,7 @@ final class RecipesPanel {
         }
         if (wide && selected != null) inspector(g, font, selected, x + tw + 12, top, iw, bottom - top, mx, my);
         // MNX-088: the hovered recipe next to the pointer; without a viewer, its id as a tooltip.
-        if (hovered == null || !RecipeHover.draw(g, font, hovered.recipe(), Component.literal(hovered.recipe().toString()), mx, my)) hits.tooltip(g, font, mx, my);
+        if (hovered == null || !RecipeHover.draw(g, font, hovered.recipe(), dev.drimoz.materialnexus.client.ui.ScreenSettings.get().showIds() ? Component.literal(hovered.recipe().toString()) : null, mx, my)) hits.tooltip(g, font, mx, my);
     }
 
     /** The item this form keeps, as it will be after Apply. */
@@ -177,21 +177,16 @@ final class RecipesPanel {
     /** The recipe as the viewer draws it, then what Material Nexus does to it. */
     private void inspector(GuiGraphics g, Font font, RecipeFamilies.Row row, int ix, int iy, int iw, int ih, int mx, int my) {
         g.fill(ix, iy, ix + iw, iy + ih, Theme.SURFACE);
-        int left = ix + 10;
-        int inner = iw - 20;
+        int left = ix + 12;
+        int inner = iw - 24;
         int cy = iy + 8;
         g.drawString(font, Component.literal(font.plainSubstrByWidth(machine(row), inner)).withStyle(ChatFormatting.BOLD), left, cy, Theme.TEXT, false);
-        cy += 14;
+        cy += 16;
         RecipeViewer viewer = RecipeViewer.Slot.current;
         Optional<RecipeViewer.Layout> layout = RecipeHover.layout(row.recipe());
         if (layout.isPresent()) {
-            // Drawn by the viewer itself: same background, slots and tooltips as in its own screen.
-            RecipeViewer.Layout l = layout.get();
-            int lx = ix + Math.max(4, (iw - l.width()) / 2);
-            g.drawString(font, tr("drawn_by", viewer.name()), left, cy, Theme.FAINT, false);
-            cy += 14;
-            l.draw(g, lx, cy, mx, my);
-            cy += l.height() + 10;
+            // Drawn by the viewer itself, on the tray every recipe of the screen sits on.
+            cy += RecipeHover.stage(g, layout.get(), left, cy, mx, my) + 12;
         } else {
             Component why = viewer == null ? tr("no_viewer") : tr(row.status() == Status.DISABLED ? "not_loaded" : "not_drawable", viewer.name());
             for (var line : font.split(why, inner)) {
@@ -220,9 +215,12 @@ final class RecipesPanel {
             Ui.slot(g, row.output(), left, cy, 0, false);
             g.drawString(font, font.plainSubstrByWidth(Names.withMod(row.output()).getString(), inner - 26), left + 24, cy + 5, Theme.MUTED, false);
         }
-        cy += 26;
-        g.drawString(font, font.plainSubstrByWidth(row.recipe().toString(), inner), left, cy, Theme.FAINT, false);
-        g.drawString(font, font.plainSubstrByWidth(row.type().toString(), inner), left, cy + 10, Theme.FAINT, false);
+        cy += 28;
+        // MNX-101: technical ids are a setting.
+        if (dev.drimoz.materialnexus.client.ui.ScreenSettings.get().showIds()) {
+            g.drawString(font, font.plainSubstrByWidth(row.recipe().toString(), inner), left, cy, Theme.FAINT, false);
+            g.drawString(font, font.plainSubstrByWidth(row.type().toString(), inner), left, cy + 10, Theme.FAINT, false);
+        }
         if (viewer != null) {
             Component open = tr("open", viewer.name());
             int bw = font.width(open) + 12;

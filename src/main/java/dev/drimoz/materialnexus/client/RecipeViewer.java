@@ -29,6 +29,9 @@ public interface RecipeViewer {
         Component title();
 
         void draw(GuiGraphics g, int x, int y, int mouseX, int mouseY);
+
+        /** True when the viewer paints its own panel behind the recipe (JEI); otherwise the screen gives it one. */
+        default boolean framed() { return false; }
     }
 
     /** "JEI", "EMI". */
