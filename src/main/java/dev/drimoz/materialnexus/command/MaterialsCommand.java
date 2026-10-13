@@ -37,8 +37,9 @@ public final class MaterialsCommand {
             var policy = dev.drimoz.materialnexus.datapack.PolicyFiles.load(dev.drimoz.materialnexus.datapack.MnxPaths.policies());
             java.util.SortedMap<net.minecraft.resources.ResourceLocation, java.util.TreeSet<net.minecraft.resources.ResourceLocation>> missingTags = new java.util.TreeMap<>();
             dev.drimoz.materialnexus.datapack.PackContent.missingTags(snapshot.materials(), policy, snapshot.conventionTags(), missingTags);
+            var recipes = recipeJson(source.getServer());
             java.nio.file.Files.writeString(file, dev.drimoz.materialnexus.diagnostics.DiagnosticsReport.build(snapshot, missing, untagged,
-                            tagAudit(source.getServer()), missingTags, policy.addMissingTags()),
+                            tagAudit(source.getServer(), recipes), missingTags, policy.addMissingTags(), unhandled(source.getServer(), snapshot, recipes)),
                     java.nio.charset.StandardCharsets.UTF_8);
         } catch (java.io.IOException | RuntimeException e) {
             source.sendFailure(Component.translatable("message.materialnexus.report_failed", e.getMessage()));
@@ -49,13 +50,32 @@ public final class MaterialsCommand {
     }
 
     /** MNX-080: the tags every loaded recipe asks for, from its JSON file (recipes scripts made in memory have none). */
-    private static dev.drimoz.materialnexus.diagnostics.TagAudit.Result tagAudit(net.minecraft.server.MinecraftServer server) {
-        var items = server.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.ITEM);
+    private static java.util.Map<net.minecraft.resources.ResourceLocation, com.google.gson.JsonElement> recipeJson(net.minecraft.server.MinecraftServer server) {
         java.util.Map<net.minecraft.resources.ResourceLocation, com.google.gson.JsonElement> recipes = new java.util.HashMap<>();
         // ponytail: reads every recipe file (~0.5 s on 13k recipes); /materials report only, an explicit command.
         for (var holder : server.getRecipeManager().getRecipes()) {
             dev.drimoz.materialnexus.datapack.RecipeSources.originalJson(server.getResourceManager(), holder.id()).ifPresent(json -> recipes.put(holder.id(), json));
         }
+        return recipes;
+    }
+
+    /** MNX-090: recipe types no format covers, by how many of their recipes name a material item. */
+    private static java.util.List<dev.drimoz.materialnexus.diagnostics.UnhandledTypes.Row> unhandled(net.minecraft.server.MinecraftServer server,
+            dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot snapshot, java.util.Map<net.minecraft.resources.ResourceLocation, com.google.gson.JsonElement> recipes) {
+        var formats = dev.drimoz.materialnexus.integration.RecipeFormats.load(server.getResourceManager());
+        java.util.Set<net.minecraft.resources.ResourceLocation> items = new java.util.HashSet<>();
+        java.util.Set<net.minecraft.resources.ResourceLocation> alternatives = new java.util.HashSet<>();
+        snapshot.materials().values().forEach(m -> m.forms().values().forEach(f -> {
+            f.canonical().ifPresent(items::add);
+            f.notUnified().forEach(n -> items.add(n.item()));
+            alternatives.addAll(f.alternatives());
+        }));
+        items.addAll(alternatives);
+        return dev.drimoz.materialnexus.diagnostics.UnhandledTypes.rank(recipes, type -> formats.forType(type).isPresent(), items, alternatives);
+    }
+
+    private static dev.drimoz.materialnexus.diagnostics.TagAudit.Result tagAudit(net.minecraft.server.MinecraftServer server, java.util.Map<net.minecraft.resources.ResourceLocation, com.google.gson.JsonElement> recipes) {
+        var items = server.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.ITEM);
         return dev.drimoz.materialnexus.diagnostics.TagAudit.of(recipes,
                 tag -> items.getTag(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag)).map(t -> t.size() > 0).orElse(false),
                 dev.drimoz.materialnexus.core.discovery.TagDiscovery::isFolder);
