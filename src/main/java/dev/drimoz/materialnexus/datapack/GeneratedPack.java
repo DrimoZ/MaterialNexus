@@ -44,6 +44,10 @@ public final class GeneratedPack {
         if (event.getPackType() == PackType.CLIENT_RESOURCES) {
             // MNX-039: the created items' models live in the same pack, so the client loads it as a resource pack too.
             if (prepareItems(items)) add(event, ITEMS_PACK_ID, items, PackType.CLIENT_RESOURCES);
+            // MNX-107: the templates as drawn, before their levels were stretched; off unless the player picks it.
+            event.addPackFinders(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("materialnexus", "resourcepacks/soft_templates"),
+                    PackType.CLIENT_RESOURCES, Component.translatable("materialnexus.pack.soft_templates"), PackSource.BUILT_IN,
+                    false, Pack.Position.TOP);
             return;
         }
         if (event.getPackType() != PackType.SERVER_DATA) return;

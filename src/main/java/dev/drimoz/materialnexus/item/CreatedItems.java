@@ -40,7 +40,9 @@ public final class CreatedItems {
             new FormId("bolt"), new FormId("ring"), new FormId("tiny_dust"), new FormId("gem"),
             // MNX-065: the other item forms the tag folders know (blocks and ores would need registered blocks).
             new FormId("raw"), new FormId("crystal"), new FormId("shard"), new FormId("clump"), new FormId("dirty_dust"),
-            new FormId("curved_plate"), new FormId("blade"), new FormId("rotor"), new FormId("drill_head"), new FormId("fine_wire"));
+            new FormId("curved_plate"), new FormId("blade"), new FormId("rotor"), new FormId("drill_head"), new FormId("fine_wire"),
+            // MNX-107: sheet has its template too, but is not offered until its relation to plate is a setting.
+            new FormId("double_plate"));
     private static final Logger LOGGER = LogUtils.getLogger();
     private static final FormId INGOT = new FormId("ingot");
     private static final FormId GEM = new FormId("gem");
