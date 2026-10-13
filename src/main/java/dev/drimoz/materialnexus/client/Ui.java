@@ -80,6 +80,11 @@ final class Ui {
         return w;
     }
 
+    /** {@code text} cut to {@code width} with an ellipsis, so a cut name never reads as a whole one. */
+    static String fit(Font font, String text, int width) {
+        return font.width(text) <= width ? text : font.plainSubstrByWidth(text, Math.max(0, width - font.width("…"))) + "…";
+    }
+
     /** A flat button drawn by a panel that handles its own clicks; {@code primary} is the view's main action. */
     static void button(GuiGraphics g, Font font, Component label, int x, int y, int w, int h, boolean primary, boolean over, boolean active) {
         int fill = !active ? Theme.RAISED : primary ? (over ? Theme.mix(Theme.ACCENT, Theme.TEXT, 0.18f) : Theme.ACCENT) : over ? Theme.SEL : Theme.RAISED;

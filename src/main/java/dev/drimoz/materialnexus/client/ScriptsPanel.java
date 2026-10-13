@@ -94,7 +94,7 @@ final class ScriptsPanel {
 
         // Beside the table when there is room, under it otherwise.
         boolean wide = w >= 760;
-        int iw = wide ? 320 : w;
+        int iw = wide ? 300 : w;
         int ih = wide ? y + h - ty : Math.min(120, (y + h - ty) / 2);
         int tw = wide ? w - iw - 12 : w;
         int bottom = wide ? y + h : y + h - ih - 8;
@@ -103,8 +103,8 @@ final class ScriptsPanel {
         }
 
         int c2 = x + Math.clamp(tw / 4, 110, 170);
-        int c3 = c2 + (tw - (c2 - x) - 150) / 2;
-        int c4 = x + tw - 150;
+        int c3 = c2 + (tw - (c2 - x) - 100) / 2;
+        int c4 = x + tw - 100;
         g.drawString(font, tr("col.form"), x + 16, ty + 4, Theme.MUTED, false);
         g.drawString(font, tr("col.scripts"), c2, ty + 4, Theme.MUTED, false);
         g.drawString(font, font.plainSubstrByWidth(tr("col.ours").getString(), c4 - c3 - 4), c3, ty + 4, Theme.MUTED, false);
@@ -144,27 +144,30 @@ final class ScriptsPanel {
         Component title = Component.translatable("screen.materialnexus.triage.item", Names.material(r.material()), Names.form(r.form()));
         g.drawString(font, font.plainSubstrByWidth(title.getString(), c2 - x - 20), x + 16, ry + 7, Theme.TEXT, false);
         r.kept().ifPresent(item -> {
+            // The form is named in the first column: what tells two items apart here is the mod.
             Ui.slot(g, item, c2, ry + 2, 0, false);
-            g.drawString(font, font.plainSubstrByWidth(Names.withMod(item).getString(), c3 - c2 - 28), c2 + 24, ry + 7, Theme.TEXT, false);
+            g.drawString(font, Ui.fit(font, NexusScreen.modName(item.getNamespace()), c3 - c2 - 28), c2 + 24, ry + 7, Theme.TEXT, false);
         });
         if (r.status() == Status.DIFFERS) {
             if (r.current().isPresent()) {
                 Ui.slot(g, r.current().get(), c3, ry + 2, 0, false);
-                g.drawString(font, font.plainSubstrByWidth(Names.withMod(r.current().get()).getString(), c4 - c3 - 28), c3 + 24, ry + 7, Theme.MUTED, false);
+                g.drawString(font, Ui.fit(font, NexusScreen.modName(r.current().get().getNamespace()), c4 - c3 - 28), c3 + 24, ry + 7, Theme.MUTED, false);
             } else {
                 g.drawString(font, tr("current_none"), c3, ry + 7, Theme.MUTED, false);
             }
         } else if (r.status() == Status.SAME || r.status() == Status.RECORDED) {
             g.drawString(font, tr("same_item"), c3, ry + 7, Theme.FAINT, false);
         }
-        if (!inList) return;
-        hits.add(x, ry, tw - 6, ROW, () -> selected = r, null, List.of());
+        if (inList) hits.add(x, ry, tw - 6, ROW, () -> selected = r, null, List.of());
         if (readOnly || !offered(r)) return;
         if (pending(r)) {
             g.drawString(font, Ui.Status.PENDING.label(), c4, ry + 7, Theme.INFO, false);
         } else {
+            // Always drawn: an action that only appears under the pointer is a hidden one. Clickable only inside the list.
             Component keep = tr("keep");
-            button(g, font, keep, x + tw - 12 - font.width(keep) - 12, ry + 3, mx, my, () -> keep(r));
+            int bx = x + tw - 12 - font.width(keep) - 12;
+            if (inList) button(g, font, keep, bx, ry + 3, mx, my, () -> keep(r));
+            else Ui.button(g, font, keep, bx, ry + 3, font.width(keep) + 12, 16, false, false, true);
         }
     }
 
