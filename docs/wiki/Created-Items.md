@@ -78,5 +78,6 @@ Only the template, on its own layer, is ever tinted: your texture or model keeps
   cannot join.
 - A resource pack can also replace a template for every material at once:
   `assets/materialnexus/textures/item/template/<form>.png` (grayscale, tinted by the game).
-- The mod ships one such pack, off by default: **Material Nexus: soft item templates** in the
-  resource pack screen draws the templates with less contrast.
+- The mod ships one such pack, off by default, drawing the templates with less contrast: pick
+  **Soft** under *Created items* in the screen's Settings (or enable **Material Nexus: soft item
+  templates** in the resource pack screen, it is the same switch).
