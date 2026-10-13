@@ -1,0 +1,26 @@
+{
+  "machine": "thermal:press",
+  "forms": {
+    "gear": {
+      "die": "thermal:press_gear_die"
+    }
+  },
+  "recipe": {
+    "type": "thermal:press",
+    "ingredients": [
+      {
+        "count": "${in}",
+        "${input}": ""
+      },
+      {
+        "item": "${die}"
+      }
+    ],
+    "result": [
+      {
+        "count": "${out}",
+        "item": "${output_item}"
+      }
+    ]
+  }
+}

@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Thermal Series: its machine recipes (press, pulverizer, smelter, sawmill, centrifuge, insolator...) are rewritten like the others, and process rules can write press (plate, gear), pulverizer and smelter recipes. Tinkers' Construct needs nothing: its casting recipes give the item of a tag, so they follow the kept item once the tag is cleaned.
+
 ## 0.2.0
 
 - New logo.

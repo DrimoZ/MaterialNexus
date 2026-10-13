@@ -36,9 +36,12 @@ Checked against the recipes inside the 1.20.1 jars, and by the `shippedProcessTe
 | Immersive Engineering 10.2 | `input: {"base_ingredient": ..., "count": n}` | `result: {"item", "count"}` |
 | Create Crafts & Additions 1.3.3 | `input: ...` | `result: {"item", "count"}` |
 | Create Metallurgy 1.0.1 | as Create | as Create |
+| Thermal 11.0.6 | `ingredient: {"tag", "count": n}`; with a die, `ingredients: [{...}, {"item": die}]` | `result: [{"item", "count"}]` (or `"chance"`) |
 | Vanilla | `ingredient` | crafting `{"item", "count"}`; smelting/blasting a bare id (one item); stonecutting id + top-level `count` |
 
 Modern Industrialization and Oritech have no Forge 1.20.1 build: their process templates are not shipped here.
+Thermal is the reverse: format and templates exist on this branch only (MNX-090), with the `thermalRecipesAreRewritten` GameTest.
+Tinkers' Construct 3.11 needs no format: casting results are tags.
 Their recipe format files stay (they only name recipe types, harmless when absent).
 
 ## Status

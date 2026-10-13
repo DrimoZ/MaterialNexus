@@ -1,0 +1,16 @@
+{
+  "machine": "thermal:smelter",
+  "recipe": {
+    "type": "thermal:smelter",
+    "ingredient": {
+      "count": "${in}",
+      "${input}": ""
+    },
+    "result": [
+      {
+        "count": "${out}",
+        "item": "${output_item}"
+      }
+    ]
+  }
+}

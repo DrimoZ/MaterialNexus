@@ -1,0 +1,6 @@
+{
+  "types": ["thermal:press", "thermal:pulverizer", "thermal:pulverizer_recycle", "thermal:smelter", "thermal:smelter_recycle",
+            "thermal:sawmill", "thermal:centrifuge", "thermal:insolator", "thermal:chiller", "thermal:bottler",
+            "thermal:crystallizer", "thermal:pyrolyzer", "thermal:refinery", "thermal:crucible", "thermal:furnace"],
+  "outputs": ["result"]
+}
