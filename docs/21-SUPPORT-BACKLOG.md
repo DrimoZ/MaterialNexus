@@ -9,8 +9,8 @@ Analysis was done by reading code, docs and the store captures. **Nothing was ru
 
 ## Status (2026-10-13)
 
-All of it is merged in `main` (NeoForge 1.21.1). **Nothing is ported to `forge-1.20.1` yet**, the version the tester
-plays: that port is the next step for this feedback to reach them.
+All of it is merged in `main` (NeoForge 1.21.1) and ported to `forge-1.20.1`, the version the tester plays (MNX-085 to
+MNX-105 carried over, Thermal added there). Both are released as 0.3.0.
 
 | ID | State |
 |---|---|
@@ -18,7 +18,7 @@ plays: that port is the next step for this feedback to reach them.
 | MNX-087 | Done: Start block at the top of the store page, "I want to..." table and FAQ entries in the wiki. To do by hand: paste the description on CurseForge and Modrinth. |
 | MNX-088 | Done, differently: recipes are drawn by JEI or EMI (inspector and next to the pointer, Recipes and How it is made), with the replaced item struck next to the kept one. No renderer of our own. |
 | MNX-089 | Done as the UI redesign (MNX-093 to MNX-104, `22-UI-REDESIGN.md`). Still to ask the tester for the three moments they got stuck. |
-| MNX-090 | Partly: `/materials report` ranks the recipe types no format covers. Thermal and Tinkers have no NeoForge 1.21.1 build on Modrinth: they wait for the 1.20.1 port. |
+| MNX-090 | Done: `/materials report` ranks the recipe types no format covers. On `forge-1.20.1`, Thermal has its format and templates; Tinkers needs none (its casting results are tags). Neither has a NeoForge 1.21.1 build on Modrinth. |
 | MNX-091 | Done, differently: `config/materialnexus/textures/<material>_<form>.png` (resource packs are not loaded yet when the models are written). |
 | MNX-092 | Done: "Declare tag folder" in Rule files, Untagged forms. |
 | Free groups | Still parked. |
