@@ -44,6 +44,7 @@ config/materialnexus/
 | `mod_priority` | mods in order: the first wins every duplicate you have not decided ([Choosing Items](Choosing-Items#mod-priority)) |
 | `conversion_recipes` | forms for which a 1:1 crafting recipe turns each alternative into the kept item |
 | `not_same` | items never unified with the others of their tags |
+| `same` | items set aside on a guess that are the same item after all |
 | `exclude` | `material` or `material/form` never unified |
 | `processes` | process rules per form ([Process Rules](Process-Rules)) |
 | `almost_unified` | which domains Material Nexus handles when Almost Unified is installed ([Compatibility](Compatibility#almost-unified)) |

@@ -68,6 +68,13 @@ Right click an item (or Shift + its number in triage) to say it is not interchan
 others in its tag: it is set aside, with "marked as not the same". It is stored in `not_same` of
 `global.json`. Picking it explicitly still works.
 
+## The same item after all
+
+An item is sometimes set aside on a guess: its name reads like a variant or like another material,
+its mod has several items in the tag, or it also carries a more specific tag. The reason is written
+on its card. When the guess is wrong, press **It is the same item** on that card: the item becomes a
+candidate again, like any other duplicate. It is stored in `same` of `global.json`.
+
 ## Presets
 
 ![Presets](images/screen_presets.png)

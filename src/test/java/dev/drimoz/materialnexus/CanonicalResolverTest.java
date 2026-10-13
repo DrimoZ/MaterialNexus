@@ -146,6 +146,26 @@ class CanonicalResolverTest {
         assertTrue(plate.notUnified().stream().anyMatch(n -> n.item().equals(B) && n.reasonKey().equals("materialnexus.not_unified.not_same")));
     }
 
+    /** MNX-086, from a real pack: an alloy ingot named after its base metal is not that metal; and the player has the last word on a guess. */
+    @Test
+    void aGuessNeedsMembershipAndThePlayerCanOverruleIt() {
+        var rl = (java.util.function.Function<String, ResourceLocation>) ResourceLocation::parse;
+        Map<ResourceLocation, List<ResourceLocation>> tags = Map.of(
+                rl.apply("c:dusts/electrotine"), List.of(rl.apply("projectred_core:electrotine_dust")),
+                rl.apply("c:ingots/electrotine_alloy"), List.of(rl.apply("projectred_core:electrotine_ingot"), rl.apply("koynification:electrotine_alloy_ingot")),
+                rl.apply("c:gems/amethyst"), List.of(rl.apply("minecraft:amethyst_shard"), rl.apply("remin:yellow_amethyst")));
+        var discovered = TagDiscovery.discover(tags);
+        ResolvedForm alloy = CanonicalResolver.resolve(discovered, ResolutionPolicy.NONE).get(new MaterialId("electrotine_alloy")).forms().get(new FormId("ingot"));
+        assertEquals(1, alloy.alternatives().size(), "both ingots are candidates");
+        assertTrue(alloy.notUnified().isEmpty());
+
+        var policy = dev.drimoz.materialnexus.datapack.PolicyFiles.parse(
+                com.google.gson.JsonParser.parseString("{\"same\": [\"remin:yellow_amethyst\"]}"), Map.of());
+        ResolvedForm gem = CanonicalResolver.resolve(discovered, policy).get(new MaterialId("amethyst")).forms().get(new FormId("gem"));
+        assertEquals(List.of(rl.apply("remin:yellow_amethyst")), gem.alternatives());
+        assertTrue(gem.notUnified().isEmpty());
+    }
+
     private static void assertResolved(ResourceLocation expected, PolicyPrecedence source, ResolvedForm actual) {
         assertEquals(expected, actual.canonical().orElseThrow(), actual.reasonKey());
         assertEquals(source, actual.source(), actual.reasonKey());

@@ -128,7 +128,7 @@ final class PendingChanges {
      * is kept (MNX-061): it has its own reset, on the Home view.
      */
     static void resetSettings() {
-        for (String field : List.of("not_same", "conversion_recipes")) setGlobal(field, new com.google.gson.JsonArray());
+        for (String field : List.of("not_same", "same", "conversion_recipes")) setGlobal(field, new com.google.gson.JsonArray());
         setGlobal("add_missing_tags", new com.google.gson.JsonPrimitive(false));
         setGlobal("tag_edits", new com.google.gson.JsonObject());
         if (baseGlobal.get("processes") instanceof com.google.gson.JsonObject rules) {
@@ -140,7 +140,7 @@ final class PendingChanges {
     static List<Map.Entry<net.minecraft.network.chat.Component, Runnable>> globalEdits() {
         List<Map.Entry<net.minecraft.network.chat.Component, Runnable>> out = new java.util.ArrayList<>();
         for (String field : List.copyOf(GLOBAL_PATCH.keySet())) {
-            if (!field.equals("not_same")) {
+            if (!field.equals("not_same") && !field.equals("same")) {
                 net.minecraft.network.chat.Component text = net.minecraft.network.chat.Component.translatableWithFallback(
                         "screen.materialnexus.presets.field." + field, field);
                 out.add(Map.entry(text, () -> GLOBAL_PATCH.remove(field)));
@@ -154,24 +154,33 @@ final class PendingChanges {
             for (String item : changed) {
                 ResourceLocation id = ResourceLocation.tryParse(item);
                 if (id == null) continue;
-                String key = notSame(id) ? "screen.materialnexus.preview_not_same" : "screen.materialnexus.preview_same_again";
-                out.add(Map.entry(net.minecraft.network.chat.Component.translatable(key, Names.stack(id).getHoverName()), () -> toggleNotSame(id)));
+                String key = "screen.materialnexus.preview_" + (field.equals("same") ? (same(id) ? "same" : "same_undone") : notSame(id) ? "not_same" : "same_again");
+                out.add(Map.entry(net.minecraft.network.chat.Component.translatable(key, Names.stack(id).getHoverName()), () -> toggle(field, id)));
             }
         }
         return out;
     }
 
     /** "Not the same item" (MNX-050), as it will be after Apply. */
-    static boolean notSame(ResourceLocation item) {
-        com.google.gson.JsonElement list = global("not_same");
+    static boolean notSame(ResourceLocation item) { return listed("not_same", item); }
+
+    static void toggleNotSame(ResourceLocation item) { toggle("not_same", item); }
+
+    /** "Same item after all" (MNX-086), as it will be after Apply. */
+    static boolean same(ResourceLocation item) { return listed("same", item); }
+
+    static void toggleSame(ResourceLocation item) { toggle("same", item); }
+
+    private static boolean listed(String field, ResourceLocation item) {
+        com.google.gson.JsonElement list = global(field);
         return list != null && list.isJsonArray() && list.getAsJsonArray().contains(new com.google.gson.JsonPrimitive(item.toString()));
     }
 
-    static void toggleNotSame(ResourceLocation item) {
-        com.google.gson.JsonArray list = global("not_same") instanceof com.google.gson.JsonArray a ? a.deepCopy() : new com.google.gson.JsonArray();
+    private static void toggle(String field, ResourceLocation item) {
+        com.google.gson.JsonArray list = global(field) instanceof com.google.gson.JsonArray a ? a.deepCopy() : new com.google.gson.JsonArray();
         com.google.gson.JsonPrimitive id = new com.google.gson.JsonPrimitive(item.toString());
         if (!list.remove(id)) list.add(id);
-        setGlobal("not_same", list);
+        setGlobal(field, list);
     }
 
     /** The pending global.json edits in words, for Preview: items (un)marked as not the same, other fields changed. */
@@ -184,14 +193,16 @@ final class PendingChanges {
                 lines.add(net.minecraft.network.chat.Component.translatable("screen.materialnexus.preview_priority", String.join(" > ", order)));
                 continue;
             }
-            if (!field.equals("not_same")) {
+            if (!field.equals("not_same") && !field.equals("same")) {
                 lines.add(net.minecraft.network.chat.Component.translatable("screen.materialnexus.preview_global", field));
                 continue;
             }
+            String added = "screen.materialnexus.preview_" + (field.equals("same") ? "same" : "not_same");
+            String removed = "screen.materialnexus.preview_" + (field.equals("same") ? "same_undone" : "same_again");
             com.google.gson.JsonArray before = baseGlobal.get(field) instanceof com.google.gson.JsonArray a ? a : new com.google.gson.JsonArray();
             com.google.gson.JsonArray after = GLOBAL_PATCH.getAsJsonArray(field);
-            after.forEach(e -> { if (!before.contains(e)) lines.add(net.minecraft.network.chat.Component.translatable("screen.materialnexus.preview_not_same", e.getAsString())); });
-            before.forEach(e -> { if (!after.contains(e)) lines.add(net.minecraft.network.chat.Component.translatable("screen.materialnexus.preview_same_again", e.getAsString())); });
+            after.forEach(e -> { if (!before.contains(e)) lines.add(net.minecraft.network.chat.Component.translatable(added, e.getAsString())); });
+            before.forEach(e -> { if (!after.contains(e)) lines.add(net.minecraft.network.chat.Component.translatable(removed, e.getAsString())); });
         }
         return lines;
     }

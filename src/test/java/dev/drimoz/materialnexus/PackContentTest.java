@@ -71,7 +71,7 @@ class PackContentTest {
                 ResourceLocation.fromNamespaceAndPath("materialnexus", "pattern/ingots/tin"), List.of(modx),
                 ResourceLocation.fromNamespaceAndPath("materialnexus", "pattern/double_ingots/tin"), List.of(modxDouble));
         var policy = new ResolutionPolicy(List.of(), Map.of(), Map.of(), Map.of(), Set.of(), Set.of(), Set.of(),
-                dev.drimoz.materialnexus.core.policy.AlmostUnified.NONE, dev.drimoz.materialnexus.core.policy.ProcessRules.NONE, Set.of(), true, Map.of());
+                dev.drimoz.materialnexus.core.policy.AlmostUnified.NONE, dev.drimoz.materialnexus.core.policy.ProcessRules.NONE, Set.of(), true, Map.of(), Set.of());
 
         var discovered = TagDiscovery.discover(before);
         var content = PackContent.generate(CanonicalResolver.resolve(discovered, policy), policy,
