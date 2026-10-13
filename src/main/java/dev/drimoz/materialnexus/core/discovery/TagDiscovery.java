@@ -52,6 +52,7 @@ public final class TagDiscovery {
             // Usually untagged; found through item name patterns declared as data (FormPatterns).
             Map.entry("double_ingots", new FormId("double_ingot")),
             Map.entry("large_plates", new FormId("large_plate")),
+            Map.entry("double_plates", new FormId("double_plate")),
             Map.entry("curved_plates", new FormId("curved_plate")),
             Map.entry("bolts", new FormId("bolt")),
             Map.entry("rings", new FormId("ring")),

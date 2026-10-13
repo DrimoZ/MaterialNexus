@@ -55,3 +55,4 @@
 | MNX-091 | P2 | Texture by file name | `config/materialnexus/textures/<material>_<form>.png` is used for a created item, nothing declared |
 | MNX-092 | P2 | Tag folder as a form | Declared from Rule files, written in the declared patterns file, applied like any change |
 | MNX-093..104 | P1 | UI redesign | Theme roles, shell, tables with inspector, review panel, settings; captures and wiki regenerated (docs/22, docs/07) |
+| MNX-107 | P1 | New default item templates | 25 redrawn templates with stretched levels, double plate as a form, the drawings as an optional "soft" resource pack; sheet template shipped, offered once its relation to plate is a setting |
