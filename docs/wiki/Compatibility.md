@@ -84,3 +84,6 @@ unified through tags and in the world in the meantime.
   blades, rotors, drill heads, wires, fine wires), Oritech's small dusts and Realistic Minerals' ores
   are found by shipped name patterns.
 - Coal and charcoal are tagged as gems (`forge:gems/coal`, `forge:gems/charcoal`), as vanilla leaves them untagged.
+- A tag folder no form reads yet (`forge:coils/<material>`) is declared from the screen: Rule files, Untagged forms,
+  type the folder and the form name, **Declare tag folder**. It is read from the next Apply; the same thing by hand
+  is `"folders": {"coils": "coil"}` in a forms file ([Datapack Guide](Datapack-Guide)).
