@@ -1,5 +1,8 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.client.ui.Btn;
+import dev.drimoz.materialnexus.client.ui.Field;
+import dev.drimoz.materialnexus.client.ui.Theme;
 import dev.drimoz.materialnexus.core.policy.ProcessRules;
 import dev.drimoz.materialnexus.network.ProcessPayload;
 import net.minecraft.client.gui.Font;
@@ -112,12 +115,12 @@ final class ProcessPanel {
             add.accept(small("×", bx + 64, ry, () -> editRoute(index, null)));
         }
         int oy = optionsTop();
-        add.accept(Button.builder(toggle("screen.materialnexus.process.exclusive", rule.exclusive()),
+        add.accept(Btn.of(toggle("screen.materialnexus.process.exclusive", rule.exclusive()),
                 b -> edit(r -> new ProcessRules.Rule(r.routes(), !r.exclusive(), r.enforceRatio()))).bounds(x, oy, 150, 18).build());
-        add.accept(Button.builder(toggle("screen.materialnexus.process.enforce", rule.enforceRatio()),
+        add.accept(Btn.of(toggle("screen.materialnexus.process.enforce", rule.enforceRatio()),
                 b -> edit(r -> new ProcessRules.Rule(r.routes(), r.exclusive(), !r.enforceRatio()))).bounds(x + 154, oy, 150, 18).build());
         if (PendingChanges.process(payload.form()).isPresent()) {
-            add.accept(Button.builder(Component.translatable("screen.materialnexus.process.reset"), b -> {
+            add.accept(Btn.of(Component.translatable("screen.materialnexus.process.reset"), b -> {
                 PendingChanges.clearProcess(payload.form());
                 refresh.run();
             }).bounds(x + 308, oy, 70, 18).build());
@@ -137,35 +140,35 @@ final class ProcessPanel {
 
     void render(GuiGraphics g, Font font) {
         if (payload == null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x, y, 0x888888);
+            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x, y, Theme.FAINT, false);
             return;
         }
         boolean pending = PendingChanges.process(payload.form()).isPresent();
-        g.drawString(font, Component.translatable("screen.materialnexus.process.title", Names.form(payload.form())), x, y, pending ? 0x55FF55 : 0xFFFFFF);
+        g.drawString(font, Component.translatable("screen.materialnexus.process.title", Names.form(payload.form())), x, y, pending ? Theme.OK : Theme.TEXT, false);
         if (undecided > 0) {
             g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.process.undecided", undecided, Names.form(payload.form())).getString(), width),
-                    x, y + 12, 0xFFAA33);
+                    x, y + 12, Theme.WARN, false);
         }
         ProcessRules.Rule rule = rule();
         int textWidth = width - (readOnly ? 0 : 5 * 16 + 4);
-        if (rule.routes().isEmpty()) g.drawString(font, Component.translatable("screen.materialnexus.process.none"), x + 6, routesTop() + 4, 0x888888);
+        if (rule.routes().isEmpty()) g.drawString(font, Component.translatable("screen.materialnexus.process.none"), x + 6, routesTop() + 4, Theme.FAINT, false);
         for (int i = 0; i < rule.routes().size(); i++) {
-            g.drawString(font, font.plainSubstrByWidth(line(rule.routes().get(i)).getString(), textWidth), x + 6, routesTop() + i * ROW + 4, 0xFFFFFF);
+            g.drawString(font, font.plainSubstrByWidth(line(rule.routes().get(i)).getString(), textWidth), x + 6, routesTop() + i * ROW + 4, Theme.TEXT, false);
         }
         if (readOnly) {
-            g.drawString(font, toggle("screen.materialnexus.process.exclusive", rule.exclusive()), x, optionsTop() + 5, 0xAAAAAA);
-            g.drawString(font, toggle("screen.materialnexus.process.enforce", rule.enforceRatio()), x + 154, optionsTop() + 5, 0xAAAAAA);
+            g.drawString(font, toggle("screen.materialnexus.process.exclusive", rule.exclusive()), x, optionsTop() + 5, Theme.MUTED, false);
+            g.drawString(font, toggle("screen.materialnexus.process.enforce", rule.enforceRatio()), x + 154, optionsTop() + 5, Theme.MUTED, false);
         }
         List<ProcessRules.Route> examples = addable();
         g.drawString(font, Component.translatable(examples.isEmpty() ? "screen.materialnexus.process.no_examples" : "screen.materialnexus.process.examples"),
-                x, examplesTop(), 0xAAAAAA);
+                x, examplesTop(), Theme.MUTED, false);
         int ey = examplesTop() + 12;
         for (int row = 0; row < visibleExamples() && firstExample + row < examples.size(); row++) {
-            g.drawString(font, font.plainSubstrByWidth(line(examples.get(firstExample + row)).getString(), width - 22), x + 6, ey + row * ROW + 4, 0x88AAFF);
+            g.drawString(font, font.plainSubstrByWidth(line(examples.get(firstExample + row)).getString(), width - 22), x + 6, ey + row * ROW + 4, Theme.INFO, false);
         }
         if (examples.size() > visibleExamples()) {
             g.drawString(font, Component.translatable("screen.materialnexus.process.more", firstExample + 1,
-                    Math.min(examples.size(), firstExample + visibleExamples()), examples.size()), x + width - 120, examplesTop(), 0x777777);
+                    Math.min(examples.size(), firstExample + visibleExamples()), examples.size()), x + width - 120, examplesTop(), Theme.FAINT, false);
         }
     }
 
@@ -179,6 +182,6 @@ final class ProcessPanel {
     }
 
     private static Button small(String label, int x, int y, Runnable action) {
-        return Button.builder(Component.literal(label), b -> action.run()).bounds(x, y, 15, 14).build();
+        return Btn.of(Component.literal(label), b -> action.run()).bounds(x, y, 15, 14).build();
     }
 }

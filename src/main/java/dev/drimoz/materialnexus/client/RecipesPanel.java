@@ -1,5 +1,8 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.client.ui.Btn;
+import dev.drimoz.materialnexus.client.ui.Field;
+import dev.drimoz.materialnexus.client.ui.Theme;
 import dev.drimoz.materialnexus.datapack.RecipeFamilies;
 import dev.drimoz.materialnexus.network.MaterialDetailPayload;
 import dev.drimoz.materialnexus.network.RecipeFamilyPayload;
@@ -78,29 +81,29 @@ final class RecipesPanel {
             int w = font.width(name) + 8;
             if (cx + w > x + width) break;
             boolean active = view.form().equals(form);
-            g.fill(cx, y, cx + w, y + 12, active ? 0xFF3A5A8A : 0xFF2A2A2A);
-            g.drawString(font, name, cx + 4, y + 2, active ? 0xFFFFFF : 0xAAAAAA);
+            g.fill(cx, y, cx + w, y + 12, active ? Theme.SEL : Theme.RAISED);
+            g.drawString(font, name, cx + 4, y + 2, active ? Theme.TEXT : Theme.MUTED, false);
             chips.add(new Chip(cx, y, w, view.form()));
             cx += w + 4;
         }
         int top = y + 18;
         if (form == null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.recipes.select_form"), x, top + 4, 0x888888);
+            g.drawString(font, Component.translatable("screen.materialnexus.recipes.select_form"), x, top + 4, Theme.FAINT, false);
             return;
         }
         if (family == null) return;
         if (family.rows().isEmpty()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.recipes.empty"), x, top + 4, 0x888888);
+            g.drawString(font, Component.translatable("screen.materialnexus.recipes.empty"), x, top + 4, Theme.FAINT, false);
             return;
         }
         g.enableScissor(x, top, x + width, y + height);
         int ry = top - (int) scroll;
         for (RecipeFamilies.Row row : family.rows()) {
-            g.fill(x, ry, x + width, ry + ROW - 2, 0x40000000);
+            g.fill(x, ry, x + width, ry + ROW - 2, Theme.SURFACE);
             g.renderItem(Names.stack(row.output()), x + 2, ry + 2);
-            g.drawString(font, font.plainSubstrByWidth(row.recipe().toString(), width - 30), x + 22, ry + 2, 0xFFFFFF);
+            g.drawString(font, font.plainSubstrByWidth(row.recipe().toString(), width - 30), x + 22, ry + 2, Theme.TEXT, false);
             Component status = Component.translatable("screen.materialnexus.family." + Names.lowerName(row.status()));
-            g.drawString(font, font.plainSubstrByWidth(row.type() + " · " + status.getString(), width - 30), x + 22, ry + 11, color(row.status()));
+            g.drawString(font, font.plainSubstrByWidth(row.type() + " · " + status.getString(), width - 30), x + 22, ry + 11, color(row.status()), false);
             ry += ROW;
         }
         g.disableScissor();
@@ -108,11 +111,11 @@ final class RecipesPanel {
 
     private static int color(RecipeFamilies.Status status) {
         return switch (status) {
-            case CANONICAL, REWRITTEN -> 0x55FF55;
-            case ALTERNATIVE -> 0xFFCC33;
-            case DISABLED -> 0x888888;
-            case UNSUPPORTED -> 0xFF6666;
-            case OTHER -> 0xAAAAAA;
+            case CANONICAL, REWRITTEN -> Theme.OK;
+            case ALTERNATIVE -> Theme.WARN;
+            case DISABLED -> Theme.FAINT;
+            case UNSUPPORTED -> Theme.BAD;
+            case OTHER -> Theme.MUTED;
         };
     }
 }

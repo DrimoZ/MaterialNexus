@@ -1,5 +1,8 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.client.ui.Btn;
+import dev.drimoz.materialnexus.client.ui.Field;
+import dev.drimoz.materialnexus.client.ui.Theme;
 import dev.drimoz.materialnexus.datapack.CanonicalChange;
 
 import dev.drimoz.materialnexus.core.domain.FormId;
@@ -28,7 +31,7 @@ final class DetailTable {
     private static final int ROW = 26;
     private static final int HEAD = 13;
     private static final int LABEL = 112;
-    private static final int STATUS = 84;
+    private static final int STATUS = 112;
 
     private final boolean readOnly;
     private final BiConsumer<String, String> openRecipes;
@@ -79,10 +82,10 @@ final class DetailTable {
     void render(GuiGraphics g, Font font, int mx, int my) {
         hits.clear();
         if (detail == null) return;
-        g.drawString(font, Component.translatable(detail.byForm() ? "screen.materialnexus.col.material" : "screen.materialnexus.col.form"), x + 4, y + 2, Ui.FAINT, false);
-        g.drawString(font, Component.translatable("screen.materialnexus.col.status"), x + LABEL, y + 2, Ui.FAINT, false);
-        g.drawString(font, Component.translatable("screen.materialnexus.col.kept"), x + LABEL + STATUS, y + 2, Ui.FAINT, false);
-        g.drawString(font, Component.translatable("screen.materialnexus.col.others"), x + LABEL + STATUS + 30, y + 2, Ui.FAINT, false);
+        g.drawString(font, Component.translatable(detail.byForm() ? "screen.materialnexus.col.material" : "screen.materialnexus.col.form"), x + 4, y + 2, Theme.FAINT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.col.status"), x + LABEL, y + 2, Theme.FAINT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.col.kept"), x + LABEL + STATUS, y + 2, Theme.FAINT, false);
+        g.drawString(font, Component.translatable("screen.materialnexus.col.others"), x + LABEL + STATUS + 30, y + 2, Theme.FAINT, false);
         g.enableScissor(x, y + HEAD, x + width, y + height);
         int top = y + HEAD - (int) scroll;
         for (MaterialDetailPayload.FormView view : detail.forms()) {
@@ -101,13 +104,13 @@ final class DetailTable {
         ResolvedForm f = view.resolved();
         String material = view.material();
         boolean hover = my >= top && my < top + ROW && mx >= x && mx < x + width;
-        g.fill(x, top + ROW - 1, x + width, top + ROW, Ui.LINE);
-        if (hover) g.fill(x, top, x + width, top + ROW - 1, 0x18FFFFFF);
+        g.fill(x, top + ROW - 1, x + width, top + ROW, Theme.BORDER);
+        if (hover) g.fill(x, top, x + width, top + ROW - 1, Theme.RAISED);
         Component label = detail.byForm() ? Names.material(material) : Names.form(view.form());
-        g.drawString(font, font.plainSubstrByWidth(label.getString(), LABEL - 8), x + 4, top + 9, Ui.TEXT, false);
+        g.drawString(font, font.plainSubstrByWidth(label.getString(), LABEL - 8), x + 4, top + 9, Theme.TEXT, false);
 
         Ui.Status status = status(view);
-        Ui.pill(g, font, status.label(), x + LABEL, top + 7, status.color);
+        Ui.pill(g, font, status.label(), x + LABEL, top + 7, status.color());
 
         Optional<ResourceLocation> pending = PendingChanges.get(material, view.form()).filter(p -> !p.equals(CanonicalChange.RESET));
         boolean decided = f.source() != PolicyPrecedence.DEFAULT && !f.alternatives().isEmpty();
@@ -115,11 +118,11 @@ final class DetailTable {
         int sx = x + LABEL + STATUS + 4;
         Optional<ResourceLocation> kept = pending.or(f::canonical);
         if (kept.isPresent()) {
-            Ui.slot(g, kept.get(), sx, top + 4, status.color, false);
+            Ui.slot(g, kept.get(), sx, top + 4, status.color(), false);
             List<Component> tip = itemTip(kept.get(), Component.translatable(pending.isPresent() ? "screen.materialnexus.role.pending" : "screen.materialnexus.role.canonical"));
             tip.add(Component.translatable("screen.materialnexus.why", why,
                     Component.translatable("materialnexus.source." + Names.lowerName(f.source())),
-                    Component.translatable("materialnexus.confidence." + Names.lowerName(f.confidence()))).withColor(0xAAAAAA));
+                    Component.translatable("materialnexus.confidence." + Names.lowerName(f.confidence()))).withColor(Theme.TIP_MUTED));
             ResourceLocation k = kept.get();
             notSameMark(g, material, view.form(), k, sx, top + 4);
             hits.add(sx - 1, top + 3, 20, 20, () -> choose(material, view.form(), k, f, decided), notSame(material, view.form(), k), withHint(material, view.form(), tip, k));
@@ -132,7 +135,7 @@ final class DetailTable {
         int right = x + width - 64;
         for (ResourceLocation item : others) {
             if (ix + 20 > right) break;
-            Ui.slot(g, item, ix, top + 4, Ui.NEUTRAL, false);
+            Ui.slot(g, item, ix, top + 4, Theme.CTRL, false);
             notSameMark(g, material, view.form(), item, ix, top + 4);
             hits.add(ix - 1, top + 3, 20, 20, () -> choose(material, view.form(), item, f, decided), notSame(material, view.form(), item),
                     withHint(material, view.form(), itemTip(item, Component.translatable("screen.materialnexus.role.alternative")), item));
@@ -140,13 +143,13 @@ final class DetailTable {
         }
         if (!f.notUnified().isEmpty() && ix + 30 < right) {
             ix += 4;
-            g.fill(ix - 3, top + 6, ix - 2, top + 20, Ui.LINE);
+            g.fill(ix - 3, top + 6, ix - 2, top + 20, Theme.BORDER);
         }
         for (ResolvedForm.NotUnified n : f.notUnified()) {
             if (ix + 20 > right) break;
             Ui.slot(g, n.item(), ix, top + 4, 0, true);
             List<Component> tip = itemTip(n.item(), Component.translatable("screen.materialnexus.role.not_unified",
-                    Component.translatable(n.reasonKey(), n.reasonArgs().toArray())).withColor(0xCC8888));
+                    Component.translatable(n.reasonKey(), n.reasonArgs().toArray())).withColor(Theme.TIP_BAD));
             notSameMark(g, material, view.form(), n.item(), ix, top + 4);
             hits.add(ix - 1, top + 3, 20, 20, () -> choose(material, view.form(), n.item(), f, decided), notSame(material, view.form(), n.item()), withHint(material, view.form(), tip, n.item()));
             ix += 21;
@@ -159,33 +162,33 @@ final class DetailTable {
             boolean resetting = status == Ui.Status.RESET;
             int bx = rx - 16;
             boolean overR = mx >= bx && mx < bx + 12 && my >= top + 7 && my < top + 19;
-            g.drawString(font, "↺", bx + 2, top + 9, resetting ? Ui.WARNING : overR ? Ui.TEXT : Ui.FAINT, false);
+            g.drawString(font, "↺", bx + 2, top + 9, resetting ? Theme.WARN : overR ? Theme.TEXT : Theme.FAINT, false);
             hits.add(bx, top + 7, 12, 12, () -> {
                 if (resetting) PendingChanges.clear(material, view.form());
                 else PendingChanges.set(material, view.form(), CanonicalChange.RESET);
             }, null, List.of(Component.translatable(resetting ? "screen.materialnexus.reset.cancel" : "screen.materialnexus.reset.row")));
         }
         boolean over = mx >= rx && my >= top && my < top + ROW && mx < x + width;
-        g.drawString(font, recipes, rx, top + 9, over ? Ui.TEXT : 0x88AAFF, false);
+        g.drawString(font, recipes, rx, top + 9, over ? Theme.TEXT : Theme.INFO, false);
         hits.add(rx, top, x + width - rx, ROW, () -> openRecipes.accept(material, view.form()), null, List.of());
     }
 
     private void absentRow(GuiGraphics g, Font font, String form, int top, int mx, int my) {
         String material = detail.material();
-        g.fill(x, top + ROW - 1, x + width, top + ROW, Ui.LINE);
-        g.drawString(font, Names.form(form), x + 4, top + 9, Ui.FAINT, false);
-        Ui.pill(g, font, Ui.Status.ABSENT.label(), x + LABEL, top + 7, Ui.Status.ABSENT.color);
+        g.fill(x, top + ROW - 1, x + width, top + ROW, Theme.BORDER);
+        g.drawString(font, Names.form(form), x + 4, top + 9, Theme.FAINT, false);
+        Ui.pill(g, font, Ui.Status.ABSENT.label(), x + LABEL, top + 7, Ui.Status.ABSENT.color());
         int sx = x + LABEL + STATUS + 4;
-        g.fill(sx, top + 4, sx + 18, top + 22, 0x40FFFFFF);
-        g.fill(sx + 1, top + 5, sx + 17, top + 21, 0xFF16161C);
+        g.fill(sx, top + 4, sx + 18, top + 22, Theme.CTRL);
+        g.fill(sx + 1, top + 5, sx + 17, top + 21, Theme.SURFACE);
         if (readOnly) return;
         boolean pending = PendingChanges.creating(material, form);
         Component label = Component.translatable(pending ? "screen.materialnexus.create.pending" : "screen.materialnexus.create.button");
         int bx = sx + 26;
         int bw = font.width(label) + 10;
         boolean over = mx >= bx && mx < bx + bw && my >= top + 6 && my < top + 20;
-        g.fill(bx, top + 6, bx + bw, top + 20, pending ? 0xFF24502E : over ? 0xFF3A3A55 : 0xFF2A2A3A);
-        g.drawString(font, label, bx + 5, top + 9, pending ? 0x55FF55 : 0xAAAAFF, false);
+        g.fill(bx, top + 6, bx + bw, top + 20, pending ? Theme.mix(Theme.BG, Theme.OK, 0.3f) : over ? Theme.SEL : Theme.RAISED);
+        g.drawString(font, label, bx + 5, top + 9, pending ? Theme.OK : Theme.INFO, false);
         hits.add(bx, top + 6, bw, 14, () -> PendingChanges.toggleCreation(material, form), null,
                 List.of(Component.translatable("screen.materialnexus.create.tooltip", "materialnexus:" + material + "_" + form)));
     }
@@ -202,11 +205,11 @@ final class DetailTable {
     }
 
     private static void notSameMark(GuiGraphics g, String material, String form, ResourceLocation item, int x, int y) {
-        if (PendingChanges.globalChanged("tag_edits") && PendingChanges.tagRemoved(material, form, item)) g.fill(x, y + 16, x + 18, y + 18, Ui.WARNING);
+        if (PendingChanges.globalChanged("tag_edits") && PendingChanges.tagRemoved(material, form, item)) g.fill(x, y + 16, x + 18, y + 18, Theme.WARN);
         if (!PendingChanges.globalChanged("not_same") || !PendingChanges.notSame(item)) return;
         for (int i = 0; i < 18; i++) {
-            g.fill(x + i, y + i, x + i + 1, y + i + 1, Ui.DANGER);
-            g.fill(x + 17 - i, y + i, x + 18 - i, y + i + 1, Ui.DANGER);
+            g.fill(x + i, y + i, x + i + 1, y + i + 1, Theme.BAD);
+            g.fill(x + 17 - i, y + i, x + 18 - i, y + i + 1, Theme.BAD);
         }
     }
 
@@ -215,18 +218,18 @@ final class DetailTable {
         // MNX-052: what helps choose: its mod, and how central it is in the pack's recipes.
         var usage = detail.usage().get(item);
         String mod = net.neoforged.fml.ModList.get().getModContainerById(item.getNamespace()).map(c -> c.getModInfo().getDisplayName()).orElse(item.getNamespace());
-        out.add(usage == null ? Component.translatable("screen.materialnexus.usage.mod", mod).withColor(0x88AACC)
-                : Component.translatable("screen.materialnexus.usage", mod, usage.produced(), usage.used()).withColor(0x88AACC));
+        out.add(usage == null ? Component.translatable("screen.materialnexus.usage.mod", mod).withColor(Theme.TIP_INFO)
+                : Component.translatable("screen.materialnexus.usage", mod, usage.produced(), usage.used()).withColor(Theme.TIP_INFO));
         if (readOnly) return out;
-        out.add(Component.translatable(PendingChanges.notSame(item) ? "screen.materialnexus.not_same.unmark" : "screen.materialnexus.not_same.mark").withColor(0x777788));
+        out.add(Component.translatable(PendingChanges.notSame(item) ? "screen.materialnexus.not_same.unmark" : "screen.materialnexus.not_same.mark").withColor(Theme.TIP_FAINT));
         out.add(Component.translatable(PendingChanges.tagRemoved(material, form, item) || PendingChanges.tagAdded(material, form, item)
-                ? "screen.materialnexus.tag_edit.undo" : "screen.materialnexus.tag_edit.remove").withColor(0x777788));
+                ? "screen.materialnexus.tag_edit.undo" : "screen.materialnexus.tag_edit.remove").withColor(Theme.TIP_FAINT));
         return out;
     }
 
     private static List<Component> itemTip(ResourceLocation item, Component role) {
-        return new ArrayList<>(List.of(Names.stack(item).getHoverName(), Component.literal(item.toString()).withColor(0x888888),
-                role.copy().withColor(0xAAAAAA)));
+        return new ArrayList<>(List.of(Names.stack(item).getHoverName(), Component.literal(item.toString()).withColor(Theme.TIP_FAINT),
+                role.copy().withColor(Theme.TIP_MUTED)));
     }
 
     /** Pick an item as the pending canonical; picking the pending one again, or the already decided one, cancels. */

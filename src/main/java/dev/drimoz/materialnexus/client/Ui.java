@@ -1,5 +1,6 @@
 package dev.drimoz.materialnexus.client;
 
+import dev.drimoz.materialnexus.client.ui.Theme;
 import net.minecraft.client.gui.Font;
 import net.minecraft.client.gui.GuiGraphics;
 import net.minecraft.network.chat.Component;
@@ -8,32 +9,26 @@ import net.minecraft.resources.ResourceLocation;
 import java.util.ArrayList;
 import java.util.List;
 
-/** Shared look of the Material Nexus screens (MNX-049): one palette, pills, item slots and click areas. */
+/** Shared drawing of the Material Nexus screens (MNX-049, MNX-094): pills, buttons, item slots and click areas, in {@link Theme} roles. */
 final class Ui {
-    static final int BG = 0xFA101014;
-    static final int PANEL = 0xC0181820;
-    static final int ROW = 0x40FFFFFF;
-    static final int LINE = 0x30FFFFFF;
-    static final int TEXT = 0xFFFFFF;
-    static final int MUTED = 0x9A9AA6;
-    static final int FAINT = 0x66666F;
-    static final int ACCENT = 0xFF5A9BE6;
-    static final int SUCCESS = 0xFF4CC46A;
-    static final int WARNING = 0xFFE8B23A;
-    static final int DANGER = 0xFFD9534F;
-    static final int NEUTRAL = 0xFF5A5A66;
-
     /** Status of one material/form, from what decides it most. */
     enum Status {
-        PENDING("pending", ACCENT), UNIFIED("unified", SUCCESS), SUGGESTION("suggestion", WARNING),
-        SINGLE("single", NEUTRAL), RESET("reset", WARNING), NOTHING("nothing", NEUTRAL), ABSENT("absent", 0xFF3A3A44);
+        PENDING("pending"), UNIFIED("unified"), SUGGESTION("suggestion"), SINGLE("single"), RESET("reset"), NOTHING("nothing"), ABSENT("absent");
 
         final String key;
-        final int color;
 
-        Status(String key, int color) {
+        Status(String key) {
             this.key = key;
-            this.color = color;
+        }
+
+        /** To decide is the warning colour, a choice not applied yet the information one; what asks nothing stays quiet. */
+        int color() {
+            return switch (this) {
+                case PENDING, RESET -> Theme.INFO;
+                case UNIFIED -> Theme.OK;
+                case SUGGESTION -> Theme.WARN;
+                case SINGLE, NOTHING, ABSENT -> Theme.FAINT;
+            };
         }
 
         Component label() { return Component.translatable("screen.materialnexus.status." + key); }
@@ -76,20 +71,27 @@ final class Ui {
 
     private Ui() { }
 
-    /** A label on a tinted background with a colored edge; returns its width. */
+    /** A label in {@code color} on that colour mixed into the background, with a full-colour edge; returns its width. */
     static int pill(GuiGraphics g, Font font, Component text, int x, int y, int color) {
         int w = font.width(text) + 8;
-        g.fill(x, y, x + w, y + 11, (color & 0x00FFFFFF) | 0x50000000);
+        g.fill(x, y, x + w, y + 11, Theme.mix(Theme.BG, color, 0.22f));
         g.fill(x, y, x + 1, y + 11, color);
-        g.drawString(font, text, x + 4, y + 2, color | 0xFF000000, false);
+        g.drawString(font, text, x + 4, y + 2, color, false);
         return w;
     }
 
-    /** An 18px item slot with a 1px outline in {@code outline} (0 for none); {@code dim} greys it out. */
+    /** A flat button drawn by a panel that handles its own clicks; {@code primary} is the view's main action. */
+    static void button(GuiGraphics g, Font font, Component label, int x, int y, int w, int h, boolean primary, boolean over, boolean active) {
+        int fill = !active ? Theme.RAISED : primary ? (over ? Theme.mix(Theme.ACCENT, Theme.TEXT, 0.18f) : Theme.ACCENT) : over ? Theme.SEL : Theme.RAISED;
+        g.fill(x, y, x + w, y + h, fill);
+        g.drawString(font, label, x + (w - font.width(label)) / 2, y + (h - 8) / 2, !active ? Theme.FAINT : primary ? Theme.ON : Theme.TEXT, false);
+    }
+
+    /** An 18px item slot on the mid-grey well, with a 1px outline in {@code outline} (0 for none); {@code dim} fades it. */
     static void slot(GuiGraphics g, ResourceLocation item, int x, int y, int outline, boolean dim) {
         if (outline != 0) g.fill(x - 1, y - 1, x + 19, y + 19, outline);
-        g.fill(x, y, x + 18, y + 18, 0xFF22222A);
+        g.fill(x, y, x + 18, y + 18, Theme.WELL);
         g.renderItem(Names.stack(item), x + 1, y + 1);
-        if (dim) g.fill(x, y, x + 18, y + 18, 0x99101014);
+        if (dim) g.fill(x, y, x + 18, y + 18, Theme.BG & 0x00FFFFFF | 0x99000000);
     }
 }
