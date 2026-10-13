@@ -25,7 +25,18 @@ restore any of the last 20 applied states from the history.
 
 **Why is an item not unified with the others of its tag?**
 Hover it: it was set aside, and the reason is given (named as a variant, belongs to another material,
-several items from the same mod, marked as not the same, excluded). Click it to keep it anyway.
+several items from the same mod, marked as not the same, excluded). Click it to keep it anyway, or,
+when the reason is only a guess, mark it [the same item after all](Choosing-Items#the-same-item-after-all).
+
+**Can I edit the generated datapack?**
+No: `config/materialnexus/generated/` is rebuilt on every Apply and hand changes are lost
+([Configuration Files](Configuration-Files#the-generated-datapack)). Change what goes into it instead:
+your choices in the screen, the files in `config/materialnexus/`, or the pack's own datapack and
+KubeJS scripts, which run after Material Nexus.
+
+**Can I use my own textures for created items?**
+Yes, without touching the generated pack: a `"texture"` on the entry in `items.json`, a model in a
+resource pack, or a template for every material ([Created Items](Created-Items#your-own-texture-or-model)).
 
 **Why is a recipe "not handled yet"?**
 Its type has no recipe format. Add one ([Datapack Guide](Datapack-Guide#recipe-formats)), or let
