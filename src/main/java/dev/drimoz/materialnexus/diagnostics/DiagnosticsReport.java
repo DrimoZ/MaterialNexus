@@ -34,6 +34,14 @@ public final class DiagnosticsReport {
     public static String build(ResolvedSnapshot snapshot, Map<MaterialId, List<FamilyRelations.Relation>> missing,
                                List<dev.drimoz.materialnexus.datapack.FormPatterns.Candidate> untagged, TagAudit.Result audit,
                                java.util.SortedMap<ResourceLocation, ? extends java.util.Collection<ResourceLocation>> missingTags, boolean addingMissingTags) {
+        return build(snapshot, missing, untagged, audit, missingTags, addingMissingTags, List.of());
+    }
+
+    /** With the recipe types no format covers (MNX-090), those with the most material recipes first. */
+    public static String build(ResolvedSnapshot snapshot, Map<MaterialId, List<FamilyRelations.Relation>> missing,
+                               List<dev.drimoz.materialnexus.datapack.FormPatterns.Candidate> untagged, TagAudit.Result audit,
+                               java.util.SortedMap<ResourceLocation, ? extends java.util.Collection<ResourceLocation>> missingTags, boolean addingMissingTags,
+                               List<UnhandledTypes.Row> unhandled) {
         StringBuilder out = new StringBuilder();
         long unified = snapshot.materials().values().stream().flatMap(m -> m.forms().values().stream())
                 .filter(f -> f.canonical().isPresent() && !f.alternatives().isEmpty()).count();
@@ -73,6 +81,7 @@ public final class DiagnosticsReport {
             out.append('\n');
         }
         tags(out, audit, missingTags, addingMissingTags);
+        unhandled(out, unhandled);
         scripts(out, snapshot);
         return out.toString();
     }
@@ -119,6 +128,19 @@ public final class DiagnosticsReport {
                     .append(ids.stream().map(ResourceLocation::toString).collect(Collectors.joining(", "))).append('\n'));
             out.append('\n');
         }
+    }
+
+    /** MNX-090: which mods' recipes are left as they are, and how much it matters. */
+    private static void unhandled(StringBuilder out, List<UnhandledTypes.Row> rows) {
+        if (rows.isEmpty()) return;
+        out.append("## Recipe types not handled yet\n\n")
+                .append("Recipe types with no recipe format: their recipes are left as the mod wrote them (items are still unified through tags ")
+                .append("and in the world). Counted: recipes naming an item of a material, and among them those naming an item unification ")
+                .append("replaces. A format is one file in `data/<namespace>/material_nexus/recipe_formats/`; to ask for one, paste this table ")
+                .append("in an issue.\n\n")
+                .append("| Recipe type | Recipes with a material item | With a replaced item |\n|---|---|---|\n");
+        rows.forEach(r -> out.append("| `").append(r.type()).append("` | ").append(r.recipes()).append(" | ").append(r.replaced()).append(" |\n"));
+        out.append('\n');
     }
 
     private static String args(ResolvedForm f) {
