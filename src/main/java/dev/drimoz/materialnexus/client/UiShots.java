@@ -59,7 +59,10 @@ public final class UiShots {
             new Step(1660, "", "", "mnx_14_recipes"),
             new Step(1666, "shortcuts", "", ""),
             new Step(1680, "", "", "mnx_15_shortcuts"),
-            new Step(1685, "quit", "", ""));
+            new Step(1686, "smooth", "", ""),
+            new Step(1690, "material", "copper", ""),
+            new Step(1790, "", "", "mnx_16_smooth"),
+            new Step(1795, "quit", "", ""));
     private static int ticks;
     private static int next;
 

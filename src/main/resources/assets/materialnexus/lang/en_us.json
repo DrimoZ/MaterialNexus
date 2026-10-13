@@ -492,5 +492,8 @@
   "screen.materialnexus.shortcuts.7.keys": "Shift + wheel, on the grid",
   "screen.materialnexus.shortcuts.7.what": "scroll the columns",
   "screen.materialnexus.shortcuts.8.keys": "Esc",
-  "screen.materialnexus.shortcuts.8.what": "close the side panel, then the screen"
+  "screen.materialnexus.shortcuts.8.what": "close the side panel, then the screen",
+  "screen.materialnexus.settings.font": "Font",
+  "screen.materialnexus.settings.font.game": "The game font",
+  "screen.materialnexus.settings.font.smooth": "Smooth"
 }

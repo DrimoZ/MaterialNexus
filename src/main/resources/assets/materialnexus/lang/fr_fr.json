@@ -492,5 +492,8 @@
   "screen.materialnexus.shortcuts.7.keys": "Maj + molette, sur la grille",
   "screen.materialnexus.shortcuts.7.what": "faire défiler les colonnes",
   "screen.materialnexus.shortcuts.8.keys": "Échap",
-  "screen.materialnexus.shortcuts.8.what": "fermer le panneau latéral, puis l’écran"
+  "screen.materialnexus.shortcuts.8.what": "fermer le panneau latéral, puis l’écran",
+  "screen.materialnexus.settings.font": "Police",
+  "screen.materialnexus.settings.font.game": "Celle du jeu",
+  "screen.materialnexus.settings.font.smooth": "Lisse"
 }

@@ -19,15 +19,17 @@ public final class ScreenSettings {
      * {@code showIds}: the technical id under an item's name. {@code openGroups}: the groups that ask nothing ("No
      * duplicate", "Forms that can be created") start open. {@code reopen}: the screen reopens where it was left.
      */
-    public record Values(Theme theme, boolean showIds, boolean openGroups, boolean reopen, boolean comfortable) {
-        public static final Values DEFAULT = new Values(Theme.GRAPHITE, true, false, true, false);
+    public record Values(Theme theme, boolean showIds, boolean openGroups, boolean reopen, boolean comfortable, boolean smoothFont) {
+        public static final Values DEFAULT = new Values(Theme.GRAPHITE, true, false, true, false, false);
 
-        public Values withTheme(Theme value) { return new Values(value, showIds, openGroups, reopen, comfortable); }
-        public Values withShowIds(boolean value) { return new Values(theme, value, openGroups, reopen, comfortable); }
-        public Values withOpenGroups(boolean value) { return new Values(theme, showIds, value, reopen, comfortable); }
-        public Values withReopen(boolean value) { return new Values(theme, showIds, openGroups, value, comfortable); }
+        public Values withTheme(Theme value) { return new Values(value, showIds, openGroups, reopen, comfortable, smoothFont); }
+        public Values withShowIds(boolean value) { return new Values(theme, value, openGroups, reopen, comfortable, smoothFont); }
+        public Values withOpenGroups(boolean value) { return new Values(theme, showIds, value, reopen, comfortable, smoothFont); }
+        public Values withReopen(boolean value) { return new Values(theme, showIds, openGroups, value, comfortable, smoothFont); }
         /** Taller rows in the main lists. */
-        public Values withComfortable(boolean value) { return new Values(theme, showIds, openGroups, reopen, value); }
+        public Values withComfortable(boolean value) { return new Values(theme, showIds, openGroups, reopen, value, smoothFont); }
+        /** The bundled smooth font instead of the game one. */
+        public Values withSmoothFont(boolean value) { return new Values(theme, showIds, openGroups, reopen, comfortable, value); }
     }
 
     private static Values current = Values.DEFAULT;
@@ -45,7 +47,7 @@ public final class ScreenSettings {
                 for (Theme t : Theme.values()) if (t.key().equals(o.get("theme").getAsString())) theme = t;
             }
             return new Values(theme, flag(o, "show_ids", Values.DEFAULT.showIds()), flag(o, "open_groups", Values.DEFAULT.openGroups()),
-                    flag(o, "reopen", Values.DEFAULT.reopen()), flag(o, "comfortable", Values.DEFAULT.comfortable()));
+                    flag(o, "reopen", Values.DEFAULT.reopen()), flag(o, "comfortable", Values.DEFAULT.comfortable()), flag(o, "smooth_font", Values.DEFAULT.smoothFont()));
         } catch (RuntimeException ignored) {
             return Values.DEFAULT;
         }
@@ -82,6 +84,7 @@ public final class ScreenSettings {
         json.addProperty("open_groups", values.openGroups());
         json.addProperty("reopen", values.reopen());
         json.addProperty("comfortable", values.comfortable());
+        json.addProperty("smooth_font", values.smoothFont());
         try {
             Files.createDirectories(dir);
             Files.writeString(dir.resolve(FILE), json + "\n");
