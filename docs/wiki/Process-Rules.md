@@ -7,18 +7,21 @@ is **made**: by which machines, from which form, at what ratio, for every materi
 
 ## Editing a rule
 
-Open **Forms**, click a form's name, then the **Process** tab.
+Open **Forms**, click a form's name, then the **How it's made** tab.
 
-- **Existing routes** lists what the pack's recipes already do for that form, for any material:
-  `immersiveengineering:metal_press: 1 × Ingot → 2 × Rod`. **+** adds one to the rule; adjust its
-  ratio there.
-- **Only these** (`exclusive`): recipes making this form in any other way are disabled.
-- **Enforce ratios** (`enforce_ratio`): a recipe of a route's machine with another ratio is
-  replaced by one with the rule's ratio. Without it, only missing routes are added.
-- A warning lists the materials that still have several items for the form: a rule adds recipes,
+- **Routes of the rule**: each route with its machine, how many items of which form go in, and
+  how many come out. **−** and **+** change the quantities, **Remove** drops the route.
+- **Routes found in the pack**: what the recipes of the pack already do for that form, grouped by
+  machine (*Metal Press: 1 × Ingot → 2 × Rod*). **Add** puts one in the rule. Hover a route to see
+  one recipe of the pack that follows it, drawn by JEI or EMI.
+- **Allow only these routes** (`exclusive`): recipes making this form in any other way are disabled.
+- **Impose these quantities on existing recipes** (`enforce_ratio`): a recipe of a route machine
+  with other quantities is replaced by one with the quantities of the rule. Without it, only
+  missing routes are added.
+- A warning says how many materials still have several items for the form: a rule adds recipes,
   it does not unify. Choose the kept item first.
 
-The rule is a pending change like any other; Preview lists every recipe it generates or disables.
+The rule is a change to apply like any other; the review lists every recipe it generates or disables.
 
 ## How the recipes are written
 

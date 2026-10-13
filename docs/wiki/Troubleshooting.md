@@ -8,7 +8,7 @@ You are on a dedicated server. Decide in singleplayer or LAN, then ship `config/
 
 **An item I expect is not found.**
 It has no convention tag for its form. Check `/materials report`, "Possibly untagged forms", or the
-Data view's **Untagged forms** tab, and declare its name pattern
+**Untagged forms** tab of Rule files, and declare its name pattern
 ([Datapack Guide](Datapack-Guide#forms)).
 
 **Two different items are unified together.**
@@ -30,7 +30,7 @@ Restart the game: items are registered at startup. On a server, the clients need
 
 **A choice shows as ignored.**
 The item it names is no longer a member of that form (a mod was removed, or a tag changed). Pick
-another item, or put the form back to default with **↺**.
+another item, or put the form back to default (**Back to default** in its inspector).
 
 **The analysis failed after a hand edit.**
 The log names the file and the field. Fix it, then `/reload`.

@@ -75,7 +75,7 @@ final class ScriptsPanel {
             g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x, y + 16, Theme.MUTED, false);
             return;
         }
-        g.drawString(font, tr("count", decided(), differing()), x + font.width(tr("title")) + 14, y, Theme.MUTED, false);
+        g.drawString(font, tr("count", decided(), differing()), x + font.width(tr("title").copy().withStyle(ChatFormatting.BOLD)) + 14, y, Theme.MUTED, false);
         long open = payload.rows().stream().filter(r -> offered(r) && !pending(r)).count();
         if (!readOnly && open > 0) {
             Component all = tr("keep_all.count", open);
