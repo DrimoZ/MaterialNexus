@@ -191,10 +191,11 @@ not lift them into another project.
 <!-- End of the pasted description. -->
 
 
-## Release checklist: 0.2.0
+## Release checklist: 0.3.0
 
 - [ ] `main` green: `./gradlew test`, `./gradlew runGameTestServer`, `./gradlew runGameTestServer -Pvanilla`
       (and `-Pau`, `-Pkubejs` when those parts changed).
+- [ ] New textures of the default items in place: no jar and no image (store art, wiki, gallery) before them.
 - [ ] Project avatar: `src/main/resources/logo.png` (from `java tools/GenerateLogo.java`).
 - [ ] Generate the art (see the top of this file) and push it; the description loads it from GitHub.
 - [ ] Gallery (850 px wide at most): `screen_material.png`, `screen_inspector.png`, `screen_matrix.png`,
@@ -202,7 +203,7 @@ not lift them into another project.
       `screen_triage.png`, `screen_recipes.png`...) are for the description only.
 - [ ] Paste the summary and the description.
 - [ ] Upload the jar from `gradlew build` (`build/libs`), release type **Beta**,
-      loader NeoForge, with the `## 0.2.0` section of `CHANGELOG.md`.
+      loader NeoForge, with the `## 0.3.0` section of `CHANGELOG.md`.
 - [ ] Optional dependencies: JEI, EMI, Almost Unified, KubeJS.
-- [ ] Tag `v0.2.0`, and add the CurseForge link to the README and to the links above.
+- [ ] Tag `v0.3.0`, and add the CurseForge link to the README and to the links above.
 - [ ] Report upstream: `docs/upstream/immersiveengineering-silentgear-reload.md`.
