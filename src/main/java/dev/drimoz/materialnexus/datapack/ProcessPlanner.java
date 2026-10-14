@@ -49,12 +49,8 @@ public final class ProcessPlanner {
     private record Ref(MaterialForm target, boolean tag, boolean output, boolean condition,
                        JsonObject node, String field, JsonObject wrapper, JsonArray list, int index, int uses) { }
 
-    private record Reading(Optional<Ref> output, List<Ref> inputs, List<Ref> all) {
-        Optional<MaterialId> onlyMaterial() {
-            var materials = all.stream().map(r -> r.target().material()).distinct().toList();
-            return materials.size() == 1 ? Optional.of(materials.getFirst()) : Optional.empty();
-        }
-
+    /** {@code onlyMaterial}: the one material every reference names, if there is exactly one. */
+    private record Reading(Optional<Ref> output, List<Ref> inputs, List<Ref> all, Optional<MaterialId> onlyMaterial) {
         boolean makes(MaterialForm form) { return output.map(r -> r.target().equals(form)).orElse(false); }
 
         boolean consumes(MaterialForm form) { return inputs.stream().anyMatch(r -> r.target().equals(form)); }
@@ -102,32 +98,43 @@ public final class ProcessPlanner {
         Map<String, JsonElement> files = new TreeMap<>();
         List<PackContent.Effect> effects = new ArrayList<>();
 
-        record Known(RecipeRewrites.Source source, List<String> outputKeys, Reading reading) { }
+        record Known(RecipeRewrites.Source source, ResourceLocation type, List<String> outputKeys, Reading reading) { }
+        // Readings are independent and the index is read only: read in parallel, kept in source order (MNX-113).
+        List<Known> readings = sources.parallelStream()
+                .filter(s -> s.json().isPresent())
+                .flatMap(s -> RecipeRewrites.format(s.json().get(), formats).stream().map(format -> new Known(s,
+                        ResourceLocation.parse(s.json().get().get("type").getAsString()), format.outputKeys(),
+                        read(s.json().get(), format.outputKeys(), index))))
+                .toList();
         Map<ResourceLocation, List<Known>> byType = new TreeMap<>();
-        for (RecipeRewrites.Source s : sources) {
-            if (s.json().isEmpty()) continue;
-            RecipeRewrites.format(s.json().get(), formats).ifPresent(format -> byType
-                    .computeIfAbsent(ResourceLocation.parse(s.json().get().get("type").getAsString()), t -> new ArrayList<>())
-                    .add(new Known(s, format.outputKeys(), read(s.json().get(), format.outputKeys(), index))));
-        }
+        readings.forEach(k -> byType.computeIfAbsent(k.type(), t -> new ArrayList<>()).add(k));
+        // Recipes by what they make, in byType order: each target looks only at its own producers instead of every recipe.
+        Map<MaterialForm, List<Known>> byOutput = new HashMap<>();
+        byType.values().forEach(recipes -> recipes.forEach(k -> k.reading().output()
+                .ifPresent(o -> byOutput.computeIfAbsent(o.target(), t -> new ArrayList<>()).add(k))));
+        // Possible examples: recipes of one machine making one form, in source order.
+        Map<Map.Entry<ResourceLocation, FormId>, List<Known>> byMachineForm = new HashMap<>();
+        readings.forEach(k -> k.reading().output().ifPresent(o -> byMachineForm
+                .computeIfAbsent(Map.entry(k.type(), o.target().form()), t -> new ArrayList<>()).add(k)));
 
         resolved.forEach((material, rm) -> rm.forms().forEach((form, f) -> {
             MaterialForm target = new MaterialForm(material, form);
             Optional<ProcessRules.Rule> rule = rules.ruleFor(target);
             if (rule.isEmpty() || policy.isExcluded(target) || f.canonical().isEmpty()) return;
             ResourceLocation product = f.canonical().get();
+            List<Known> producers = byOutput.getOrDefault(target, List.of());
 
             for (ProcessRules.Route route : rule.get().routes()) {
                 MaterialForm input = new MaterialForm(material, route.input());
                 if (index.form(input).isEmpty()) continue;
-                List<Known> machine = byType.getOrDefault(route.machine(), List.of());
-                List<Known> existing = machine.stream().filter(k -> k.reading().makes(target) && k.reading().consumes(input)).toList();
+                List<Known> existing = producers.stream().filter(k -> k.type().equals(route.machine()) && k.reading().consumes(input)).toList();
                 if (!existing.isEmpty() && (!rule.get().enforceRatio() || existing.stream().anyMatch(k -> hasRatio(k.reading(), input, route)))) continue;
                 // The material's own recipe is the best example (it keeps its mold, energy...); then other materials'.
                 List<ProcessTemplates.Template> usable = templates.stream()
                         .filter(t -> t.machine().equals(route.machine()) && t.appliesTo(form)).toList();
                 java.util.function.Supplier<Optional<JsonObject>> byExample = () -> java.util.stream.Stream.concat(existing.stream(),
-                                machine.stream().filter(k -> isExample(k.reading(), form, route.input(), material)))
+                                byMachineForm.getOrDefault(Map.entry(route.machine(), form), List.of()).stream()
+                                        .filter(k -> isExample(k.reading(), form, route.input(), material)))
                         .map(k -> copy(k.source().json().get(), k.outputKeys(), material, route, index))
                         .flatMap(Optional::stream)
                         .findFirst();
@@ -148,11 +155,10 @@ public final class ProcessPlanner {
             }
 
             if (rule.get().exclusive()) {
-                byType.forEach((type, recipes) -> recipes.stream()
-                        .filter(k -> k.reading().makes(target))
-                        .filter(k -> rule.get().routes().stream().noneMatch(r -> r.machine().equals(type)
+                producers.stream()
+                        .filter(k -> rule.get().routes().stream().noneMatch(r -> r.machine().equals(k.type())
                                 && k.reading().consumes(new MaterialForm(material, r.input()))))
-                        .forEach(k -> disable(k.source().id(), product, files, effects)));
+                        .forEach(k -> disable(k.source().id(), product, files, effects));
             }
         }));
         return new PackContent.Content(files, effects);
@@ -284,7 +290,9 @@ public final class ProcessPlanner {
             }
         }
         List<Ref> inputs = all.stream().filter(r -> !r.output() && !r.condition()).toList();
-        return new Reading(all.stream().filter(Ref::output).findFirst(), inputs, all);
+        var materials = all.stream().map(r -> r.target().material()).distinct().toList();
+        return new Reading(all.stream().filter(Ref::output).findFirst(), inputs, all,
+                materials.size() == 1 ? Optional.of(materials.getFirst()) : Optional.empty());
     }
 
     /** {@code element} is {@code owner.ownerKey}, or {@code list[index]} when {@code list} is set. */

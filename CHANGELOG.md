@@ -3,6 +3,7 @@
 ## Unreleased
 
 - Preview and Apply are faster on large packs: recipe files are listed once, read once and parsed in parallel, and rewrites copy less (full Preview of the 1.21.1 dev pack from 1.9 s to 0.8 s).
+- Process rules are planned in a fraction of the time: each form looks only at the recipes that make it (dev pack: 400 ms to 35 ms).
 
 ## 0.3.0
 
