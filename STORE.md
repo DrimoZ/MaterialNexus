@@ -207,4 +207,3 @@ not lift them into another project.
 - [ ] Optional dependencies: JEI, EMI, Almost Unified, KubeJS.
 - [ ] Tag `v0.3.0`.
 - [x] Modrinth and CurseForge links in the README.
-- [ ] Report upstream: `docs/upstream/immersiveengineering-silentgear-reload.md`.
