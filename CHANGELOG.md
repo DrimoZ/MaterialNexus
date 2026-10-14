@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- Preview and Apply are faster on large packs: each recipe file is read once instead of twice, and rewrites copy less (full Preview of the 1.21.1 dev pack from 1.9 s to 1.0 s).
+- Preview and Apply are faster on large packs: recipe files are listed once, read once and parsed in parallel, and rewrites copy less (full Preview of the 1.21.1 dev pack from 1.9 s to 0.8 s).
 
 ## 0.3.0
 
