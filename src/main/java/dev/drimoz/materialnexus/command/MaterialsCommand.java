@@ -54,7 +54,7 @@ public final class MaterialsCommand {
         java.util.Map<net.minecraft.resources.ResourceLocation, com.google.gson.JsonElement> recipes = new java.util.HashMap<>();
         // ponytail: reads every recipe file (~0.5 s on 13k recipes); /materials report only, an explicit command.
         for (var holder : server.getRecipeManager().getRecipes()) {
-            dev.drimoz.materialnexus.datapack.RecipeSources.originalJson(server.getResourceManager(), holder.id()).ifPresent(json -> recipes.put(holder.id(), json));
+            dev.drimoz.materialnexus.datapack.RecipeSources.originalJson(server, holder.id()).ifPresent(json -> recipes.put(holder.id(), json));
         }
         return recipes;
     }

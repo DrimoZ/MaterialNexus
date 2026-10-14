@@ -98,7 +98,7 @@ public final class RecipeEdges {
                 // ponytail: reads those files on each request; index them on reload if this shows up in a profile.
                 ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
                 if (type != null && formats.forType(type).isPresent()) {
-                    RecipeSources.originalJson(server.getResourceManager(), holder.id()).ifPresent(json -> edges.addAll(fromJson(json, formats)));
+                    RecipeSources.originalJson(server, holder.id()).ifPresent(json -> edges.addAll(fromJson(json, formats)));
                 }
                 if (out.isEmpty()) continue;
             }
