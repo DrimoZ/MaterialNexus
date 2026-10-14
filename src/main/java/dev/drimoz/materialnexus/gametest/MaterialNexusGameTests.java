@@ -268,11 +268,16 @@ public final class MaterialNexusGameTests {
         long t3 = System.nanoTime();
         var processes = dev.drimoz.materialnexus.datapack.ProcessPlanner.plan(known, formats, resolved, policy);
         long t4 = System.nanoTime();
+        // As PolicyHandler.packContent ends: every written recipe decoded, then guarded by item_exists conditions.
+        var checked = PackContent.withItemConditions(PackContent.withValidRecipes(PackContent.withProcesses(content, processes),
+                json -> RecipeSources.decodeError(json).isEmpty()), formats);
+        long t5 = System.nanoTime();
         org.slf4j.LoggerFactory.getLogger("MaterialNexusPerf").info(
-                "Preview: {} choices, resolve {} ms, read {} recipes {} ms, unification+rewrites {} ms ({} effects), processes {} ms ({} effects)",
+                "Preview: {} choices, resolve {} ms, read {} recipes {} ms, unification+rewrites {} ms ({} effects), processes {} ms ({} effects), "
+                        + "validation+conditions {} ms ({} files), total {} ms",
                 explicit.size(), (t1 - t0) / 1_000_000, known.size(), (t2 - t1) / 1_000_000, (t3 - t2) / 1_000_000, content.effects().size(),
-                (t4 - t3) / 1_000_000, processes.effects().size());
-        helper.assertTrue((t4 - t0) / 1_000_000 < 5000, "full preview took " + (t4 - t0) / 1_000_000 + " ms");
+                (t4 - t3) / 1_000_000, processes.effects().size(), (t5 - t4) / 1_000_000, checked.files().size(), (t5 - t0) / 1_000_000);
+        helper.assertTrue((t5 - t0) / 1_000_000 < 5000, "full preview took " + (t5 - t0) / 1_000_000 + " ms");
         helper.succeed();
     }
 
