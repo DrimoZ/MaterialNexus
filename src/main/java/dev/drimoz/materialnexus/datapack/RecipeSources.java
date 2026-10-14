@@ -26,6 +26,7 @@ import java.util.Set;
  * Server adapter for {@link RecipeRewrites}: recipes touching unified items, with their JSON as it was
  * before Material Nexus (ADR-010). Called on preview / apply only, never per tick.
  */
+@net.minecraftforge.fml.common.Mod.EventBusSubscriber(modid = dev.drimoz.materialnexus.MaterialNexus.MOD_ID)
 public final class RecipeSources {
     /** Any quoted namespaced id in a recipe's JSON text. */
     private static final java.util.regex.Pattern QUOTED_ID = java.util.regex.Pattern.compile("\"([a-z0-9_.-]+:[a-z0-9_./-]+)\"");
@@ -123,20 +124,23 @@ public final class RecipeSources {
 
     /**
      * MNX-114: the pre-MNX text of the recipe files, read once per reload, on first need (a reload is not slowed down
-     * when nobody previews). Text rather than parsed JSON: compact, and nothing can edit it in place. MNX-115: only the
-     * recipes the game loaded, plus those the generated pack overrides (a disabled one is not loaded): files no recipe
-     * comes from (conditions off, a mod's unused data) are never kept. ponytail: the last pack's texts stay in memory
-     * until the next preview, even after leaving the world.
+     * when nobody previews). Text rather than parsed JSON: compact, and nothing can edit it in place. MNX-115/116: only
+     * what previews read: loaded recipes of a known format, plus those the generated pack overrides (a disabled one is
+     * not loaded). Any other recipe is read from its file when asked ({@link #originalJson}). Dropped when the server stops.
      */
     private static synchronized Map<ResourceLocation, String> texts(MinecraftServer server) {
         ResourceManager resources = server.getResourceManager();
         if (texts == null || texts.owner().get() != resources) {
             long start = System.nanoTime();
-            Set<ResourceLocation> loaded = new HashSet<>();
-            server.getRecipeManager().getRecipes().forEach(holder -> loaded.add(file(holder.getId())));
+            RecipeFormats formats = RecipeFormats.load(resources);
+            Set<ResourceLocation> kept = new HashSet<>();
+            for (Recipe<?> holder : server.getRecipeManager().getRecipes()) {
+                ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.getSerializer());
+                if (type != null && formats.forType(type).isPresent()) kept.add(file(holder.getId()));
+            }
             Map<ResourceLocation, String> files = resources.listResourceStacks("recipes", path -> path.getPath().endsWith(".json"))
                     .entrySet().parallelStream()
-                    .filter(e -> loaded.contains(e.getKey()) || e.getValue().stream().anyMatch(r -> r.sourcePackId().equals(GeneratedPack.PACK_ID)))
+                    .filter(e -> kept.contains(e.getKey()) || e.getValue().stream().anyMatch(r -> r.sourcePackId().equals(GeneratedPack.PACK_ID)))
                     .flatMap(e -> originalText(e.getValue()).stream().map(text -> Map.entry(e.getKey(), text)))
                     .collect(java.util.stream.Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
             texts = new Texts(new java.lang.ref.WeakReference<>(resources), files);
@@ -144,6 +148,12 @@ public final class RecipeSources {
                     files.values().stream().mapToLong(String::length).sum() / 1024, (System.nanoTime() - start) / 1_000_000);
         }
         return texts.files();
+    }
+
+    /** Leaving a world (or stopping the server) frees the texts; the next server reads its own. */
+    @net.minecraftforge.eventbus.api.SubscribeEvent
+    public static synchronized void onServerStopped(net.minecraftforge.event.server.ServerStoppedEvent event) {
+        texts = null;
     }
 
     private static ResourceLocation firstOrSelf(List<ResourceLocation> outputs, ResourceLocation recipe) {
@@ -169,7 +179,9 @@ public final class RecipeSources {
 
     /** The highest-priority definition of a recipe, skipping the Material Nexus generated pack. */
     public static Optional<JsonObject> originalJson(MinecraftServer server, ResourceLocation id) {
-        return parse(texts(server).get(file(id)));
+        String text = texts(server).get(file(id));
+        // Outside the cache (another format, only /materials report asks): read from the file, not kept.
+        return parse(text != null ? text : originalText(server.getResourceManager().getResourceStack(file(id))).orElse(null));
     }
 
     /** The text of the top definition below the generated pack; empty when it cannot be read (no lower one is tried). */
