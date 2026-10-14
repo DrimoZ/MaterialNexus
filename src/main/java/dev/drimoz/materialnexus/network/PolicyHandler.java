@@ -212,7 +212,7 @@ final class PolicyHandler {
                     tag -> items.getTag(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag)).map(t -> t.size() > 0).orElse(false)));
         }
         var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
-        return PackContent.withValidRecipes(content, json -> net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, json).isSuccess());
+        return PackContent.withItemConditions(PackContent.withValidRecipes(content, json -> net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, json).isSuccess()), formats);
     }
 
     /**

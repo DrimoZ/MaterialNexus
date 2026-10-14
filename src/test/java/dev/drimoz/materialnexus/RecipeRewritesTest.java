@@ -37,6 +37,24 @@ class RecipeRewritesTest {
         return RecipeFormats.parse(files);
     }
 
+    /** MNX-109: a written recipe is skipped, not reported broken, once a mod it names is gone. */
+    @Test
+    void writtenRecipesLoadOnlyWhileTheirItemsExist() {
+        final String DISABLED = "{\"neoforge:conditions\":[{\"type\":\"neoforge:false\"}]}";
+        String smelting = "{\"type\":\"minecraft:smelting\",\"ingredient\":{\"item\":\"mekanism:dust_bronze\"},\"result\":{\"id\":\"mekanism:ingot_bronze\"},"
+                + "\"neoforge:conditions\":[{\"type\":\"neoforge:mod_loaded\",\"modid\":\"thermal\"}]}";
+        var content = new PackContent.Content(Map.of(
+                "data/thermal/recipe/bronze_from_dust.json", JsonParser.parseString(smelting),
+                "data/test/recipe/vanilla_only.json", JsonParser.parseString("{\"type\":\"minecraft:smelting\",\"ingredient\":{\"item\":\"minecraft:iron_ore\"},\"result\":{\"id\":\"minecraft:iron_ingot\"}}"),
+                "data/test/recipe/disabled.json", JsonParser.parseString(DISABLED)), List.of());
+        var files = PackContent.withItemConditions(content, SHIPPED).files();
+        assertEquals(JsonParser.parseString("[{\"type\":\"neoforge:mod_loaded\",\"modid\":\"thermal\"},"
+                        + "{\"type\":\"neoforge:item_exists\",\"item\":\"mekanism:dust_bronze\"},{\"type\":\"neoforge:item_exists\",\"item\":\"mekanism:ingot_bronze\"}]"),
+                files.get("data/thermal/recipe/bronze_from_dust.json").getAsJsonObject().get("neoforge:conditions"));
+        assertFalse(files.get("data/test/recipe/vanilla_only.json").getAsJsonObject().has("neoforge:conditions"), "vanilla items are always there");
+        assertEquals(JsonParser.parseString(DISABLED), files.get("data/test/recipe/disabled.json"));
+    }
+
     private static Optional<JsonObject> json(String text) {
         return Optional.of(JsonParser.parseString(text).getAsJsonObject());
     }

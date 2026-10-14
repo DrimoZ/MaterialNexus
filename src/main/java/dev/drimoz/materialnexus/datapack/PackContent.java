@@ -122,6 +122,52 @@ public final class PackContent {
      * Every recipe file this pack would write is decoded by the game first ({@code decodes}); one that fails is dropped
      * and reported, so a wrong template or format never reaches the world. Disabling stubs have no type and pass.
      */
+    /**
+     * MNX-109: every recipe file this pack writes is loaded only while each item it names exists. The pack outlives the
+     * mods it was built with: without this, a pack that drops a mod after Apply fills the log with broken recipes (and on
+     * 1.20.1 a single cooking recipe whose result is unknown stops the whole datapack load).
+     */
+    public static Content withItemConditions(Content content, dev.drimoz.materialnexus.integration.RecipeFormats formats) {
+        Map<String, JsonElement> files = new TreeMap<>(content.files());
+        for (var e : content.files().entrySet()) {
+            if (!e.getKey().contains("/recipe/") || !(e.getValue() instanceof JsonObject json) || !json.has("type")) continue;
+            java.util.SortedSet<String> items = new java.util.TreeSet<>();
+            RecipeRewrites.outputIds(json, formats).forEach(id -> items.add(id.toString()));
+            collectItems(json, items);
+            items.removeIf(id -> id.startsWith("minecraft:"));
+            if (items.isEmpty()) continue;
+            JsonObject recipe = json.deepCopy();
+            com.google.gson.JsonArray conditions = recipe.has("neoforge:conditions") && recipe.get("neoforge:conditions").isJsonArray()
+                    ? recipe.getAsJsonArray("neoforge:conditions") : new com.google.gson.JsonArray();
+            for (String id : items) {
+                JsonObject condition = new JsonObject();
+                condition.addProperty("type", "neoforge:item_exists");
+                condition.addProperty("item", id);
+                conditions.add(condition);
+            }
+            recipe.add("neoforge:conditions", conditions);
+            files.put(e.getKey(), recipe);
+        }
+        return new Content(files, content.effects());
+    }
+
+    /** Literal {@code "item": "<id>"} values anywhere in a recipe (ingredients, stacks); tags are left out. */
+    private static void collectItems(JsonElement element, java.util.Set<String> items) {
+        if (element.isJsonArray()) {
+            element.getAsJsonArray().forEach(e -> collectItems(e, items));
+        } else if (element.isJsonObject()) {
+            for (var e : element.getAsJsonObject().entrySet()) {
+                if (e.getKey().equals("neoforge:conditions")) continue;
+                if (e.getKey().equals("item") && e.getValue().isJsonPrimitive()) {
+                    ResourceLocation id = ResourceLocation.tryParse(e.getValue().getAsString());
+                    if (id != null) items.add(id.toString());
+                } else {
+                    collectItems(e.getValue(), items);
+                }
+            }
+        }
+    }
+
     public static Content withValidRecipes(Content content, java.util.function.Predicate<JsonObject> decodes) {
         Map<String, JsonElement> files = new TreeMap<>(content.files());
         java.util.Set<ResourceLocation> invalid = new java.util.HashSet<>();
