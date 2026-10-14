@@ -272,11 +272,11 @@ public final class NexusScreen extends Screen {
 
     /** The effects the server worked out: shown in the review panel if it is still on that step. */
     void showPreview(PreviewPayload payload) {
-        if (drawer instanceof ReviewDrawer review && review.onEffects()) review.accept(payload);
+        if (drawer != null && drawer.onEffects()) drawer.accept(payload);
     }
 
     private void togglePending() {
-        if (drawer instanceof ReviewDrawer review && !review.onEffects()) drawer = null;
+        if (drawer != null && !drawer.onEffects()) drawer = null;
         else review(false);
     }
 
