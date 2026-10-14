@@ -209,7 +209,7 @@ final class PolicyHandler {
                     dev.drimoz.materialnexus.datapack.ProcessTemplates.templates(),
                     tag -> items.getTag(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag)).map(t -> t.size() > 0).orElse(false)));
         }
-        return PackContent.withValidRecipes(content, json -> RecipeSources.decodeError(json).isEmpty());
+        return PackContent.withItemConditions(PackContent.withValidRecipes(content, json -> RecipeSources.decodeError(json).isEmpty()), formats);
     }
 
     /**
