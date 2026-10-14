@@ -13,7 +13,6 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Recipe;
 
 import java.io.IOException;
-import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
@@ -102,24 +101,43 @@ public final class RecipeSources {
         return sources;
     }
 
-    /**
-     * Every known-format recipe with its pre-MNX JSON, for {@link #collect} and process rules (MNX-036). Preview / apply only.
-     * ponytail: reads every file on each preview (24.5k recipes on the 1.20.1 dev pack, MNX-111); index on reload if that
-     * becomes the bottleneck.
-     */
+    /** Every known-format recipe with its pre-MNX JSON, for {@link #collect} and process rules (MNX-036). Preview / apply only. */
     public static List<RecipeRewrites.Source> known(MinecraftServer server, RecipeFormats formats, Collection<ResourceLocation> overridden) {
-        ResourceManager resources = server.getResourceManager();
         Set<ResourceLocation> ids = new java.util.TreeSet<>(overridden);
         for (Recipe<?> holder : server.getRecipeManager().getRecipes()) {
             ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.getSerializer());
             if (type != null && formats.forType(type).isPresent()) ids.add(holder.getId());
         }
-        // MNX-111: one listing instead of one lookup per recipe; files are independent, so they are read and parsed in
-        // parallel, in id order. Our own generated recipes have no file beneath the generated pack: never read back here.
-        Map<ResourceLocation, List<Resource>> files = resources.listResourceStacks("recipes", path -> path.getPath().endsWith(".json"));
+        // Parsed in parallel (independent texts), in id order. Our own generated recipes have no file beneath the
+        // generated pack: never read back here.
+        Map<ResourceLocation, String> files = texts(server.getResourceManager());
         return ids.parallelStream()
-                .flatMap(id -> originalJson(files.getOrDefault(file(id), List.of())).stream().map(json -> new RecipeRewrites.Source(id, Optional.of(json), id)))
+                .flatMap(id -> parse(files.get(file(id))).stream().map(json -> new RecipeRewrites.Source(id, Optional.of(json), id)))
                 .toList();
+    }
+
+    /** The text cache of one resource manager; the game makes a new one on every reload, Apply included. */
+    private record Texts(java.lang.ref.WeakReference<ResourceManager> owner, Map<ResourceLocation, String> files) { }
+
+    private static Texts texts;
+
+    /**
+     * MNX-114: the pre-MNX text of every recipe file, read once per reload, on first need (a reload is not slowed down
+     * when nobody previews). Text rather than parsed JSON: compact (4 MB on the 1.21.1 dev pack, 25 MB for the 68k files of the 1.20.1 one) and nothing can edit it
+     * in place. ponytail: the last pack's texts stay in memory until the next preview, even after leaving the world.
+     */
+    private static synchronized Map<ResourceLocation, String> texts(ResourceManager resources) {
+        if (texts == null || texts.owner().get() != resources) {
+            long start = System.nanoTime();
+            Map<ResourceLocation, String> files = resources.listResourceStacks("recipes", path -> path.getPath().endsWith(".json"))
+                    .entrySet().parallelStream()
+                    .flatMap(e -> originalText(e.getValue()).stream().map(text -> Map.entry(e.getKey(), text)))
+                    .collect(java.util.stream.Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+            texts = new Texts(new java.lang.ref.WeakReference<>(resources), files);
+            com.mojang.logging.LogUtils.getLogger().info("Material Nexus read {} recipe files ({} KB of text) in {} ms", files.size(),
+                    files.values().stream().mapToLong(String::length).sum() / 1024, (System.nanoTime() - start) / 1_000_000);
+        }
+        return texts.files();
     }
 
     private static ResourceLocation firstOrSelf(List<ResourceLocation> outputs, ResourceLocation recipe) {
@@ -145,20 +163,30 @@ public final class RecipeSources {
 
     /** The highest-priority definition of a recipe, skipping the Material Nexus generated pack. */
     public static Optional<JsonObject> originalJson(ResourceManager resources, ResourceLocation id) {
-        return originalJson(resources.getResourceStack(file(id)));
+        return parse(texts(resources).get(file(id)));
     }
 
-    private static Optional<JsonObject> originalJson(List<Resource> stack) {
+    /** The text of the top definition below the generated pack; empty when it cannot be read (no lower one is tried). */
+    private static Optional<String> originalText(List<Resource> stack) {
         for (int i = stack.size() - 1; i >= 0; i--) {
             Resource resource = stack.get(i);
             if (resource.sourcePackId().equals(GeneratedPack.PACK_ID)) continue;
-            try (Reader reader = resource.openAsReader()) {
-                JsonElement json = JsonParser.parseReader(reader);
-                return json.isJsonObject() ? Optional.of(json.getAsJsonObject()) : Optional.empty();
-            } catch (IOException | RuntimeException e) {
+            try (var in = resource.open()) {
+                return Optional.of(new String(in.readAllBytes(), java.nio.charset.StandardCharsets.UTF_8));
+            } catch (IOException e) {
                 return Optional.empty();
             }
         }
         return Optional.empty();
+    }
+
+    private static Optional<JsonObject> parse(String text) {
+        if (text == null) return Optional.empty();
+        try {
+            JsonElement json = JsonParser.parseString(text);
+            return json.isJsonObject() ? Optional.of(json.getAsJsonObject()) : Optional.empty();
+        } catch (RuntimeException e) {
+            return Optional.empty();
+        }
     }
 }

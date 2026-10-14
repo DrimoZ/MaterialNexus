@@ -4,6 +4,7 @@
 
 - Preview and Apply are faster on large packs: recipe files are listed once, read once and parsed in parallel, and rewrites copy less (full Preview of the 24.5k-recipe dev pack from 5.5 s to 3.7 s).
 - Process rules are planned in a fraction of the time: each form looks only at the recipes that make it (24.5k-recipe dev pack: 1.8 s to 0.1 s; full Preview now 1.7 s).
+- Recipe files are read once after each reload instead of on every preview (24.5k-recipe dev pack: reading 1.2 s to 0.1 s per preview, full Preview 0.7 s; the first preview after a reload reads the files, 1.3 to 1.4 s).
 
 ## 0.3.0
 
