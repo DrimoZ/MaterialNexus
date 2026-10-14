@@ -4,7 +4,7 @@
 
 - Preview and Apply are faster on large packs: recipe files are listed once, read once and parsed in parallel, and rewrites copy less (full Preview of the 1.21.1 dev pack from 1.9 s to 0.8 s).
 - Process rules are planned in a fraction of the time: each form looks only at the recipes that make it (dev pack: 400 ms to 35 ms).
-- Recipe files are read once after each reload instead of on every preview, keeping only those of recipes the game loaded (dev pack: reading 290 ms to 50 ms per preview).
+- Recipe files are read once after each reload instead of on every preview, keeping only the recipes Material Nexus can read, until the world closes (dev pack: reading 290 ms to 50 ms per preview).
 
 ## 0.3.0
 
