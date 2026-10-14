@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Preview and Apply are faster on large packs: recipe files are listed once, read once and parsed in parallel, and rewrites copy less (full Preview of the 24.5k-recipe dev pack from 5.5 s to 3.7 s).
+
 ## 0.3.0
 
 - The screen is redesigned. A path at the top, a menu on the left (Overview, Materials, Forms, then Rule files and Presets under Advanced) and one bar at the bottom for what is not applied yet. Four themes.
