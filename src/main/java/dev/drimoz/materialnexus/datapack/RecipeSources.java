@@ -44,60 +44,69 @@ public final class RecipeSources {
         return ids;
     }
 
-    /** One pass over the text instead of one search per alternative (MNX-044: 178 alternatives × 13k recipes). */
-    private static boolean mentions(String text, Set<ResourceLocation> ids) {
-        var m = QUOTED_ID.matcher(text);
-        while (m.find()) {
-            ResourceLocation id = ResourceLocation.tryParse(m.group(1));
-            if (id != null && ids.contains(id)) return true;
+    /** Any string value naming one of {@code ids}, in one walk of the tree (MNX-044: 178 alternatives × 13k recipes). */
+    private static boolean mentions(JsonElement element, Set<ResourceLocation> ids) {
+        if (element.isJsonPrimitive()) {
+            if (!element.getAsJsonPrimitive().isString()) return false;
+            String text = element.getAsString();
+            // Namespaced only: a bare word ("misc") would parse as minecraft:misc.
+            ResourceLocation id = text.indexOf(':') > 0 ? ResourceLocation.tryParse(text) : null;
+            return id != null && ids.contains(id);
+        }
+        if (element.isJsonArray()) {
+            for (JsonElement e : element.getAsJsonArray()) if (mentions(e, ids)) return true;
+        } else if (element.isJsonObject()) {
+            for (var e : element.getAsJsonObject().entrySet()) if (mentions(e.getValue(), ids)) return true;
         }
         return false;
+    }
+
+    public static List<RecipeRewrites.Source> collect(MinecraftServer server, Map<ResourceLocation, ResourceLocation> conversions, RecipeFormats formats,
+                                                      Collection<ResourceLocation> overridden) {
+        return collect(server, conversions, formats, overridden, known(server, formats, overridden));
     }
 
     /**
      * Known-format recipes producing or literally consuming an alternative or canonical item, read from
      * their JSON (Mekanism does not expose its outputs through vanilla APIs); unknown-format recipes
      * producing an alternative, to be listed as unsupported. {@code conversions} maps alternative to canonical.
+     * {@code known} is {@link #known} for the same {@code overridden}: read once, shared with process rules (MNX-111).
      */
     public static List<RecipeRewrites.Source> collect(MinecraftServer server, Map<ResourceLocation, ResourceLocation> conversions, RecipeFormats formats,
-                                                      Collection<ResourceLocation> overridden) {
-        ResourceManager resources = server.getResourceManager();
+                                                      Collection<ResourceLocation> overridden, List<RecipeRewrites.Source> known) {
         Set<ResourceLocation> ours = new HashSet<>(overridden);
         Set<ResourceLocation> items = new HashSet<>(conversions.keySet());
         items.addAll(conversions.values());
+        Set<ResourceLocation> read = new HashSet<>();
         List<RecipeRewrites.Source> sources = new ArrayList<>();
 
-        // ponytail: reads the JSON of every known-format recipe on each preview (13k on the dev pack: ~0.5 s, explicit
-        // player action only; MNX-044 measured a worst-case preview under 2 s). Index on reload if packs get much bigger.
-        for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
-            if (ours.contains(holder.id())) continue;
-            ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
-            // A recipe with no file (added in memory by a script, e.g. KubeJS) has no JSON we may rewrite: it is
-            // reported like an unknown type rather than silently skipped.
-            Optional<JsonObject> file = type != null && formats.forType(type).isPresent() ? originalJson(resources, holder.id()) : Optional.empty();
-            if (file.isPresent()) {
-                JsonObject json = file.get();
-                List<ResourceLocation> outputs = RecipeRewrites.outputIds(json, formats);
-                boolean touches = outputs.stream().anyMatch(items::contains) || mentions(json.toString(), conversions.keySet());
-                if (touches) sources.add(new RecipeRewrites.Source(holder.id(), Optional.of(json), firstOrSelf(outputs, holder.id())));
-            } else {
-                ItemStack out = holder.value().getResultItem(server.registryAccess());
-                ResourceLocation result = out.isEmpty() ? null : BuiltInRegistries.ITEM.getKey(out.getItem());
-                if (result != null && conversions.containsKey(result)) {
-                    sources.add(new RecipeRewrites.Source(holder.id(), Optional.empty(), result));
-                }
-            }
+        for (RecipeRewrites.Source s : known) {
+            read.add(s.id());
+            JsonObject json = s.json().orElseThrow();
+            List<ResourceLocation> outputs = RecipeRewrites.outputIds(json, formats);
+            // Recipes we rewrote or disabled are judged by their original JSON, not by what we made of them.
+            boolean touches = ours.contains(s.id()) || outputs.stream().anyMatch(items::contains) || mentions(json, conversions.keySet());
+            if (touches) sources.add(new RecipeRewrites.Source(s.id(), s.json(), firstOrSelf(outputs, s.id())));
         }
-        // Recipes we rewrote or disabled are judged by their original JSON, not by what we made of them.
-        for (ResourceLocation id : ours) {
-            originalJson(resources, id).ifPresent(json ->
-                    sources.add(new RecipeRewrites.Source(id, Optional.of(json), firstOrSelf(RecipeRewrites.outputIds(json, formats), id))));
+        // A recipe with no file (added in memory by a script, e.g. KubeJS) has no JSON we may rewrite: it is
+        // reported like an unknown type rather than silently skipped.
+        for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
+            if (ours.contains(holder.id()) || read.contains(holder.id())) continue;
+            ItemStack out = holder.value().getResultItem(server.registryAccess());
+            ResourceLocation result = out.isEmpty() ? null : BuiltInRegistries.ITEM.getKey(out.getItem());
+            if (result != null && conversions.containsKey(result)) {
+                sources.add(new RecipeRewrites.Source(holder.id(), Optional.empty(), result));
+            }
         }
         sources.sort(Comparator.comparing(RecipeRewrites.Source::id));
         return sources;
     }
 
-    /** Every known-format recipe with its pre-MNX JSON, for process rules (MNX-036). Preview / apply only. */
+    /**
+     * Every known-format recipe with its pre-MNX JSON, for {@link #collect} and process rules (MNX-036). Preview / apply only.
+     * ponytail: reads every file on each preview (24.5k recipes on the 1.20.1 dev pack, MNX-111); index on reload if that
+     * becomes the bottleneck.
+     */
     public static List<RecipeRewrites.Source> known(MinecraftServer server, RecipeFormats formats, Collection<ResourceLocation> overridden) {
         ResourceManager resources = server.getResourceManager();
         Set<ResourceLocation> ids = new java.util.TreeSet<>(overridden);

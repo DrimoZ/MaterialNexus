@@ -55,7 +55,9 @@ public final class RecipeRewrites {
             }
             JsonObject original = s.json().get();
             // Inputs too: an alternative named as a literal item would otherwise be asked for after it was converted away.
-            JsonObject json = withOutputs(withInputs(original, conversions, format.get().outputKeys()), format.get().outputKeys(), conversions);
+            JsonObject json = original.deepCopy();
+            replaceInputs(json, conversions, format.get().outputKeys());
+            replaceOutputs(json, format.get().outputKeys(), conversions);
             if (!json.equals(original)) rewritten.put(s.id(), json);
         }
 
@@ -116,9 +118,8 @@ public final class RecipeRewrites {
         }
     }
 
-    /** Replaces alternatives in the outputs (a stack, a bare id, or nested in lists and objects such as IE secondaries). */
-    static JsonObject withOutputs(JsonObject recipe, List<String> outputKeys, Map<ResourceLocation, ResourceLocation> conversions) {
-        JsonObject copy = recipe.deepCopy();
+    /** Replaces alternatives in the outputs (a stack, a bare id, or nested in lists and objects such as IE secondaries), in place. */
+    private static void replaceOutputs(JsonObject copy, List<String> outputKeys, Map<ResourceLocation, ResourceLocation> conversions) {
         for (String key : outputKeys) {
             JsonElement output = copy.get(key);
             if (output == null) continue;
@@ -129,7 +130,6 @@ public final class RecipeRewrites {
                 replaceStacks(output, conversions);
             }
         }
-        return copy;
     }
 
     private static void replaceStacks(JsonElement output, Map<ResourceLocation, ResourceLocation> conversions) {
@@ -148,13 +148,11 @@ public final class RecipeRewrites {
         }
     }
 
-    /** Replaces every literal {@code "item": <alternative>} outside the outputs; tag ingredients are left as they are. */
-    static JsonObject withInputs(JsonObject recipe, Map<ResourceLocation, ResourceLocation> conversions, List<String> outputKeys) {
-        JsonObject copy = recipe.deepCopy();
+    /** Replaces every literal {@code "item": <alternative>} outside the outputs, in place; tag ingredients are left as they are. */
+    private static void replaceInputs(JsonObject copy, Map<ResourceLocation, ResourceLocation> conversions, List<String> outputKeys) {
         for (String key : copy.keySet()) {
             if (!outputKeys.contains(key)) replaceItems(copy.get(key), conversions);
         }
-        return copy;
     }
 
     private static void replaceItems(JsonElement element, Map<ResourceLocation, ResourceLocation> conversions) {
@@ -172,12 +170,12 @@ public final class RecipeRewrites {
         }
     }
 
-    /** What makes two recipes the same for a player: everything but grouping and book category. */
+    private static final java.util.Set<String> COSMETIC = java.util.Set.of("group", "category", "show_notification");
+
+    /** What makes two recipes the same for a player: everything but grouping and book category. Shares the children: read only. */
     private static JsonElement normalized(JsonObject recipe) {
-        JsonObject copy = recipe.deepCopy();
-        copy.remove("group");
-        copy.remove("category");
-        copy.remove("show_notification");
+        JsonObject copy = new JsonObject();
+        recipe.entrySet().forEach(e -> { if (!COSMETIC.contains(e.getKey())) copy.add(e.getKey(), e.getValue()); });
         return copy;
     }
 

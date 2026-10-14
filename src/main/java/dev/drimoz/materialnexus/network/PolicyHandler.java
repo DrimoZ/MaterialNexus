@@ -201,13 +201,16 @@ final class PolicyHandler {
         boolean auPresent = net.neoforged.fml.ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID);
         var resolved = CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy);
         RecipeFormats formats = RecipeFormats.load(server.getResourceManager());
+        var overridden = RecipeRewrites.overridden(applied);
+        // Read at most once, and only when rewrites or process rules need it (MNX-111).
+        var known = com.google.common.base.Suppliers.memoize(() -> RecipeSources.known(server, formats, overridden));
         PackContent.Content content = PackContent.full(resolved, policy, auPresent, (conversions, ownership) -> RecipeRewrites.plan(
-                RecipeSources.collect(server, conversions, formats, RecipeRewrites.overridden(applied)), conversions, formats, ownership),
+                RecipeSources.collect(server, conversions, formats, overridden, known.get()), conversions, formats, ownership),
                 SnapshotManager.current().conventionTags());
         if (!policy.processes().isEmpty()) {
             var items = server.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.ITEM);
             content = PackContent.withProcesses(content, dev.drimoz.materialnexus.datapack.ProcessPlanner.plan(
-                    RecipeSources.known(server, formats, RecipeRewrites.overridden(applied)), formats, resolved, policy,
+                    known.get(), formats, resolved, policy,
                     dev.drimoz.materialnexus.datapack.ProcessTemplates.templates(),
                     tag -> items.getTag(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag)).map(t -> t.size() > 0).orElse(false)));
         }
