@@ -56,7 +56,7 @@ public final class RecipeFamilies {
             if (!out.isEmpty()) {
                 outputs.add(BuiltInRegistries.ITEM.getKey(out.getItem()));
             } else if (type != null && formats.forType(type).isPresent()) {
-                RecipeSources.originalJson(server.getResourceManager(), holder.getId()).ifPresent(json -> outputs.addAll(RecipeRewrites.outputIds(json, formats)));
+                RecipeSources.originalJson(server, holder.getId()).ifPresent(json -> outputs.addAll(RecipeRewrites.outputIds(json, formats)));
             }
             for (ResourceLocation output : outputs) {
                 if (!members.contains(output)) continue;
@@ -66,7 +66,7 @@ public final class RecipeFamilies {
                         : alternatives.contains(output) ? (known ? Status.ALTERNATIVE : Status.UNSUPPORTED)
                         : Status.OTHER;
                 java.util.Optional<ResourceLocation> replaced = status != Status.REWRITTEN ? java.util.Optional.empty()
-                        : RecipeSources.originalJson(server.getResourceManager(), holder.getId()).stream()
+                        : RecipeSources.originalJson(server, holder.getId()).stream()
                                 .flatMap(json -> RecipeRewrites.outputIds(json, formats).stream()).filter(alternatives::contains).findFirst();
                 rows.add(new Row(holder.getId(), type == null ? holder.getId() : type, output, status, replaced));
                 break;

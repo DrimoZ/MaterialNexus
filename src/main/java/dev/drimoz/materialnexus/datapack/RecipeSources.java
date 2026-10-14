@@ -110,7 +110,7 @@ public final class RecipeSources {
         }
         // Parsed in parallel (independent texts), in id order. Our own generated recipes have no file beneath the
         // generated pack: never read back here.
-        Map<ResourceLocation, String> files = texts(server.getResourceManager());
+        Map<ResourceLocation, String> files = texts(server);
         return ids.parallelStream()
                 .flatMap(id -> parse(files.get(file(id))).stream().map(json -> new RecipeRewrites.Source(id, Optional.of(json), id)))
                 .toList();
@@ -122,15 +122,21 @@ public final class RecipeSources {
     private static Texts texts;
 
     /**
-     * MNX-114: the pre-MNX text of every recipe file, read once per reload, on first need (a reload is not slowed down
-     * when nobody previews). Text rather than parsed JSON: compact (4 MB on the 1.21.1 dev pack, 25 MB for the 68k files of the 1.20.1 one) and nothing can edit it
-     * in place. ponytail: the last pack's texts stay in memory until the next preview, even after leaving the world.
+     * MNX-114: the pre-MNX text of the recipe files, read once per reload, on first need (a reload is not slowed down
+     * when nobody previews). Text rather than parsed JSON: compact, and nothing can edit it in place. MNX-115: only the
+     * recipes the game loaded, plus those the generated pack overrides (a disabled one is not loaded): files no recipe
+     * comes from (conditions off, a mod's unused data) are never kept. ponytail: the last pack's texts stay in memory
+     * until the next preview, even after leaving the world.
      */
-    private static synchronized Map<ResourceLocation, String> texts(ResourceManager resources) {
+    private static synchronized Map<ResourceLocation, String> texts(MinecraftServer server) {
+        ResourceManager resources = server.getResourceManager();
         if (texts == null || texts.owner().get() != resources) {
             long start = System.nanoTime();
+            Set<ResourceLocation> loaded = new HashSet<>();
+            server.getRecipeManager().getRecipes().forEach(holder -> loaded.add(file(holder.getId())));
             Map<ResourceLocation, String> files = resources.listResourceStacks("recipes", path -> path.getPath().endsWith(".json"))
                     .entrySet().parallelStream()
+                    .filter(e -> loaded.contains(e.getKey()) || e.getValue().stream().anyMatch(r -> r.sourcePackId().equals(GeneratedPack.PACK_ID)))
                     .flatMap(e -> originalText(e.getValue()).stream().map(text -> Map.entry(e.getKey(), text)))
                     .collect(java.util.stream.Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
             texts = new Texts(new java.lang.ref.WeakReference<>(resources), files);
@@ -162,8 +168,8 @@ public final class RecipeSources {
     }
 
     /** The highest-priority definition of a recipe, skipping the Material Nexus generated pack. */
-    public static Optional<JsonObject> originalJson(ResourceManager resources, ResourceLocation id) {
-        return parse(texts(resources).get(file(id)));
+    public static Optional<JsonObject> originalJson(MinecraftServer server, ResourceLocation id) {
+        return parse(texts(server).get(file(id)));
     }
 
     /** The text of the top definition below the generated pack; empty when it cannot be read (no lower one is tried). */
