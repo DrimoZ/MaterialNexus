@@ -20,6 +20,10 @@
 
 - A created item is drawn with `config/materialnexus/textures/<material>_<form>.png` when the file is there, nothing to declare.
 
+- New default drawings for created items: 25 templates redrawn so the tint reads as the material, and the double plate as a form. The previous, softer drawings stay available from the screen's Settings.
+
+- The generated pack no longer breaks a world when a mod is removed after Apply: each recipe it writes loads only while every item it names exists.
+
 - `/materials report` ranks the recipe types no format covers by the recipes naming a material item, so the mods worth a format are known.
 
 - Screen settings: technical id under item names, groups open by default, reopening where the screen was left, and a smooth font (IBM Plex Sans; the game font stays the default).
