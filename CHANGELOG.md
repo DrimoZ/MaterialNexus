@@ -26,6 +26,10 @@
 
 - Thermal Series: its machine recipes (press, pulverizer, smelter, sawmill, centrifuge, insolator...) are rewritten like the others, and process rules can write press (plate, gear), pulverizer and smelter recipes. Tinkers' Construct needs nothing: its casting recipes give the item of a tag, so they follow the kept item once the tag is cleaned.
 
+- New default drawings for created items: 25 templates redrawn so the tint reads as the material, and the double plate as a form. The previous, softer drawings stay available from the screen's Settings.
+
+- The generated pack no longer breaks a world when a mod is removed after Apply: each recipe it writes loads only while every item it names exists.
+
 ## 0.2.0
 
 - New logo.
