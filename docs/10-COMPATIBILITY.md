@@ -3,16 +3,12 @@
 ## Integration boundary
 
 ```text
-IntegrationAdapter
-  ├── CreateAdapter
-  ├── MekanismAdapter
-  ├── ImmersiveEngineeringAdapter
-  ├── ThermalAdapter
-  ├── JeiAdapter
-  └── EmiAdapter
+client/compat/jei, client/compat/emi   recipe viewers (RecipeViewer)
+integration/kubejs                     script binding and script recipe edits
+integration/RecipeFormats              machine mods (Create, Mekanism, IE...) described as data, no code per mod
 ```
 
-An adapter can contribute semantic evidence, recipe-family hints and viewer hooks. It cannot mutate the core model directly.
+There is no common adapter type: each integration plugs into its own mod's entry point. An integration can contribute evidence, recipe formats and viewer hooks. It cannot mutate the core model directly.
 
 ## Optional dependency rule
 

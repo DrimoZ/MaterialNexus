@@ -27,7 +27,7 @@ import java.util.function.Consumer;
  * line and each group removable, nothing sent to the server. "Effects on the pack": what applying would do, asked from
  * the server when the tab opens, grouped by gravity: what to look at first, then the changes, then what is undone.
  */
-final class ReviewDrawer implements Drawer {
+final class ReviewDrawer {
     private static final int LINE = 12;
     private static final int HEAD = 44;
     private static final int FOOT = 28;
@@ -93,20 +93,16 @@ final class ReviewDrawer implements Drawer {
                 || PendingChanges.size() > 0);
     }
 
-    @Override
     public void layout(int x, int y, int width, int height) {
         this.x = x; this.y = y; this.width = width; this.height = height;
     }
 
-    @Override
     public boolean contains(double mx, double my) { return mx >= x && mx < x + width && my >= y && my < y + height; }
 
-    @Override
     public void scroll(double delta) {
         scroll = Math.max(0, scroll - delta * LINE * 3);
     }
 
-    @Override
     public boolean click(double mx, double my, int button) {
         return hits.click(mx, my, button) || contains(mx, my);
     }
@@ -164,7 +160,6 @@ final class ReviewDrawer implements Drawer {
 
     // ---- render --------------------------------------------------------------------------------------------
 
-    @Override
     public void render(GuiGraphics g, Font font, int mx, int my) {
         hits.clear();
         g.fill(x, y, x + width, y + height, Theme.SURFACE);

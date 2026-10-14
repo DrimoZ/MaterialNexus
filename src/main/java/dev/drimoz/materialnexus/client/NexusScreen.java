@@ -73,7 +73,7 @@ public final class NexusScreen extends Screen {
     private MaterialDetailPayload detail;
     private String recipesOnArrival;
     private final MaterialSidebar list = new MaterialSidebar(this::openMaterial);
-    private Drawer drawer;
+    private ReviewDrawer drawer;
     private int contentX, contentY, contentW, contentH;
 
     /** MNX-056: the latest applies and reverts, newest first (lines of history.jsonl). */
@@ -272,11 +272,11 @@ public final class NexusScreen extends Screen {
 
     /** The effects the server worked out: shown in the review panel if it is still on that step. */
     void showPreview(PreviewPayload payload) {
-        if (drawer instanceof ReviewDrawer review && review.onEffects()) review.accept(payload);
+        if (drawer != null && drawer.onEffects()) drawer.accept(payload);
     }
 
     private void togglePending() {
-        if (drawer instanceof ReviewDrawer review && !review.onEffects()) drawer = null;
+        if (drawer != null && !drawer.onEffects()) drawer = null;
         else review(false);
     }
 

@@ -34,10 +34,6 @@ public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.
         data = java.util.Map.copyOf(data);
     }
 
-    public PreviewRequest(List<CanonicalChange> changes, boolean apply) {
-        this(changes, apply, java.util.Optional.empty(), java.util.Map.of(), List.of(), java.util.Map.of(), java.util.Optional.empty());
-    }
-
     private static final int MAX_RULES = 256;
     private static final int MAX_ROUTES = 32;
 
