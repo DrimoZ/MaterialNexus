@@ -61,3 +61,4 @@
 | MNX-112 | P2 | Dead code cleanup | Unused types, constructor and method removed; single-implementation `Drawer` interface folded into `ReviewDrawer`; compatibility doc describes the integrations as they are |
 | MNX-113 | P1 | Process rules at scale | Recipes indexed once by what they make: each target reads only its own producers and examples (no scan of every recipe per form); same files and effects, in the same order |
 | MNX-114 | P1 | Recipe texts read once per reload | Pre-MNX text of every recipe file read on first need after a reload and kept until the next one (one log line per build); Preview, material detail and /materials parse from it; same JSON as reading the files |
+| MNX-115 | P2 | Recipe text cache limited to loaded recipes | Only files the game loaded a recipe from, plus those the generated pack overrides (disabled originals stay readable); same sources, files and effects |
