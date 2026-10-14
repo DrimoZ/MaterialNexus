@@ -56,3 +56,4 @@
 | MNX-092 | P2 | Tag folder as a form | Declared from Rule files, written in the declared patterns file, applied like any change |
 | MNX-093..104 | P1 | UI redesign | Theme roles, shell, tables with inspector, review panel, settings; captures and wiki regenerated (docs/22, docs/07) |
 | MNX-107 | P1 | New default item templates | 25 redrawn templates with stretched levels, double plate as a form, the drawings as an optional "soft" resource pack; sheet template shipped, offered once its relation to plate is a setting |
+| MNX-109 | P1 | Generated pack safe without its mods | Every recipe the pack writes carries an item_exists condition per item it names: a pack that drops a mod after Apply still opens its worlds (on 1.20.1 one cooking recipe with an unknown result stopped the whole datapack load) |
