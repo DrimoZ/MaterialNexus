@@ -73,7 +73,7 @@ public final class NexusScreen extends Screen {
     private MaterialDetailPayload detail;
     private String recipesOnArrival;
     private final MaterialSidebar list = new MaterialSidebar(this::openMaterial);
-    private Drawer drawer;
+    private ReviewDrawer drawer;
     private int contentX, contentY, contentW, contentH;
 
     /** MNX-056: the latest applies and reverts, newest first (lines of history.jsonl). */

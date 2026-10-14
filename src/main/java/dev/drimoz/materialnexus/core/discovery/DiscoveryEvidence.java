@@ -7,8 +7,6 @@ public record DiscoveryEvidence(Confidence confidence, String explanation) {
         EXPLICIT_DEFINITION,
         MATERIAL_TAG,
         INTEGRATION,
-        CONSERVATIVE_HEURISTIC;
-
-        public boolean isStrongerThan(Confidence other) { return ordinal() < other.ordinal(); }
+        CONSERVATIVE_HEURISTIC
     }
 }
