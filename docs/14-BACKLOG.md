@@ -60,3 +60,4 @@
 | MNX-111 | P1 | Preview performance on large packs | Measure where the full Preview spends its time on the 1.20.1 dev pack (24.5k recipes, 7.5 s against the 5 s of MNX-044: rewrites 3.3 s, reading recipes 2.2 s, processes 2 s) and bring it back under 5 s, or justify a new threshold |
 | MNX-112 | P2 | Dead code cleanup | Unused types, constructor and method removed; single-implementation `Drawer` interface folded into `ReviewDrawer`; compatibility doc describes the integrations as they are |
 | MNX-113 | P1 | Process rules at scale | Recipes indexed once by what they make: each target reads only its own producers and examples (no scan of every recipe per form); same files and effects, in the same order |
+| MNX-114 | P1 | Recipe texts read once per reload | Pre-MNX text of every recipe file read on first need after a reload and kept until the next one (one log line per build); Preview, material detail and /materials parse from it; same JSON as reading the files |
