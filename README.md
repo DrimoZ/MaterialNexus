@@ -10,6 +10,8 @@ you have read the preview and pressed Apply.
 
 **Documentation:** [the wiki](https://github.com/DrimoZ/MaterialNexus/wiki)
 
+**Download:** [Modrinth](https://modrinth.com/mod/material-nexus) · [CurseForge](https://www.curseforge.com/minecraft/mc-mods/material-nexus)
+
 ## What it does
 
 - **Finds every material form** in the pack, from the convention tags (`forge:ingots/copper`,

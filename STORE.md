@@ -190,11 +190,11 @@ not lift them into another project.
 
 ## Release checklist: 0.3.0
 
-- [ ] `main` green: `./gradlew test`, `./gradlew runGameTestServer`, `./gradlew runGameTestServer -Pvanilla`
+- [ ] `forge-1.20.1` green: `./gradlew test`, `./gradlew runGameTestServer`, `./gradlew runGameTestServer -Pvanilla`
       (and `-Pau`, `-Pkubejs` when those parts changed).
-- [ ] New textures of the default items in place: no jar and no image (store art, wiki, gallery) before them.
-- [ ] Project avatar: `src/main/resources/logo.png` (from `java tools/GenerateLogo.java`).
-- [ ] Art: generated and pushed on `main`; the description loads it from GitHub.
+- [x] New textures of the default items in place: no jar and no image (store art, wiki, gallery) before them (MNX-107).
+- [x] Project avatar: `src/main/resources/logo.png` (from `java tools/GenerateLogo.java`), unchanged since 0.2.0.
+- [x] Art: generated and pushed on `main`; the description loads it from GitHub (MNX-107).
 - [ ] Gallery (850 px wide at most): `screen_material.png`, `screen_inspector.png`, `screen_matrix.png`,
       `screen_priority.png`, `screen_preview.png`, `screen_process.png`. The wider ones (`screen_home.png`,
       `screen_triage.png`, `screen_recipes.png`...) are for the description only.
@@ -202,5 +202,6 @@ not lift them into another project.
 - [ ] Upload the jar from `gradlew build` (`build/libs`), release type **Beta**,
       loader Forge, with the `## 0.3.0` section of `CHANGELOG.md`.
 - [ ] Optional dependencies: JEI, EMI, Almost Unified, KubeJS.
-- [ ] Tag `v0.3.0`, and add the CurseForge link to the README and to the links above.
+- [ ] Tag `v0.3.0+1.20.1`.
+- [x] Modrinth and CurseForge links in the README.
 - [ ] Report upstream: `docs/upstream/immersiveengineering-silentgear-reload.md`.
