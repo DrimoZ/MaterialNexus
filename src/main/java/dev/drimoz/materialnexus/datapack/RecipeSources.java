@@ -114,22 +114,28 @@ public final class RecipeSources {
             ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
             if (type != null && formats.forType(type).isPresent()) ids.add(holder.id());
         }
-        List<RecipeRewrites.Source> sources = new ArrayList<>();
-        // Our own generated recipes have no file beneath the generated pack, so they are never read back here.
-        for (ResourceLocation id : ids) {
-            originalJson(resources, id).ifPresent(json -> sources.add(new RecipeRewrites.Source(id, Optional.of(json), id)));
-        }
-        return sources;
+        // MNX-111: one listing instead of one lookup per recipe; files are independent, so they are read and parsed in
+        // parallel, in id order. Our own generated recipes have no file beneath the generated pack: never read back here.
+        Map<ResourceLocation, List<Resource>> files = resources.listResourceStacks("recipe", path -> path.getPath().endsWith(".json"));
+        return ids.parallelStream()
+                .flatMap(id -> originalJson(files.getOrDefault(file(id), List.of())).stream().map(json -> new RecipeRewrites.Source(id, Optional.of(json), id)))
+                .toList();
     }
 
     private static ResourceLocation firstOrSelf(List<ResourceLocation> outputs, ResourceLocation recipe) {
         return outputs.isEmpty() ? recipe : outputs.getFirst();
     }
 
+    private static ResourceLocation file(ResourceLocation id) {
+        return ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "recipe/" + id.getPath() + ".json");
+    }
+
     /** The highest-priority definition of a recipe, skipping the Material Nexus generated pack. */
     public static Optional<JsonObject> originalJson(ResourceManager resources, ResourceLocation id) {
-        ResourceLocation file = ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "recipe/" + id.getPath() + ".json");
-        List<Resource> stack = resources.getResourceStack(file);
+        return originalJson(resources.getResourceStack(file(id)));
+    }
+
+    private static Optional<JsonObject> originalJson(List<Resource> stack) {
         for (int i = stack.size() - 1; i >= 0; i--) {
             Resource resource = stack.get(i);
             if (resource.sourcePackId().equals(GeneratedPack.PACK_ID)) continue;
