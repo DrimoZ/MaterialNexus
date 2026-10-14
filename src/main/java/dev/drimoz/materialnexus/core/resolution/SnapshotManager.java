@@ -1,5 +1,6 @@
 package dev.drimoz.materialnexus.core.resolution;
 
+import java.util.Objects;
 import java.util.concurrent.atomic.AtomicReference;
 
 /** Owns the immutable server-side resolved state. */
@@ -15,7 +16,6 @@ public final class SnapshotManager {
     }
 
     public static void swap(ResolvedSnapshot snapshot) {
-        if (snapshot == null) throw new IllegalArgumentException("snapshot cannot be null");
-        ACTIVE.set(snapshot);
+        ACTIVE.set(Objects.requireNonNull(snapshot, "snapshot"));
     }
 }
