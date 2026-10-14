@@ -57,3 +57,4 @@
 | MNX-093..104 | P1 | UI redesign | Theme roles, shell, tables with inspector, review panel, settings; captures and wiki regenerated (docs/22, docs/07) |
 | MNX-107 | P1 | New default item templates | 25 redrawn templates with stretched levels, double plate as a form, the drawings as an optional "soft" resource pack; sheet template shipped, offered once its relation to plate is a setting |
 | MNX-109 | P1 | Generated pack safe without its mods | Every recipe the pack writes carries an item_exists condition per item it names: a pack that drops a mod after Apply still opens its worlds (on 1.20.1 one cooking recipe with an unknown result stopped the whole datapack load) |
+| MNX-111 | P1 | Preview performance on large packs | Measure where the full Preview spends its time on the 1.20.1 dev pack (24.5k recipes, 7.5 s against the 5 s of MNX-044: rewrites 3.3 s, reading recipes 2.2 s, processes 2 s) and bring it back under 5 s, or justify a new threshold |
