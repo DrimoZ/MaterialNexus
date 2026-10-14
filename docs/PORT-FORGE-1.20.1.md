@@ -59,6 +59,7 @@ Their recipe format files stay (they only name recipe types, harmless when absen
   report, never evidence.
 - MNX-085 to MNX-105 (screen redesign, recipes drawn by the viewer, smooth font, same-item overrule, declared tag folders): 37 JUnit tests green; GameTests 18/19 with the big dev pack (`full_preview_on_the_dev_pack_is_fast`, same open issue); `./gradlew runUiShots` walks the 19 captures (JEI draws the recipes, the smooth font loads). `-Pvanilla` GameTests not rerun: the world left in `run-gametest` comes from the big pack and does not load without it.
 - MNX-111 (2026-10-14, big dev pack, 24 682 recipes): 20/20 GameTests green; `full_preview_on_the_dev_pack_is_fast` at 3.6 and 3.9 s (5.5 s twice before on the same machine, validation and item conditions now timed): recipe files listed once and parsed in parallel, read once for rewrites and process rules. Process rules are now the largest step (1.8 to 2.1 s).
+- MNX-113 (2026-10-14, big dev pack): 20/20 GameTests green; process rules 90 and 108 ms (1667 to 2072 ms before), full Preview 1.68 and 1.75 s (3.3 to 3.9 s before); generated files and effects hash the same as before. Reading the recipe files (1.2 s) is now the largest step.
 - Not verified at runtime: a message large enough to be split (an apply with many in-game data edits); the screens by hand with the mouse, EMI
   (`-Pemi`), Almost Unified (`-Pau`).
 
