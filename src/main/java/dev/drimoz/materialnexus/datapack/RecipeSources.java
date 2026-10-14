@@ -123,7 +123,7 @@ public final class RecipeSources {
 
     /**
      * MNX-114: the pre-MNX text of every recipe file, read once per reload, on first need (a reload is not slowed down
-     * when nobody previews). Text rather than parsed JSON: compact (about 4 MB for 13k recipes) and nothing can edit it
+     * when nobody previews). Text rather than parsed JSON: compact (4 MB on the 1.21.1 dev pack, 25 MB for the 68k files of the 1.20.1 one) and nothing can edit it
      * in place. ponytail: the last pack's texts stay in memory until the next preview, even after leaving the world.
      */
     private static synchronized Map<ResourceLocation, String> texts(ResourceManager resources) {
@@ -134,7 +134,8 @@ public final class RecipeSources {
                     .flatMap(e -> originalText(e.getValue()).stream().map(text -> Map.entry(e.getKey(), text)))
                     .collect(java.util.stream.Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
             texts = new Texts(new java.lang.ref.WeakReference<>(resources), files);
-            com.mojang.logging.LogUtils.getLogger().info("Material Nexus read {} recipe files in {} ms", files.size(), (System.nanoTime() - start) / 1_000_000);
+            com.mojang.logging.LogUtils.getLogger().info("Material Nexus read {} recipe files ({} KB of text) in {} ms", files.size(),
+                    files.values().stream().mapToLong(String::length).sum() / 1024, (System.nanoTime() - start) / 1_000_000);
         }
         return texts.files();
     }
