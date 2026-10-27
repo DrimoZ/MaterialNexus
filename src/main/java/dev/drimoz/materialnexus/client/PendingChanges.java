@@ -140,7 +140,7 @@ final class PendingChanges {
     static List<Map.Entry<net.minecraft.network.chat.Component, Runnable>> globalEdits() {
         List<Map.Entry<net.minecraft.network.chat.Component, Runnable>> out = new java.util.ArrayList<>();
         for (String field : List.copyOf(GLOBAL_PATCH.keySet())) {
-            if (!field.equals("not_same") && !field.equals("same")) {
+            if (!ID_LISTS.contains(field)) {
                 net.minecraft.network.chat.Component text = net.minecraft.network.chat.Component.translatableWithFallback(
                         "screen.materialnexus.presets.field." + field, field);
                 out.add(Map.entry(text, () -> GLOBAL_PATCH.remove(field)));
@@ -154,6 +154,12 @@ final class PendingChanges {
             for (String item : changed) {
                 ResourceLocation id = ResourceLocation.tryParse(item);
                 if (id == null) continue;
+                // A recipe has no name of its own outside the viewer: its id.
+                if (field.equals("disabled_recipes")) {
+                    out.add(Map.entry(net.minecraft.network.chat.Component.translatable(recipeRemoved(id) ? "screen.materialnexus.preview_recipe_removed"
+                            : "screen.materialnexus.preview_recipe_restored", id.toString()), () -> toggle(field, id)));
+                    continue;
+                }
                 String key = "screen.materialnexus.preview_" + (field.equals("same") ? (same(id) ? "same" : "same_undone") : notSame(id) ? "not_same" : "same_again");
                 out.add(Map.entry(net.minecraft.network.chat.Component.translatable(key, Names.stack(id).getHoverName()), () -> toggle(field, id)));
             }
@@ -170,6 +176,21 @@ final class PendingChanges {
     static boolean same(ResourceLocation item) { return listed("same", item); }
 
     static void toggleSame(ResourceLocation item) { toggle("same", item); }
+
+    /** global.json fields that are lists of ids, shown and dropped one id at a time. */
+    private static final java.util.Set<String> ID_LISTS = java.util.Set.of("not_same", "same", "disabled_recipes");
+
+    /** "Remove this recipe" (MNX-117), as it will be after Apply. */
+    static boolean recipeRemoved(ResourceLocation recipe) { return listed("disabled_recipes", recipe); }
+
+    static void toggleRecipeRemoval(ResourceLocation recipe) { toggle("disabled_recipes", recipe); }
+
+    /** True when the recipe's removal changes at Apply: removed now and not before, or back again. */
+    static boolean recipeRemovalPending(ResourceLocation recipe) {
+        com.google.gson.JsonPrimitive id = new com.google.gson.JsonPrimitive(recipe.toString());
+        boolean before = baseGlobal.get("disabled_recipes") instanceof com.google.gson.JsonArray a && a.contains(id);
+        return globalChanged("disabled_recipes") && before != recipeRemoved(recipe);
+    }
 
     private static boolean listed(String field, ResourceLocation item) {
         com.google.gson.JsonElement list = global(field);
@@ -193,12 +214,20 @@ final class PendingChanges {
                 lines.add(net.minecraft.network.chat.Component.translatable("screen.materialnexus.preview_priority", String.join(" > ", order)));
                 continue;
             }
-            if (!field.equals("not_same") && !field.equals("same")) {
+            if (!ID_LISTS.contains(field)) {
                 lines.add(net.minecraft.network.chat.Component.translatable("screen.materialnexus.preview_global", field));
                 continue;
             }
-            String added = "screen.materialnexus.preview_" + (field.equals("same") ? "same" : "not_same");
-            String removed = "screen.materialnexus.preview_" + (field.equals("same") ? "same_undone" : "same_again");
+            String added = "screen.materialnexus.preview_" + switch (field) {
+                case "same" -> "same";
+                case "disabled_recipes" -> "recipe_removed";
+                default -> "not_same";
+            };
+            String removed = "screen.materialnexus.preview_" + switch (field) {
+                case "same" -> "same_undone";
+                case "disabled_recipes" -> "recipe_restored";
+                default -> "same_again";
+            };
             com.google.gson.JsonArray before = baseGlobal.get(field) instanceof com.google.gson.JsonArray a ? a : new com.google.gson.JsonArray();
             com.google.gson.JsonArray after = GLOBAL_PATCH.getAsJsonArray(field);
             after.forEach(e -> { if (!before.contains(e)) lines.add(net.minecraft.network.chat.Component.translatable(added, e.getAsString())); });

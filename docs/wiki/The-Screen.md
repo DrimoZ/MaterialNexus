@@ -94,6 +94,12 @@ recipe whose result changes, the replaced item is struck through next to the kep
 JEI / EMI** shows the item's recipes in the viewer. Without a viewer the list stays, without the
 drawing. A disabled recipe is no longer loaded by the game: this list is the only place it appears.
 
+The bin at the end of a row, or **Remove this recipe** at the bottom right of the inspector, switches a recipe off.
+Like every choice it waits for **Review and apply**; the row wears the blue ring until then, and the red bin (or
+**Put this recipe back**) undoes it, before or after applying. A removed recipe stays in the list under **Removed by you**. A recipe a script
+makes in memory, or one Material Nexus makes from your rules, cannot be removed here: the inspector says why. When a
+KubeJS script also changes the recipe, the inspector says so.
+
 ### Missing
 
 Standard conversions between this material's forms that no recipe provides (nugget to ingot, ingot

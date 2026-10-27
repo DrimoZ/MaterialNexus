@@ -16,6 +16,7 @@ import java.util.Set;
  * arbitration with Almost Unified (ADR-012), and process rules (MNX-036). Mod priorities are namespaces, strongest first.
  * {@code same}: items the player says are the same after all, whatever their name or mod suggests (MNX-086).
  * {@code addMissingTags}: items known as a form but missing its convention tag get it on Apply (MNX-078, ADR-023).
+ * {@code disabledRecipes}: recipes the player removed from the screen (MNX-117), switched off by the generated pack.
  */
 public record ResolutionPolicy(
         List<String> globalModPriority,
@@ -30,7 +31,8 @@ public record ResolutionPolicy(
         Set<ResourceLocation> notSame,
         boolean addMissingTags,
         Map<MaterialForm, TagEdit> tagEdits,
-        Set<ResourceLocation> same) {
+        Set<ResourceLocation> same,
+        Set<ResourceLocation> disabledRecipes) {
     /** MNX-079: items the player adds to or removes from a form's convention tag. */
     public record TagEdit(Set<ResourceLocation> add, Set<ResourceLocation> remove) {
         public TagEdit {
@@ -52,6 +54,7 @@ public record ResolutionPolicy(
         notSame = Set.copyOf(notSame);
         tagEdits = Map.copyOf(tagEdits);
         same = Set.copyOf(same);
+        disabledRecipes = Set.copyOf(disabledRecipes);
     }
 
     public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
@@ -59,7 +62,7 @@ public record ResolutionPolicy(
                             Set<MaterialId> excludedMaterials, Set<MaterialForm> excludedForms, Set<FormId> conversionRecipeForms,
                             AlmostUnified almostUnified, ProcessRules processes, Set<ResourceLocation> notSame) {
         this(globalModPriority, materialModPriority, formModPriority, explicitProviders, excludedMaterials, excludedForms,
-                conversionRecipeForms, almostUnified, processes, notSame, false, Map.of(), Set.of());
+                conversionRecipeForms, almostUnified, processes, notSame, false, Map.of(), Set.of(), Set.of());
     }
 
     /** Without items marked "not the same" (MNX-050). */
@@ -110,7 +113,7 @@ public record ResolutionPolicy(
     /** This policy with pending process rule edits (MNX-036). */
     public ResolutionPolicy withProcesses(Map<FormId, ProcessRules.Rule> edits) {
         return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, explicitProviders,
-                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes.withForms(edits), notSame, addMissingTags, tagEdits, same);
+                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes.withForms(edits), notSame, addMissingTags, tagEdits, same, disabledRecipes);
     }
 
     /** This policy plus extra explicit choices, used to preview pending GUI changes before they are written. */
@@ -119,13 +122,13 @@ public record ResolutionPolicy(
         Map<MaterialForm, ResourceLocation> kept = new HashMap<>(explicitProviders);
         kept.keySet().removeAll(forms);
         return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, kept,
-                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes, notSame, addMissingTags, tagEdits, same);
+                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes, notSame, addMissingTags, tagEdits, same, disabledRecipes);
     }
 
     public ResolutionPolicy withExplicit(Map<MaterialForm, ResourceLocation> extra) {
         Map<MaterialForm, ResourceLocation> merged = new HashMap<>(explicitProviders);
         merged.putAll(extra);
         return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, merged,
-                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes, notSame, addMissingTags, tagEdits, same);
+                excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes, notSame, addMissingTags, tagEdits, same, disabledRecipes);
     }
 }
