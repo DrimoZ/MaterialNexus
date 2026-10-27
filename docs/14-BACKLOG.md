@@ -68,3 +68,4 @@
 | MNX-119 | P2 | Nothing drawn under the drawer over it | While the pointer is over the Review drawer, the view beneath gets no pointer: no hover, tooltip or recipe drawing of a hidden row appears over the drawer |
 | MNX-120 | P1 | Only world datapacks are the author's | A pack counts as the author's datapack only when it comes from the world's datapacks folder (Create New Age ships a pack with a source of its own, which MNX-118 took for one); the MNX-118 GameTest checks that only the fixture is attributed recipes |
 | MNX-121 | P3 | Graph not tracked | `graphify-out/` is ignored as a whole: the graph is built locally and was removed from the repository |
+| MNX-122 | P1 | 0.4.0 prepared | mod_version, changelog, store description (removing a recipe, your own datapacks) and release checklist; store art and wiki images retaken with the bins |

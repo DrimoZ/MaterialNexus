@@ -95,6 +95,8 @@ needs operator rights (permission level 2).
   Engineering, Modern Industrialization, Oritech, Occultism, Silent Gear and more.
 - **Recipes drawn by JEI or EMI** inside the screen, grouped by what applying does to them; hover a
   recipe or a machine route to see it.
+- **Remove a recipe** with the bin on its row: it waits for the review like every choice, and one
+  click puts it back.
 
 ![Recipes](https://raw.githubusercontent.com/DrimoZ/MaterialNexus/main/docs/store-art/screen_recipes.png)
 
@@ -131,7 +133,8 @@ Everything is files in `config/materialnexus/`, made to ship with the pack; the
 presets) are datapack data, editable in game in Rule files. `/materials report` writes a full
 analysis. KubeJS scripts get a read-only `MaterialNexus` binding to ask which item is kept, and a pack
 that already unifies with scripts sees what they decided, offered as the same choices, with the script
-lines to delete once applied.
+lines to delete once applied. Your own datapacks are read too, never changed: the screen names the one
+that replaces or switches off a recipe or edits a form's tag, and the review warns before undoing it.
 
 ### Compatibility
 
@@ -188,19 +191,18 @@ not lift them into another project.
 <!-- End of the pasted description. -->
 
 
-## Release checklist: 0.3.0
+## Release checklist: 0.4.0
 
 - [ ] `forge-1.20.1` green: `./gradlew test`, `./gradlew runGameTestServer`, `./gradlew runGameTestServer -Pvanilla`
       (and `-Pau`, `-Pkubejs` when those parts changed).
-- [x] New textures of the default items in place: no jar and no image (store art, wiki, gallery) before them (MNX-107).
 - [x] Project avatar: `src/main/resources/logo.png` (from `java tools/GenerateLogo.java`), unchanged since 0.2.0.
-- [x] Art: generated and pushed on `main`; the description loads it from GitHub (MNX-107).
+- [x] Art: generated and pushed on `main` (MNX-122); the description loads it from GitHub.
+- [x] Wiki published from `main`'s `docs/wiki` (MNX-122).
 - [ ] Gallery (850 px wide at most): `screen_material.png`, `screen_inspector.png`, `screen_matrix.png`,
       `screen_priority.png`, `screen_preview.png`, `screen_process.png`. The wider ones (`screen_home.png`,
       `screen_triage.png`, `screen_recipes.png`...) are for the description only.
-- [ ] Paste the summary and the description.
+- [ ] Paste the description (new since 0.3.0: removing a recipe, your own datapacks).
 - [ ] Upload the jar from `gradlew build` (`build/libs`), release type **Beta**,
-      loader Forge, with the `## 0.3.0` section of `CHANGELOG.md`.
+      loader Forge, with the `## 0.4.0` section of `CHANGELOG.md`.
 - [ ] Optional dependencies: JEI, EMI, Almost Unified, KubeJS.
-- [ ] Tag `v0.3.0+1.20.1`.
-- [x] Modrinth and CurseForge links in the README.
+- [ ] Tag `v0.4.0+1.20.1`.
