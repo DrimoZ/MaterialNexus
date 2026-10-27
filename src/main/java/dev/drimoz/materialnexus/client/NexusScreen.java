@@ -402,8 +402,13 @@ public final class NexusScreen extends Screen {
         else draw(g, devMouse[0], devMouse[1], partialTick);
     }
 
-    private void draw(GuiGraphics g, int mx, int my, float partialTick) {
+    private void draw(GuiGraphics g, int pointerX, int pointerY, float partialTick) {
         hits.clear();
+        // MNX-119: what lies under the drawer gets no pointer while it is over the drawer, so no hover or tooltip of
+        // a row beneath is drawn over it. The drawer itself gets the real one.
+        boolean overDrawer = drawer != null && drawer.contains(pointerX, pointerY);
+        int mx = overDrawer ? -1 : pointerX;
+        int my = overDrawer ? -1 : pointerY;
         g.fill(0, 0, width, height, Theme.BG);
         g.fill(0, 0, width, TOP, Theme.SURFACE);
         g.fill(0, TOP - 1, width, TOP, Theme.BORDER);
@@ -431,12 +436,12 @@ public final class NexusScreen extends Screen {
             g.flush();
             g.pose().pushPose();
             g.pose().translate(0, 0, 200);
-            drawer.render(g, font, mx, my);
+            drawer.render(g, font, pointerX, pointerY);
             g.pose().popPose();
         } else {
             hits.tooltip(g, font, mx, my);
         }
-        if (applying > 0) renderApplying(g, mx, my);
+        if (applying > 0) renderApplying(g, pointerX, pointerY);
     }
 
     @Override
