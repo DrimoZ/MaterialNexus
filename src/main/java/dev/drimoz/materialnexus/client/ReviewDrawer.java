@@ -89,7 +89,8 @@ final class ReviewDrawer {
     private boolean hasChanges() {
         // A script conflict is a warning (MNX-076): alone, it is nothing to apply.
         return preview != null && (preview.entries().stream().anyMatch(PolicyEditor.Entry::valid)
-                || preview.added().stream().anyMatch(e -> !e.kind().equals(PackContent.SCRIPT_CONFLICT)) || !preview.removed().isEmpty()
+                || preview.added().stream().anyMatch(e -> !e.kind().equals(PackContent.SCRIPT_CONFLICT)
+                        && !e.kind().equals(dev.drimoz.materialnexus.datapack.PackEdits.PACK_CONFLICT)) || !preview.removed().isEmpty()
                 || PendingChanges.size() > 0);
     }
 

@@ -54,7 +54,9 @@ final class PolicyHandler {
                     .withProcesses(processes(request));
             current = PackContent.readManifest(MnxPaths.generated());
             proposed = packContent(player.server, policy, current).effects();
-            conflicts = scriptConflicts(SnapshotManager.current(), policy);
+            conflicts = new java.util.ArrayList<>(scriptConflicts(SnapshotManager.current(), policy));
+            // MNX-118: tag changes that go against a datapack of the pack: warnings too, never written.
+            conflicts.addAll(dev.drimoz.materialnexus.datapack.PackEdits.conflicts(proposed, dev.drimoz.materialnexus.datapack.PackEdits.of(player.server).tags()));
         } catch (IOException | RuntimeException e) {
             LOGGER.error("Material Nexus preview failed", e);
             player.sendSystemMessage(Component.translatable("message.materialnexus.apply_failed", e.getMessage()));

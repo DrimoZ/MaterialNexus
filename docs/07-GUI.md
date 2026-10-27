@@ -50,6 +50,10 @@ MNX-117: a bin at the end of each removable row (always shown, R2; red once remo
 pending `disabled_recipes` edit like any other; **Put this recipe back** undoes it. Refused, with the reason in the
 inspector, when the recipe has no file the generated pack can override (`RecipeFamilies.Removal`).
 
+MNX-118: a recipe replaced by one of the author's datapacks names it in the inspector (`Row.editedBy`); one a datapack
+switches off is its own group, "Switched off by a datapack". The form inspector lists datapack edits of the form's tag
+under "Why?" (`MaterialDetailPayload.packTags`); Review lists `pack_conflict` warnings under "To look at".
+
 ### Forms
 
 The materials × forms grid, each cell with a mark as well as a colour, materials without duplicates left out by
