@@ -47,6 +47,10 @@ public final class PackContent {
     public static final String ALMOST_UNIFIED = "almost_unified";
     /** Preview only, never written (MNX-076): target, the item scripts keep; item, the one Material Nexus would keep. */
     public static final String SCRIPT_CONFLICT = "script_conflict";
+    /** MNX-117: a recipe the player removed from the screen; {@code target} the recipe, {@code item} what it made. */
+    public static final String PLAYER_DISABLE = "player_disable";
+    /** MNX-117: a removed recipe with no file to override (made in memory by a script, or by Material Nexus): nothing written. */
+    public static final String PLAYER_DISABLE_INVALID = "player_disable_invalid";
     private static final ResourceLocation AU_ID = ResourceLocation.fromNamespaceAndPath(AlmostUnified.MOD_ID, "owner");
 
     /** One generated change; for both conversions, {@code target} is the canonical item. */
@@ -114,6 +118,30 @@ public final class PackContent {
                 .filter(e -> !(disabled.contains(e.target()) && (e.kind().equals(RecipeRewrites.REWRITE) || e.kind().equals(RecipeRewrites.DISABLE))))
                 .toList());
         effects.addAll(processes.effects());
+        effects.sort(ORDER);
+        return new Content(files, List.copyOf(effects));
+    }
+
+    /**
+     * MNX-117: the recipes the player removed, switched off at their own id. The most specific decision there is: it wins
+     * over a rewrite or a disable of the same recipe by unification or process rules. {@code removable}: recipe to what it
+     * made, for the removed ids that have a file to override; any other removed id is reported and writes nothing.
+     */
+    public static Content withDisabledRecipes(Content base, Set<ResourceLocation> disabled, Map<ResourceLocation, ResourceLocation> removable) {
+        if (disabled.isEmpty()) return base;
+        Set<String> overriding = Set.of(RecipeRewrites.REWRITE, RecipeRewrites.DISABLE, ProcessPlanner.DISABLE);
+        Map<String, JsonElement> files = new TreeMap<>(base.files());
+        List<Effect> effects = new ArrayList<>(base.effects().stream()
+                .filter(e -> !(removable.containsKey(e.target()) && overriding.contains(e.kind()))).toList());
+        for (ResourceLocation id : new TreeSet<>(disabled)) {
+            ResourceLocation output = removable.get(id);
+            if (output == null) {
+                effects.add(new Effect(PLAYER_DISABLE_INVALID, id, id));
+                continue;
+            }
+            files.put(RecipeRewrites.path(id), RecipeRewrites.disabled());
+            effects.add(new Effect(PLAYER_DISABLE, id, output));
+        }
         effects.sort(ORDER);
         return new Content(files, List.copyOf(effects));
     }

@@ -92,6 +92,23 @@ final class Ui {
         g.drawString(font, label, x + (w - font.width(label)) / 2, y + (h - 8) / 2, !active ? Theme.FAINT : primary ? Theme.ON : Theme.TEXT, false);
     }
 
+    /** A bin, 9 by 10: lid, handle, and a body with two stripes (MNX-117). */
+    static void bin(GuiGraphics g, int x, int y, int color) {
+        g.fill(x + 3, y, x + 6, y + 1, color);
+        g.fill(x, y + 1, x + 9, y + 2, color);
+        g.fill(x + 1, y + 3, x + 2, y + 10, color);
+        g.fill(x + 7, y + 3, x + 8, y + 10, color);
+        g.fill(x + 1, y + 9, x + 8, y + 10, color);
+        g.fill(x + 3, y + 4, x + 4, y + 8, color);
+        g.fill(x + 5, y + 4, x + 6, y + 8, color);
+    }
+
+    /** The danger variant (docs/22 4.5): red text on the secondary fill, for an action that switches something off. */
+    static void dangerButton(GuiGraphics g, Font font, Component label, int x, int y, int w, int h, boolean over) {
+        g.fill(x, y, x + w, y + h, over ? Theme.SEL : Theme.RAISED);
+        g.drawString(font, label, x + (w - font.width(label)) / 2, y + (h - 8) / 2, Theme.BAD, false);
+    }
+
     /**
      * The shape that goes with a status colour, 6 px: a filled dot for what is to decide, a ring for a choice not applied
      * yet, a tick for unified. What asks nothing has no mark. Colour is never the only sign.

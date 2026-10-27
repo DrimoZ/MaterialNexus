@@ -45,6 +45,11 @@ one is drawn by the installed viewer, through `client/RecipeViewer` and its adap
 Without a viewer the list stays, without the drawing. A disabled recipe that is applied is no longer loaded, so the
 list is the only place it appears.
 
+MNX-117: a bin at the end of each removable row (always shown, R2; red once removed) and, in the inspector's footer,
+**Remove this recipe** (danger variant, on the right, away from "Open in"), a
+pending `disabled_recipes` edit like any other; **Put this recipe back** undoes it. Refused, with the reason in the
+inspector, when the recipe has no file the generated pack can override (`RecipeFamilies.Removal`).
+
 ### Forms
 
 The materials × forms grid, each cell with a mark as well as a colour, materials without duplicates left out by

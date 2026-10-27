@@ -35,7 +35,8 @@ config/materialnexus/
   },
   "almost_unified": { "tags": "mnx", "output_rewrite": "au", "recipe_disable": "au", "viewer_hiding": "au" },
   "add_missing_tags": true,
-  "tag_edits": { "tin/ingot": { "add": ["modx:tin_bar"], "remove": ["mody:tin_ingot"] } }
+  "tag_edits": { "tin/ingot": { "add": ["modx:tin_bar"], "remove": ["mody:tin_ingot"] } },
+  "disabled_recipes": ["mekanism:processing/tin/ingot/from_dust_smelting"]
 }
 ```
 
@@ -46,6 +47,7 @@ config/materialnexus/
 | `not_same` | items never unified with the others of their tags |
 | `same` | items left alone on a guess that are the same item after all |
 | `exclude` | `material` or `material/form` never unified |
+| `disabled_recipes` | recipes switched off, by id; written by **Remove this recipe** ([The Screen](The-Screen#recipes)) |
 | `processes` | process rules per form ([Process Rules](Process-Rules)) |
 | `almost_unified` | which domains Material Nexus handles when Almost Unified is installed ([Compatibility](Compatibility#almost-unified)) |
 | `add_missing_tags` | items known as a form by name pattern or alias get its convention tag on Apply, where the pack uses that tag ([FAQ](FAQ)) |

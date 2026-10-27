@@ -177,6 +177,26 @@ public final class RecipeSources {
         return ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "recipes/" + id.getPath() + ".json");
     }
 
+    /** MNX-117: the packs providing a recipe's file, lowest first, the generated pack included; empty for a recipe made in memory. */
+    public static List<String> packs(MinecraftServer server, ResourceLocation id) {
+        return server.getResourceManager().getResourceStack(file(id)).stream().map(Resource::sourcePackId).toList();
+    }
+
+    /** True when some pack other than the generated one has the recipe's file: the generated pack can then switch it off. */
+    public static boolean removable(List<String> packs) {
+        return packs.stream().anyMatch(p -> !p.equals(GeneratedPack.PACK_ID));
+    }
+
+    /** MNX-117: of these recipe ids, those the generated pack can switch off, with what each made (the recipe itself when unknown). */
+    public static Map<ResourceLocation, ResourceLocation> removable(MinecraftServer server, Collection<ResourceLocation> ids, RecipeFormats formats) {
+        Map<ResourceLocation, ResourceLocation> out = new java.util.TreeMap<>();
+        for (ResourceLocation id : ids) {
+            if (!removable(packs(server, id))) continue;
+            out.put(id, firstOrSelf(originalJson(server, id).map(json -> RecipeRewrites.outputIds(json, formats)).orElse(List.of()), id));
+        }
+        return out;
+    }
+
     /** The highest-priority definition of a recipe, skipping the Material Nexus generated pack. */
     public static Optional<JsonObject> originalJson(MinecraftServer server, ResourceLocation id) {
         String text = texts(server).get(file(id));

@@ -92,7 +92,8 @@ public final class PolicyFiles {
     /** Unknown fields are ignored so later sections (e.g. almost_unified) do not break older readers. */
     private record GlobalPolicy(List<String> modPriority, List<String> exclude, List<String> conversionRecipes,
                                 Map<String, String> almostUnified, Map<FormId, ProcessRules.Rule> processes, List<ResourceLocation> notSame,
-                                boolean addMissingTags, Map<String, ResolutionPolicy.TagEdit> tagEdits, List<ResourceLocation> same) {
+                                boolean addMissingTags, Map<String, ResolutionPolicy.TagEdit> tagEdits, List<ResourceLocation> same,
+                                List<ResourceLocation> disabledRecipes) {
         static final Codec<GlobalPolicy> CODEC = RecordCodecBuilder.create(i -> i.group(
                 dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.STRING.listOf(), "mod_priority", List.of()).forGetter(GlobalPolicy::modPriority),
                 dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.STRING.listOf(), "exclude", List.of()).forGetter(GlobalPolicy::exclude),
@@ -102,7 +103,8 @@ public final class PolicyFiles {
                 dev.drimoz.materialnexus.core.OptionalFields.strict(ResourceLocation.CODEC.listOf(), "not_same", List.of()).forGetter(GlobalPolicy::notSame),
                 dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.BOOL, "add_missing_tags", false).forGetter(GlobalPolicy::addMissingTags),
                 dev.drimoz.materialnexus.core.OptionalFields.strict(Codec.unboundedMap(Codec.STRING, TAG_EDIT), "tag_edits", Map.of()).forGetter(GlobalPolicy::tagEdits),
-                dev.drimoz.materialnexus.core.OptionalFields.strict(ResourceLocation.CODEC.listOf(), "same", List.of()).forGetter(GlobalPolicy::same)
+                dev.drimoz.materialnexus.core.OptionalFields.strict(ResourceLocation.CODEC.listOf(), "same", List.of()).forGetter(GlobalPolicy::same),
+                dev.drimoz.materialnexus.core.OptionalFields.strict(ResourceLocation.CODEC.listOf(), "disabled_recipes", List.of()).forGetter(GlobalPolicy::disabledRecipes)
         ).apply(i, GlobalPolicy::new));
     }
 
@@ -190,7 +192,8 @@ public final class PolicyFiles {
         }
         return new ResolutionPolicy(globalPolicy.modPriority(), materialPriority, formPriority, explicit, excludedMaterials, excludedForms,
                 conversionForms, almostUnified(globalPolicy.almostUnified()), new ProcessRules(globalPolicy.processes(), processOverrides),
-                new HashSet<>(globalPolicy.notSame()), globalPolicy.addMissingTags(), tagEdits(globalPolicy.tagEdits()), new HashSet<>(globalPolicy.same()));
+                new HashSet<>(globalPolicy.notSame()), globalPolicy.addMissingTags(), tagEdits(globalPolicy.tagEdits()), new HashSet<>(globalPolicy.same()),
+                new HashSet<>(globalPolicy.disabledRecipes()));
     }
 
     private static <T> T decode(Codec<T> codec, JsonElement json, String file) {

@@ -66,6 +66,14 @@ public final class MaterialNexusGameTests {
         var rows = dev.drimoz.materialnexus.datapack.RecipeFamilies.family(helper.getLevel().getServer(), form);
         helper.assertTrue(rows.stream().anyMatch(r -> r.status() == dev.drimoz.materialnexus.datapack.RecipeFamilies.Status.CANONICAL),
                 "copper ingot family should contain recipes making the canonical item, got " + rows.size() + " rows");
+        // MNX-117: a vanilla recipe has a file the generated pack can switch off, and what it makes is read from it.
+        var vanilla = rows.stream().filter(r -> r.recipe().getNamespace().equals("minecraft")).findFirst();
+        helper.assertTrue(vanilla.isPresent() && vanilla.get().removal() == dev.drimoz.materialnexus.datapack.RecipeFamilies.Removal.ALLOWED,
+                "a vanilla copper ingot recipe should be removable, got " + vanilla);
+        var removable = RecipeSources.removable(helper.getLevel().getServer(), java.util.List.of(vanilla.get().recipe(),
+                ResourceLocation.fromNamespaceAndPath("materialnexus", "nothing_here")), RecipeFormats.load(helper.getLevel().getServer().getResourceManager()));
+        helper.assertTrue(removable.equals(java.util.Map.of(vanilla.get().recipe(), vanilla.get().output())),
+                "only the vanilla recipe should be removable, making its output, got " + removable);
         helper.succeed();
     }
 

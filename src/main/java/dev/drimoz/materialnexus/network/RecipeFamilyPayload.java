@@ -21,11 +21,13 @@ public record RecipeFamilyPayload(String material, String form, List<RecipeFamil
                     b.writeResourceLocation(r.output());
                     b.writeEnum(r.status());
                     b.writeOptional(r.replaced(), (o, id) -> o.writeResourceLocation(id));
+                    b.writeEnum(r.removal());
+                    b.writeOptional(r.editedBy(), (o, s) -> o.writeUtf(s));
                 });
             },
             buf -> new RecipeFamilyPayload(buf.readUtf(), buf.readUtf(), buf.readList(b -> new RecipeFamilies.Row(
                     b.readResourceLocation(), b.readResourceLocation(), b.readResourceLocation(), b.readEnum(RecipeFamilies.Status.class),
-                    b.readOptional(o -> o.readResourceLocation())))));
+                    b.readOptional(o -> o.readResourceLocation()), b.readEnum(RecipeFamilies.Removal.class), b.readOptional(o -> o.readUtf())))));
 
     public RecipeFamilyPayload {
         rows = List.copyOf(rows);
