@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
- * MNX-118: what the pack author's datapacks (neither the game, a mod jar nor Material Nexus) change in the data Material
+ * MNX-118: what the pack author's datapacks (those of the world's datapacks folder) change in the data Material
  * Nexus reads: recipe files they replace (rewritten, or switched off) and item tags they edit. Read from the resource
  * stacks once per reload, on first need, like the recipe texts (MNX-114); never per tick. Nothing in those packs is changed.
  */
@@ -56,12 +56,12 @@ public final class PackEdits {
 
     private PackEdits() { }
 
-    /** A pack of the pack author: a world datapack, or one a datapack loader adds. Never the game, a mod jar or Material Nexus. */
+    /**
+     * A pack of the pack author: one from the world's datapacks folder. Any other source may be a mod's own pack (MNX-120:
+     * Create New Age ships one with a source of its own), so packs a global datapack loader adds are left out too.
+     */
     static boolean authored(Pack pack) {
-        PackSource source = pack.getPackSource();
-        if (source == PackSource.WORLD) return true;
-        if (source == PackSource.BUILT_IN || source == PackSource.FEATURE || source == PackSource.DEFAULT || source == PackSource.SERVER) return false;
-        return !pack.getId().startsWith("mod/") && !pack.getId().equals("mod_data") && !pack.getId().equals("mod_resources");
+        return pack.getPackSource() == PackSource.WORLD;
     }
 
     public static Edits of(MinecraftServer server) {

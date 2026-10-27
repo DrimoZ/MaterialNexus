@@ -84,9 +84,10 @@ under "Removed by you" and can put it back.
 
 ## Decisions found in datapacks (MNX-118)
 
-Like scripts (MNX-076), the pack author's own datapacks are read, never changed. A pack counts when its source is the
-world (`file/…`), or a datapack loader: never the game (built-in and feature packs), a mod jar (`mod/…`, `mod_data`)
-or Material Nexus's own packs. Read from the resource stacks once per reload, on first need (`PackEdits`):
+Like scripts (MNX-076), the pack author's own datapacks are read, never changed. A pack counts when it comes from the
+world's `datapacks/` folder (`file/…`, source `WORLD`), and only then (MNX-120): mods ship packs with sources of their
+own (Create New Age does), so packs a global datapack loader adds are not counted either. Read from the resource stacks
+once per reload, on first need (`PackEdits`):
 
 - a recipe file such a pack replaces is shown in the Recipes tab with the pack's name; one it switches off (not loaded)
   is listed under "Switched off by a datapack", with what it made read from the file beneath;

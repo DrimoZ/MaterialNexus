@@ -77,7 +77,7 @@ public final class MaterialNexusGameTests {
         var replaced = blocks.stream().filter(r -> r.recipe().equals(ResourceLocation.parse("minecraft:lapis_block"))).findFirst();
         helper.assertTrue(replaced.isPresent() && replaced.get().editedBy().equals(java.util.Optional.of(pack)),
                 "lapis_block should be listed as replaced by the datapack, got " + replaced);
-        // Only the fixture is a datapack of the pack: no mod jar or built-in pack is taken for one.
+        // MNX-120: only the fixture is a datapack of the pack: no mod jar or built-in pack is taken for one.
         var attributed = new java.util.TreeSet<>(dev.drimoz.materialnexus.datapack.PackEdits.of(server).recipes().values());
         helper.assertTrue(attributed.equals(java.util.Set.of(pack)), "only the fixture should be attributed recipes, got " + attributed);
         var tag = dev.drimoz.materialnexus.datapack.PackEdits.of(server).tags().get(ResourceLocation.parse("forge:gems/lapis"));
