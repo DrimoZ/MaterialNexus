@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- Remove a recipe from the screen: the bin at the end of a row in the Recipes tab, or **Remove this recipe** in its inspector. Like every choice it waits for Review and apply, and the same button puts it back, before or after applying (`disabled_recipes` in `global.json`). A recipe a script makes in memory, or one Material Nexus makes from your rules, cannot be removed this way, and the screen says why.
+- Your own datapacks are read, never changed: a recipe one of them replaces or switches off says which datapack does, a form's inspector says what they put in or take out of its tag, and Review and apply warns when applying would undo one of their changes.
 - Preview and Apply are faster on large packs: recipe files are listed once, read once and parsed in parallel, and rewrites copy less (full Preview of the 1.21.1 dev pack from 1.9 s to 0.8 s).
 - Process rules are planned in a fraction of the time: each form looks only at the recipes that make it (dev pack: 400 ms to 35 ms).
 - Recipe files are read once after each reload instead of on every preview, keeping only the recipes Material Nexus can read, until the world closes (dev pack: reading 290 ms to 50 ms per preview).
