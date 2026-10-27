@@ -63,15 +63,22 @@ public final class UiShots {
             new Step(1661, "mouse", "350,342", ""),
             new Step(1663, "", "", "mnx_18_recipe_hover"),
             new Step(1664, "mouse", "", ""),
-            new Step(1666, "shortcuts", "", ""),
-            new Step(1680, "", "", "mnx_15_shortcuts"),
-            new Step(1686, "smooth", "", ""),
-            new Step(1690, "material", "copper", ""),
-            new Step(1790, "", "", "mnx_16_smooth"),
-            new Step(1795, "data", "", ""),
-            new Step(1830, "click", "208,51", ""),
-            new Step(1870, "", "", "mnx_19_untagged"),
-            new Step(1875, "quit", "", ""));
+            // MNX-117: the bin of the first row, then "Put this recipe back" in the inspector, so later captures count the same.
+            // Frames are slow on the dev pack: the pointer is drawn (its click areas made) before clicking.
+            new Step(1665, "mouse", "722,148", ""),
+            new Step(1700, "click", "722,148", ""),
+            new Step(1760, "", "", "mnx_20_recipe_remove"),
+            new Step(1765, "click", "925,490", ""),
+            new Step(1766, "mouse", "", ""),
+            new Step(1770, "shortcuts", "", ""),
+            new Step(1784, "", "", "mnx_15_shortcuts"),
+            new Step(1790, "smooth", "", ""),
+            new Step(1794, "material", "copper", ""),
+            new Step(1894, "", "", "mnx_16_smooth"),
+            new Step(1899, "data", "", ""),
+            new Step(1934, "click", "208,51", ""),
+            new Step(1974, "", "", "mnx_19_untagged"),
+            new Step(1979, "quit", "", ""));
     private static int ticks;
     private static int next;
 

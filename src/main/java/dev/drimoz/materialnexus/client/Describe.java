@@ -36,6 +36,8 @@ final class Describe {
             case dev.drimoz.materialnexus.datapack.ProcessPlanner.PROCESS -> processLine(e);
             case dev.drimoz.materialnexus.datapack.ProcessPlanner.DISABLE -> Component.translatable("screen.materialnexus.effect.process_disable", e.target().toString(), e.item().toString());
             case dev.drimoz.materialnexus.datapack.ProcessPlanner.UNSUPPORTED -> Component.translatable("screen.materialnexus.effect.process_unsupported", e.target().toString(), e.item().toString());
+            case PackContent.PLAYER_DISABLE -> Component.translatable("screen.materialnexus.effect.player_disable", e.target().toString(), e.item().toString());
+            case PackContent.PLAYER_DISABLE_INVALID -> Component.translatable("screen.materialnexus.effect.player_disable_invalid", e.target().toString());
             case PackContent.RECIPE_INVALID -> Component.translatable("screen.materialnexus.effect.recipe_invalid", e.target().toString(), e.item().toString());
             case "data_edit" -> Component.translatable("screen.materialnexus.effect.data_edit", e.item().getPath(), e.target().toString());
             case "data_reset" -> Component.translatable("screen.materialnexus.effect.data_reset", e.item().getPath(), e.target().toString());

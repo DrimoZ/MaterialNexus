@@ -214,6 +214,7 @@ final class PolicyHandler {
                     dev.drimoz.materialnexus.datapack.ProcessTemplates.templates(),
                     tag -> items.getTag(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag)).map(t -> t.size() > 0).orElse(false)));
         }
+        content = PackContent.withDisabledRecipes(content, policy.disabledRecipes(), RecipeSources.removable(server, policy.disabledRecipes(), formats));
         var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
         return PackContent.withItemConditions(PackContent.withValidRecipes(content, json -> net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, json).isSuccess()), formats);
     }

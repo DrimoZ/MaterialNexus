@@ -72,6 +72,16 @@ Puts items in or takes them out of the form's convention tag (`c:ingots/tin`), o
 
 `"not_same": ["remin:yellow_amethyst"]` in `global.json`: items never unified with the others of their tags, listed as "marked as not the same". Right click an item in the GUI to (un)mark it; Preview lists the change. An explicit choice of such an item still wins.
 
+## Removed recipes (MNX-117)
+
+`"disabled_recipes": ["mekanism:processing/tin/ingot/from_dust_smelting"]` in `global.json` ("Remove this recipe" in the
+Recipes tab): on Apply each recipe is overridden at its own id with a `neoforge:false` condition (manifest kind
+`player_disable`, the recipe and what it made). This wins over a rewrite or disable of the same recipe by
+unification or process rules. Only a recipe with a file in a pack other than the generated one can be removed: one a
+script makes in memory, or one Material Nexus generates, is listed in Preview as `player_disable_invalid` and writes
+nothing. Its original JSON stays readable beneath the generated pack (ADR-010), so the Recipes tab still lists it
+under "Removed by you" and can put it back.
+
 ## Global policy: Almost Unified arbitration
 
 ```json
