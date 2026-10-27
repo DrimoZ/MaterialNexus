@@ -100,6 +100,11 @@ Like every choice it waits for **Review and apply**; the row wears the blue ring
 makes in memory, or one Material Nexus makes from your rules, cannot be removed here: the inspector says why. When a
 KubeJS script also changes the recipe, the inspector says so.
 
+Your own datapacks are read too, never changed: a recipe one of them replaces says which datapack does, and one a
+datapack switches off is listed under **Switched off by a datapack**. In the **Forms** tab, the inspector of a form
+says what your datapacks put in or take out of its tag, and **Review and apply** lists under **Against your
+datapacks** any change that undoes one of theirs.
+
 ### Missing
 
 Standard conversions between this material's forms that no recipe provides (nugget to ingot, ingot

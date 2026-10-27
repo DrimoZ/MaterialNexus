@@ -16,7 +16,8 @@ import java.util.List;
  * {@code byForm} one form across every material (MNX-035). {@code material} is the name of whichever was asked.
  */
 public record MaterialDetailPayload(String material, boolean byForm, List<FormView> forms, List<FamilyRelations.Relation> missing,
-                                    java.util.Map<ResourceLocation, dev.drimoz.materialnexus.datapack.RecipeEdges.Usage> usage)
+                                    java.util.Map<ResourceLocation, dev.drimoz.materialnexus.datapack.RecipeEdges.Usage> usage,
+                                    java.util.Map<ResourceLocation, List<dev.drimoz.materialnexus.datapack.PackEdits.TagEdit>> packTags)
         implements CustomPacketPayload {
     public static final Type<MaterialDetailPayload> TYPE =
             new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "material_detail"));
@@ -29,16 +30,22 @@ public record MaterialDetailPayload(String material, boolean byForm, List<FormVi
         forms = List.copyOf(forms);
         missing = List.copyOf(missing);
         usage = java.util.Map.copyOf(usage);
+        packTags = java.util.Map.copyOf(packTags);
     }
 
     /** The same detail with the missing-recipe proposals computed on the server (MNX-010). */
     public MaterialDetailPayload withMissing(List<FamilyRelations.Relation> relations) {
-        return new MaterialDetailPayload(material, byForm, forms, relations, usage);
+        return new MaterialDetailPayload(material, byForm, forms, relations, usage, packTags);
     }
 
     /** The same detail with each item's recipe counts (MNX-052). */
     public MaterialDetailPayload withUsage(java.util.Map<ResourceLocation, dev.drimoz.materialnexus.datapack.RecipeEdges.Usage> counts) {
-        return new MaterialDetailPayload(material, byForm, forms, missing, counts);
+        return new MaterialDetailPayload(material, byForm, forms, missing, counts, packTags);
+    }
+
+    /** The same detail with what datapacks do to the convention tag of each of its forms (MNX-118). */
+    public MaterialDetailPayload withPackTags(java.util.Map<ResourceLocation, List<dev.drimoz.materialnexus.datapack.PackEdits.TagEdit>> tags) {
+        return new MaterialDetailPayload(material, byForm, forms, missing, usage, tags);
     }
 
     @Override public Type<MaterialDetailPayload> type() { return TYPE; }
@@ -71,6 +78,12 @@ public record MaterialDetailPayload(String material, boolean byForm, List<FormVi
             b.writeVarInt(u.produced());
             b.writeVarInt(u.used());
         });
+        buf.writeMap(p.packTags(), FriendlyByteBuf::writeResourceLocation, (b, edits) -> b.writeCollection(edits, (bb, e) -> {
+            bb.writeUtf(e.pack());
+            bb.writeBoolean(e.replace());
+            bb.writeCollection(e.added(), FriendlyByteBuf::writeResourceLocation);
+            bb.writeCollection(e.removed(), FriendlyByteBuf::writeResourceLocation);
+        }));
     }
 
     private static MaterialDetailPayload read(FriendlyByteBuf buf) {
@@ -84,6 +97,8 @@ public record MaterialDetailPayload(String material, boolean byForm, List<FormVi
                 b.readList(FriendlyByteBuf::readUtf),
                 b.readOptional(FriendlyByteBuf::readResourceLocation)))),
                 buf.readList(b -> new FamilyRelations.Relation(new FormId(b.readUtf()), new FormId(b.readUtf()))),
-                buf.readMap(FriendlyByteBuf::readResourceLocation, b -> new dev.drimoz.materialnexus.datapack.RecipeEdges.Usage(b.readVarInt(), b.readVarInt())));
+                buf.readMap(FriendlyByteBuf::readResourceLocation, b -> new dev.drimoz.materialnexus.datapack.RecipeEdges.Usage(b.readVarInt(), b.readVarInt())),
+                buf.readMap(FriendlyByteBuf::readResourceLocation, b -> b.readList(bb -> new dev.drimoz.materialnexus.datapack.PackEdits.TagEdit(
+                        bb.readUtf(), bb.readBoolean(), bb.readList(FriendlyByteBuf::readResourceLocation), bb.readList(FriendlyByteBuf::readResourceLocation)))));
     }
 }

@@ -28,6 +28,12 @@ final class Names {
         return Component.empty().append(stack(item).getHoverName()).append(" (" + NexusScreen.modName(item.getNamespace()) + ")");
     }
 
+    /** MNX-118: a datapack as the player named it: "file/my_tweaks" or "file/my_tweaks.zip" is "my_tweaks". */
+    static String pack(String id) {
+        String name = id.startsWith("file/") ? id.substring("file/".length()) : id;
+        return name.endsWith(".zip") ? name.substring(0, name.length() - ".zip".length()) : name;
+    }
+
     static String lowerName(Enum<?> value) {
         return value.name().toLowerCase(Locale.ROOT);
     }
