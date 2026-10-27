@@ -59,6 +59,31 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /**
+     * MNX-118: the fixture datapack mnx_fixture (src/gametest-fixtures) switches minecraft:lapis_lazuli off, replaces
+     * minecraft:lapis_block and edits c:gems/lapis; each is attributed to it, and the switched-off recipe is still listed.
+     */
+    @GameTest(template = "empty")
+    public static void datapackEditsAreAttributed(GameTestHelper helper) {
+        var server = helper.getLevel().getServer();
+        String pack = "file/mnx_fixture";
+        var lapis = SnapshotManager.current().materials().get(new MaterialId("lapis"));
+        helper.assertTrue(lapis != null, "lapis should be discovered");
+        var gems = dev.drimoz.materialnexus.datapack.RecipeFamilies.family(server, lapis.forms().get(new FormId("gem")));
+        var off = gems.stream().filter(r -> r.recipe().equals(ResourceLocation.parse("minecraft:lapis_lazuli"))).findFirst();
+        helper.assertTrue(off.isPresent() && off.get().status() == dev.drimoz.materialnexus.datapack.RecipeFamilies.Status.PACK_DISABLED
+                && off.get().editedBy().equals(java.util.Optional.of(pack)), "lapis_lazuli should be listed as switched off by the datapack, got " + off);
+        var blocks = dev.drimoz.materialnexus.datapack.RecipeFamilies.family(server, lapis.forms().get(new FormId("block")));
+        var replaced = blocks.stream().filter(r -> r.recipe().equals(ResourceLocation.parse("minecraft:lapis_block"))).findFirst();
+        helper.assertTrue(replaced.isPresent() && replaced.get().editedBy().equals(java.util.Optional.of(pack)),
+                "lapis_block should be listed as replaced by the datapack, got " + replaced);
+        var tag = dev.drimoz.materialnexus.datapack.PackEdits.of(server).tags().get(ResourceLocation.parse("c:gems/lapis"));
+        helper.assertTrue(tag != null && tag.equals(java.util.List.of(new dev.drimoz.materialnexus.datapack.PackEdits.TagEdit(pack, false,
+                java.util.List.of(ResourceLocation.parse("minecraft:lapis_lazuli")), java.util.List.of(ResourceLocation.parse("minecraft:lapis_block"))))),
+                "the datapack's edit of c:gems/lapis should be read, got " + tag);
+        helper.succeed();
+    }
+
     /** MNX-009: the recipe family of copper ingots lists real recipes producing the canonical item. */
     @GameTest(template = "empty")
     public static void copperIngotRecipeFamilyIsListed(GameTestHelper helper) {

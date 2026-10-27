@@ -20,18 +20,19 @@ import java.util.Set;
  * Computed when the family is requested, never per tick.
  */
 public final class RecipeFamilies {
-    /** {@code REMOVED}: removed by the player (MNX-117), no longer loaded. */
-    public enum Status { CANONICAL, ALTERNATIVE, OTHER, REWRITTEN, DISABLED, UNSUPPORTED, REMOVED }
+    /** {@code REMOVED}: removed by the player (MNX-117); {@code PACK_DISABLED}: switched off by a datapack (MNX-118). Neither is loaded. */
+    public enum Status { CANONICAL, ALTERNATIVE, OTHER, REWRITTEN, DISABLED, UNSUPPORTED, REMOVED, PACK_DISABLED }
 
     /**
      * Whether the player can remove a recipe from the screen (MNX-117): only one with a file the generated pack can
-     * override. A recipe made in memory by a script has none; one Material Nexus generates comes from a rule.
+     * override. A recipe made in memory by a script has none; one Material Nexus generates comes from a rule; one a
+     * datapack switches off is already off.
      */
-    public enum Removal { ALLOWED, IN_MEMORY, GENERATED }
+    public enum Removal { ALLOWED, IN_MEMORY, GENERATED, PACK }
 
     /**
      * {@code replaced}: for a rewritten recipe, the alternative it made before Material Nexus (MNX-088). {@code editedBy}:
-     * who else already changes this recipe, "kubejs" for a script (MNX-117).
+     * who else already changes this recipe: "kubejs" for a script (MNX-117), else the id of the datapack replacing it (MNX-118).
      */
     public record Row(ResourceLocation recipe, ResourceLocation type, ResourceLocation output, Status status, java.util.Optional<ResourceLocation> replaced,
                       Removal removal, java.util.Optional<String> editedBy) { }
@@ -59,6 +60,7 @@ public final class RecipeFamilies {
         Set<ResourceLocation> scripted = new HashSet<>();
         dev.drimoz.materialnexus.core.resolution.SnapshotManager.current().scripts().recipes().stream()
                 .filter(r -> r.kind() == dev.drimoz.materialnexus.core.scripts.ScriptChanges.Kind.CHANGED).forEach(r -> scripted.add(r.recipe()));
+        PackEdits.Edits packs = PackEdits.of(server);
         List<Row> rows = new ArrayList<>();
         ResourceLocation disabledType = ResourceLocation.fromNamespaceAndPath("materialnexus", "disabled");
         for (PackContent.Effect e : manifest) {
@@ -69,11 +71,18 @@ public final class RecipeFamilies {
                 ResourceLocation type = !player ? disabledType : RecipeSources.originalJson(server, e.target())
                         .map(json -> json.has("type") ? ResourceLocation.tryParse(json.get("type").getAsString()) : null).orElse(disabledType);
                 rows.add(new Row(e.target(), type == null ? disabledType : type, e.item(), player ? Status.REMOVED : Status.DISABLED,
-                        java.util.Optional.empty(), removal(server, e.target()), editedBy(e.target(), scripted)));
+                        java.util.Optional.empty(), removal(server, e.target()), editedBy(e.target(), scripted, packs)));
             }
         }
 
         RecipeFormats formats = RecipeFormats.load(server.getResourceManager());
+        // MNX-118: a recipe a datapack switched off is not loaded either; what it made is read under the datapack.
+        packs.recipes().forEach((id, pack) -> {
+            if (server.getRecipeManager().byKey(id).isPresent()) return;
+            PackEdits.beneath(server, id).ifPresent(json -> RecipeRewrites.outputIds(json, formats).stream().filter(members::contains).findFirst()
+                    .ifPresent(output -> rows.add(new Row(id, json.has("type") ? java.util.Objects.requireNonNullElse(ResourceLocation.tryParse(json.get("type").getAsString()), disabledType) : disabledType,
+                            output, Status.PACK_DISABLED, java.util.Optional.empty(), Removal.PACK, java.util.Optional.of(pack)))));
+        });
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
             ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
             ItemStack out = holder.value().getResultItem(server.registryAccess());
@@ -93,7 +102,7 @@ public final class RecipeFamilies {
                 java.util.Optional<ResourceLocation> replaced = status != Status.REWRITTEN ? java.util.Optional.empty()
                         : RecipeSources.originalJson(server, holder.id()).stream()
                                 .flatMap(json -> RecipeRewrites.outputIds(json, formats).stream()).filter(alternatives::contains).findFirst();
-                rows.add(new Row(holder.id(), type == null ? holder.id() : type, output, status, replaced, removal(server, holder.id()), editedBy(holder.id(), scripted)));
+                rows.add(new Row(holder.id(), type == null ? holder.id() : type, output, status, replaced, removal(server, holder.id()), editedBy(holder.id(), scripted, packs)));
                 break;
             }
         }
@@ -101,7 +110,8 @@ public final class RecipeFamilies {
         return rows;
     }
 
-    private static java.util.Optional<String> editedBy(ResourceLocation recipe, Set<ResourceLocation> scripted) {
-        return scripted.contains(recipe) ? java.util.Optional.of("kubejs") : java.util.Optional.empty();
+    /** A script first: it acts on what the datapacks left. */
+    private static java.util.Optional<String> editedBy(ResourceLocation recipe, Set<ResourceLocation> scripted, PackEdits.Edits packs) {
+        return scripted.contains(recipe) ? java.util.Optional.of("kubejs") : java.util.Optional.ofNullable(packs.recipes().get(recipe));
     }
 }
