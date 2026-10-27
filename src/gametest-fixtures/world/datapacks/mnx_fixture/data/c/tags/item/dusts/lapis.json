@@ -1,1 +1,1 @@
-{ "values": ["occultism:lapis_dust"] }
+{ "values": [{ "id": "occultism:lapis_dust", "required": false }] }

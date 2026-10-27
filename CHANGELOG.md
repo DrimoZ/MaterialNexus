@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.4.0
 
 - Remove a recipe from the screen: the bin at the end of a row in the Recipes tab, or **Remove this recipe** in its inspector. Like every choice it waits for Review and apply, and the same button puts it back, before or after applying (`disabled_recipes` in `global.json`). A recipe a script makes in memory, or one Material Nexus makes from your rules, cannot be removed this way, and the screen says why.
 - Your own datapacks are read, never changed: a recipe one of them replaces or switches off says which datapack does, a form's inspector says what they put in or take out of its tag, and Review and apply warns when applying would undo one of their changes.
