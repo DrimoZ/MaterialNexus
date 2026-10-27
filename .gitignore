@@ -10,3 +10,5 @@ repo/
 .DS_Store
 run-ui/
 logs/
+# graphify: the graph is built locally (graphify update .), never committed
+graphify-out/
