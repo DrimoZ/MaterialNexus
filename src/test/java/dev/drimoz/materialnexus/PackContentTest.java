@@ -65,7 +65,7 @@ class PackContentTest {
                 ResourceLocation.fromNamespaceAndPath("materialnexus", "pattern/ingots/tin"), List.of(modx),
                 ResourceLocation.fromNamespaceAndPath("materialnexus", "pattern/double_ingots/tin"), List.of(modxDouble));
         var policy = new ResolutionPolicy(List.of(), Map.of(), Map.of(), Map.of(), Set.of(), Set.of(), Set.of(),
-                dev.drimoz.materialnexus.core.policy.AlmostUnified.NONE, dev.drimoz.materialnexus.core.policy.ProcessRules.NONE, Set.of(), true, Map.of(), Set.of());
+                dev.drimoz.materialnexus.core.policy.AlmostUnified.NONE, dev.drimoz.materialnexus.core.policy.ProcessRules.NONE, Set.of(), true, Map.of(), Set.of(), Set.of());
 
         var discovered = TagDiscovery.discover(before);
         var content = PackContent.generate(CanonicalResolver.resolve(discovered, policy), policy,
@@ -109,5 +109,25 @@ class PackContentTest {
         PackContent.restoreRemovedMembers(after, PackContent.readManifest(pack));
         PackContent.addPlayerTags(after, policy);
         assertEquals(content.effects(), PackContent.generate(CanonicalResolver.resolve(TagDiscovery.discover(after), policy), policy).effects());
+    }
+
+    /** MNX-117: a removed recipe is switched off over any rewrite of it, one with no file writes nothing, and its original stays readable. */
+    @Test
+    void removedRecipesWinAndOnlyFilesAreSwitchedOff() {
+        ResourceLocation press = ResourceLocation.fromNamespaceAndPath("mekanism", "tin_plate");
+        ResourceLocation scripted = ResourceLocation.fromNamespaceAndPath("kubejs", "made_in_memory");
+        String file = "data/mekanism/recipe/tin_plate.json";
+        var rewritten = new PackContent.Content(Map.of(file, new com.google.gson.JsonObject()),
+                List.of(new PackContent.Effect(dev.drimoz.materialnexus.datapack.RecipeRewrites.REWRITE, press, MEK)));
+        var policy = dev.drimoz.materialnexus.datapack.PolicyFiles.parse(
+                com.google.gson.JsonParser.parseString("{\"disabled_recipes\": [\"mekanism:tin_plate\", \"kubejs:made_in_memory\"]}"), Map.of());
+
+        var content = PackContent.withDisabledRecipes(rewritten, policy.disabledRecipes(), Map.of(press, MEK));
+
+        assertEquals(List.of(new PackContent.Effect(PackContent.PLAYER_DISABLE, press, MEK),
+                new PackContent.Effect(PackContent.PLAYER_DISABLE_INVALID, scripted, scripted)), content.effects());
+        assertEquals(Set.of(file), content.files().keySet());
+        assertEquals("neoforge:false", content.files().get(file).getAsJsonObject().getAsJsonArray("neoforge:conditions").get(0).getAsJsonObject().get("type").getAsString());
+        assertEquals(List.of(press), dev.drimoz.materialnexus.datapack.RecipeRewrites.overridden(content.effects()));
     }
 }

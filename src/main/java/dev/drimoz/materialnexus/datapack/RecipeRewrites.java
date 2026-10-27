@@ -85,7 +85,8 @@ public final class RecipeRewrites {
 
     /** Recipe ids this pack overrides; their pre-MNX JSON must be read beneath it (ADR-010). */
     public static List<ResourceLocation> overridden(List<PackContent.Effect> manifest) {
-        return manifest.stream().filter(e -> e.kind().equals(REWRITE) || e.kind().equals(DISABLE) || e.kind().equals(ProcessPlanner.DISABLE))
+        return manifest.stream().filter(e -> e.kind().equals(REWRITE) || e.kind().equals(DISABLE) || e.kind().equals(ProcessPlanner.DISABLE)
+                        || e.kind().equals(PackContent.PLAYER_DISABLE))
                 .map(PackContent.Effect::target).toList();
     }
 
@@ -189,7 +190,7 @@ public final class RecipeRewrites {
         return recipe;
     }
 
-    private static String path(ResourceLocation id) {
+    static String path(ResourceLocation id) {
         return "data/" + id.getNamespace() + "/recipe/" + id.getPath() + ".json";
     }
 }
