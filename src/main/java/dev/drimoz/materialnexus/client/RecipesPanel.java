@@ -22,7 +22,7 @@ import java.util.function.Consumer;
  * place it appears.
  */
 final class RecipesPanel {
-    private static final List<Status> ORDER = List.of(Status.REWRITTEN, Status.DISABLED, Status.REMOVED, Status.UNSUPPORTED, Status.ALTERNATIVE, Status.CANONICAL, Status.OTHER);
+    private static final List<Status> ORDER = List.of(Status.REWRITTEN, Status.DISABLED, Status.REMOVED, Status.PACK_DISABLED, Status.UNSUPPORTED, Status.ALTERNATIVE, Status.CANONICAL, Status.OTHER);
 
     private final Consumer<String> requestFamily;
     private final Ui.Hits hits = new Ui.Hits();
@@ -200,7 +200,7 @@ final class RecipesPanel {
             // Drawn by the viewer itself, on the tray every recipe of the screen sits on.
             cy += RecipeHover.stage(g, layout.get(), left, cy, mx, my) + 12;
         } else {
-            Component why = viewer == null ? tr("no_viewer") : tr(row.status() == Status.DISABLED || row.status() == Status.REMOVED ? "not_loaded" : "not_drawable", viewer.name());
+            Component why = viewer == null ? tr("no_viewer") : tr(row.status() == Status.DISABLED || row.status() == Status.REMOVED || row.status() == Status.PACK_DISABLED ? "not_loaded" : "not_drawable", viewer.name());
             for (var line : font.split(why, inner)) {
                 g.drawString(font, line, left, cy, Theme.MUTED, false);
                 cy += 10;
@@ -216,8 +216,11 @@ final class RecipesPanel {
         // MNX-117: what Apply will do to it, why it cannot be removed here, who else already changes it.
         List<Component> notes = new java.util.ArrayList<>();
         if (PendingChanges.recipeRemovalPending(row.recipe())) notes.add(tr(PendingChanges.recipeRemoved(row.recipe()) ? "pending_remove" : "pending_restore"));
-        if (row.removal() != RecipeFamilies.Removal.ALLOWED) notes.add(tr("remove." + Names.lowerName(row.removal())));
-        row.editedBy().ifPresent(by -> notes.add(tr("edited." + by)));
+        // A recipe a datapack switches off is said once, with the datapack's name, below.
+        if (row.removal() != RecipeFamilies.Removal.ALLOWED && row.removal() != RecipeFamilies.Removal.PACK) notes.add(tr("remove." + Names.lowerName(row.removal())));
+        // MNX-118: a datapack is named as the player knows it, its folder name.
+        row.editedBy().ifPresent(by -> notes.add(by.equals("kubejs") ? tr("edited.kubejs")
+                : tr(row.status() == Status.PACK_DISABLED ? "edited.pack_off" : "edited.pack", Names.pack(by))));
         for (Component note : notes) {
             for (var line : font.split(note, inner)) {
                 g.drawString(font, line, left, cy, Theme.MUTED, false);
@@ -271,7 +274,7 @@ final class RecipesPanel {
 
     /** Switched off, or about to be: the output is drawn dimmed. */
     private static boolean switchedOff(RecipeFamilies.Row row) {
-        return row.status() == Status.DISABLED || PendingChanges.recipeRemoved(row.recipe())
+        return row.status() == Status.DISABLED || row.status() == Status.PACK_DISABLED || PendingChanges.recipeRemoved(row.recipe())
                 || row.status() == Status.REMOVED && !PendingChanges.recipeRemovalPending(row.recipe());
     }
 
@@ -281,7 +284,7 @@ final class RecipesPanel {
             case REWRITTEN -> Ui.mark(g, Ui.Status.UNIFIED, x, y);
             case UNSUPPORTED -> Ui.mark(g, Ui.Status.SUGGESTION, x, y);
             case ALTERNATIVE -> Ui.mark(g, Ui.Status.PENDING, x, y);
-            case DISABLED, REMOVED -> {
+            case DISABLED, REMOVED, PACK_DISABLED -> {
                 for (int i = 0; i < 6; i++) {
                     g.fill(x + i, y + i, x + i + 1, y + i + 1, Theme.BAD);
                     g.fill(x + 5 - i, y + i, x + 6 - i, y + i + 1, Theme.BAD);

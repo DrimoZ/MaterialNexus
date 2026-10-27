@@ -113,7 +113,12 @@ public final class MnxNetwork {
                         items.addAll(v.resolved().alternatives());
                         v.resolved().notUnified().forEach(n -> items.add(n.item()));
                     });
-                    var withUsage = d.withUsage(dev.drimoz.materialnexus.datapack.RecipeEdges.usage(edges, items));
+                    // MNX-118: what datapacks do to the convention tag of each form shown.
+                    var packTags = dev.drimoz.materialnexus.datapack.PackEdits.of(player.server).tags();
+                    java.util.Map<net.minecraft.resources.ResourceLocation, java.util.List<dev.drimoz.materialnexus.datapack.PackEdits.TagEdit>> shown = new java.util.HashMap<>();
+                    d.forms().forEach(v -> dev.drimoz.materialnexus.core.discovery.TagDiscovery.conventionTag(new dev.drimoz.materialnexus.core.domain.MaterialId(v.material()),
+                            new dev.drimoz.materialnexus.core.domain.FormId(v.form())).filter(packTags::containsKey).ifPresent(tag -> shown.put(tag, packTags.get(tag))));
+                    var withUsage = d.withUsage(dev.drimoz.materialnexus.datapack.RecipeEdges.usage(edges, items)).withPackTags(shown);
                     PacketDistributor.sendToPlayer(player, d.byForm() ? withUsage : withUsage.withMissing(
                             dev.drimoz.materialnexus.datapack.RecipeEdges.missing(edges, snapshot.discovered(),
                                     new dev.drimoz.materialnexus.core.domain.MaterialId(d.material()))));

@@ -374,6 +374,16 @@ final class DetailTable {
             cy += 10;
         }
         cy += 6;
+        // MNX-118: datapacks of the pack that already edit this form's tag, by name, with what they put in or take out.
+        var formTag = dev.drimoz.materialnexus.core.discovery.TagDiscovery.conventionTag(new dev.drimoz.materialnexus.core.domain.MaterialId(material),
+                new dev.drimoz.materialnexus.core.domain.FormId(form));
+        for (var edit : formTag.map(t -> detail.packTags().getOrDefault(t, List.of())).orElse(List.of())) {
+            for (var line : font.split(packTagLine(edit), inner)) {
+                g.drawString(font, line, left, cy, Theme.MUTED, false);
+                cy += 10;
+            }
+            cy += 6;
+        }
 
         Optional<ResourceLocation> pending = PendingChanges.get(material, form).filter(p -> !p.equals(CanonicalChange.RESET));
         boolean decided = f.source() != PolicyPrecedence.DEFAULT && !f.alternatives().isEmpty();
@@ -416,6 +426,19 @@ final class DetailTable {
                 else PendingChanges.set(material, form, CanonicalChange.RESET);
             });
         }
+    }
+
+    /** "The datapack my_tweaks replaces this tag; puts in A; takes out B." Items by name, as everywhere in the inspector. */
+    private static Component packTagLine(dev.drimoz.materialnexus.datapack.PackEdits.TagEdit edit) {
+        List<String> parts = new ArrayList<>();
+        if (edit.replace()) parts.add(Component.translatable("screen.materialnexus.insp.pack_tag.replace").getString());
+        if (!edit.added().isEmpty()) parts.add(Component.translatable("screen.materialnexus.insp.pack_tag.add", names(edit.added())).getString());
+        if (!edit.removed().isEmpty()) parts.add(Component.translatable("screen.materialnexus.insp.pack_tag.remove", names(edit.removed())).getString());
+        return Component.translatable("screen.materialnexus.insp.pack_tag", Names.pack(edit.pack()), String.join("; ", parts));
+    }
+
+    private static String names(List<ResourceLocation> items) {
+        return String.join(", ", items.stream().map(i -> Names.withMod(i).getString()).toList());
     }
 
     /** Reasons that are guesses of the resolver, which "same item after all" overrules (MNX-086). */

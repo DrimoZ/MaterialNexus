@@ -82,6 +82,18 @@ script makes in memory, or one Material Nexus generates, is listed in Preview as
 nothing. Its original JSON stays readable beneath the generated pack (ADR-010), so the Recipes tab still lists it
 under "Removed by you" and can put it back.
 
+## Decisions found in datapacks (MNX-118)
+
+Like scripts (MNX-076), the pack author's own datapacks are read, never changed. A pack counts when its source is the
+world (`file/…`), or a datapack loader: never the game (built-in and feature packs), a mod jar (`mod/…`, `mod_data`)
+or Material Nexus's own packs. Read from the resource stacks once per reload, on first need (`PackEdits`):
+
+- a recipe file such a pack replaces is shown in the Recipes tab with the pack's name; one it switches off (not loaded)
+  is listed under "Switched off by a datapack", with what it made read from the file beneath;
+- its edits of a form's convention tag (`replace`, items put in, items taken out) are shown in that form's inspector;
+- Preview warns (`pack_conflict`, "Against your datapacks") where Apply takes out of a tag an item a datapack puts in,
+  or puts in one a datapack takes out. The generated pack is on top, so Apply wins; nothing is written for the warning.
+
 ## Global policy: Almost Unified arbitration
 
 ```json
