@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- Dusts that mods tag as grits (`c:grits/<material>`, Immersive Geology) are found as dusts of that material. Declared as data (`material_nexus/forms/common_tags.json`), so a datapack can drop it or add another folder the same way.
+
 ## 0.4.0
 
 - Remove a recipe from the screen: the bin at the end of a row in the Recipes tab, or **Remove this recipe** in its inspector. Like every choice it waits for Review and apply, and the same button puts it back, before or after applying (`disabled_recipes` in `global.json`). A recipe a script makes in memory, or one Material Nexus makes from your rules, cannot be removed this way, and the screen says why.
