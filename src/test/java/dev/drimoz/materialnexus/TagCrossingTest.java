@@ -62,7 +62,7 @@ class TagCrossingTest {
 
         var found = discovered.providers(new MaterialId("chromium"), new FormId("plate"));
         assertEquals(List.of(plate), found.stream().map(p -> p.resource()).toList());
-        assertEquals(Confidence.INTEGRATION, found.getFirst().evidence().getFirst().confidence());
+        assertEquals(Confidence.INTEGRATION, found.get(0).evidence().get(0).confidence());
         // Two materials on one item: not guessed.
         assertTrue(discovered.providers(new MaterialId("nickel"), new FormId("plate")).isEmpty());
     }
@@ -75,8 +75,8 @@ class TagCrossingTest {
                 rl("forge:plates"), List.of(plate),
                 rl("forge:material/chromium"), List.of(plate)));
 
-        var evidence = discovered.providers(new MaterialId("chromium"), new FormId("plate")).getFirst().evidence();
+        var evidence = discovered.providers(new MaterialId("chromium"), new FormId("plate")).get(0).evidence();
         assertEquals(1, evidence.size());
-        assertEquals(Confidence.MATERIAL_TAG, evidence.getFirst().confidence());
+        assertEquals(Confidence.MATERIAL_TAG, evidence.get(0).confidence());
     }
 }
