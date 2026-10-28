@@ -33,7 +33,7 @@ final class ReviewDrawer {
     private static final int FOOT = 28;
     /** Effect kinds in reading order; unknown kinds go last under their own name. */
     private static final List<String> ORDER = List.of("script_conflict", "recipe_disable", "process_disable", "recipe_unsupported", "process_unsupported",
-            "recipe_invalid", "data_invalid", "almost_unified", "tag_add", "tag_remove", "item_conversion", "conversion_recipe", "recipe_rewrite",
+            "recipe_invalid", "data_invalid", "almost_unified", "tag_add", "tag_remove", "item_conversion", "conversion_recipe", "recipe_rewrite", "recipe_by_keys",
             "process_recipe", "item_create", "data_edit", "data_reset");
 
     private record Change(Component text, int depth, boolean group, Runnable discard) { }

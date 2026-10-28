@@ -260,6 +260,51 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /**
+     * MNX-124 (ADR-025, field report), with {@code -Pcases}: every Immersive Geology and Voltex item of a shared form unified
+     * away. Their machines have no recipe format: the foundry still gets the kept items out, plate tags in, and every recipe
+     * written is one the game reads.
+     */
+    @GameTest(template = "empty")
+    public static void recipesWithoutAFormatAreRewritten(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("immersivegeology") || !ModList.get().isLoaded("industrial_core")) { helper.succeed(); return; }
+        var server = helper.getLevel().getServer();
+        var snapshot = SnapshotManager.current();
+        java.util.function.Predicate<ResourceLocation> reported = i -> i.getNamespace().equals("immersivegeology") || i.getNamespace().equals("industrial_core");
+        java.util.Map<ResourceLocation, ResourceLocation> conversions = new java.util.TreeMap<>();
+        java.util.List<RecipeRewrites.UnifiedForm> forms = new java.util.ArrayList<>();
+        snapshot.discovered().materials().forEach((material, byForm) -> {
+            java.util.Set<ResourceLocation> materialItems = new java.util.HashSet<>();
+            byForm.values().forEach(ps -> ps.forEach(p -> materialItems.add(p.resource())));
+            byForm.forEach((form, ps) -> {
+                var items = ps.stream().map(p -> p.resource()).sorted().toList();
+                var kept = items.stream().filter(reported.negate()).findFirst();
+                var alts = items.stream().filter(reported).toList();
+                if (kept.isEmpty() || alts.isEmpty()) return;
+                alts.forEach(a -> conversions.put(a, kept.get()));
+                dev.drimoz.materialnexus.core.discovery.TagDiscovery.conventionTag(material, form)
+                        .ifPresent(tag -> forms.add(new RecipeRewrites.UnifiedForm(tag, kept.get(), alts, materialItems)));
+            });
+        });
+        var formats = RecipeFormats.load(server.getResourceManager());
+        var decoder = RecipeSources.decoder(server);
+        var plan = RecipeRewrites.plan(RecipeSources.collect(server, conversions, formats, java.util.List.of()), conversions, formats,
+                dev.drimoz.materialnexus.core.policy.AlmostUnified.Ownership.ALL, RecipeRewrites.inputTags(forms, snapshot.conventionTags()), decoder);
+        var byKeys = plan.effects().stream().filter(e -> e.kind().equals(RecipeRewrites.BY_KEYS)).toList();
+        var types = byKeys.stream().map(e -> e.item()).collect(java.util.stream.Collectors.toCollection(java.util.TreeSet::new));
+        long tagInputs = plan.files().values().stream().filter(json -> json.toString().contains("\"tag\":\"forge:plates/")).count();
+        var unread = plan.files().entrySet().stream().filter(e -> e.getValue().isJsonObject() && e.getValue().getAsJsonObject().has("type")
+                && decoder.decode(e.getValue().getAsJsonObject()).isEmpty()).map(java.util.Map.Entry::getKey).toList();
+        org.slf4j.LoggerFactory.getLogger("MNX-124").info("{} alternatives, {} recipes rewritten, {} without a format ({}), {} with a plate tag, {} left listed",
+                conversions.size(), plan.effects().stream().filter(e -> e.kind().equals(RecipeRewrites.REWRITE)).count(), byKeys.size(), types,
+                tagInputs, plan.effects().stream().filter(e -> e.kind().equals(RecipeRewrites.UNSUPPORTED)).count());
+        helper.assertTrue(types.contains(ResourceLocation.parse("immersivegeology:foundry")), "the foundry should be rewritten by its keys, got " + types);
+        helper.assertTrue(types.stream().anyMatch(t -> t.getNamespace().equals("industrial_core")), "Voltex (industrial_core) machines should be rewritten by their keys, got " + types);
+        helper.assertTrue(tagInputs > 0, "some input should become a plate tag");
+        helper.assertTrue(unread.isEmpty(), "every rewritten recipe should decode, not " + unread);
+        helper.succeed();
+    }
+
     /** MNX-090: with the Thermal format, unifying tin dust on Mekanism's rewrites Thermal's pulverizer recipes. */
     @GameTest(template = "empty")
     public static void thermalRecipesAreRewritten(GameTestHelper helper) {

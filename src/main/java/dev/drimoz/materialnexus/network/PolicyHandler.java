@@ -205,7 +205,8 @@ final class PolicyHandler {
         // Read at most once, and only when rewrites or process rules need it (MNX-111).
         var known = com.google.common.base.Suppliers.memoize(() -> RecipeSources.known(server, formats, overridden));
         PackContent.Content content = PackContent.full(resolved, policy, auPresent, (conversions, ownership) -> RecipeRewrites.plan(
-                RecipeSources.collect(server, conversions, formats, overridden, known.get()), conversions, formats, ownership),
+                RecipeSources.collect(server, conversions, formats, overridden, known.get()), conversions, formats, ownership,
+                RecipeSources.inputTags(resolved), RecipeSources.decoder(server)),
                 SnapshotManager.current().conventionTags());
         if (!policy.processes().isEmpty()) {
             var items = server.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.ITEM);
