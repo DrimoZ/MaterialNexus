@@ -3,6 +3,8 @@
 ## Unreleased
 
 - Dusts that mods tag as grits (`c:grits/<material>`, Immersive Geology) are found as dusts of that material. Declared as data (`material_nexus/forms/common_tags.json`), so a datapack can drop it or add another folder the same way.
+- Recipes of any mod are rewritten, not only those with a recipe format: without one, an item under `input(s)`, `ingredient(s)` or `inputItems` is an input and one under `output(s)`, `result(s)` or `outputItems` an output, unless the game reads the recipe otherwise (the Immersive Geology foundry now makes the kept chromium plate). Any other key is left as it is and listed. Review and apply lists these recipes apart, with their type.
+- Inputs become the form's tag (`c:plates/chromium`, `c:ores/copper`) instead of the kept item, when every item of that tag is the same material, the tag holds the kept item and the game accepts both items there; otherwise the kept item, as before.
 
 ## 0.4.0
 

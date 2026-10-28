@@ -32,6 +32,7 @@ final class Describe {
             case PackContent.ITEM_CONVERSION -> Component.translatable("screen.materialnexus.effect.item_conversion", e.item().toString(), e.target().toString());
             case RecipeRewrites.REWRITE -> Component.translatable("screen.materialnexus.effect.recipe_rewrite", e.target().toString(), e.item().toString());
             case RecipeRewrites.DISABLE -> Component.translatable("screen.materialnexus.effect.recipe_disable", e.target().toString());
+            case RecipeRewrites.BY_KEYS -> Component.translatable("screen.materialnexus.effect.recipe_by_keys", e.target().toString(), e.item().toString());
             case RecipeRewrites.UNSUPPORTED -> Component.translatable("screen.materialnexus.effect.recipe_unsupported", e.target().toString(), e.item().toString());
             case dev.drimoz.materialnexus.datapack.ProcessPlanner.PROCESS -> processLine(e);
             case dev.drimoz.materialnexus.datapack.ProcessPlanner.DISABLE -> Component.translatable("screen.materialnexus.effect.process_disable", e.target().toString(), e.item().toString());

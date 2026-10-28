@@ -58,7 +58,14 @@ The **Untagged forms** tab of Rule files and the end of the report list name sha
 
 `types`: the recipe types this format describes. `outputs`: the top-level keys holding the items a
 recipe produces. With a format, Material Nexus rewrites those recipes (outputs and inputs) when they
-involve an alternative; without one, they are listed as "not handled yet" and left untouched.
+involve an alternative. Without one, it reads the usual keys: `input`, `inputs`, `ingredient`,
+`ingredients`, `inputItems` are inputs, `output`, `outputs`, `result`, `results`, `outputItems` are
+outputs, as long as the game does not read the recipe otherwise; an alternative under any other key is
+left untouched and listed as "not handled yet". A format is still the way to cover a type whose
+outputs sit under another key.
+
+An input becomes the form's tag (`c:plates/chromium`) when every item of that tag is the same
+material, the tag holds the kept item and the game accepts both items there; otherwise the kept item.
 
 ## Process templates
 
