@@ -176,14 +176,19 @@ public final class TagDiscovery {
 
     /** Folder name for a form, e.g. ingot to ingots. */
     public static java.util.Optional<String> folder(FormId form) {
-        return folders.entrySet().stream().filter(e -> e.getValue().equals(form)).map(Map.Entry::getKey).findFirst();
+        return folderOf(form);
+    }
+
+    /** Several folders may name one form (dusts, grits): the first by name, so the answer never depends on map order. */
+    private static java.util.Optional<String> folderOf(FormId form) {
+        return folders.entrySet().stream().filter(e -> e.getValue().equals(form)).map(Map.Entry::getKey).min(String::compareTo);
     }
 
     /** The convention tag a material/form was discovered from, e.g. forge:ingots/tin or forge:storage_blocks/raw_tin. */
     public static java.util.Optional<ResourceLocation> conventionTag(MaterialId material, FormId form) {
         if (form.equals(RAW_BLOCK)) return java.util.Optional.of(ResourceLocation.fromNamespaceAndPath(CONVENTION_NAMESPACE, "storage_blocks/" + RAW_PREFIX + material.name()));
         if (form.equals(ORE) || form.name().endsWith("_ore")) return java.util.Optional.of(ResourceLocation.fromNamespaceAndPath(CONVENTION_NAMESPACE, "ores/" + material.name()));
-        return folders.entrySet().stream().filter(e -> e.getValue().equals(form)).map(Map.Entry::getKey).findFirst()
+        return folderOf(form)
                 .map(folder -> ResourceLocation.fromNamespaceAndPath(CONVENTION_NAMESPACE, folder + "/" + material.name()));
     }
 }
