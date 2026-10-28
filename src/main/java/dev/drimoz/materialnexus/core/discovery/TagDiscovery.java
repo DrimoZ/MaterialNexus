@@ -12,7 +12,6 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.SortedMap;
 import java.util.TreeMap;
 
@@ -82,16 +81,6 @@ public final class TagDiscovery {
         folders = Map.copyOf(merged);
     }
 
-    private static volatile Set<String> materialFolders = Set.of();
-
-    /**
-     * Folders (declared by data, {@code material_folders}) whose tags name a material, like {@code forge:material/chromium}:
-     * some mods tag the material apart from the form. Nothing is read this way unless data declares it.
-     */
-    public static void setMaterialFolders(Collection<String> declared) {
-        materialFolders = Set.copyOf(declared);
-    }
-
     /** Host rock to ore form: stone and deepslate ores are variants, never duplicates of each other. */
     private static final Map<String, String> GROUNDS = Map.of(
             "stone", "ore", "deepslate", "deepslate_ore", "netherrack", "nether_ore", "end_stone", "end_ore");
@@ -145,8 +134,6 @@ public final class TagDiscovery {
             }
         });
 
-        crossTags(tagMembers, aliases, found);
-
         SortedMap<MaterialId, SortedMap<FormId, List<Provider>>> materials = new TreeMap<>();
         found.forEach((material, forms) -> {
             SortedMap<FormId, List<Provider>> byForm = new TreeMap<>();
@@ -156,40 +143,6 @@ public final class TagDiscovery {
             materials.put(material, Collections.unmodifiableSortedMap(byForm));
         });
         return new DiscoveredMaterials(Collections.unmodifiableSortedMap(materials));
-    }
-
-    /**
-     * With a declared material folder: an item in a flat form tag ({@code forge:plates}) and in exactly one
-     * {@code forge:material/<name>} tag is that form of that material. An item naming two materials is left alone, never guessed; ores keep their own rules.
-     */
-    private static void crossTags(Map<ResourceLocation, ? extends Collection<ResourceLocation>> tagMembers, Map<String, MaterialId> aliases,
-                                  SortedMap<MaterialId, SortedMap<FormId, SortedMap<ResourceLocation, List<DiscoveryEvidence>>>> found) {
-        Map<ResourceLocation, Map<MaterialId, ResourceLocation>> materialsOf = new HashMap<>();
-        tagMembers.forEach((tag, members) -> {
-            if (!tag.getNamespace().equals(CONVENTION_NAMESPACE)) return;
-            String[] parts = tag.getPath().split("/");
-            if (parts.length != 2 || !materialFolders.contains(parts[0])) return;
-            String name = parts[1];
-            MaterialId material = aliases.get(name);
-            if (material == null) material = MaterialId.read(name).result().orElse(null);
-            if (material == null) return;
-            for (ResourceLocation item : members) materialsOf.computeIfAbsent(item, i -> new TreeMap<>()).put(material, tag);
-        });
-        tagMembers.forEach((tag, members) -> {
-            if (!tag.getNamespace().equals(CONVENTION_NAMESPACE)) return;
-            FormId form = folders.get(tag.getPath());
-            if (form == null || form.equals(ORE)) return;
-            for (ResourceLocation item : members) {
-                Map<MaterialId, ResourceLocation> of = materialsOf.get(item);
-                if (of == null || of.size() != 1) continue;
-                var entry = of.entrySet().iterator().next();
-                var evidence = found.computeIfAbsent(entry.getKey(), m -> new TreeMap<>())
-                        .computeIfAbsent(form, f -> new TreeMap<>())
-                        .computeIfAbsent(item, i -> new ArrayList<>());
-                // Already found through its own c:<folder>/<material> tag: that evidence is stronger, keep it alone.
-                if (evidence.isEmpty()) evidence.add(new DiscoveryEvidence(Confidence.INTEGRATION, "#" + tag + " + #" + entry.getValue()));
-            }
-        });
     }
 
     private static Map<ResourceLocation, String> groundsByItem(Map<ResourceLocation, ? extends Collection<ResourceLocation>> tagMembers) {
