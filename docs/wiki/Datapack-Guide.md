@@ -36,6 +36,7 @@ Your edits are decoded before being written, and the history keeps them.
 - `folders`: a convention tag folder and the form it holds (`c:ore_chunks/<material>`). Adds to the
   built-in ones or remaps one.
 - `remove_folders`: folders no longer read, built-in ones included; that form disappears from the pack view.
+- `material_folders`: folders whose tags name a material (`["material"]` reads `c:material/chromium`). An item in a flat form tag (`c:plates`) and in exactly one such tag is that form of that material; an item naming two materials is left alone. Material Nexus ships `material` and a `grits` folder for dusts in `common_tags.json`; a datapack file at the same path replaces it.
 - `patterns`: item ids of a form mods leave untagged; `{material}` stands for a material some tag
   already knows. A match counts as evidence for that form; nothing is added to the game's tags.
 - `relations` / `remove_relations`: conversions checked by the Missing tab and the report.

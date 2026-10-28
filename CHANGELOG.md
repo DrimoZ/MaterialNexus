@@ -1,5 +1,11 @@
 # Changelog
 
+## Unreleased
+
+- Dusts that mods tag as grits (`c:grits/<material>`) are found as dusts of that material.
+- Mods that tag the form and the material apart (an item in `c:plates` and in `c:material/chromium`, without `c:plates/chromium`) are found too, when the item names exactly one material; its own `c:<form>/<material>` tag still wins when it has one.
+- Both are declared as data in `material_nexus/forms` (`folders`, new `material_folders`), so a datapack can add the same kind of fix for another mod, or drop these, without a new version.
+
 ## 0.4.0
 
 - Remove a recipe from the screen: the bin at the end of a row in the Recipes tab, or **Remove this recipe** in its inspector. Like every choice it waits for Review and apply, and the same button puts it back, before or after applying (`disabled_recipes` in `global.json`). A recipe a script makes in memory, or one Material Nexus makes from your rules, cannot be removed this way, and the screen says why.
