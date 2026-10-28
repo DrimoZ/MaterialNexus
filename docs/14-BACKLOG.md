@@ -69,3 +69,4 @@
 | MNX-120 | P1 | Only world datapacks are the author's | A pack counts as the author's datapack only when it comes from the world's datapacks folder (Create New Age ships a pack with a source of its own, which MNX-118 took for one); the MNX-118 GameTest checks that only the fixture is attributed recipes |
 | MNX-121 | P3 | Graph not tracked | `graphify-out/` is ignored as a whole: the graph is built locally and was removed from the repository |
 | MNX-122 | P1 | 0.4.0 prepared | mod_version, changelog, store description (removing a recipe, your own datapacks) and release checklist; store art and wiki images retaken with the bins |
+| MNX-123 | P1 | Grits read as dusts | `grits` is a dust folder declared as data (`material_nexus/forms/common_tags.json`); the tag Material Nexus writes for a form with several folders is the first by name (`dusts`); on the Forge 1.20.1 pack with Immersive Geology, its grits join their material's dusts |

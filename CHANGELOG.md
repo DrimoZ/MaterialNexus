@@ -2,9 +2,7 @@
 
 ## Unreleased
 
-- Dusts that mods tag as grits (`c:grits/<material>`) are found as dusts of that material.
-- Mods that tag the form and the material apart (an item in `c:plates` and in `c:material/chromium`, without `c:plates/chromium`) are found too, when the item names exactly one material; its own `c:<form>/<material>` tag still wins when it has one.
-- Both are declared as data in `material_nexus/forms` (`folders`, new `material_folders`), so a datapack can add the same kind of fix for another mod, or drop these, without a new version.
+- Dusts that mods tag as grits (`c:grits/<material>`, Immersive Geology) are found as dusts of that material. Declared as data (`material_nexus/forms/common_tags.json`), so a datapack can drop it or add another folder the same way.
 
 ## 0.4.0
 
