@@ -1,6 +1,4 @@
 {
-  "types": ["tconstruct:casting_table", "tconstruct:casting_basin", "tconstruct:retextured_casting_basin",
-            "tconstruct:molding_table", "tconstruct:item_part_builder", "tconstruct:part_builder",
-            "tconstruct:part_builder_recycling"],
+  "types": ["tconstruct:casting_table", "tconstruct:casting_basin", "tconstruct:retextured_casting_basin", "tconstruct:molding_table", "tconstruct:item_part_builder", "tconstruct:part_builder", "tconstruct:part_builder_recycling", "tconstruct:modifier", "tconstruct:incremental_modifier", "tconstruct:multilevel_modifier", "tconstruct:multilevel_incremental_modifier", "tconstruct:swappable_modifier", "tconstruct:table_casting_material", "tconstruct:table_casting_composite", "tconstruct:table_tool_casting", "tconstruct:basin_tool_casting", "tconstruct:basin_casting_material", "tconstruct:basin_casting_composite", "tconstruct:casting_table_potion", "tconstruct:tool_building", "tconstruct:tipped_tool_transform", "tconstruct:severing"],
   "outputs": ["result", "results"]
 }
