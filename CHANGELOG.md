@@ -3,6 +3,10 @@
 ## Unreleased
 
 - Dusts that mods tag as grits (`forge:grits/<material>`, Immersive Geology) are found as dusts of that material. Declared as data (`material_nexus/forms/common_tags.json`), so a datapack can drop it or add another folder the same way.
+- Conditional recipes (`forge:conditional`, `meadow:conditional` on 1.20.1) are read through: the recipe they hold is rewritten like any other. In the 292 most downloaded technology, magic and equipment mods for 1.20.1 Forge, 395 recipes sit inside such a wrapper.
+- More keys are read without a recipe format: `key` (the grid of a shaped recipe), `template`, `base` and `addition` (smithing) and `itemInput` are inputs.
+- Recipe formats shipped for Voltex (`industrial_core`) and Tinkers' Construct casting and part recipes: their secondary outputs (`result2`, `byproduct`) and bare-string results are rewritten.
+- A recipe format file can now `skip` a recipe type (`{"skip": ["mod:type"]}`): it is never rewritten, by format or by its keys, and is listed as not handled.
 - Recipes of any mod are rewritten, not only those with a recipe format: without one, an item under `input(s)`, `ingredient(s)` or `inputItems` is an input and one under `output(s)`, `result(s)` or `outputItems` an output, unless the game reads the recipe otherwise (the Immersive Geology foundry now makes the kept chromium plate). Any other key is left as it is and listed. Review and apply lists these recipes apart, with their type.
 - Inputs become the form's tag (`forge:plates/chromium`, `forge:ores/copper`) instead of the kept item, when every item of that tag is the same material, the tag holds the kept item and the game accepts both items there; otherwise the kept item, as before.
 

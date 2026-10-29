@@ -299,7 +299,8 @@ public final class MaterialNexusGameTests {
                 conversions.size(), plan.effects().stream().filter(e -> e.kind().equals(RecipeRewrites.REWRITE)).count(), byKeys.size(), types,
                 tagInputs, plan.effects().stream().filter(e -> e.kind().equals(RecipeRewrites.UNSUPPORTED)).count());
         helper.assertTrue(types.contains(ResourceLocation.parse("immersivegeology:foundry")), "the foundry should be rewritten by its keys, got " + types);
-        helper.assertTrue(types.stream().anyMatch(t -> t.getNamespace().equals("industrial_core")), "Voltex (industrial_core) machines should be rewritten by their keys, got " + types);
+        helper.assertTrue(plan.effects().stream().anyMatch(e -> e.kind().equals(RecipeRewrites.REWRITE) && e.target().getNamespace().equals("industrial_core")), "Voltex (industrial_core) recipes should be rewritten through its format");
+        helper.assertTrue(plan.effects().stream().noneMatch(e -> e.kind().equals(RecipeRewrites.UNSUPPORTED) && (e.target().getNamespace().equals("industrial_core") || e.target().getNamespace().equals("immersivegeology") && !e.target().getPath().startsWith("thermoelectric/"))), "only the thermoelectric structure block of Immersive Geology may stay listed, got " + plan.effects().stream().filter(e -> e.kind().equals(RecipeRewrites.UNSUPPORTED)).toList());
         helper.assertTrue(tagInputs > 0, "some input should become a plate tag");
         helper.assertTrue(unread.isEmpty(), "every rewritten recipe should decode, not " + unread);
         helper.succeed();
