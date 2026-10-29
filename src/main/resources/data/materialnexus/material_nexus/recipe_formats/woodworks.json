@@ -1,0 +1,4 @@
+{
+  "types": ["woodworks:sawmill"],
+  "outputs": ["result"]
+}
