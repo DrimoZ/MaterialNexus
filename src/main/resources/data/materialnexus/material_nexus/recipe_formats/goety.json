@@ -1,0 +1,4 @@
+{
+  "types": ["goety:ritual", "goety:cursed_infuser_recipes"],
+  "outputs": ["result"]
+}

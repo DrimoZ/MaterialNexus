@@ -1,0 +1,4 @@
+{
+  "types": ["electrodynamics:chemical_crystallizer_recipe", "electrodynamics:chemical_mixer_recipe", "electrodynamics:fermentation_plant_recipe", "electrodynamics:mineral_washer_recipe", "electrodynamics:energized_alloyer_recipe", "electrodynamics:lathe_recipe", "electrodynamics:mineral_crusher_recipe", "electrodynamics:mineral_grinder_recipe", "electrodynamics:oxidation_furnace_recipe", "electrodynamics:reinforced_alloyer_recipe", "electrodynamics:wire_mill_recipe", "electrodynamics:electrolytic_separator_recipe"],
+  "outputs": ["output", "itembi"]
+}

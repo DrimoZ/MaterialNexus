@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Recipe formats shipped for more mods, so their recipes are rewritten without anything to set up: Electrodynamics, Goety, Wither Storm, Meadow, Aether, Woodworks, Clayworks, Ceramics, TACZ, more Tinkers' Construct types, and Immersive Geology's mineral mixes. A format only acts where its mod is installed. A test checks that every shipped file reads and that no recipe type is claimed by two of them.
 - A recipe is no longer listed as not handled because a tag, a load condition or a group is spelled like an item it unifies (`{"tag": "aether:skyroot_stick"}` next to the item `aether:skyroot_stick`). Found loading 33 more mods: 79 recipes were listed for that reason.
 - Dusts that mods tag as grits (`forge:grits/<material>`, Immersive Geology) are found as dusts of that material. Declared as data (`material_nexus/forms/common_tags.json`), so a datapack can drop it or add another folder the same way.
 - Conditional recipes (`forge:conditional`, `meadow:conditional` on 1.20.1) are read through: the recipe they hold is rewritten like any other. In the 292 most downloaded technology, magic and equipment mods for 1.20.1 Forge, 395 recipes sit inside such a wrapper.

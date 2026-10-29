@@ -37,7 +37,33 @@ class RecipeRewritesTest {
         return RecipeFormats.parse(files);
     }
 
+<<<<<<< HEAD
     /** MNX-109: a written recipe is skipped, not fatal, once a mod it names is gone (1.20.1 cooking recipes throw). */
+=======
+    /**
+     * MNX-127: formats are shipped for many mods and keyed by recipe type, so they only act where the mod is there. What has to hold
+     * for all of them: each file reads, and no type is claimed by two files (the later one would silently replace the earlier).
+     */
+    @Test
+    void everyShippedFormatReadsAndNoTypeIsClaimedTwice() throws Exception {
+        Map<ResourceLocation, String> owner = new java.util.HashMap<>();
+        var directory = java.nio.file.Path.of(RecipeRewritesTest.class.getResource("/data/materialnexus/material_nexus/recipe_formats").toURI());
+        try (var files = java.nio.file.Files.list(directory)) {
+            for (java.nio.file.Path file : files.filter(f -> f.toString().endsWith(".json")).sorted().toList()) {
+                var json = JsonParser.parseString(java.nio.file.Files.readString(file));
+                assertTrue(RecipeFormats.validate(json).isEmpty(), file + ": " + RecipeFormats.validate(json));
+                if (!json.getAsJsonObject().has("types")) continue;
+                for (var type : json.getAsJsonObject().getAsJsonArray("types")) {
+                    String previous = owner.put(ResourceLocation.parse(type.getAsString()), file.getFileName().toString());
+                    assertNull(previous, type.getAsString() + " is in " + previous + " and in " + file.getFileName());
+                }
+            }
+        }
+        assertTrue(owner.size() > 100, "the shipped formats cover " + owner.size() + " recipe types");
+    }
+
+    /** MNX-109: a written recipe is skipped, not reported broken, once a mod it names is gone. */
+>>>>>>> 5cc53d4 (MNX-127: recipe formats shipped for Electrodynamics, Goety, Wither Storm, Meadow, Aether, Woodworks, Clayworks, Ceramics, TACZ, 15 more Tinkers' Construct types and IE mineral mixes, chosen from uncovered types with bare-string outputs or unusual output keys in the 292 most downloaded Forge 1.20.1 mods; a JUnit test reads every shipped format and refuses a type claimed twice; 44 JUnit, 20/20 GameTests)
     @Test
     void writtenRecipesLoadOnlyWhileTheirItemsExist() {
         final String DISABLED = "{\"conditions\":[{\"type\":\"forge:false\"}]}";

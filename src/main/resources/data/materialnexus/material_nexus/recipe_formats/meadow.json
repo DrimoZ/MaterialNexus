@@ -1,0 +1,4 @@
+{
+  "types": ["meadow:woodcutting", "meadow:cheese"],
+  "outputs": ["outputItem", "result"]
+}
