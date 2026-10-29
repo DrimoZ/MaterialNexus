@@ -31,7 +31,11 @@ public final class RecipeRewrites {
     public static final String BY_KEYS = "recipe_by_keys";
 
     /** Top-level keys whose role is known without a format (the list Almost Unified uses). */
-    static final List<String> INPUT_KEYS = List.of("input", "inputs", "ingredient", "ingredients", "inputItems");
+    // MNX-125, read off the 300 most downloaded Forge 1.20.1 mods of the technology, magic and equipment categories: a key
+    // is added when several mods use it for one role (key: shaped grids; template, base, addition: smithing; itemInput:
+    // Mekanism and Immersive Geology).
+    static final List<String> INPUT_KEYS = List.of("input", "inputs", "ingredient", "ingredients", "inputItems", "itemInput",
+            "key", "template", "base", "addition");
     static final List<String> OUTPUT_KEYS = List.of("output", "outputs", "result", "results", "outputItems");
 
     /**
@@ -81,29 +85,11 @@ public final class RecipeRewrites {
                 continue;
             }
             JsonObject original = s.json().get();
-            Optional<RecipeFormats.Format> format = format(original, formats);
             JsonObject json = original.deepCopy();
-            if (format.isPresent()) {
-                List<String> outputKeys = format.get().outputKeys();
-                // Inputs too: an alternative named as a literal item would otherwise be asked for after it was converted away.
-                List<JsonObject> inputs = new ArrayList<>();
-                // Load conditions name items too: kept item there, never a tag.
-                json.keySet().stream().filter(k -> !outputKeys.contains(k))
-                        .forEach(k -> replaceItems(json.get(k), conversions, id -> true, k.endsWith("conditions") ? new ArrayList<>() : inputs));
-                replaceOutputs(json, outputKeys, conversions);
-                toTags(json, inputs, conversions, inputTags, decoder);
-            } else {
-                // ADR-025: the role comes from the key; the game, when it shows the recipe, must not say otherwise.
-                Optional<Decoded> read = decoder.decode(original).filter(Decoded::exposed);
-                List<JsonObject> inputs = new ArrayList<>();
-                for (String key : INPUT_KEYS) {
-                    if (json.has(key)) replaceItems(json.get(key), conversions, id -> read.map(d -> d.consumes(id) || !d.produces(id)).orElse(true), inputs);
-                }
-                for (String key : OUTPUT_KEYS) {
-                    if (json.has(key)) replaceStacks(json.get(key), conversions, id -> read.map(d -> d.produces(id) || !d.consumes(id)).orElse(true));
-                }
-                toTags(json, inputs, conversions, inputTags, decoder);
-                if (!json.equals(original)) effects.add(new PackContent.Effect(BY_KEYS, s.id(), type(original)));
+            // A wrapper (forge:conditional, meadow:conditional) holds the real recipes: each is read on its own.
+            for (JsonObject recipe : recipes(json)) {
+                rewrite(recipe, conversions, formats, inputTags, decoder)
+                        .ifPresent(type -> effects.add(new PackContent.Effect(BY_KEYS, s.id(), type)));
             }
             // What is left names an alternative where no role is known (a structure block, a group): listed, untouched.
             Optional<ResourceLocation> left = firstMention(json, conversions.keySet());
@@ -131,6 +117,59 @@ public final class RecipeRewrites {
             }
         });
         return new PackContent.Content(files, effects);
+    }
+
+    /** A format file said never to touch this type (MNX-125). */
+    private static boolean skipped(JsonObject recipe, RecipeFormats formats) {
+        JsonElement type = recipe.get("type");
+        ResourceLocation id = type != null && type.isJsonPrimitive() ? ResourceLocation.tryParse(type.getAsString()) : null;
+        return id != null && formats.skips(id);
+    }
+
+    /** The recipe itself, then those a wrapper holds under {@code recipe} or {@code recipes[].recipe} (Forge conditional recipes), in place. */
+    private static List<JsonObject> recipes(JsonObject json) {
+        List<JsonObject> out = new ArrayList<>(List.of(json));
+        JsonElement one = json.get("recipe");
+        if (one != null && one.isJsonObject()) out.addAll(recipes(one.getAsJsonObject()));
+        JsonElement many = json.get("recipes");
+        if (many != null && many.isJsonArray()) {
+            for (JsonElement e : many.getAsJsonArray()) {
+                JsonElement inner = e.isJsonObject() ? e.getAsJsonObject().get("recipe") : null;
+                if (inner != null && inner.isJsonObject()) out.addAll(recipes(inner.getAsJsonObject()));
+            }
+        }
+        return out;
+    }
+
+    /**
+     * One recipe, in place: with a format, every key outside its outputs is an input; without, the role comes from the key and
+     * the game, when it shows the recipe, must not say otherwise (ADR-025). The type when keys alone made the change.
+     */
+    private static Optional<ResourceLocation> rewrite(JsonObject json, Map<ResourceLocation, ResourceLocation> conversions, RecipeFormats formats,
+                                                      Map<ResourceLocation, ResourceLocation> inputTags, Decoder decoder) {
+        JsonObject before = json.deepCopy();
+        if (skipped(json, formats)) return Optional.empty();
+        Optional<RecipeFormats.Format> format = format(json, formats);
+        List<JsonObject> inputs = new ArrayList<>();
+        if (format.isPresent()) {
+            List<String> outputKeys = format.get().outputKeys();
+            // Inputs too: an alternative named as a literal item would otherwise be asked for after it was converted away.
+            // Load conditions name items too: kept item there, never a tag. A wrapped recipe is rewritten on its own.
+            json.keySet().stream().filter(k -> !outputKeys.contains(k) && !k.equals("recipe") && !k.equals("recipes"))
+                    .forEach(k -> replaceItems(json.get(k), conversions, id -> true, k.endsWith("conditions") ? new ArrayList<>() : inputs));
+            replaceOutputs(json, outputKeys, conversions);
+            toTags(json, inputs, conversions, inputTags, decoder);
+            return Optional.empty();
+        }
+        Optional<Decoded> read = decoder.decode(before).filter(Decoded::exposed);
+        for (String key : INPUT_KEYS) {
+            if (json.has(key)) replaceItems(json.get(key), conversions, id -> read.map(d -> d.consumes(id) || !d.produces(id)).orElse(true), inputs);
+        }
+        for (String key : OUTPUT_KEYS) {
+            if (json.has(key)) replaceStacks(json.get(key), conversions, id -> read.map(d -> d.produces(id) || !d.consumes(id)).orElse(true));
+        }
+        toTags(json, inputs, conversions, inputTags, decoder);
+        return json.equals(before) ? Optional.empty() : Optional.of(type(before));
     }
 
     /** Recipe ids this pack overrides; their pre-MNX JSON must be read beneath it (ADR-010). */

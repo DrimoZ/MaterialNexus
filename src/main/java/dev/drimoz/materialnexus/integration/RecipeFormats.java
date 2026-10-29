@@ -4,6 +4,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import com.mojang.logging.LogUtils;
 import com.mojang.serialization.Codec;
+import com.mojang.serialization.DataResult;
 import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import net.minecraft.resources.ResourceLocation;
@@ -35,17 +36,30 @@ public final class RecipeFormats {
     /** One format file: the recipe types it covers and the JSON keys holding their outputs. */
     public record Format(ResourceLocation source, List<ResourceLocation> types, List<String> outputKeys) { }
 
-    private record FormatJson(List<ResourceLocation> types, List<String> outputs) {
-        static final Codec<FormatJson> CODEC = RecordCodecBuilder.create(i -> i.group(
-                ResourceLocation.CODEC.listOf().fieldOf("types").forGetter(FormatJson::types),
-                Codec.STRING.listOf().fieldOf("outputs").forGetter(FormatJson::outputs)
-        ).apply(i, FormatJson::new));
+    /** {@code skip}: recipe types never rewritten, by format or by their keys (MNX-125); a file may only skip. */
+    private record FormatJson(List<ResourceLocation> types, List<String> outputs, List<ResourceLocation> skip) {
+        static final Codec<FormatJson> CODEC = RecordCodecBuilder.<FormatJson>create(i -> i.group(
+                ResourceLocation.CODEC.listOf().optionalFieldOf("types", List.of()).forGetter(FormatJson::types),
+                Codec.STRING.listOf().optionalFieldOf("outputs", List.of()).forGetter(FormatJson::outputs),
+                ResourceLocation.CODEC.listOf().optionalFieldOf("skip", List.of()).forGetter(FormatJson::skip)
+        ).apply(i, FormatJson::new)).validate(f -> {
+            if (f.types().isEmpty() != f.outputs().isEmpty()) return DataResult.error(() -> "\"types\" and \"outputs\" go together");
+            if (f.types().isEmpty() && f.skip().isEmpty()) return DataResult.error(() -> "a recipe format needs \"types\" and \"outputs\", or \"skip\"");
+            return DataResult.success(f);
+        });
     }
 
     private final Map<ResourceLocation, Format> byType;
+    private final java.util.Set<ResourceLocation> skipped;
 
-    private RecipeFormats(Map<ResourceLocation, Format> byType) {
+    private RecipeFormats(Map<ResourceLocation, Format> byType, java.util.Set<ResourceLocation> skipped) {
         this.byType = Map.copyOf(byType);
+        this.skipped = java.util.Set.copyOf(skipped);
+    }
+
+    /** True when a format file says this type is never rewritten. */
+    public boolean skips(ResourceLocation type) {
+        return skipped.contains(type);
     }
 
     /** Every format visible in the active datapacks; files are applied in id order, so the result is deterministic. */
@@ -69,13 +83,15 @@ public final class RecipeFormats {
 
     public static RecipeFormats parse(Map<ResourceLocation, JsonElement> files) {
         Map<ResourceLocation, Format> byType = new HashMap<>();
+        java.util.Set<ResourceLocation> skipped = new java.util.HashSet<>();
         new TreeMap<>(files).forEach((file, json) -> FormatJson.CODEC.parse(JsonOps.INSTANCE, json)
                 .resultOrPartial(error -> LOGGER.warn("Ignoring invalid recipe format {}: {}", file, error))
                 .ifPresent(f -> {
                     Format format = new Format(file, List.copyOf(f.types()), List.copyOf(f.outputs()));
                     f.types().forEach(type -> byType.put(type, format));
+                    skipped.addAll(f.skip());
                 }));
-        return new RecipeFormats(byType);
+        return new RecipeFormats(byType, skipped);
     }
 
     public Optional<Format> forType(ResourceLocation type) {
