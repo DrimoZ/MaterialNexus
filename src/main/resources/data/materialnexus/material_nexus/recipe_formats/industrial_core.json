@@ -1,0 +1,8 @@
+{
+  "types": ["industrial_core:accelerating", "industrial_core:assembling", "industrial_core:bioreactor_recipe",
+            "industrial_core:blast_furnace_recipe", "industrial_core:machine_recipe", "industrial_core:cryo_recipe",
+            "industrial_core:crystallizer_recipe", "industrial_core:fluid_enricher_recipe", "industrial_core:growing_recipe",
+            "industrial_core:liquefier_recipe", "industrial_core:phase_splitter_recipe", "industrial_core:rod_fabrication_recipe",
+            "industrial_core:ore_washing_recipe"],
+  "outputs": ["result", "result2", "result3", "byproduct", "output"]
+}

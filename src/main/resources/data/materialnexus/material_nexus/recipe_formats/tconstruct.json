@@ -1,0 +1,6 @@
+{
+  "types": ["tconstruct:casting_table", "tconstruct:casting_basin", "tconstruct:retextured_casting_basin",
+            "tconstruct:molding_table", "tconstruct:item_part_builder", "tconstruct:part_builder",
+            "tconstruct:part_builder_recycling"],
+  "outputs": ["result", "results"]
+}
