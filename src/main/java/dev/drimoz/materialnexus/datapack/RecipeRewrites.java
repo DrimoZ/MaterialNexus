@@ -251,6 +251,9 @@ public final class RecipeRewrites {
             }
         } else if (element.isJsonObject()) {
             for (var e : element.getAsJsonObject().entrySet()) {
+                // A group is a label, a tag may be spelled like an item, a load condition tests an item without using it:
+                // none of them is an item left behind.
+                if (COSMETIC.contains(e.getKey()) || e.getKey().equals("tag") || e.getKey().endsWith("conditions")) continue;
                 Optional<ResourceLocation> found = firstMention(e.getValue(), ids);
                 if (found.isPresent()) return found;
             }
