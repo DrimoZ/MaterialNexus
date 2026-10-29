@@ -120,6 +120,42 @@ dependencies {
         modRuntimeOnly "maven.modrinth:voltex:gkFDGQqo" // 3.0.4
     }
 
+    // MNX-126: a batch of the most downloaded technology, magic and equipment mods, to read what the recipe rewrite leaves
+    // listed (`-Pbatch`, with the recipesAreRewrittenAcrossTheBatch GameTest report). Versions and required dependencies from Modrinth.
+    if (project.hasProperty("batch")) {
+        modRuntimeOnly "maven.modrinth:tinkers-construct:Fv0zTUuh" // 3.12.1.231
+        modRuntimeOnly "maven.modrinth:mantle:37ccXi7G" // 1.11.117
+        modRuntimeOnly "maven.modrinth:botania:npY4sRWF" // 1.20.1-456-forge
+        modRuntimeOnly "maven.modrinth:curios:IPQlZkz1" // 5.14.1+1.20.1
+        modRuntimeOnly "maven.modrinth:patchouli:94dtOLgZ" // 1.20.1-85-forge
+        modRuntimeOnly "maven.modrinth:ad-astra:8EwzHQkx" // 1.15.21
+        modRuntimeOnly "maven.modrinth:resourceful-config:DERs8u7v" // 2.1.3
+        modRuntimeOnly "maven.modrinth:resourceful-lib:OhsHaCcW" // 2.1.29
+        modRuntimeOnly "maven.modrinth:botarium:O7D6FTfW" // 2.3.4
+        modRuntimeOnly "maven.modrinth:create-diesel-generators:DTQVvA5H" // 1.20.1-1.3.12
+        modRuntimeOnly "maven.modrinth:create-ore-excavation:J3rjB9Lq" // 1.20.1-1.6.6
+        modRuntimeOnly "maven.modrinth:create-tfmg:ZNOx0jhg" // 1.0.2f
+        modRuntimeOnly "maven.modrinth:powah:xDOvxyqP" // 5.0.11-forge
+        modRuntimeOnly "maven.modrinth:cloth-config:t8TXrZvZ" // 11.1.136+forge
+        modRuntimeOnly "maven.modrinth:architectury-api:1MKTLiiG" // 9.2.14+forge
+        modRuntimeOnly "maven.modrinth:spartan-weaponry:4U6gwadt" // 1.20.1-3.2.1
+        modRuntimeOnly "maven.modrinth:quark:DijQLauD" // 1.20.1-4.0-462
+        modRuntimeOnly "maven.modrinth:zeta:mSER3jBI" // 1.20.1-1.0-31
+        modRuntimeOnly "maven.modrinth:aether:2411kUqF" // 1.20.1-1.5.2-neoforge
+        modRuntimeOnly "maven.modrinth:vampirism-integrations:vcA8lABo" // 1.20.1-1.9.0-beta.1
+        modRuntimeOnly "maven.modrinth:vampirism:yg8B0dzt" // 1.20.1-1.10.17
+        modRuntimeOnly "maven.modrinth:farmers-delight:SiIpcZzM" // 1.20.1-1.3.4
+        modRuntimeOnly "maven.modrinth:delightful:HbEQIqIu" // 3.8.1-1.20.1
+        modRuntimeOnly "maven.modrinth:abnormals-delight:vvM8zPPK" // 5.0.1
+        modRuntimeOnly "maven.modrinth:blueprint:ZQKDh6gd" // 7.1.5
+        modRuntimeOnly "maven.modrinth:cc-tweaked:gRtcHJd8" // 1.120.2
+        modRuntimeOnly "maven.modrinth:create-enchantment-industry:fs3kihCQ" // 2.5.4b
+        modRuntimeOnly "maven.modrinth:create-dragons-plus:eMalpJtP" // 1.11.9
+        modRuntimeOnly "maven.modrinth:applied-energistics-2-wireless-terminals:z8QXeyI0" // 15.3.3-forge
+        modRuntimeOnly "maven.modrinth:vintage-delight:q8Ght7Bo" // 0.1.6
+        modRuntimeOnly "maven.modrinth:goety:SUT3Eqyy" // 2.5.60.0
+    }
+
     // A small real pack for the dev runs: overlapping copper/tin/lead/silver providers are what discovery and
     // resolution exist for. runtimeOnly, never compiled against or shipped. Modern Industrialization has no
     // Forge 1.20.1 build, so it is not part of this pack.

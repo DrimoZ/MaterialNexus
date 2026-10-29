@@ -306,6 +306,70 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
+    /**
+     * MNX-126, with {@code -Pbatch}: every form with two items or more is unified (the first by id kept), and the recipe plan is
+     * read as a report: what is rewritten, what stays listed and under which key. A recipe the game read before the rewrite
+     * must still be read after it.
+     */
+    @GameTest(template = "empty")
+    public static void recipesAreRewrittenAcrossTheBatch(GameTestHelper helper) {
+        if (!ModList.get().isLoaded("tconstruct") || !ModList.get().isLoaded("botania")) { helper.succeed(); return; }
+        var server = helper.getLevel().getServer();
+        var snapshot = SnapshotManager.current();
+        java.util.Map<ResourceLocation, ResourceLocation> conversions = new java.util.TreeMap<>();
+        java.util.List<RecipeRewrites.UnifiedForm> forms = new java.util.ArrayList<>();
+        snapshot.discovered().materials().forEach((material, byForm) -> {
+            java.util.Set<ResourceLocation> materialItems = new java.util.HashSet<>();
+            byForm.values().forEach(ps -> ps.forEach(p -> materialItems.add(p.resource())));
+            byForm.forEach((form, ps) -> {
+                var items = ps.stream().map(p -> p.resource()).sorted().toList();
+                if (items.size() < 2) return;
+                var kept = items.get(0);
+                var alts = items.subList(1, items.size());
+                alts.forEach(a -> conversions.put(a, kept));
+                dev.drimoz.materialnexus.core.discovery.TagDiscovery.conventionTag(material, form)
+                        .ifPresent(tag -> forms.add(new RecipeRewrites.UnifiedForm(tag, kept, alts, materialItems)));
+            });
+        });
+        var formats = RecipeFormats.load(server.getResourceManager());
+        var decoder = RecipeSources.decoder(server);
+        var plan = RecipeRewrites.plan(RecipeSources.collect(server, conversions, formats, java.util.List.of()), conversions, formats,
+                dev.drimoz.materialnexus.core.policy.AlmostUnified.Ownership.ALL, RecipeRewrites.inputTags(forms, snapshot.conventionTags()), decoder);
+        var log = org.slf4j.LoggerFactory.getLogger("MNX-126");
+        log.info("{} alternatives, {} recipes rewritten ({} by keys), {} disabled as duplicates, {} left listed", conversions.size(),
+                plan.effects().stream().filter(e -> e.kind().equals(RecipeRewrites.REWRITE)).count(),
+                plan.effects().stream().filter(e -> e.kind().equals(RecipeRewrites.BY_KEYS)).count(),
+                plan.effects().stream().filter(e -> e.kind().equals(RecipeRewrites.DISABLE)).count(),
+                plan.effects().stream().filter(e -> e.kind().equals(RecipeRewrites.UNSUPPORTED)).count());
+        // A recipe whose JSON names no alternative but one tag holding it makes it through that tag: the pack removes
+        // alternatives from the convention tags, so such a recipe is already settled ("TAG"), not left behind.
+        var tags = snapshot.conventionTags();
+        java.util.Map<String, java.util.List<String>> left = new java.util.TreeMap<>();
+        plan.effects().stream().filter(e -> e.kind().equals(RecipeRewrites.UNSUPPORTED)).forEach(e -> {
+            String where = RecipeSources.originalJson(server, e.target()).map(json -> {
+                StringBuilder keys = new StringBuilder(String.valueOf(json.get("type")).replace("\"", ""));
+                json.entrySet().forEach(k -> { if (k.getValue().toString().contains("\"" + e.item() + "\"")) keys.append(" key=").append(k.getKey()); });
+                if (keys.indexOf(" key=") < 0) {
+                    boolean viaTag = tags.entrySet().stream().anyMatch(t -> t.getValue().contains(e.item()) && json.toString().contains("\"" + t.getKey() + "\""));
+                    keys.append(viaTag ? " TAG" : " NOKEY");
+                }
+                return keys.toString();
+            }).orElse("no file");
+            left.computeIfAbsent(where, w -> new java.util.ArrayList<>()).add(e.target() + " (" + e.item() + ")");
+        });
+        left.forEach((where, ids) -> log.info("LEFT {} x{} e.g. {}", where, ids.size(), ids.subList(0, Math.min(2, ids.size()))));
+        var broken = new java.util.ArrayList<String>();
+        plan.files().forEach((path, json) -> {
+            String[] parts = path.split("/", 4);
+            if (parts.length < 4 || !json.isJsonObject() || !json.getAsJsonObject().has("type")) return;
+            var id = ResourceLocation.fromNamespaceAndPath(parts[1], parts[3].substring(0, parts[3].length() - ".json".length()));
+            boolean before = RecipeSources.originalJson(server, id).map(o -> decoder.decode(o).isPresent()).orElse(false);
+            if (before && decoder.decode(json.getAsJsonObject()).isEmpty()) broken.add(id.toString());
+        });
+        helper.assertTrue(broken.isEmpty(), "rewriting must not make a readable recipe unreadable: " + broken);
+        helper.succeed();
+    }
+
     /** MNX-090: with the Thermal format, unifying tin dust on Mekanism's rewrites Thermal's pulverizer recipes. */
     @GameTest(template = "empty")
     public static void thermalRecipesAreRewritten(GameTestHelper helper) {
