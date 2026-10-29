@@ -63,6 +63,46 @@ class RecipeRewritesTest {
         return ResourceLocation.fromNamespaceAndPath("test", path);
     }
 
+    /**
+     * ADR-025, the field report: a foundry with no format still gets the kept plate out and the plate tag in, an unknown key
+     * is left and listed, a tag the game would refuse falls back to the item, and a second pass changes nothing.
+     */
+    @Test
+    void recipesWithoutAFormatAreRewrittenByTheirKeys() {
+        var igPlate = ResourceLocation.parse("immersivegeology:plate_chromium");
+        var kept = ResourceLocation.parse("modern_industrialization:chromium_plate");
+        var tag = ResourceLocation.parse("c:plates/chromium");
+        var all = dev.drimoz.materialnexus.core.policy.AlmostUnified.Ownership.ALL;
+        Map<ResourceLocation, ResourceLocation> conversions = Map.of(igPlate, kept);
+        String foundry = "{\"type\":\"immersivegeology:foundry\",\"inputs\":[{\"item\":\"%1$s\"},{\"tag\":\"c:dusts/coal\"}],"
+                + "\"result\":{\"id\":\"%1$s\",\"count\":2},\"block\":{\"item\":\"%1$s\"}}";
+        var source = new Source(id("foundry"), json(foundry.formatted(igPlate)), igPlate);
+        // A machine that hides its recipe from the game (GregTech-like): it decodes, nothing more is known.
+        RecipeRewrites.Decoder hidden = json -> Optional.of(new RecipeRewrites.Decoded() {
+            public boolean exposed() { return false; }
+            public boolean produces(ResourceLocation item) { return false; }
+            public boolean consumes(ResourceLocation item) { return false; }
+        });
+        var form = new RecipeRewrites.UnifiedForm(tag, kept, List.of(igPlate), java.util.Set.of(igPlate, kept));
+        var inputTags = RecipeRewrites.inputTags(List.of(form), Map.of(tag, java.util.Set.of(igPlate, kept)));
+
+        var plan = RecipeRewrites.plan(List.of(source), conversions, SHIPPED, all, inputTags, hidden);
+        JsonObject written = plan.files().get("data/test/recipe/foundry.json").getAsJsonObject();
+        assertEquals(JsonParser.parseString("[{\"tag\":\"c:plates/chromium\"},{\"tag\":\"c:dusts/coal\"}]"), written.get("inputs"));
+        assertEquals(JsonParser.parseString("{\"id\":\"" + kept + "\",\"count\":2}"), written.get("result"));
+        assertEquals(JsonParser.parseString("{\"item\":\"" + igPlate + "\"}"), written.get("block"), "an unknown key is not rewritten");
+        assertTrue(plan.effects().contains(new PackContent.Effect(RecipeRewrites.BY_KEYS, id("foundry"), ResourceLocation.parse("immersivegeology:foundry"))));
+        assertTrue(plan.effects().contains(new PackContent.Effect(RecipeRewrites.UNSUPPORTED, id("foundry"), igPlate)));
+
+        assertTrue(RecipeRewrites.plan(List.of(new Source(id("foundry"), Optional.of(written), kept)), conversions, SHIPPED, all, inputTags, hidden)
+                .files().isEmpty(), "a second pass changes nothing");
+        assertEquals(JsonParser.parseString("{\"item\":\"" + kept + "\"}"),
+                RecipeRewrites.plan(List.of(source), conversions, SHIPPED, all, inputTags, RecipeRewrites.Decoder.NONE)
+                        .files().get("data/test/recipe/foundry.json").getAsJsonObject().getAsJsonArray("inputs").get(0), "no tag the game refuses");
+        assertTrue(RecipeRewrites.inputTags(List.of(form), Map.of(tag, java.util.Set.of(igPlate, kept, ResourceLocation.parse("othermod:plate_iron"))))
+                .isEmpty(), "a tag holding another material keeps the item");
+    }
+
     @Test
     void rewritesVanillaOutputsAndDisablesOnlyNewDuplicates() {
         String block = "{\"type\":\"minecraft:crafting_shapeless\",\"ingredients\":[{\"tag\":\"c:storage_blocks/tin\"}],\"result\":{\"count\":9,\"id\":\"%s\"}}";

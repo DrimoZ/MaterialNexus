@@ -3,6 +3,10 @@ package dev.drimoz.materialnexus.datapack;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import dev.drimoz.materialnexus.core.discovery.TagDiscovery;
+import dev.drimoz.materialnexus.core.domain.MaterialId;
+import dev.drimoz.materialnexus.core.resolution.ResolvedMaterial;
+import dev.drimoz.materialnexus.core.resolution.SnapshotManager;
 import dev.drimoz.materialnexus.integration.RecipeFormats;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.resources.ResourceLocation;
@@ -88,10 +92,16 @@ public final class RecipeSources {
             boolean touches = ours.contains(s.id()) || outputs.stream().anyMatch(items::contains) || mentions(json, conversions.keySet());
             if (touches) sources.add(new RecipeRewrites.Source(s.id(), s.json(), firstOrSelf(outputs, s.id())));
         }
-        // A recipe with no file (added in memory by a script, e.g. KubeJS) has no JSON we may rewrite: it is
-        // reported like an unknown type rather than silently skipped.
+        // ADR-025: any other type naming an alternative, read from its file and rewritten by its keys. A recipe with no
+        // file (added in memory by a script, e.g. KubeJS) has no JSON we may rewrite: it is reported, not skipped.
+        Map<ResourceLocation, String> files = texts(server);
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
             if (ours.contains(holder.id()) || read.contains(holder.id())) continue;
+            Optional<JsonObject> json = parse(files.get(file(holder.id()))).filter(j -> mentions(j, conversions.keySet()));
+            if (json.isPresent()) {
+                sources.add(new RecipeRewrites.Source(holder.id(), json, firstOrSelf(RecipeRewrites.outputIds(json.get(), formats), holder.id())));
+                continue;
+            }
             ItemStack out = holder.value().getResultItem(server.registryAccess());
             ResourceLocation result = out.isEmpty() ? null : BuiltInRegistries.ITEM.getKey(out.getItem());
             if (result != null && conversions.containsKey(result)) {
@@ -138,10 +148,19 @@ public final class RecipeSources {
                 ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
                 if (type != null && formats.forType(type).isPresent()) kept.add(file(holder.id()));
             }
+            // ADR-025: of the other types, only the files naming an item that could become an alternative (a form with
+            // two items or more): rewritten by their keys once a unification makes it one.
+            Set<ResourceLocation> shared = new HashSet<>();
+            SnapshotManager.current().discovered().materials().values().forEach(forms -> forms.values().forEach(providers -> {
+                if (providers.size() > 1) providers.forEach(p -> shared.add(p.resource()));
+            }));
             Map<ResourceLocation, String> files = resources.listResourceStacks("recipe", path -> path.getPath().endsWith(".json"))
                     .entrySet().parallelStream()
-                    .filter(e -> kept.contains(e.getKey()) || e.getValue().stream().anyMatch(r -> r.sourcePackId().equals(GeneratedPack.PACK_ID)))
-                    .flatMap(e -> originalText(e.getValue()).stream().map(text -> Map.entry(e.getKey(), text)))
+                    .flatMap(e -> {
+                        boolean known = kept.contains(e.getKey()) || e.getValue().stream().anyMatch(r -> r.sourcePackId().equals(GeneratedPack.PACK_ID));
+                        return originalText(e.getValue()).filter(text -> known || ids(text).stream().anyMatch(shared::contains))
+                                .stream().map(text -> Map.entry(e.getKey(), text));
+                    })
                     .collect(java.util.stream.Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
             texts = new Texts(new java.lang.ref.WeakReference<>(resources), files);
             com.mojang.logging.LogUtils.getLogger().info("Material Nexus read {} recipe files ({} KB of text) in {} ms", files.size(),
@@ -154,6 +173,49 @@ public final class RecipeSources {
     @net.neoforged.bus.api.SubscribeEvent
     public static synchronized void onServerStopped(net.neoforged.neoforge.event.server.ServerStoppedEvent event) {
         texts = null;
+    }
+
+    /** ADR-025: for each unified form, the tag its inputs may become, from the current snapshot (tags as they are without Material Nexus). */
+    public static Map<ResourceLocation, ResourceLocation> inputTags(java.util.SortedMap<MaterialId, ResolvedMaterial> resolved) {
+        var snapshot = SnapshotManager.current();
+        List<RecipeRewrites.UnifiedForm> forms = new ArrayList<>();
+        resolved.forEach((material, rm) -> {
+            Set<ResourceLocation> materialItems = new HashSet<>();
+            snapshot.discovered().materials().getOrDefault(material, java.util.Collections.emptySortedMap())
+                    .values().forEach(providers -> providers.forEach(p -> materialItems.add(p.resource())));
+            rm.forms().forEach((form, f) -> {
+                if (!PackContent.isUnified(f)) return;
+                TagDiscovery.conventionTag(material, form).ifPresent(tag ->
+                        forms.add(new RecipeRewrites.UnifiedForm(tag, f.canonical().orElseThrow(), f.alternatives(), materialItems)));
+            });
+        });
+        return RecipeRewrites.inputTags(forms, snapshot.conventionTags());
+    }
+
+    /** The game's reading of a recipe, load conditions left out; Preview / Apply only. */
+    public static RecipeRewrites.Decoder decoder(MinecraftServer server) {
+        var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
+        return json -> {
+            JsonObject recipe = json.deepCopy();
+            recipe.remove("neoforge:conditions");
+            try {
+                var decoded = net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, recipe).result();
+                if (decoded.isEmpty()) return Optional.empty();
+                ItemStack result = decoded.get().getResultItem(server.registryAccess());
+                var ingredients = decoded.get().getIngredients();
+                return Optional.of(new RecipeRewrites.Decoded() {
+                    public boolean exposed() { return !result.isEmpty() || !ingredients.isEmpty(); }
+                    public boolean produces(ResourceLocation item) { return !result.isEmpty() && BuiltInRegistries.ITEM.getKey(result.getItem()).equals(item); }
+                    public boolean consumes(ResourceLocation item) {
+                        ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.get(item));
+                        return ingredients.stream().anyMatch(i -> i.test(stack));
+                    }
+                });
+            } catch (RuntimeException e) {
+                // A mod whose recipe cannot be read, or will not tell its result here: the game cannot vouch for it.
+                return Optional.empty();
+            }
+        };
     }
 
     private static ResourceLocation firstOrSelf(List<ResourceLocation> outputs, ResourceLocation recipe) {

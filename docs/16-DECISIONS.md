@@ -71,7 +71,7 @@
 
 **Decision:** rewriting a recipe output to the canonical item is a policy action, off by default and visible in preview. V1 supports vanilla recipe types only (crafting, smelting/blasting/smoking/campfire, stonecutting). Mod recipe types are classified but marked `UNSUPPORTED` for rewriting until their adapter exists; they can still be disabled (the `neoforge:false` condition works for any type).
 
-**Rejected:** generic JSON rewriting (searching `"id"` in result fields) — works often, fails silently.
+**Rejected:** generic JSON rewriting (searching `"id"` in result fields) — works often, fails silently. Superseded by ADR-025: roles now come from evidence, not from any `id`.
 
 ## ADR-012 — Almost Unified arbitration per domain
 
@@ -112,7 +112,7 @@ Everything under an output key is output (stacks with `id` or `item`, lists, nes
 
 **Why:** a pack author must be able to cover the mods of their pack without waiting for a release; no mod class is ever loaded, so absent mods stay safe.
 
-**Rejected:** one Java adapter per mod (closed to pack authors); generic "find every id" rewriting (cannot tell outputs from inputs).
+**Rejected:** one Java adapter per mod (closed to pack authors); generic "find every id" rewriting (cannot tell outputs from inputs). ADR-025 keeps formats first and rewrites other types from known keys and decoding.
 
 ## ADR-017 - Scripts (KubeJS) have the last word
 
@@ -193,3 +193,20 @@ Consequences, made visible rather than hidden:
 **Consequences:** nothing is written when Almost Unified owns tags. A form with no convention tag folder ignores its edits. Removing an item from a tag also keeps it from being unified there; it keeps its other tags (`c:ingots`).
 
 **Rejected:** editing any tag by id (KubeJS does that; ADR-023); hiding removed items (the edit could only be undone by hand in the file).
+
+## ADR-025 - Recipes are rewritten from evidence, inputs to the form's tag
+
+**Decision:** a recipe that names an alternative is rewritten whatever its type, one occurrence at a time, when Material Nexus can tell what that occurrence is:
+1. **Role.** From the recipe format when one covers the type (ADR-016); otherwise from the top-level key holding it: `input`, `inputs`, `ingredient`, `ingredients`, `inputItems` are inputs, `output`, `outputs`, `result`, `results`, `outputItems` are outputs (the list Almost Unified uses). When the game exposes it (`getIngredients`, `getResultItem` on the decoded recipe), decoding confirms the role; a disagreement leaves the occurrence alone. Any other key (`block`, `singleBlock`, `group`, `byproduct`, `result2`...) is not rewritten, only listed. Only ids under an `item` or `id` key are candidates, never a bare string.
+2. **Input.** It becomes the form's convention tag (`c:plates/chromium`; for ores `c:ores/copper`, every ground) when every member of the tag is the same material, aliases included, and the tag holds the kept item: the alias tags are searched for it (`c:ingots/aluminium`), or it is added like `add_missing_tags` does (ADR-023). After rewriting, the decoded ingredient must accept both the kept item and the alternative. Otherwise the input becomes the kept item.
+3. **Output.** It becomes the kept item.
+
+Each rewrite records its evidence (format file, key, confirmed by decoding, tag or item) for Preview and `/materials report`. A second pass over the result changes nothing. A recipe that becomes an exact duplicate is disabled as before. Recipes with no file (made in memory by a script) stay listed as not rewritten.
+
+**Why:** field report (2026-10-28): the Immersive Geology foundry kept producing its own chromium plate, and Voltex machines their own dusts, because their types had no format file; asking pack authors to write one per mod does not scale. Measured on the Forge 1.20.1 test pack (116 mods, Immersive Geology and Voltex added), 9,818 occurrences of alternatives in recipe files: every recipe naming an alternative had a file (GregTech's too); decoding told the role for 29% and never disagreed with the key list; swapping one item id for another never broke decoding, so decoding confirms roles but cannot vouch for an item swap; of the 480 inputs, 462 decoded with the tag and accepted both items, the other 18 because the tag lacked the kept item (aluminum/aluminium alias); the 52 tags wider than the unified items held only the same material: variants left unified apart (35), and ores of other grounds or added by GregTech scripts (18). Inputs become tags so that an alternative still in a chest or a pipe is accepted until the world converts it (ADR-015).
+
+**Consequences:** supersedes the rejection of generic rewriting in ADR-011 and ADR-016: the role is no longer guessed from any `id`, it comes from a format, a known key or the game. Format files keep priority and stay the way to cover a type whose keys are unusual. An ore input accepts every ground of its material, and any item a script adds to the tag. A tag holding another material keeps the item. Mods that hide their recipes from the vanilla API (GregTech, Thermal) rely on the key alone. Reading every recipe file costs time on large packs: one pass over the texts, keeping only the recipes that name an alternative, measured before release.
+
+**First version (MNX-124):** the tag is used only when the form's own tag already holds the kept item; alias tags are not searched and the kept item is not added to the tag, so those inputs (aluminium) get the kept item. Evidence is per recipe: rewrites without a format are listed apart in Review and apply with their type; the rest reads from the recipe file.
+
+**Rejected:** rewriting every `item` value whatever its key (cannot put a tag in an input and an item in an output; touches structure blocks and groups); deciding roles by decoding alone (blind to most machines); a strict tag rule allowing only unified items (refused 57% of tags that held only the same material); a mixin rewriting recipes in memory (recipes in memory are the scripts' own; ADR-022).
