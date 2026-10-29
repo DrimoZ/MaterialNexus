@@ -64,6 +64,32 @@ class RecipeRewritesTest {
     }
 
     /**
+     * MNX-125, read off 292 mods: the real recipe of a conditional wrapper is rewritten, a shaped grid's {@code key} counts as
+     * input, and a type a format file {@code skip}s is never touched.
+     */
+    @Test
+    void wrappersGridKeysAndSkippedTypes() {
+        var all = dev.drimoz.materialnexus.core.policy.AlmostUnified.Ownership.ALL;
+        var alt = ResourceLocation.parse("mekanism:dust_tin");
+        var kept = ResourceLocation.parse("immersiveengineering:dust_tin");
+        Map<ResourceLocation, ResourceLocation> conversions = Map.of(alt, kept);
+        String wrapped = "{\"type\":\"forge:conditional\",\"recipes\":[{\"conditions\":[{\"type\":\"forge:mod_loaded\",\"modid\":\"othermod\"}],"
+                + "\"recipe\":{\"type\":\"othermod:grinder\",\"ingredient\":{\"item\":\"%1$s\"},\"result\":{\"item\":\"%1$s\"}}}]}";
+        String grid = "{\"type\":\"othermod:shaped_table\",\"pattern\":[\"#\"],\"key\":{\"#\":{\"item\":\"%1$s\"}},\"result\":{\"item\":\"othermod:thing\"}}";
+        var sources = List.of(new Source(id("wrapped"), json(wrapped.formatted(alt)), alt), new Source(id("grid"), json(grid.formatted(alt)), alt));
+
+        var plan = RecipeRewrites.plan(sources, conversions, SHIPPED, all, Map.of(), RecipeRewrites.Decoder.NONE);
+        assertEquals(JsonParser.parseString("{\"item\":\"" + kept + "\"}"), plan.files().get("data/test/recipe/wrapped.json").getAsJsonObject()
+                .getAsJsonArray("recipes").get(0).getAsJsonObject().getAsJsonObject("recipe").get("result"));
+        assertEquals(JsonParser.parseString("{\"#\":{\"item\":\"" + kept + "\"}}"), plan.files().get("data/test/recipe/grid.json").getAsJsonObject().get("key"));
+
+        var skip = RecipeFormats.parse(Map.of(id("skip"), JsonParser.parseString("{\"skip\":[\"othermod:grinder\"]}")));
+        var skipped = RecipeRewrites.plan(sources.subList(0, 1), conversions, skip, all, Map.of(), RecipeRewrites.Decoder.NONE);
+        assertTrue(skipped.files().isEmpty(), "a skipped type is never rewritten");
+        assertTrue(skipped.effects().stream().anyMatch(e -> e.kind().equals(RecipeRewrites.UNSUPPORTED)), "and it is listed");
+    }
+
+    /**
      * ADR-025, the field report: a foundry with no format still gets the kept plate out and the plate tag in, an unknown key
      * is left and listed, a tag the game would refuse falls back to the item, and a second pass changes nothing.
      */

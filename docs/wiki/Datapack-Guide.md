@@ -64,6 +64,10 @@ outputs, as long as the game does not read the recipe otherwise; an alternative 
 left untouched and listed as "not handled yet". A format is still the way to cover a type whose
 outputs sit under another key.
 
+Without a format the inputs are the keys `input`, `inputs`, `ingredient`, `ingredients`, `inputItems`, `itemInput`, `key` (the grid of a shaped recipe), `template`, `base` and `addition` (smithing). A recipe wrapped in `recipe` or `recipes[].recipe` (Forge conditional recipes) is read as the recipe it holds.
+
+To leave a recipe type alone whatever it holds, name it in `skip`: `{ "skip": ["othermod:grinder"] }`. A file may hold only `skip`; it wins over a format for the same type.
+
 An input becomes the form's tag (`forge:plates/chromium`) when every item of that tag is the same
 material, the tag holds the kept item and the game accepts both items there; otherwise the kept item.
 
