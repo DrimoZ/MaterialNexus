@@ -1,0 +1,4 @@
+{
+  "types": ["clayworks:baking"],
+  "outputs": ["result"]
+}

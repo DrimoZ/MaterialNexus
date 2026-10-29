@@ -1,0 +1,4 @@
+{
+  "types": ["ceramics:kiln"],
+  "outputs": ["result"]
+}

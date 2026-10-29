@@ -1,7 +1,4 @@
 {
-  "types": ["immersiveengineering:crusher", "immersiveengineering:metal_press", "immersiveengineering:arc_furnace",
-            "immersiveengineering:sawmill", "immersiveengineering:alloy", "immersiveengineering:hammer_crushing",
-            "immersiveengineering:blueprint", "immersiveengineering:bottling_machine", "immersiveengineering:squeezer",
-            "immersiveengineering:fermenter"],
-  "outputs": ["result", "results", "secondaries", "secondaryOutputs", "strippingSecondaries", "slag"]
+  "types": ["immersiveengineering:crusher", "immersiveengineering:metal_press", "immersiveengineering:arc_furnace", "immersiveengineering:sawmill", "immersiveengineering:alloy", "immersiveengineering:hammer_crushing", "immersiveengineering:blueprint", "immersiveengineering:bottling_machine", "immersiveengineering:squeezer", "immersiveengineering:fermenter", "immersiveengineering:mineral_mix"],
+  "outputs": ["result", "results", "secondaries", "secondaryOutputs", "strippingSecondaries", "slag", "ores", "spoils"]
 }
