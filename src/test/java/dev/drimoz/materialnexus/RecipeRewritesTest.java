@@ -83,6 +83,12 @@ class RecipeRewritesTest {
                 .getAsJsonArray("recipes").get(0).getAsJsonObject().getAsJsonObject("recipe").get("result"));
         assertEquals(JsonParser.parseString("{\"#\":{\"item\":\"" + kept + "\"}}"), plan.files().get("data/test/recipe/grid.json").getAsJsonObject().get("key"));
 
+        // MNX-126, found loading 33 more mods: a tag spelled like the item, a load condition and a group are not items left behind.
+        String labels = "{\"type\":\"othermod:shaped_table\",\"group\":\"%1$s\",\"conditions\":[{\"type\":\"neoforge:item_exists\",\"item\":\"%1$s\"}],"
+                + "\"key\":{\"/\":{\"tag\":\"%1$s\"}},\"pattern\":[\"/\"],\"result\":{\"item\":\"othermod:thing\"}}";
+        assertTrue(RecipeRewrites.plan(List.of(new Source(id("labels"), json(labels.formatted(alt)), alt)), conversions, SHIPPED, all, Map.of(),
+                RecipeRewrites.Decoder.NONE).effects().stream().noneMatch(e -> e.kind().equals(RecipeRewrites.UNSUPPORTED)));
+
         var skip = RecipeFormats.parse(Map.of(id("skip"), JsonParser.parseString("{\"skip\":[\"othermod:grinder\"]}")));
         var skipped = RecipeRewrites.plan(sources.subList(0, 1), conversions, skip, all, Map.of(), RecipeRewrites.Decoder.NONE);
         assertTrue(skipped.files().isEmpty(), "a skipped type is never rewritten");

@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- A recipe is no longer listed as not handled because a tag, a load condition or a group is spelled like an item it unifies (`{"tag": "aether:skyroot_stick"}` next to the item `aether:skyroot_stick`). Found loading 33 more mods: 79 recipes were listed for that reason.
 - Conditional recipes (`forge:conditional`, `meadow:conditional` on 1.20.1) are read through: the recipe they hold is rewritten like any other. In the 292 most downloaded technology, magic and equipment mods for 1.20.1 Forge, 395 recipes sit inside such a wrapper.
 - More keys are read without a recipe format: `key` (the grid of a shaped recipe), `template`, `base` and `addition` (smithing) and `itemInput` are inputs.
 - Recipe formats shipped for Voltex (`industrial_core`) and Tinkers' Construct casting and part recipes: their secondary outputs (`result2`, `byproduct`) and bare-string results are rewritten.
