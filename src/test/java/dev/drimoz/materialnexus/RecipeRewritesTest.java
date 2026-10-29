@@ -37,9 +37,6 @@ class RecipeRewritesTest {
         return RecipeFormats.parse(files);
     }
 
-<<<<<<< HEAD
-    /** MNX-109: a written recipe is skipped, not fatal, once a mod it names is gone (1.20.1 cooking recipes throw). */
-=======
     /**
      * MNX-127: formats are shipped for many mods and keyed by recipe type, so they only act where the mod is there. What has to hold
      * for all of them: each file reads, and no type is claimed by two files (the later one would silently replace the earlier).
@@ -62,8 +59,7 @@ class RecipeRewritesTest {
         assertTrue(owner.size() > 100, "the shipped formats cover " + owner.size() + " recipe types");
     }
 
-    /** MNX-109: a written recipe is skipped, not reported broken, once a mod it names is gone. */
->>>>>>> 5cc53d4 (MNX-127: recipe formats shipped for Electrodynamics, Goety, Wither Storm, Meadow, Aether, Woodworks, Clayworks, Ceramics, TACZ, 15 more Tinkers' Construct types and IE mineral mixes, chosen from uncovered types with bare-string outputs or unusual output keys in the 292 most downloaded Forge 1.20.1 mods; a JUnit test reads every shipped format and refuses a type claimed twice; 44 JUnit, 20/20 GameTests)
+    /** MNX-109: a written recipe is skipped, not fatal, once a mod it names is gone (1.20.1 cooking recipes throw). */
     @Test
     void writtenRecipesLoadOnlyWhileTheirItemsExist() {
         final String DISABLED = "{\"conditions\":[{\"type\":\"forge:false\"}]}";
