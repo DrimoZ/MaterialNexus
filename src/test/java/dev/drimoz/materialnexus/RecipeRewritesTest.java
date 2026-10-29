@@ -79,9 +79,9 @@ class RecipeRewritesTest {
         var sources = List.of(new Source(id("wrapped"), json(wrapped.formatted(alt)), alt), new Source(id("grid"), json(grid.formatted(alt)), alt));
 
         var plan = RecipeRewrites.plan(sources, conversions, SHIPPED, all, Map.of(), RecipeRewrites.Decoder.NONE);
-        assertEquals(JsonParser.parseString("{\"item\":\"" + kept + "\"}"), plan.files().get("data/test/recipe/wrapped.json").getAsJsonObject()
+        assertEquals(JsonParser.parseString("{\"item\":\"" + kept + "\"}"), plan.files().get("data/test/recipes/wrapped.json").getAsJsonObject()
                 .getAsJsonArray("recipes").get(0).getAsJsonObject().getAsJsonObject("recipe").get("result"));
-        assertEquals(JsonParser.parseString("{\"#\":{\"item\":\"" + kept + "\"}}"), plan.files().get("data/test/recipe/grid.json").getAsJsonObject().get("key"));
+        assertEquals(JsonParser.parseString("{\"#\":{\"item\":\"" + kept + "\"}}"), plan.files().get("data/test/recipes/grid.json").getAsJsonObject().get("key"));
 
         var skip = RecipeFormats.parse(Map.of(id("skip"), JsonParser.parseString("{\"skip\":[\"othermod:grinder\"]}")));
         var skipped = RecipeRewrites.plan(sources.subList(0, 1), conversions, skip, all, Map.of(), RecipeRewrites.Decoder.NONE);

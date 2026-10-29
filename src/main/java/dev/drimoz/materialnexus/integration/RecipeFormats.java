@@ -42,11 +42,13 @@ public final class RecipeFormats {
                 ResourceLocation.CODEC.listOf().optionalFieldOf("types", List.of()).forGetter(FormatJson::types),
                 Codec.STRING.listOf().optionalFieldOf("outputs", List.of()).forGetter(FormatJson::outputs),
                 ResourceLocation.CODEC.listOf().optionalFieldOf("skip", List.of()).forGetter(FormatJson::skip)
-        ).apply(i, FormatJson::new)).validate(f -> {
-            if (f.types().isEmpty() != f.outputs().isEmpty()) return DataResult.error(() -> "\"types\" and \"outputs\" go together");
-            if (f.types().isEmpty() && f.skip().isEmpty()) return DataResult.error(() -> "a recipe format needs \"types\" and \"outputs\", or \"skip\"");
+        ).apply(i, FormatJson::new)).flatXmap(FormatJson::checked, FormatJson::checked);
+        // DFU 6.0 has no Codec#validate: the same check, both ways.
+        private static DataResult<FormatJson> checked(FormatJson f) {
+            if (f.types().isEmpty() != f.outputs().isEmpty()) return DataResult.error(() -> "types and outputs go together");
+            if (f.types().isEmpty() && f.skip().isEmpty()) return DataResult.error(() -> "a recipe format needs types and outputs, or skip");
             return DataResult.success(f);
-        });
+        }
     }
 
     private final Map<ResourceLocation, Format> byType;
