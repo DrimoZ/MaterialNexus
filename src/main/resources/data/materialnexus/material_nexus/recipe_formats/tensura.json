@@ -1,0 +1,4 @@
+{
+  "types": ["tensura:woodcutting", "tensura:kiln_mixing", "tensura:refining", "tensura:smithing_bench", "tensura:kiln_melting", "tensura:mining_station"],
+  "outputs": ["output", "result", "results", "primary", "secondary"]
+}

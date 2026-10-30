@@ -1,0 +1,4 @@
+{
+  "types": ["energizedpower:alloy_furnace", "energizedpower:assembling_machine", "energizedpower:charger", "energizedpower:compressor", "energizedpower:crusher", "energizedpower:crystal_growth_chamber", "energizedpower:energizer", "energizedpower:filtration_plant", "energizedpower:fluid_freezer", "energizedpower:fluid_transposer", "energizedpower:plant_growth_chamber", "energizedpower:metal_press", "energizedpower:press_mold_maker", "energizedpower:pulverizer", "energizedpower:sawmill", "energizedpower:stone_solidifier"],
+  "outputs": ["output", "outputs", "result", "secondaryOutput"]
+}

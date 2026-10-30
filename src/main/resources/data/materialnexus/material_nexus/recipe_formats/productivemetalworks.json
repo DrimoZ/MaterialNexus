@@ -1,0 +1,4 @@
+{
+  "types": ["productivemetalworks:item_casting", "productivemetalworks:block_casting", "productivemetalworks:item_melting", "productivemetalworks:fluid_alloying"],
+  "outputs": ["result"]
+}
