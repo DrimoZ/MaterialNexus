@@ -1,6 +1,4 @@
 {
-  "types": ["mekanism:crushing", "mekanism:enriching", "mekanism:sawing", "mekanism:injecting", "mekanism:combining",
-            "mekanism:metallurgic_infusing", "mekanism:purifying", "mekanism:nucleosynthesizing", "mekanism:crystallizing",
-            "mekanism:compressing", "mekanism:reaction"],
+  "types": ["mekanism:crushing", "mekanism:enriching", "mekanism:sawing", "mekanism:injecting", "mekanism:combining", "mekanism:metallurgic_infusing", "mekanism:purifying", "mekanism:nucleosynthesizing", "mekanism:crystallizing", "mekanism:compressing", "mekanism:reaction", "mekanism:painting"],
   "outputs": ["output", "mainOutput", "secondaryOutput", "itemOutput"]
 }
