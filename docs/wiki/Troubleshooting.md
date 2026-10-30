@@ -16,7 +16,7 @@ Right click the wrong one: **not the same**. If a whole material should never be
 `exclude` in `global.json`.
 
 **A recipe still gives the old item.**
-Look for it in the material's **Recipes** tab. *Not handled yet*: its type has no recipe format. If
+Look for it in the material's **Recipes** tab. *Not handled yet*: an item of that recipe sits under a key Material Nexus does not know (add a recipe format for its type). If
 it comes from KubeJS, the script runs after Material Nexus; use `MaterialNexus.kept` there. If it is
 listed as rewritten, check that the apply finished (the chat says so).
 
