@@ -1,0 +1,4 @@
+{
+  "types": ["extendedae:crystal_assembler", "extendedae:circuit_cutter", "extendedae:crystal_fixer"],
+  "outputs": ["output"]
+}

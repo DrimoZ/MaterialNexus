@@ -1,0 +1,4 @@
+{
+  "types": ["ars_nouveau:enchanting_apparatus", "ars_nouveau:enchantment", "ars_nouveau:imbuement", "ars_nouveau:budding_conversion"],
+  "outputs": ["output", "result"]
+}

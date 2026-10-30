@@ -64,7 +64,7 @@ outputs, as long as the game does not read the recipe otherwise; an alternative 
 left untouched and listed as "not handled yet". A format is still the way to cover a type whose
 outputs sit under another key, or hold an item as a bare string.
 
-Formats are keyed by recipe type, so one for a mod that is not installed does nothing and costs nothing: no mod class is loaded. Shipped for: aether, ceramics, clayworks, create, create_new_age, createaddition, createmetallurgy, electrodynamics, exdeorum, extreme_reactors, goety, immersiveengineering, immersivepetroleum, industrial_core, meadow, mekanism, modern_industrialization, occultism, oritech, silentgear, tacz, tconstruct, vanilla, witherstormmod, woodworks.
+Formats are keyed by recipe type, so one for a mod that is not installed does nothing and costs nothing: no mod class is loaded. Shipped for: aether, ars_nouveau, ceramics, clayworks, create, createaddition, createmetallurgy, create_new_age, electrodynamics, energizedpower, exdeorum, extendedae, extreme_reactors, goety, immersiveengineering, immersivepetroleum, industrial_core, meadow, mekanism, modern_industrialization, occultism, oritech, productivemetalworks, silentgear, tacz, tconstruct, tensura, vanilla, witherstormmod, woodworks.
 
 Without a format the inputs are the keys `input`, `inputs`, `ingredient`, `ingredients`, `inputItems`, `itemInput`, `key` (the grid of a shaped recipe), `template`, `base` and `addition` (smithing). A recipe wrapped in `recipe` or `recipes[].recipe` (Forge conditional recipes) is read as the recipe it holds.
 
