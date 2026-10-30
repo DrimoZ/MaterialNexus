@@ -11,7 +11,7 @@ screen on right click, with the same permission check.
 ## The report
 
 The last section, **Recipe types not handled yet**, ranks the recipe types that have no recipe format by how many of
-their recipes name a material item. It tells which mods are worth a format
+their recipes name a material item. Those types are still read through the usual keys; the list tells which mods are worth a format
 ([Datapack Guide](Datapack-Guide#recipe-formats)); paste it in an issue to ask for one.
 
 `report.md` lists, for every material, each form with its items, which is kept and why, what is set

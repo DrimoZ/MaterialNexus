@@ -40,7 +40,8 @@ Yes, without touching the generated pack. The simplest: drop
 entry in `items.json`, a model in a resource pack, or a template for every material ([Created Items](Created-Items#your-own-texture-or-model)).
 
 **Why is a recipe "not handled yet"?**
-Its type has no recipe format. Add one ([Datapack Guide](Datapack-Guide#recipe-formats)), or let
+An item of that recipe sits where Material Nexus cannot tell an input from an output (an unusual key), or the
+recipe is made by a script. Add a format for its type ([Datapack Guide](Datapack-Guide#recipe-formats)), or let
 in-world conversion handle its output.
 
 **Does it work on a dedicated server?**
