@@ -19,7 +19,7 @@ they would do; Apply writes it.
 | Process recipes generated / disabled | from [Process Rules](Process-Rules) |
 | Items to create | from [Created Items](Created-Items), after a restart |
 | Data edits | files of the edits pack, from Rule files |
-| Recipes not handled yet | a recipe type with no recipe format: left untouched ([Compatibility](Compatibility#recipe-formats)) |
+| Recipes not handled yet | an item of the recipe sits where no input or output is known, or the recipe is made by a script: left as it is ([Compatibility](Compatibility#recipe-formats)) |
 | Recipe invalid | a recipe Material Nexus would write but the game refuses: not written |
 | Left to Almost Unified | a domain Almost Unified handles ([Compatibility](Compatibility#almost-unified)) |
 | Undone | content of the previous apply that goes away |

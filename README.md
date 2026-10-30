@@ -64,7 +64,8 @@ Every integration is optional.
   ([details](https://github.com/DrimoZ/MaterialNexus/wiki/Modpacks-and-Multiplayer#a-pack-that-already-unifies-with-scripts)).
 - **Recipes rewritten** for vanilla, Create and its addons, Mekanism, Immersive Engineering, Modern
   Industrialization, Oritech, Occultism, Silent Gear, Ex Deorum and more, through recipe formats that
-  are data: any mod can be added with one JSON file.
+  are data (any mod can be added with one JSON file), and any other mod through the usual input and
+  output keys.
 
 ## Building
 

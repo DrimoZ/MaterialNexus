@@ -63,7 +63,7 @@ as a choice, never applies it on its own, and the review warns when it would kee
 
 ## Recipe formats
 
-Recipes are rewritten for the recipe types a format describes. Shipped formats:
+Recipes of any mod are rewritten. A format says where a recipe type keeps its items; without one, the usual keys do ([Datapack Guide](Datapack-Guide#recipe-formats)). Formats are shipped for these mods and only act where the mod is installed:
 
 | Mod | |
 |---|---|
@@ -75,12 +75,12 @@ Recipes are rewritten for the recipe types a format describes. Shipped formats:
 | Modern Industrialization | its machines |
 | Thermal Series | press, pulverizer, smelter, sawmill, centrifuge, insolator, chiller, bottler... |
 | Oritech, Occultism, Silent Gear, Ex Deorum, Extreme Reactors | their machines |
+| Tinkers' Construct | casting, molds, part builder, modifiers |
+| Tensura, Energized Power, Extended AE, Ars Nouveau, Goety, Aether | their machines and rituals |
+| Electrodynamics, Voltex, Productive Metalworks, TACZ | their machines |
+| Meadow, Woodworks, Clayworks, Ceramics, Wither Storm | their recipes |
 
-Tinkers' Construct needs no format: its casting recipes give the item of a tag (`forge:ingots/tin`), so they
-follow the kept item once the tag is cleaned.
-
-Any other mod: add a format ([Datapack Guide](Datapack-Guide#recipe-formats)). Its items are still
-unified through tags and in the world in the meantime.
+Any other mod is read through the usual keys. For a type that keeps its items somewhere else, add a format; for one the keys get wrong, `skip` it ([Datapack Guide](Datapack-Guide#recipe-formats)). Its items are still unified through tags and in the world either way.
 
 ## Forms and tags
 
