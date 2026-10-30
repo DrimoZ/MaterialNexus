@@ -1,6 +1,6 @@
 # Changelog
 
-## Unreleased
+## 0.5.0
 
 - Recipe formats shipped for the NeoForge 1.21.1 mods that have recipe types of their own: Tensura, Extended AE, Energized Power (all its machines), Ars Nouveau, Productive Metalworks, and the missing Mekanism painting and Modern Industrialization quarry and coke oven types. Chosen from the 295 most downloaded technology, magic and equipment mods for 1.21.1; a format only acts where its mod is installed.
 - Recipe formats shipped for more mods, so their recipes are rewritten without anything to set up: Electrodynamics, Goety, Wither Storm, Meadow, Aether, Woodworks, Clayworks, Ceramics, TACZ, more Tinkers' Construct types, and Immersive Geology's mineral mixes. A format only acts where its mod is installed. A test checks that every shipped file reads and that no recipe type is claimed by two of them.

@@ -93,9 +93,13 @@ needs operator rights (permission level 2).
   touches them (dropped, in an opened container, at login). Nothing scans the world.
 - **Tags fixed on request**: an item a mod forgot to tag gets its convention tag, and any item can be
   put in or taken out of a form's tag, so recipes asking for the tag accept the right items.
-- **Recipes it cannot rewrite are named**, never guessed: add a one-file recipe format and they are.
-- **Recipes of many mods** are rewritten from data: Create and its addons, Mekanism, Immersive
-  Engineering, Modern Industrialization, Oritech, Occultism, Silent Gear and more.
+- **Recipes of any mod are rewritten**, not only the ones it was told about: the usual keys tell inputs
+  from outputs, the game must agree, and an input asks for the form's tag (`c:plates/chromium`) when
+  that tag holds only that material, the kept item otherwise. Conditional recipes are read through.
+- **Formats ship for nearly thirty mods** (Create and its addons, Mekanism, Immersive Engineering, Modern
+  Industrialization, Oritech, Tinkers' Construct, Tensura, Energized Power, Extended AE, Ars Nouveau, Goety,
+  Aether, Silent Gear, Electrodynamics and more) and only act where the mod is installed. A recipe it still
+  cannot read is named, never guessed: add a one-file recipe format, or `skip` the type.
 - **Recipes drawn by JEI or EMI** inside the screen, grouped by what applying does to them; hover a
   recipe or a machine route to see it.
 - **Remove a recipe** with the bin on its row: it waits for the review like every choice, and one
@@ -194,7 +198,7 @@ not lift them into another project.
 <!-- End of the pasted description. -->
 
 
-## Release checklist: 0.4.0
+## Release checklist: 0.5.0
 
 - [ ] `main` green: `./gradlew test`, `./gradlew runGameTestServer`, `./gradlew runGameTestServer -Pvanilla`
       (and `-Pau`, `-Pkubejs` when those parts changed).
@@ -204,8 +208,8 @@ not lift them into another project.
 - [ ] Gallery (850 px wide at most): `screen_material.png`, `screen_inspector.png`, `screen_matrix.png`,
       `screen_priority.png`, `screen_preview.png`, `screen_process.png`. The wider ones (`screen_home.png`,
       `screen_triage.png`, `screen_recipes.png`...) are for the description only.
-- [ ] Paste the description (new since 0.3.0: removing a recipe, your own datapacks).
+- [ ] Paste the description (new since 0.4.0: recipes of any mod rewritten, formats for nearly thirty mods).
 - [ ] Upload the jar from `gradlew build` (`build/libs`), release type **Beta**,
-      loader NeoForge, with the `## 0.4.0` section of `CHANGELOG.md`.
+      loader NeoForge, with the `## 0.5.0` section of `CHANGELOG.md`.
 - [ ] Optional dependencies: JEI, EMI, Almost Unified, KubeJS.
-- [ ] Tag `v0.4.0`.
+- [ ] Tag `v0.5.0`.
