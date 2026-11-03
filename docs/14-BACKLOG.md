@@ -77,3 +77,13 @@
 | MNX-128 | P1 | Formats and measure on NeoForge 1.21.1 | Same measure as MNX-126 on the 295 most downloaded 1.21.1 mods (259 with recipes); formats for Tensura, Extended AE, Energized Power, Ars Nouveau, Productive Metalworks, Mekanism painting, MI quarry and coke oven; dev profile `-Pbatch` and the batch report GameTest on 1.21 (389 alternatives, 2,015 recipes rewritten, 71 listed) |
 | MNX-129 | P1 | 0.5.0 prepared | mod_version, changelog, store description (recipes of any mod, formats for nearly thirty mods) and release checklist |
 | MNX-130 | P1 | Texts and images match 0.5.0 | The two game messages and the wiki and README passages that said an unknown recipe type is left untouched now say what happens (usual keys, then format or skip); store art and wiki images retaken (Review and apply, Rule files, Recipes, Process) |
+| MNX-131 | P1 | 26.1.2 spike (vanilla) | Builds against NeoForge 26.1.2 with `-Pvanilla` on a throwaway branch; compile errors counted per area; client recipe access option chosen; estimate in `23-PORT-26.1.md` corrected |
+| MNX-132 | P1 | 26.1.2 toolchain and renames | Java 25, MDG/Gradle updated, no Parchment, `Identifier`, event/annotation renames, `UiFont` without reflection; `mc/26.1.2` compiles |
+| MNX-133 | P1 | 26.1.2 recipe analysis | Sources, edges, families and `/materials` on the new recipe API; vanilla adapters verified on 26.1.2 vanilla recipes |
+| MNX-134 | P1 | 26.1.2 reload and sync | Reload listeners and generated pack injection work; MNX-060 resync removed or rebuilt, with the reason written down |
+| MNX-135 | P1 | 26.1.2 GameTests | All 20 GameTest behaviors on the new framework; `runGameTestServer` green |
+| MNX-136 | P1 | 26.1.2 GUI | Every screen of `07-GUI.md` on the render-state pipeline and input events; `UiShots` match 1.21.1 |
+| MNX-137 | P2 | 26.1.2 created item tint | Created items (ADR-019) tinted through client item definitions |
+| MNX-138 | P1 | 26.1.2 JEI and KubeJS | JEI viewer works with the client recipe solution from MNX-131; KubeJS bindings on KubeJS 8 |
+| MNX-139 | P2 | 26.1.2 content mod formats | Per mod, once it has an official 26.1.2 build: recipe formats re-validated, mod back in the dev pack |
+| MNX-140 | P3 | 26.1.2 EMI | Adapter on an official EMI build, or explicit decision to support the unofficial port behind the adapter |
