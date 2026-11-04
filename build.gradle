@@ -18,7 +18,7 @@ neoForge {
         client {
             client()
             gameDirectory = project.file('run')
-            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            systemProperty 'neoforge.enableGameTest', 'true'
         }
         // MNX-049: dev-only UI screenshots. Copies the dev world and config to run-ui (the dev world is never touched),
         // opens the world, walks the Material Nexus screen and saves screenshots to run-ui/screenshots, then quits.
@@ -32,12 +32,12 @@ neoForge {
             server()
             gameDirectory = project.file('run')
             programArgument '--nogui'
-            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            systemProperty 'neoforge.enableGameTest', 'true'
         }
         gameTestServer {
             type = 'gameTestServer'
             gameDirectory = project.file('run-gametest')
-            systemProperty 'neoforge.enabledGameTestNamespaces', mod_id
+            systemProperty 'neoforge.enableGameTest', 'true'
         }
         data {
             data()

@@ -14,7 +14,6 @@ import dev.drimoz.materialnexus.datapack.RecipeRewrites;
 import dev.drimoz.materialnexus.datapack.RecipeSources;
 import dev.drimoz.materialnexus.integration.RecipeFormats;
 import dev.drimoz.materialnexus.registry.MnxItems;
-import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
 import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
@@ -23,20 +22,62 @@ import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.Items;
 import net.neoforged.fml.ModList;
 import net.neoforged.neoforge.common.util.FakePlayerFactory;
-import net.neoforged.neoforge.gametest.GameTestHolder;
-import net.neoforged.neoforge.gametest.PrefixGameTestTemplate;
 
 /** Runtime acceptance tests; one per critical behavior. */
-@GameTestHolder(MaterialNexus.MOD_ID)
-@PrefixGameTestTemplate(false)
 public final class MaterialNexusGameTests {
     private MaterialNexusGameTests() { }
+
+    private static final net.neoforged.neoforge.registries.DeferredRegister<java.util.function.Consumer<GameTestHelper>> FUNCTIONS =
+            net.neoforged.neoforge.registries.DeferredRegister.create(net.minecraft.core.registries.Registries.TEST_FUNCTION, MaterialNexus.MOD_ID);
+    /** Ticks a test may take; 100 unless listed. */
+    private static final java.util.Map<String, Integer> MAX_TICKS = java.util.Map.of("fullPreviewOnTheDevPackIsFast", 2000);
+
+    /**
+     * MNX-135: on 26.1 a test is a registered function plus a test instance placing it in the empty structure. Every
+     * {@code public static void (GameTestHelper)} method here is one, named in snake case (copperIngotRecipeFamilyIsListed:
+     * {@code materialnexus:copper_ingot_recipe_family_is_listed}). Only where NeoForge runs game tests.
+     */
+    public static void register(net.neoforged.bus.api.IEventBus modBus) {
+        if (!net.neoforged.neoforge.gametest.GameTestHooks.isGametestEnabled()) return;
+        java.util.List<java.lang.reflect.Method> tests = java.util.Arrays.stream(MaterialNexusGameTests.class.getDeclaredMethods())
+                .filter(m -> java.lang.reflect.Modifier.isPublic(m.getModifiers()) && java.lang.reflect.Modifier.isStatic(m.getModifiers())
+                        && java.util.Arrays.equals(m.getParameterTypes(), new Class<?>[] { GameTestHelper.class }))
+                .toList();
+        for (var m : tests) FUNCTIONS.register(name(m), () -> helper -> run(m, helper));
+        FUNCTIONS.register(modBus);
+        modBus.addListener(net.neoforged.neoforge.event.RegisterGameTestsEvent.class, event -> {
+            var environment = event.registerEnvironment(Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "default"));
+            for (var m : tests) {
+                Identifier id = Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, name(m));
+                var data = new net.minecraft.gametest.framework.TestData<>(environment, Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "empty"),
+                        MAX_TICKS.getOrDefault(m.getName(), 100), 0, true);
+                event.registerTest(id, new net.minecraft.gametest.framework.FunctionGameTestInstance(
+                        net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.TEST_FUNCTION, id), data));
+            }
+        });
+    }
+
+    private static String name(java.lang.reflect.Method m) {
+        return m.getName().replaceAll("([a-z0-9])([A-Z])", "$1_$2").toLowerCase(java.util.Locale.ROOT);
+    }
+
+    /** Runs one test method; what it throws (a failed assertion) reaches the framework as is. */
+    private static void run(java.lang.reflect.Method m, GameTestHelper helper) {
+        try {
+            m.invoke(null, helper);
+        } catch (java.lang.reflect.InvocationTargetException e) {
+            if (e.getCause() instanceof RuntimeException r) throw r;
+            if (e.getCause() instanceof Error err) throw err;
+            throw new IllegalStateException(e.getCause());
+        } catch (IllegalAccessException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 
     /**
      * MNX-015..018: real Create, Mekanism, IE and MI recipes are recognized and rewritten (skipped when the mods are
      * absent, and with Almost Unified, which has already unified those outputs at load).
      */
-    @GameTest(template = "empty")
     public static void createAndMekanismRecipesAreRewritten(GameTestHelper helper) {
         if (ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID)
                 || !ModList.get().isLoaded("create") || !ModList.get().isLoaded("mekanism")
@@ -63,7 +104,6 @@ public final class MaterialNexusGameTests {
      * MNX-118: the fixture datapack mnx_fixture (src/gametest-fixtures) switches minecraft:lapis_lazuli off, replaces
      * minecraft:lapis_block and edits c:gems/lapis; each is attributed to it, and the switched-off recipe is still listed.
      */
-    @GameTest(template = "empty")
     public static void datapackEditsAreAttributed(GameTestHelper helper) {
         var server = helper.getLevel().getServer();
         String pack = "file/mnx_fixture";
@@ -88,7 +128,6 @@ public final class MaterialNexusGameTests {
     }
 
     /** MNX-009: the recipe family of copper ingots lists real recipes producing the canonical item. */
-    @GameTest(template = "empty")
     public static void copperIngotRecipeFamilyIsListed(GameTestHelper helper) {
         var form = SnapshotManager.current().materials().get(new MaterialId("copper")).forms().get(new FormId("ingot"));
         var rows = dev.drimoz.materialnexus.datapack.RecipeFamilies.family(helper.getLevel().getServer(), form);
@@ -109,7 +148,6 @@ public final class MaterialNexusGameTests {
      * MNX-076: the fixture script materialnexus_unify.js replaces Mekanism's tin ingot by MI's in recipes and removes
      * Mekanism's tin dust from its tag; both decisions are read back (run with -Pkubejs, skipped otherwise).
      */
-    @GameTest(template = "empty")
     public static void scriptDecisionsAreRead(GameTestHelper helper) {
         if (!ModList.get().isLoaded("kubejs") || !ModList.get().isLoaded("mekanism") || !ModList.get().isLoaded("modern_industrialization")) {
             helper.succeed();
@@ -132,7 +170,6 @@ public final class MaterialNexusGameTests {
     }
 
     /** MNX-019: the five shipped presets are loaded with the data. */
-    @GameTest(template = "empty")
     public static void shippedPresetsAreLoaded(GameTestHelper helper) {
         var presets = dev.drimoz.materialnexus.datapack.Presets.all().keySet();
         helper.assertTrue(presets.size() >= 5 && presets.contains(Identifier.fromNamespaceAndPath("materialnexus", "tech_pack")),
@@ -141,7 +178,6 @@ public final class MaterialNexusGameTests {
     }
 
     /** MNX-033: shipped material definitions are loaded by the data reload, before discovery uses them. */
-    @GameTest(template = "empty")
     public static void shippedMaterialDefinitionsAreLoaded(GameTestHelper helper) {
         helper.assertTrue(new MaterialId("aluminum").equals(dev.drimoz.materialnexus.datapack.MaterialDefinitions.aliases().get("aluminium")),
                 "the shipped aluminium alias should be loaded, got " + dev.drimoz.materialnexus.datapack.MaterialDefinitions.aliases());
@@ -149,7 +185,6 @@ public final class MaterialNexusGameTests {
     }
 
     /** MNX-032: /materials report runs from the server console and writes the analysis. */
-    @GameTest(template = "empty")
     public static void reportCommandWritesTheAnalysis(GameTestHelper helper) {
         var server = helper.getLevel().getServer();
         server.getCommands().performPrefixedCommand(server.createCommandSourceStack(), "materials report");
@@ -164,7 +199,6 @@ public final class MaterialNexusGameTests {
     }
 
     /** MNX-010: iron has every standard conversion in a real pack, so no proposal may appear (no false positives). */
-    @GameTest(template = "empty")
     public static void ironHasNoMissingRecipeProposals(GameTestHelper helper) {
         var missing = dev.drimoz.materialnexus.datapack.RecipeEdges.missing(helper.getLevel().getServer(),
                 SnapshotManager.current().discovered(), new MaterialId("iron"));
@@ -177,7 +211,6 @@ public final class MaterialNexusGameTests {
     }
 
     /** MNX-025: real recipes are read with their JSON from the resource stack and vanilla outputs are rewritten. */
-    @GameTest(template = "empty")
     public static void vanillaRecipesProducingAnAlternativeAreRewritten(GameTestHelper helper) {
         Identifier copper = Identifier.withDefaultNamespace("copper_ingot");
         Identifier iron = Identifier.withDefaultNamespace("iron_ingot");
@@ -195,7 +228,6 @@ public final class MaterialNexusGameTests {
      * MNX-036: process rules on the real loaded recipes generate recipes the game itself can decode, with the
      * requested ratio. Nuggets everywhere; with Immersive Engineering, rods in its metal press too.
      */
-    @GameTest(template = "empty")
     public static void processRulesGenerateLoadableRecipes(GameTestHelper helper) {
         var server = helper.getLevel().getServer();
         var nugget = new dev.drimoz.materialnexus.core.policy.ProcessRules.Route(
@@ -232,7 +264,6 @@ public final class MaterialNexusGameTests {
      * MNX-039: an item listed in items.json (fixture: netherite rod) is registered at startup, joins its convention tag
      * through the created-items pack, and discovery sees it as netherite's rod.
      */
-    @GameTest(template = "empty")
     public static void createdItemIsRegisteredTaggedAndDiscovered(GameTestHelper helper) {
         Identifier id = Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "netherite_rod");
         helper.assertTrue(net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(id), "netherite_rod should be registered");
@@ -247,7 +278,6 @@ public final class MaterialNexusGameTests {
      * MNX-043: with the addon formats, unifying electrum wire on IE's rewrites Create Crafts &amp; Additions' rolling
      * recipe instead of listing it as unsupported.
      */
-    @GameTest(template = "empty")
     public static void addonRecipesAreRewritten(GameTestHelper helper) {
         if (!ModList.get().isLoaded("createaddition")) { helper.succeed(); return; }
         var server = helper.getLevel().getServer();
@@ -265,7 +295,6 @@ public final class MaterialNexusGameTests {
      * MNX-044: a worst-case Preview on the dev pack (every suggestion accepted, rules on three forms) stays interactive.
      * Logs each step; fails above 5 s, which is when a recipe index becomes worth its complexity.
      */
-    @GameTest(template = "empty", timeoutTicks = 2000)
     public static void fullPreviewOnTheDevPackIsFast(GameTestHelper helper) {
         var server = helper.getLevel().getServer();
         var snapshot = SnapshotManager.current();
@@ -309,7 +338,6 @@ public final class MaterialNexusGameTests {
      * preview of every suggestion generates no tag edit, rewrite or disable, and notes each domain left to AU.
      * Without AU it has nothing to check.
      */
-    @GameTest(template = "empty")
     public static void almostUnifiedKeepsTheDomainsItWasNotGiven(GameTestHelper helper) {
         if (!net.neoforged.fml.ModList.get().isLoaded(dev.drimoz.materialnexus.core.policy.AlmostUnified.MOD_ID)) {
             helper.succeed();
@@ -338,7 +366,6 @@ public final class MaterialNexusGameTests {
      * MNX-037: every shipped process template whose machine is loaded, filled for iron, is a recipe the game decodes.
      * A template with a broken shape would otherwise only show up as "recipe_invalid" in a player's Preview.
      */
-    @GameTest(template = "empty")
     public static void shippedProcessTemplatesDecode(GameTestHelper helper) {
         var server = helper.getLevel().getServer();
         var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
@@ -362,7 +389,6 @@ public final class MaterialNexusGameTests {
     }
 
     /** MNX-028: an applied alternative becomes the canonical item when it enters the world or a container is converted. */
-    @GameTest(template = "empty")
     public static void unifiedItemsAreConvertedWhenTouched(GameTestHelper helper) {
         ItemConversions.install(java.util.Map.of(Identifier.withDefaultNamespace("copper_ingot"), Identifier.withDefaultNamespace("iron_ingot")));
         try {
@@ -381,7 +407,6 @@ public final class MaterialNexusGameTests {
     }
 
     /** MNX-022: the global generated pack exists on disk and is active in this world, above other packs. */
-    @GameTest(template = "empty")
     public static void generatedPackIsInjectedIntoTheWorld(GameTestHelper helper) {
         var selected = helper.getLevel().getServer().getPackRepository().getSelectedIds();
         helper.assertTrue(selected.contains(GeneratedPack.PACK_ID), "generated pack is not enabled: " + selected);
@@ -389,7 +414,6 @@ public final class MaterialNexusGameTests {
         helper.succeed();
     }
 
-    @GameTest(template = "empty")
     public static void modLoadsWithSnapshot(GameTestHelper helper) {
         helper.assertTrue(ModList.get().isLoaded(MaterialNexus.MOD_ID), "Material Nexus is not loaded");
         helper.assertTrue(SnapshotManager.current() != null, "No active snapshot");
@@ -397,7 +421,6 @@ public final class MaterialNexusGameTests {
     }
 
     /** MNX-003: discovery runs at server data load and reads the real convention tags. */
-    @GameTest(template = "empty")
     public static void discoversVanillaCopperFromConventionTags(GameTestHelper helper) {
         DiscoveredMaterials discovered = SnapshotManager.current().discovered();
         MaterialId copper = new MaterialId("copper");
@@ -420,7 +443,6 @@ public final class MaterialNexusGameTests {
     }
 
     /** MNX-006: a non-operator holding a /give'd Nexus Terminal still cannot open the screen. */
-    @GameTest(template = "empty")
     public static void nonOperatorIsRefusedServerSide(GameTestHelper helper) {
         // A fake player, not a mock: a mock "logs in", and installed mods (Jade, Mekanism) then try to sync to it.
         ServerPlayer player = FakePlayerFactory.getMinecraft(helper.getLevel());
@@ -435,7 +457,6 @@ public final class MaterialNexusGameTests {
      * read as a report: what is rewritten, what stays listed and under which key. A recipe the game read before the rewrite
      * must still be read after it.
      */
-    @GameTest(template = "empty")
     public static void recipesAreRewrittenAcrossTheBatch(GameTestHelper helper) {
         if (!ModList.get().isLoaded("tensura") || !ModList.get().isLoaded("extendedae")) { helper.succeed(); return; }
         var server = helper.getLevel().getServer();
