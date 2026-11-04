@@ -42,8 +42,9 @@ public final class ScriptSources extends SimplePreparableReloadListener<Map<Iden
     @Override
     protected Map<Identifier, Collection<Identifier>> prepare(ResourceManager resources, ProfilerFiller profiler) {
         // ponytail: reads every item tag file a second time per reload (tens of ms); only on reload, never per tick.
-        return new TagLoader<Identifier>(id -> BuiltInRegistries.ITEM.containsKey(id) ? Optional.of(id) : Optional.empty(),
-                Registries.tagsDirPath(Registries.ITEM)).loadAndBuild(resources);
+        var loader = new TagLoader<Identifier>((id, required) -> BuiltInRegistries.ITEM.containsKey(id) ? Optional.of(id) : Optional.empty(),
+                Registries.tagsDirPath(Registries.ITEM));
+        return Map.copyOf(loader.build(loader.load(resources)));
     }
 
     @Override
