@@ -134,6 +134,10 @@ dependencies {
     // discovery and resolution exist for. runtimeOnly, never compiled against or shipped.
     if (!project.hasProperty('vanilla')) {
         runtimeOnly "mezz.jei:jei-${jei_minecraft_version}-neoforge:${jei_version}"
+    }
+    // MNX-138: still the 1.21.1 builds, which NeoForge 26.1.2 refuses to load; `-Pcontent` keeps the list at hand, and
+    // MNX-139 moves each mod back above once it has an official 26.1.2 build.
+    if (project.hasProperty('content')) {
         runtimeOnly "maven.modrinth:jade:${jade_version}"
         runtimeOnly "maven.modrinth:mekanism:${mekanism_version}"
         runtimeOnly "maven.modrinth:create:${create_version}"
@@ -238,3 +242,8 @@ publishing {
 
 // MNX-140: EMI has no official 26.1.2 build; the adapter is left out until one exists.
 sourceSets.main.java.exclude 'dev/drimoz/materialnexus/client/compat/emi/**'
+
+// MNX-138: tests run inside the mod module on 26.1, where a resource folder cannot be listed; this one is passed by path.
+tasks.named('test') {
+    systemProperty 'mnx.recipeFormats', file('src/main/resources/data/materialnexus/material_nexus/recipe_formats').absolutePath
+}

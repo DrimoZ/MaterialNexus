@@ -8,8 +8,8 @@ import net.minecraft.world.item.ItemStack;
 public final class CreatedItem extends Item {
     private final CreatedItems.Entry entry;
 
-    public CreatedItem(CreatedItems.Entry entry) {
-        super(new Item.Properties());
+    public CreatedItem(CreatedItems.Entry entry, Item.Properties properties) {
+        super(properties);
         this.entry = entry;
     }
 

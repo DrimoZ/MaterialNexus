@@ -44,7 +44,9 @@ class RecipeRewritesTest {
     @Test
     void everyShippedFormatReadsAndNoTypeIsClaimedTwice() throws Exception {
         Map<Identifier, String> owner = new java.util.HashMap<>();
-        var directory = java.nio.file.Path.of(RecipeRewritesTest.class.getResource("/data/materialnexus/material_nexus/recipe_formats").toURI());
+        // MNX-138: on 26.1 the tests run inside the mod module, where a resource directory cannot be listed; the build
+        // passes where the shipped files are.
+        var directory = java.nio.file.Path.of(System.getProperty("mnx.recipeFormats"));
         try (var files = java.nio.file.Files.list(directory)) {
             for (java.nio.file.Path file : files.filter(f -> f.toString().endsWith(".json")).sorted().toList()) {
                 var json = JsonParser.parseString(java.nio.file.Files.readString(file));
