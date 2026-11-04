@@ -55,7 +55,11 @@ public final class GeneratedPack {
             if (!isOurs(dir)) {
                 LOGGER.warn("{} exists but was not created by Material Nexus; it is left untouched and not loaded", dir);
             } else {
-                if (!Files.exists(dir.resolve(MARKER))) write(dir, Map.of(), new JsonArray());
+                // MNX-142: a pack of another game version with nothing applied is just rewritten empty; one with changes waits for
+                // the server (rewriteIfStale), as its recipes have to be read again.
+                if (!Files.exists(dir.resolve(MARKER)) || (writtenForAnotherVersion(dir) && PackContent.readManifest(dir).isEmpty())) {
+                    write(dir, Map.of(), new JsonArray());
+                }
                 add(event, PACK_ID, dir);
             }
         } catch (IOException e) {
@@ -184,6 +188,9 @@ public final class GeneratedPack {
     private static boolean sameContent(Path dir, Map<String, JsonElement> files, Map<String, Path> textures) throws IOException {
         if (!Files.exists(dir.resolve(MARKER))) return false;
         var gson = new GsonBuilder().setPrettyPrinting().create();
+        // MNX-142: metadata of another game version is rewritten even when the items are the same.
+        Path meta = dir.resolve("pack.mcmeta");
+        if (!Files.isRegularFile(meta) || !Files.readString(meta, StandardCharsets.UTF_8).equals(gson.toJson(packMeta()))) return false;
         for (var e : files.entrySet()) {
             Path file = dir.resolve(e.getKey());
             if (!Files.isRegularFile(file) || !Files.readString(file, StandardCharsets.UTF_8).equals(gson.toJson(e.getValue()))) return false;
@@ -209,9 +216,12 @@ public final class GeneratedPack {
 
     private static void add(AddPackFindersEvent event, String id, Path dir, PackType type) {
         var info = new PackLocationInfo(id, Component.translatable("materialnexus.pack.generated"), PackSource.BUILT_IN, Optional.empty());
-        Pack pack = Pack.readMetaAndCreate(info, new PathPackResources.PathResourcesSupplier(dir), type,
-                new PackSelectionConfig(true, Pack.Position.TOP, false));
-        if (pack != null) event.addRepositorySource(consumer -> consumer.accept(pack));
+        // Read at each repository reload (MNX-142): a pack rewritten after startup is picked up by the next reload.
+        event.addRepositorySource(consumer -> {
+            Pack pack = Pack.readMetaAndCreate(info, new PathPackResources.PathResourcesSupplier(dir), type,
+                    new PackSelectionConfig(true, Pack.Position.TOP, false));
+            if (pack != null) consumer.accept(pack);
+        });
     }
 
     /**
@@ -228,6 +238,7 @@ public final class GeneratedPack {
         writeJson(tmp.resolve("pack.mcmeta"), packMeta());
         JsonObject manifest = new JsonObject();
         manifest.addProperty("format", 1);
+        manifest.addProperty("minecraft", net.minecraft.SharedConstants.getCurrentVersion().id());
         manifest.add("changes", changes);
         writeJson(tmp.resolve(MANIFEST), manifest);
         for (var entry : files.entrySet()) {
@@ -241,6 +252,17 @@ public final class GeneratedPack {
         // startup writes an empty one. Upgrade to a rename-swap if that window ever matters.
         deleteRecursively(dir);
         Files.move(tmp, dir);
+    }
+
+    /**
+     * MNX-142: the pack was written by another game version (any pack from before 26.1.2, whose manifest names none): its
+     * metadata and recipes may no longer load, so it is rewritten from the same policy files, which decides nothing new.
+     */
+    public static boolean writtenForAnotherVersion(Path dir) throws IOException {
+        Path manifest = dir.resolve(MANIFEST);
+        if (!Files.isRegularFile(manifest)) return false;
+        var written = com.google.gson.JsonParser.parseString(Files.readString(manifest, StandardCharsets.UTF_8)).getAsJsonObject().get("minecraft");
+        return written == null || !written.getAsString().equals(net.minecraft.SharedConstants.getCurrentVersion().id());
     }
 
     /** True if MNX may manage this folder: absent, empty, or carrying our marker. */

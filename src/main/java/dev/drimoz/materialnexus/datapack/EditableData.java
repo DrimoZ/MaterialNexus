@@ -147,7 +147,8 @@ public final class EditableData {
     public static void ensurePack(Path pack) throws IOException {
         Files.createDirectories(pack);
         Path meta = pack.resolve("pack.mcmeta");
-        if (!Files.exists(meta)) {
+        // MNX-142: metadata from before 26.1 (no min_format) is replaced; the edits beside it are kept as they are.
+        if (!Files.exists(meta) || !Files.readString(meta, StandardCharsets.UTF_8).contains("\"min_format\"")) {
             Files.writeString(meta, "{\"pack\": {\"description\": \"Material Nexus in-game edits\", \"min_format\": 82, \"max_format\": 1000}}",
                     StandardCharsets.UTF_8);
         }

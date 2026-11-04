@@ -17,6 +17,11 @@ public final class MnxNetwork {
 
     private MnxNetwork() { }
 
+    /** MNX-142: see {@link PolicyHandler#rewriteIfStale}. */
+    public static void onServerStarted(net.neoforged.neoforge.event.server.ServerStartedEvent event) {
+        PolicyHandler.rewriteIfStale(event.getServer());
+    }
+
     public static void register(RegisterPayloadHandlersEvent event) {
         var registrar = event.registrar(VERSION);
         registrar.playToClient(OpenNexusPayload.TYPE, OpenNexusPayload.STREAM_CODEC, (p, ctx) -> ClientHooks.openNexus(p));
