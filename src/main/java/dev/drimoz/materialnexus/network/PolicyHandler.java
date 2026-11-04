@@ -310,20 +310,34 @@ final class PolicyHandler {
      * MNX-060: NeoForge sends tags and recipes to players right after OnDatapackSyncEvent; when another mod's listener
      * throws there (seen: IE arc recycling reading a Silent Gear ingredient), they never leave, and the client keeps the
      * old pack until a restart. Sends them, and the unified items (our own listener may have been skipped too).
+     * MNX-134: still needed on 26.1.2, where the event is posted before the tags and recipes leave (PlayerList.reloadResources).
      */
     private static void resync(MinecraftServer server) {
         var players = server.getPlayerList();
         players.broadcastAll(new net.minecraft.network.protocol.common.ClientboundUpdateTagsPacket(
                 net.minecraft.tags.TagNetworkSerialization.serializeTagsToNetwork(server.registries())));
-        var recipes = new net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket(server.getRecipeManager().getOrderedRecipes());
+        var manager = server.getRecipeManager();
+        var recipes = new net.minecraft.network.protocol.game.ClientboundUpdateRecipesPacket(
+                manager.getSynchronizedItemProperties(), manager.getSynchronizedStonecutterRecipes());
         var unified = new UnifiedItemsPayload(dev.drimoz.materialnexus.conversion.ItemConversions.alternatives(),
                 dev.drimoz.materialnexus.conversion.ItemConversions.mapping());
         for (ServerPlayer p : players.getPlayers()) {
             p.connection.send(recipes);
             p.getRecipeBook().sendInitialRecipeBook(p);
+            net.neoforged.neoforge.common.CommonHooks.sendRecipes(p, SYNCED_TYPES, manager.recipeMap());
             PacketDistributor.sendToPlayer(p, unified);
         }
     }
+
+    /**
+     * Recipe contents clients ask for on 26.1.2: the types JEI 29.53 requests at datapack sync, which our viewer reads.
+     * ponytail: types other mods requested are not resent; collect them from the sync event if a client mod misses them.
+     */
+    private static final java.util.Set<net.minecraft.world.item.crafting.RecipeType<?>> SYNCED_TYPES = java.util.Set.of(
+            net.minecraft.world.item.crafting.RecipeType.CRAFTING, net.minecraft.world.item.crafting.RecipeType.STONECUTTING,
+            net.minecraft.world.item.crafting.RecipeType.SMELTING, net.minecraft.world.item.crafting.RecipeType.SMOKING,
+            net.minecraft.world.item.crafting.RecipeType.BLASTING, net.minecraft.world.item.crafting.RecipeType.CAMPFIRE_COOKING,
+            net.minecraft.world.item.crafting.RecipeType.SMITHING);
 
     private static void reload(ServerPlayer player, Component success, boolean regenerateAfter) {
         MinecraftServer server = player.level().getServer();
