@@ -78,6 +78,8 @@ public final class NexusScreen extends Screen {
 
     /** MNX-056: the latest applies and reverts, newest first (lines of history.jsonl). */
     private final List<com.google.gson.JsonObject> history = new java.util.ArrayList<>();
+    // MNX-136: Screen.font is final on 26.1; this one follows the font the player picks (MNX-103), set at each init.
+    private net.minecraft.client.gui.Font font;
 
     public NexusScreen(boolean readOnly, boolean canRevert, java.util.Map<Identifier, String> presets, String historyJson) {
         super(Component.translatable("screen.materialnexus.title"));
@@ -178,7 +180,7 @@ public final class NexusScreen extends Screen {
         switch (which) {
             case "click" -> {
                 int[] at = java.util.Arrays.stream(arg.split(",")).mapToInt(Integer::parseInt).toArray();
-                mouseClicked(at[0], at[1], 0);
+                mouseClicked(new net.minecraft.client.input.MouseButtonEvent(at[0], at[1], new net.minecraft.client.input.MouseButtonInfo(0, 0)), false);
             }
             case "mouse" -> devMouse = arg.isEmpty() ? null : java.util.Arrays.stream(arg.split(",")).mapToInt(Integer::parseInt).toArray();
             case "material" -> openMaterial(arg);
@@ -397,7 +399,7 @@ public final class NexusScreen extends Screen {
     // ---- drawing -------------------------------------------------------------------------------------------
 
     @Override
-    public void render(GuiGraphicsExtractor g, int mx, int my, float partialTick) {
+    public void extractRenderState(GuiGraphicsExtractor g, int mx, int my, float partialTick) {
         if (devMouse == null) draw(g, mx, my, partialTick);
         else draw(g, devMouse[0], devMouse[1], partialTick);
     }
@@ -430,7 +432,7 @@ public final class NexusScreen extends Screen {
             case SHORTCUTS -> renderShortcuts(g);
         }
         renderBottom(g, mx, my);
-        for (var widget : renderables) widget.render(g, mx, my, partialTick);
+        for (var widget : renderables) widget.extractRenderState(g, mx, my, partialTick);
         if (drawer != null) {
             // Batched text (unicode glyphs such as ▲▼) would otherwise be drawn after the drawer's background.
             g.nextStratum();
@@ -444,7 +446,7 @@ public final class NexusScreen extends Screen {
     }
 
     @Override
-    public void renderBackground(GuiGraphicsExtractor g, int mx, int my, float partialTick) { }
+    public void extractBackground(GuiGraphicsExtractor g, int mx, int my, float partialTick) { }
 
     /** Where the player is, as a path. The pack's counters live in the Overview and as a badge of the rail. */
     private void renderTop(GuiGraphicsExtractor g) {
@@ -1141,14 +1143,16 @@ public final class NexusScreen extends Screen {
     // ---- input ---------------------------------------------------------------------------------------------
 
     @Override
-    public boolean mouseClicked(double mx, double my, int button) {
+    public boolean mouseClicked(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        double mx = event.x(), my = event.y();
+        int button = event.button();
         if (applying > 0) {
             // Nothing else answers while the pack is being applied; Close leaves the screen, the apply goes on.
             if (mx >= closeX && mx < closeX + closeW && my >= closeY && my < closeY + 16) minecraft.setScreen(null);
             return true;
         }
         if (drawer != null && drawer.contains(mx, my)) return drawer.click(mx, my, button);
-        if (super.mouseClicked(mx, my, button)) return true;
+        if (super.mouseClicked(event, doubleClick)) return true;
         if (hits.click(mx, my, button)) return true;
         if (my < TOP || my > height - BOTTOM || mx < contentX) return false;
         if (view == View.MATERIALS && list.click(mx, my, button)) return true;
@@ -1195,13 +1199,14 @@ public final class NexusScreen extends Screen {
     }
 
     @Override
-    public boolean keyPressed(int key, int scan, int modifiers) {
+    public boolean keyPressed(net.minecraft.client.input.KeyEvent event) {
+        int key = event.key();
         if (key == 256 && drawer != null) {
             drawer = null;
             return true;
         }
         if (view == View.TRIAGE && drawer == null && !(getFocused() instanceof EditBox) && triage.key(key)) return true;
-        return super.keyPressed(key, scan, modifiers);
+        return super.keyPressed(event);
     }
 
     @Override

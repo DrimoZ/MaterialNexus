@@ -29,18 +29,18 @@ public final class Field extends EditBox {
 
     /** The text is drawn {@link #PAD} to the right of where an unbordered box puts it. */
     @Override
-    public void onClick(double mouseX, double mouseY) {
-        super.onClick(mouseX - PAD, mouseY);
+    public void onClick(net.minecraft.client.input.MouseButtonEvent event, boolean doubleClick) {
+        super.onClick(new net.minecraft.client.input.MouseButtonEvent(event.x() - PAD, event.y(), event.buttonInfo()), doubleClick);
     }
 
     @Override
-    public void renderWidget(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+    public void extractWidgetRenderState(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         if (!isVisible()) return;
         g.fill(getX(), getY(), getX() + width, getY() + height, Theme.RAISED);
         g.outline(getX(), getY(), width, height, isFocused() ? Theme.INFO : Theme.CTRL);
         g.pose().pushMatrix();
         g.pose().translate(PAD, (height - 8) / 2);
-        super.renderWidget(g, mouseX, mouseY, partialTick);
+        super.extractWidgetRenderState(g, mouseX, mouseY, partialTick);
         g.pose().popMatrix();
     }
 }

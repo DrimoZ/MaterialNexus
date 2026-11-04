@@ -94,7 +94,7 @@ public final class UiShots {
         if (ticks < step.tick()) return;
         next++;
         if (!step.shot().isEmpty()) {
-            Screenshot.grab(mc.gameDirectory, step.shot() + ".png", mc.getMainRenderTarget(), message -> { });
+            Screenshot.grab(mc.gameDirectory, step.shot() + ".png", mc.getMainRenderTarget(), 1, message -> { });
             return;
         }
         switch (step.view()) {

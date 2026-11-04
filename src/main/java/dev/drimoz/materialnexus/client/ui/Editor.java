@@ -15,19 +15,21 @@ import java.util.Optional;
 /**
  * The multi-line editor of the Material Nexus screen (MNX-100): the vanilla box without its sprite, on a flat fill with
  * a control outline that turns to the focus colour. The vanilla text is always light, so the ground stays dark in every
- * theme, like a code editor.
+ * theme, like a code editor. MNX-136: the box can no longer be extended on 26.1, so the panel draws {@link #ground}
+ * just before it.
  */
-public final class Editor extends MultiLineEditBox {
+public final class Editor {
     private static final TypeAdapter<JsonElement> STRICT = new Gson().getAdapter(JsonElement.class);
 
-    public Editor(Font font, int x, int y, int width, int height) {
-        super(font, x, y, width, height, Component.empty(), Component.empty());
+    private Editor() { }
+
+    public static MultiLineEditBox create(Font font, int x, int y, int width, int height) {
+        return MultiLineEditBox.builder().setX(x).setY(y).setShowBackground(false).build(font, width, height, Component.empty());
     }
 
-    @Override
-    protected void renderBorder(GuiGraphicsExtractor g, int x, int y, int width, int height) {
-        g.fill(x, y, x + width, y + height, Theme.GRAPHITE.bg);
-        g.outline(x, y, width, height, isFocused() ? Theme.INFO : Theme.CTRL);
+    public static void ground(GuiGraphicsExtractor g, MultiLineEditBox box) {
+        g.fill(box.getX(), box.getY(), box.getRight(), box.getBottom(), Theme.GRAPHITE.bg);
+        g.outline(box.getX(), box.getY(), box.getWidth(), box.getHeight(), box.isFocused() ? Theme.INFO : Theme.CTRL);
     }
 
     /** What is wrong with {@code text} as JSON ("... at line 9 column 5"), or empty when it reads. */

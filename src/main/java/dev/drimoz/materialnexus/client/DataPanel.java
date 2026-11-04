@@ -59,6 +59,8 @@ final class DataPanel {
     private String newId = "materialnexus_user:custom";
     private JsonObject declared;
     private int x, y, w, h;
+    // The open JSON editor, whose ground render() draws (MNX-136); null when none.
+    private MultiLineEditBox editor;
 
     DataPanel(Runnable rebuild) {
         this.rebuild = rebuild;
@@ -78,6 +80,7 @@ final class DataPanel {
 
     void init(Consumer<AbstractWidget> add, Font font, int x, int y, int w, int h) {
         this.x = x; this.y = y; this.w = w; this.h = h;
+        editor = null;
         if (list == null) {
             ClientPacketDistributor.sendToServer(DataListRequest.INSTANCE);
             return;
@@ -113,7 +116,7 @@ final class DataPanel {
         int ex = x + side + 8;
         String key = selected.id().toString();
         // MNX-100: capped in width (a wide JSON editor is mostly empty), with room under it for what is wrong with the text.
-        MultiLineEditBox editor = new dev.drimoz.materialnexus.client.ui.Editor(font, ex, y + 92, Math.min(x + w - ex - 8, 600), h - 92 - 42);
+        MultiLineEditBox editor = this.editor = dev.drimoz.materialnexus.client.ui.Editor.create(font, ex, y + 92, Math.min(x + w - ex - 8, 600), h - 92 - 42);
         editor.setCharacterLimit(EditableData.MAX_TEXT);
         editor.setValue(draft != null ? draft : PendingChanges.data(selected.kind(), key).map(t -> t.orElse(loadedText)).orElse(loadedText));
         add.accept(editor);
@@ -299,6 +302,7 @@ final class DataPanel {
 
     void render(GuiGraphicsExtractor g, Font font, int mx, int my) {
         hits.clear();
+        if (editor != null) dev.drimoz.materialnexus.client.ui.Editor.ground(g, editor);
         g.text(font, Component.translatable("screen.materialnexus.data_title"), x + 12, y + 6, Theme.TEXT, false);
         int tx = x + 10;
         int ty = y + 20;
