@@ -14,6 +14,8 @@ import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.world.item.ItemStack;
+import net.minecraft.world.item.crafting.Ingredient;
+import net.minecraft.world.item.crafting.Recipe;
 import net.minecraft.world.item.crafting.RecipeHolder;
 
 import java.io.IOException;
@@ -96,16 +98,16 @@ public final class RecipeSources {
         // file (added in memory by a script, e.g. KubeJS) has no JSON we may rewrite: it is reported, not skipped.
         Map<Identifier, String> files = texts(server);
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
-            if (ours.contains(holder.id()) || read.contains(holder.id())) continue;
-            Optional<JsonObject> json = parse(files.get(file(holder.id()))).filter(j -> mentions(j, conversions.keySet()));
+            if (ours.contains(holder.id().identifier()) || read.contains(holder.id().identifier())) continue;
+            Optional<JsonObject> json = parse(files.get(file(holder.id().identifier()))).filter(j -> mentions(j, conversions.keySet()));
             if (json.isPresent()) {
-                sources.add(new RecipeRewrites.Source(holder.id(), json, firstOrSelf(RecipeRewrites.outputIds(json.get(), formats), holder.id())));
+                sources.add(new RecipeRewrites.Source(holder.id().identifier(), json, firstOrSelf(RecipeRewrites.outputIds(json.get(), formats), holder.id().identifier())));
                 continue;
             }
-            ItemStack out = holder.value().getResultItem(server.registryAccess());
+            ItemStack out = result(server, holder.value());
             Identifier result = out.isEmpty() ? null : BuiltInRegistries.ITEM.getKey(out.getItem());
             if (result != null && conversions.containsKey(result)) {
-                sources.add(new RecipeRewrites.Source(holder.id(), Optional.empty(), result));
+                sources.add(new RecipeRewrites.Source(holder.id().identifier(), Optional.empty(), result));
             }
         }
         sources.sort(Comparator.comparing(RecipeRewrites.Source::id));
@@ -117,7 +119,7 @@ public final class RecipeSources {
         Set<Identifier> ids = new java.util.TreeSet<>(overridden);
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
             Identifier type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
-            if (type != null && formats.forType(type).isPresent()) ids.add(holder.id());
+            if (type != null && formats.forType(type).isPresent()) ids.add(holder.id().identifier());
         }
         // Parsed in parallel (independent texts), in id order. Our own generated recipes have no file beneath the
         // generated pack: never read back here.
@@ -146,7 +148,7 @@ public final class RecipeSources {
             Set<Identifier> kept = new HashSet<>();
             for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
                 Identifier type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
-                if (type != null && formats.forType(type).isPresent()) kept.add(file(holder.id()));
+                if (type != null && formats.forType(type).isPresent()) kept.add(file(holder.id().identifier()));
             }
             // ADR-025: of the other types, only the files naming an item that could become an alternative (a form with
             // two items or more): rewritten by their keys once a unification makes it one.
@@ -192,6 +194,21 @@ public final class RecipeSources {
         return RecipeRewrites.inputTags(forms, snapshot.conventionTags());
     }
 
+    /** MNX-133: what a loaded recipe makes, read from what it shows (26.1 recipes have no result getter); EMPTY when it shows nothing. */
+    public static ItemStack result(MinecraftServer server, Recipe<?> recipe) {
+        var context = net.minecraft.world.item.crafting.display.SlotDisplayContext.fromLevel(server.overworld());
+        for (var display : recipe.display()) {
+            ItemStack stack = display.result().resolveForFirstStack(context);
+            if (!stack.isEmpty()) return stack;
+        }
+        return ItemStack.EMPTY;
+    }
+
+    /** Its ingredients as the recipe book places them; none for a recipe the book cannot place. */
+    public static List<Ingredient> ingredients(Recipe<?> recipe) {
+        return recipe.placementInfo().ingredients();
+    }
+
     /** The game's reading of a recipe, load conditions left out; Preview / Apply only. */
     public static RecipeRewrites.Decoder decoder(MinecraftServer server) {
         var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
@@ -201,13 +218,13 @@ public final class RecipeSources {
             try {
                 var decoded = net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, recipe).result();
                 if (decoded.isEmpty()) return Optional.empty();
-                ItemStack result = decoded.get().getResultItem(server.registryAccess());
-                var ingredients = decoded.get().getIngredients();
+                ItemStack result = result(server, decoded.get());
+                var ingredients = ingredients(decoded.get());
                 return Optional.of(new RecipeRewrites.Decoded() {
                     public boolean exposed() { return !result.isEmpty() || !ingredients.isEmpty(); }
                     public boolean produces(Identifier item) { return !result.isEmpty() && BuiltInRegistries.ITEM.getKey(result.getItem()).equals(item); }
                     public boolean consumes(Identifier item) {
-                        ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.get(item));
+                        ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.getValue(item));
                         return ingredients.stream().anyMatch(i -> i.test(stack));
                     }
                 });

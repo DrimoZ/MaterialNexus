@@ -78,31 +78,31 @@ public final class RecipeFamilies {
         RecipeFormats formats = RecipeFormats.load(server.getResourceManager());
         // MNX-118: a recipe a datapack switched off is not loaded either; what it made is read under the datapack.
         packs.recipes().forEach((id, pack) -> {
-            if (server.getRecipeManager().byKey(id).isPresent()) return;
+            if (server.getRecipeManager().byKey(net.minecraft.resources.ResourceKey.create(net.minecraft.core.registries.Registries.RECIPE, id)).isPresent()) return;
             PackEdits.beneath(server, id).ifPresent(json -> RecipeRewrites.outputIds(json, formats).stream().filter(members::contains).findFirst()
                     .ifPresent(output -> rows.add(new Row(id, json.has("type") ? java.util.Objects.requireNonNullElse(Identifier.tryParse(json.get("type").getAsString()), disabledType) : disabledType,
                             output, Status.PACK_DISABLED, java.util.Optional.empty(), Removal.PACK, java.util.Optional.of(pack)))));
         });
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
             Identifier type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
-            ItemStack out = holder.value().getResultItem(server.registryAccess());
+            ItemStack out = RecipeSources.result(server, holder.value());
             List<Identifier> outputs = new ArrayList<>();
             if (!out.isEmpty()) {
                 outputs.add(BuiltInRegistries.ITEM.getKey(out.getItem()));
             } else if (type != null && formats.forType(type).isPresent()) {
-                RecipeSources.originalJson(server, holder.id()).ifPresent(json -> outputs.addAll(RecipeRewrites.outputIds(json, formats)));
+                RecipeSources.originalJson(server, holder.id().identifier()).ifPresent(json -> outputs.addAll(RecipeRewrites.outputIds(json, formats)));
             }
             for (Identifier output : outputs) {
                 if (!members.contains(output)) continue;
                 boolean known = type != null && formats.forType(type).isPresent();
-                Status status = rewritten.contains(holder.id()) ? Status.REWRITTEN
+                Status status = rewritten.contains(holder.id().identifier()) ? Status.REWRITTEN
                         : form.canonical().map(output::equals).orElse(false) ? Status.CANONICAL
                         : alternatives.contains(output) ? (known ? Status.ALTERNATIVE : Status.UNSUPPORTED)
                         : Status.OTHER;
                 java.util.Optional<Identifier> replaced = status != Status.REWRITTEN ? java.util.Optional.empty()
-                        : RecipeSources.originalJson(server, holder.id()).stream()
+                        : RecipeSources.originalJson(server, holder.id().identifier()).stream()
                                 .flatMap(json -> RecipeRewrites.outputIds(json, formats).stream()).filter(alternatives::contains).findFirst();
-                rows.add(new Row(holder.id(), type == null ? holder.id() : type, output, status, replaced, removal(server, holder.id()), editedBy(holder.id(), scripted, packs)));
+                rows.add(new Row(holder.id().identifier(), type == null ? holder.id().identifier() : type, output, status, replaced, removal(server, holder.id().identifier()), editedBy(holder.id().identifier(), scripted, packs)));
                 break;
             }
         }

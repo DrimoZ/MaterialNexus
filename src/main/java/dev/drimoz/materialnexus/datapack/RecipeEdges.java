@@ -92,20 +92,20 @@ public final class RecipeEdges {
         List<FamilyRelations.Edge> edges = new ArrayList<>();
         dev.drimoz.materialnexus.integration.RecipeFormats formats = dev.drimoz.materialnexus.integration.RecipeFormats.load(server.getResourceManager());
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
-            ItemStack out = holder.value().getResultItem(server.registryAccess());
-            if (out.isEmpty() || holder.value().getIngredients().isEmpty()) {
+            ItemStack out = RecipeSources.result(server, holder.value());
+            if (out.isEmpty() || RecipeSources.ingredients(holder.value()).isEmpty()) {
                 // Machine recipes (MI, Mekanism...) often hide their result or ingredients from vanilla APIs: read their JSON.
                 // ponytail: reads those files on each request; index them on reload if this shows up in a profile.
                 Identifier type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
                 if (type != null && formats.forType(type).isPresent()) {
-                    RecipeSources.originalJson(server, holder.id()).ifPresent(json -> edges.addAll(fromJson(json, formats)));
+                    RecipeSources.originalJson(server, holder.id().identifier()).ifPresent(json -> edges.addAll(fromJson(json, formats)));
                 }
                 if (out.isEmpty()) continue;
             }
             Identifier result = BuiltInRegistries.ITEM.getKey(out.getItem());
             List<Set<Identifier>> ingredients = new ArrayList<>();
-            for (Ingredient ingredient : holder.value().getIngredients()) {
-                ingredients.add(Arrays.stream(ingredient.getItems()).map(s -> BuiltInRegistries.ITEM.getKey(s.getItem())).collect(Collectors.toSet()));
+            for (Ingredient ingredient : RecipeSources.ingredients(holder.value())) {
+                ingredients.add(ingredient.items().map(h -> BuiltInRegistries.ITEM.getKey(h.value())).collect(Collectors.toSet()));
             }
             edges.add(new FamilyRelations.Edge(result, ingredients));
         }
@@ -134,7 +134,7 @@ public final class RecipeEdges {
             if (o.has("item") && o.get("item").isJsonPrimitive()) java.util.Optional.ofNullable(Identifier.tryParse(o.get("item").getAsString())).ifPresent(accepted::add);
             if (o.has("tag") && o.get("tag").isJsonPrimitive()) {
                 Identifier tag = Identifier.tryParse(o.get("tag").getAsString());
-                if (tag != null) BuiltInRegistries.ITEM.getTag(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag))
+                if (tag != null) BuiltInRegistries.ITEM.get(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag))
                         .ifPresent(set -> set.forEach(h -> h.unwrapKey().ifPresent(k -> accepted.add(k.identifier()))));
             }
             // Outputs name items with "id" (Create, Mekanism); in inputs "id" may name a fluid or chemical, so it is ignored there.

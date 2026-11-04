@@ -237,7 +237,7 @@ public final class MaterialNexusGameTests {
         Identifier id = Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "netherite_rod");
         helper.assertTrue(net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(id), "netherite_rod should be registered");
         var tag = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, Identifier.parse("c:rods/netherite"));
-        helper.assertTrue(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(id)).is(tag), "netherite_rod should be in #c:rods/netherite");
+        helper.assertTrue(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.getValue(id)).is(tag), "netherite_rod should be in #c:rods/netherite");
         var providers = SnapshotManager.current().discovered().providers(new MaterialId("netherite"), new FormId("rod"));
         helper.assertTrue(providers.stream().anyMatch(p -> p.resource().equals(id)), "discovery should see the netherite rod, got " + providers);
         helper.succeed();

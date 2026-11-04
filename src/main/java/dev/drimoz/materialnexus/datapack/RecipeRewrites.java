@@ -150,20 +150,25 @@ public final class RecipeRewrites {
         JsonObject before = json.deepCopy();
         if (skipped(json, formats)) return Optional.empty();
         Optional<RecipeFormats.Format> format = format(json, formats);
-        List<JsonObject> inputs = new ArrayList<>();
+        List<Slot> inputs = new ArrayList<>();
         if (format.isPresent()) {
             List<String> outputKeys = format.get().outputKeys();
             // Inputs too: an alternative named as a literal item would otherwise be asked for after it was converted away.
             // Load conditions name items too: kept item there, never a tag. A wrapped recipe is rewritten on its own.
             json.keySet().stream().filter(k -> !outputKeys.contains(k) && !k.equals("recipe") && !k.equals("recipes"))
                     .forEach(k -> replaceItems(json.get(k), conversions, id -> true, k.endsWith("conditions") ? new ArrayList<>() : inputs));
+            // A bare id carries no "item" to say it is one: only under the known input keys, even with a format.
+            INPUT_KEYS.stream().filter(k -> json.has(k) && !outputKeys.contains(k)).forEach(k -> replaceBare(json, k, conversions, id -> true, inputs));
             replaceOutputs(json, outputKeys, conversions);
             toTags(json, inputs, conversions, inputTags, decoder);
             return Optional.empty();
         }
         Optional<Decoded> read = decoder.decode(before).filter(Decoded::exposed);
+        java.util.function.Predicate<Identifier> input = id -> read.map(d -> d.consumes(id) || !d.produces(id)).orElse(true);
         for (String key : INPUT_KEYS) {
-            if (json.has(key)) replaceItems(json.get(key), conversions, id -> read.map(d -> d.consumes(id) || !d.produces(id)).orElse(true), inputs);
+            if (!json.has(key)) continue;
+            replaceItems(json.get(key), conversions, input, inputs);
+            replaceBare(json, key, conversions, input, inputs);
         }
         for (String key : OUTPUT_KEYS) {
             if (json.has(key)) replaceStacks(json.get(key), conversions, id -> read.map(d -> d.produces(id) || !d.consumes(id)).orElse(true));
@@ -219,22 +224,48 @@ public final class RecipeRewrites {
      * The inputs just set to the kept item become the form's tag, one at a time, when the game still reads the recipe and,
      * if it shows its ingredients, accepts both items there; otherwise they stay the kept item.
      */
-    private static void toTags(JsonObject recipe, List<JsonObject> inputs, Map<Identifier, Identifier> conversions,
+    private static void toTags(JsonObject recipe, List<Slot> inputs, Map<Identifier, Identifier> conversions,
                                Map<Identifier, Identifier> inputTags, Decoder decoder) {
         if (inputTags.isEmpty()) return;
         Map<Identifier, Identifier> alternativeOf = new HashMap<>();
         conversions.forEach((alt, kept) -> { if (inputTags.containsKey(alt)) alternativeOf.putIfAbsent(kept, alt); });
-        for (JsonObject input : inputs) {
-            Identifier kept = Identifier.tryParse(input.get("item").getAsString());
+        for (Slot input : inputs) {
+            Identifier kept = input.item();
             Identifier alt = kept == null ? null : alternativeOf.get(kept);
             if (alt == null) continue;
-            input.remove("item");
-            input.addProperty("tag", inputTags.get(alt).toString());
+            input.tag(inputTags.get(alt));
             boolean accepted = decoder.decode(recipe).map(d -> !d.exposed() || (d.consumes(kept) && d.consumes(alt))).orElse(false);
-            if (!accepted) {
-                input.remove("tag");
-                input.addProperty("item", kept.toString());
-            }
+            if (!accepted) input.item(kept);
+        }
+    }
+
+    /**
+     * An input just set to the kept item: an {@code {"item": id}} object, or (1.21.2+ spelling) a bare id held by an object
+     * field ({@code key}) or a list ({@code index}). A tag is then {@code {"tag": id}} or {@code "#id"}.
+     */
+    private record Slot(JsonElement parent, String key, int index, boolean bare) {
+        static Slot object(JsonObject o) { return new Slot(o, "item", -1, false); }
+
+        Identifier item() {
+            JsonElement value = parent.isJsonArray() ? parent.getAsJsonArray().get(index) : parent.getAsJsonObject().get(key);
+            return Identifier.tryParse(value.getAsString());
+        }
+
+        void tag(Identifier tag) {
+            if (bare) { set("#" + tag); return; }
+            parent.getAsJsonObject().remove("item");
+            parent.getAsJsonObject().addProperty("tag", tag.toString());
+        }
+
+        void item(Identifier item) {
+            if (bare) { set(item.toString()); return; }
+            parent.getAsJsonObject().remove("tag");
+            parent.getAsJsonObject().addProperty("item", item.toString());
+        }
+
+        private void set(String value) {
+            if (parent.isJsonArray()) parent.getAsJsonArray().set(index, new com.google.gson.JsonPrimitive(value));
+            else parent.getAsJsonObject().addProperty(key, value);
         }
     }
 
@@ -312,7 +343,7 @@ public final class RecipeRewrites {
      * changed (candidates for the form's tag); tag ingredients are left as they are.
      */
     private static void replaceItems(JsonElement element, Map<Identifier, Identifier> conversions,
-                                     java.util.function.Predicate<Identifier> allowed, List<JsonObject> changed) {
+                                     java.util.function.Predicate<Identifier> allowed, List<Slot> changed) {
         if (element.isJsonArray()) {
             element.getAsJsonArray().forEach(e -> replaceItems(e, conversions, allowed, changed));
         } else if (element.isJsonObject()) {
@@ -323,10 +354,41 @@ public final class RecipeRewrites {
                 Identifier canonical = id == null ? null : conversions.get(id);
                 if (canonical != null && allowed.test(id)) {
                     o.addProperty("item", canonical.toString());
-                    changed.add(o);
+                    changed.add(Slot.object(o));
                 }
             }
             o.entrySet().forEach(e -> replaceItems(e.getValue(), conversions, allowed, changed));
+        }
+    }
+
+    /**
+     * 1.21.2+ spelling: bare ids where the game reads an ingredient, nowhere else (a {@code "block"} id deeper down is a
+     * block): the input key's value, the lists there, and, under {@code key}, each grid symbol's value. Tags ({@code "#..."})
+     * do not parse as ids and stay as they are.
+     */
+    private static void replaceBare(JsonObject recipe, String key, Map<Identifier, Identifier> conversions,
+                                    java.util.function.Predicate<Identifier> allowed, List<Slot> changed) {
+        JsonElement value = recipe.get(key);
+        if (key.equals("key") && value.isJsonObject()) {
+            JsonObject grid = value.getAsJsonObject();
+            List.copyOf(grid.keySet()).forEach(symbol -> replaceBare(new Slot(grid, symbol, -1, true), grid.get(symbol), conversions, allowed, changed));
+        } else {
+            replaceBare(new Slot(recipe, key, -1, true), value, conversions, allowed, changed);
+        }
+    }
+
+    private static void replaceBare(Slot at, JsonElement value, Map<Identifier, Identifier> conversions,
+                                    java.util.function.Predicate<Identifier> allowed, List<Slot> changed) {
+        if (value.isJsonArray()) {
+            JsonArray list = value.getAsJsonArray();
+            for (int i = 0; i < list.size(); i++) replaceBare(new Slot(list, null, i, true), list.get(i), conversions, allowed, changed);
+        } else if (value.isJsonPrimitive() && value.getAsJsonPrimitive().isString()) {
+            Identifier id = Identifier.tryParse(value.getAsString());
+            Identifier canonical = id == null ? null : conversions.get(id);
+            if (canonical != null && allowed.test(id)) {
+                at.item(canonical);
+                changed.add(at);
+            }
         }
     }
 
