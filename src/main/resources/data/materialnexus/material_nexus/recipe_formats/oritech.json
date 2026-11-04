@@ -2,18 +2,21 @@
   "types": [
     "oritech:assembler",
     "oritech:atomic_forge",
+    "oritech:bedrock_extractor",
     "oritech:centrifuge",
     "oritech:centrifuge_fluid",
-    "oritech:cooler",
     "oritech:foundry",
-    "oritech:grinder",
+    "oritech:fragment_forge",
+    "oritech:industrial_chiller",
     "oritech:laser",
-    "oritech:pulverizer",
-    "oritech:refinery",
     "oritech:particle_collision",
-    "oritech:deep_drill"
+    "oritech:pulverizer",
+    "oritech:refinery"
   ],
   "outputs": [
-    "results"
+    "itemResults"
+  ],
+  "inputs": [
+    "itemInputs"
   ]
 }

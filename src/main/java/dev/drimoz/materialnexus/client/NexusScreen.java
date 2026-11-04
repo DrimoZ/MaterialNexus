@@ -188,6 +188,12 @@ public final class NexusScreen extends Screen {
             case "form" -> openForm(arg);
             case "suggestions" -> ClientPacketDistributor.sendToServer(SuggestionsRequest.INSTANCE);
             case "preview" -> preview();
+            case "apply" -> {
+                // MNX-139: what the drawer's Apply does, for the full-journey captures.
+                ClientPacketDistributor.sendToServer(PendingChanges.request(true, Optional.empty()));
+                applying = net.minecraft.util.Util.getMillis();
+                drawer = null;
+            }
             case "process" -> { tab = Tab.PROCESS; requestProcess(); rebuildWidgets(); }
             case "forms_tab" -> { tab = Tab.FORMS; rebuildWidgets(); }
             case "triage" -> { PendingChanges.clear(); startTriage(); }

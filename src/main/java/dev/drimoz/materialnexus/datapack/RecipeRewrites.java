@@ -34,7 +34,7 @@ public final class RecipeRewrites {
     // MNX-125, read off the 300 most downloaded Forge 1.20.1 mods of the technology, magic and equipment categories: a key
     // is added when several mods use it for one role (key: shaped grids; template, base, addition: smithing; itemInput:
     // Mekanism and Immersive Geology).
-    static final List<String> INPUT_KEYS = List.of("input", "inputs", "ingredient", "ingredients", "inputItems", "itemInput",
+    public static final List<String> INPUT_KEYS = List.of("input", "inputs", "ingredient", "ingredients", "inputItems", "itemInput",
             "key", "template", "base", "addition");
     static final List<String> OUTPUT_KEYS = List.of("output", "outputs", "result", "results", "outputItems");
 
@@ -157,8 +157,8 @@ public final class RecipeRewrites {
             // Load conditions name items too: kept item there, never a tag. A wrapped recipe is rewritten on its own.
             json.keySet().stream().filter(k -> !outputKeys.contains(k) && !k.equals("recipe") && !k.equals("recipes"))
                     .forEach(k -> replaceItems(json.get(k), conversions, id -> true, k.endsWith("conditions") ? new ArrayList<>() : inputs));
-            // A bare id carries no "item" to say it is one: only under the known input keys, even with a format.
-            INPUT_KEYS.stream().filter(k -> json.has(k) && !outputKeys.contains(k)).forEach(k -> replaceBare(json, k, conversions, id -> true, inputs));
+            // A bare id carries no "item" to say it is one: only under the format's input keys (MNX-139), never anywhere.
+            format.get().inputKeys().stream().filter(k -> json.has(k) && !outputKeys.contains(k)).forEach(k -> replaceBare(json, k, conversions, id -> true, inputs));
             replaceOutputs(json, outputKeys, conversions);
             toTags(json, inputs, conversions, inputTags, decoder);
             return Optional.empty();

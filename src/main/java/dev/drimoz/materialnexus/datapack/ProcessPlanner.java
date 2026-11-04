@@ -98,13 +98,13 @@ public final class ProcessPlanner {
         Map<String, JsonElement> files = new TreeMap<>();
         List<PackContent.Effect> effects = new ArrayList<>();
 
-        record Known(RecipeRewrites.Source source, Identifier type, List<String> outputKeys, Reading reading) { }
+        record Known(RecipeRewrites.Source source, Identifier type, RecipeFormats.Format format, Reading reading) { }
         // Readings are independent and the index is read only: read in parallel, kept in source order (MNX-113).
         List<Known> readings = sources.parallelStream()
                 .filter(s -> s.json().isPresent())
                 .flatMap(s -> RecipeRewrites.format(s.json().get(), formats).stream().map(format -> new Known(s,
-                        Identifier.parse(s.json().get().get("type").getAsString()), format.outputKeys(),
-                        read(s.json().get(), format.outputKeys(), index))))
+                        Identifier.parse(s.json().get().get("type").getAsString()), format,
+                        read(s.json().get(), format, index))))
                 .toList();
         Map<Identifier, List<Known>> byType = new TreeMap<>();
         readings.forEach(k -> byType.computeIfAbsent(k.type(), t -> new ArrayList<>()).add(k));
@@ -135,7 +135,7 @@ public final class ProcessPlanner {
                 java.util.function.Supplier<Optional<JsonObject>> byExample = () -> java.util.stream.Stream.concat(existing.stream(),
                                 byMachineForm.getOrDefault(Map.entry(route.machine(), form), List.of()).stream()
                                         .filter(k -> isExample(k.reading(), form, route.input(), material)))
-                        .map(k -> copy(k.source().json().get(), k.outputKeys(), material, route, index))
+                        .map(k -> copy(k.source().json().get(), k.format(), material, route, index))
                         .flatMap(Optional::stream)
                         .findFirst();
                 java.util.function.Supplier<Optional<JsonObject>> byTemplate = () -> usable.stream()
@@ -183,7 +183,7 @@ public final class ProcessPlanner {
             if (s.json().isEmpty()) continue;
             var format = RecipeRewrites.format(s.json().get(), formats);
             if (format.isEmpty()) continue;
-            Reading r = read(s.json().get(), format.get().outputKeys(), index);
+            Reading r = read(s.json().get(), format.get(), index);
             Optional<MaterialId> material = r.onlyMaterial();
             if (material.isEmpty() || !r.makes(new MaterialForm(material.get(), form))) continue;
             Identifier type = Identifier.parse(s.json().get().get("type").getAsString());
@@ -219,7 +219,7 @@ public final class ProcessPlanner {
         return ProcessTemplates.fill(template, new ProcessTemplates.Values(target.material().name(), target.form().name(), ingredient,
                         route.in(), route.out(), product.toString(), outputTag))
                 .filter(json -> RecipeRewrites.format(json, formats)
-                        .map(f -> hasRatio(read(json, f.outputKeys(), index), input, route) && read(json, f.outputKeys(), index).makes(target))
+                        .map(f -> hasRatio(read(json, f, index), input, route) && read(json, f, index).makes(target))
                         .orElse(false));
     }
 
@@ -250,10 +250,10 @@ public final class ProcessPlanner {
     }
 
     /** The example with the target material swapped in and the route's counts, or empty when it cannot be made exact. */
-    private static Optional<JsonObject> copy(JsonObject example, List<String> outputKeys, MaterialId material,
+    private static Optional<JsonObject> copy(JsonObject example, RecipeFormats.Format format, MaterialId material,
                                              ProcessRules.Route route, Index index) {
         JsonObject recipe = example.deepCopy();
-        for (Ref ref : read(recipe, outputKeys, index).all()) {
+        for (Ref ref : read(recipe, format, index).all()) {
             MaterialForm swapped = new MaterialForm(material, ref.target().form());
             Optional<ResolvedForm> form = index.form(swapped);
             Optional<Identifier> id = ref.tag()
@@ -266,18 +266,18 @@ public final class ProcessPlanner {
             else ref.node().addProperty(ref.field(), value);
         }
         MaterialForm input = new MaterialForm(material, route.input());
-        Reading swapped = read(recipe, outputKeys, index);
+        Reading swapped = read(recipe, format, index);
         if (swapped.output().isEmpty() || !setCount(swapped.output().get(), route.out(), true)) return Optional.empty();
         setInput(swapped.inputsOf(input), route.in());
-        return hasRatio(read(recipe, outputKeys, index), input, route) ? Optional.of(recipe) : Optional.empty();
+        return hasRatio(read(recipe, format, index), input, route) ? Optional.of(recipe) : Optional.empty();
     }
 
     // ---- reading -------------------------------------------------------------------------------------------
 
-    private static Reading read(JsonObject recipe, List<String> outputKeys, Index index) {
+    private static Reading read(JsonObject recipe, RecipeFormats.Format format, Index index) {
         List<Ref> all = new ArrayList<>();
         for (var e : recipe.entrySet()) {
-            boolean output = outputKeys.contains(e.getKey());
+            boolean output = format.outputKeys().contains(e.getKey());
             boolean condition = e.getKey().equals(CONDITIONS);
             if (e.getKey().equals("key") && e.getValue().isJsonObject() && recipe.get("pattern") instanceof JsonArray pattern) {
                 // Shaped crafting: each key ingredient is used once per occurrence of its symbol in the pattern.
@@ -286,7 +286,7 @@ public final class ProcessPlanner {
                     walk(k.getValue(), e.getValue().getAsJsonObject(), k.getKey(), null, -1, false, false, true, uses, recipe, index, all);
                 }
             } else {
-                walk(e.getValue(), recipe, e.getKey(), null, -1, output, condition, !output && RecipeRewrites.INPUT_KEYS.contains(e.getKey()), 1, recipe, index, all);
+                walk(e.getValue(), recipe, e.getKey(), null, -1, output, condition, !output && format.inputKeys().contains(e.getKey()), 1, recipe, index, all);
             }
         }
         List<Ref> inputs = all.stream().filter(r -> !r.output() && !r.condition()).toList();

@@ -19,7 +19,32 @@ public final class UiShots {
     private static final boolean ENABLED = Boolean.getBoolean("materialnexus.uishots");
     private record Step(int tick, String view, String arg, String shot) { }
 
-    private static final List<Step> STEPS = List.of(
+    // MNX-139, -Pflow=fresh: a world made in 26.1 with the real mods, choices taken and applied; -Pflow=after: the same world
+    // after a restart.
+    private static final String FLOW = System.getProperty("materialnexus.uishots.flow", "");
+    private static final List<Step> FRESH = List.of(
+            new Step(60, "open", "", ""),
+            new Step(160, "priority", "", ""),
+            new Step(220, "suggestions", "", ""),
+            new Step(320, "", "", "flow_1_home_chosen"),
+            new Step(325, "preview", "", ""),
+            new Step(620, "", "", "flow_2_preview"),
+            new Step(625, "apply", "", ""),
+            new Step(1500, "", "", "flow_3_home_applied"),
+            new Step(1505, "material", "silver", ""),
+            new Step(1650, "", "", "flow_4_silver"),
+            new Step(1655, "material", "copper", ""),
+            new Step(1800, "", "", "flow_5_copper"),
+            new Step(1805, "quit", "", ""));
+    private static final List<Step> AFTER = List.of(
+            new Step(60, "open", "", ""),
+            new Step(160, "", "", "flow_6_home_restarted"),
+            new Step(165, "material", "silver", ""),
+            new Step(300, "", "", "flow_7_silver_restarted"),
+            new Step(305, "click", "295,95", ""),
+            new Step(340, "", "", "flow_8_silver_forms"),
+            new Step(345, "quit", "", ""));
+    private static final List<Step> STEPS = FLOW.equals("fresh") ? FRESH : FLOW.equals("after") ? AFTER : List.of(
             new Step(60, "open", "", ""),
             new Step(100, "priority", "", ""),
             new Step(110, "", "", "mnx_1_home"),
@@ -80,6 +105,8 @@ public final class UiShots {
             new Step(1974, "", "", "mnx_19_untagged"),
             new Step(1979, "quit", "", ""));
     private static int ticks;
+    private static int waited;
+    private static boolean created;
     private static int next;
 
     private UiShots() { }
@@ -88,7 +115,18 @@ public final class UiShots {
     public static void onTick(ClientTickEvent.Post event) {
         if (!ENABLED || next >= STEPS.size()) return;
         Minecraft mc = Minecraft.getInstance();
-        if (mc.player == null || mc.level == null) return;
+        if (FLOW.equals("fresh") && mc.level == null && !created && mc.screen != null && ++waited > 40) {
+            // Quick play only opens a world that exists: a world made now, as Create New World would (normal preset, creative).
+            created = true;
+            mc.createWorldOpenFlows().createFreshLevel("New World", new net.minecraft.world.level.LevelSettings("New World",
+                            net.minecraft.world.level.GameType.CREATIVE, net.minecraft.world.level.LevelSettings.DifficultySettings.DEFAULT, true,
+                            net.minecraft.world.level.WorldDataConfiguration.DEFAULT),
+                    net.minecraft.world.level.levelgen.WorldOptions.defaultWithRandomSeed(),
+                    net.minecraft.world.level.levelgen.presets.WorldPresets::createNormalWorldDimensions, mc.screen);
+            return;
+        }
+        // MNX-139: a world being made shows its loading screen for a while; the steps count from when it is gone.
+        if (mc.player == null || mc.level == null || mc.screen instanceof net.minecraft.client.gui.screens.LevelLoadingScreen) return;
         ticks++;
         Step step = STEPS.get(next);
         if (ticks < step.tick()) return;

@@ -26,6 +26,7 @@ neoForge {
             client()
             gameDirectory = project.file("run-ui")
             systemProperty "materialnexus.uishots", "true"
+            if (project.hasProperty('flow')) systemProperty 'materialnexus.uishots.flow', project.property('flow')
             programArguments.addAll "--quickPlaySingleplayer", "New World", "--width", "2000", "--height", "1070"
         }
         server {
@@ -136,11 +137,33 @@ dependencies {
     // discovery and resolution exist for. runtimeOnly, never compiled against or shipped.
     if (!project.hasProperty('vanilla')) {
         runtimeOnly "mezz.jei:jei-${jei_minecraft_version}-neoforge:${jei_version}"
+        // MNX-139: the content mods that have a NeoForge 26.1.2 build (Modrinth version ids, 2026-11-04). They overlap on silver,
+        // nickel, platinum, steel and the vanilla metals' dusts, nuggets and plates; several are alpha or beta builds.
+        runtimeOnly "maven.modrinth:jade:${jade_version}"
+        runtimeOnly "maven.modrinth:occultism:FGf3SQAs" // 26.1.2-neoforge-1.262.0
+        runtimeOnly "maven.modrinth:modonomicon:PoZW527q" // 26.1.2-2.20.0
+        runtimeOnly "maven.modrinth:curios:dRnRThvD" // 15.0.0+26.1.2
+        runtimeOnly "maven.modrinth:geckolib:xfVfPcoC" // 5.5.2
+        runtimeOnly "maven.modrinth:oritech:eCP3mBH7" // 2.0.0-exp12, beta
+        runtimeOnly "maven.modrinth:athena-ctm:8KRMFzZ7" // 4.7.3
+        runtimeOnly "maven.modrinth:silent-gear:eG4f2c3T" // 4.2.3
+        runtimeOnly "maven.modrinth:silent-lib:Rc4eCDXl" // 11.2.0
+        runtimeOnly "maven.modrinth:ex-deorum:udQ4yulx" // 4.0
+        runtimeOnly "maven.modrinth:jaopca:AaMsk07b" // 26.1.2-6.0.2.2, alpha
+        runtimeOnly "maven.modrinth:mystical-agriculture:euEwsQlw" // 9.0.11
+        runtimeOnly "maven.modrinth:extended-crafting:soXMrjKe" // 8.0.3
+        runtimeOnly "maven.modrinth:cucumber:SSzjv5lL" // 9.0.7
+        runtimeOnly "maven.modrinth:ae2:nVSxZcom" // 26.1.13-beta
+        runtimeOnly "maven.modrinth:guideme:OTeLaTlN" // 26.1.17-beta
+        runtimeOnly "maven.modrinth:powah:bymXTkIP" // 7.0.4-alpha
+        runtimeOnly "maven.modrinth:cloth-config:TimoYzse" // 26.1.154+neoforge
+        runtimeOnly "maven.modrinth:cyclic:1RispO3t" // 26.1.2-1.14.2, alpha
+        runtimeOnly "maven.modrinth:flib:uMEW9ig6" // 26.1.2-0.2.11
+        runtimeOnly "maven.modrinth:enderio:SNsMXOPB" // v9.0.6, alpha
     }
     // MNX-138: still the 1.21.1 builds, which NeoForge 26.1.2 refuses to load; `-Pcontent` keeps the list at hand, and
     // MNX-139 moves each mod back above once it has an official 26.1.2 build.
     if (project.hasProperty('content')) {
-        runtimeOnly "maven.modrinth:jade:${jade_version}"
         runtimeOnly "maven.modrinth:mekanism:${mekanism_version}"
         runtimeOnly "maven.modrinth:create:${create_version}"
         runtimeOnly "maven.modrinth:immersiveengineering:${immersiveengineering_version}"
@@ -179,6 +202,16 @@ dependencies {
 tasks.matching { it.name == 'runUiShots' }.configureEach {
     doFirst {
         delete 'run-ui/screenshots'
+        // MNX-139: -Pflow=after keeps the world and config of the last -Pflow=fresh run, to see them after a restart.
+        if (project.findProperty('flow') == 'after') return
+        if (project.findProperty('flow') == 'fresh') {
+            // A world the game makes now, no config from the dev runs, and one created item with its own colour (tint check).
+            delete 'run-ui/saves', 'run-ui/config'
+            copy { from 'run'; into 'run-ui'; include 'options.txt' }
+            file('run-ui/config/materialnexus').mkdirs()
+            file('run-ui/config/materialnexus/items.json').text = '{ "items": [ { "material": "silver", "form": "gear", "color": "#D04040" } ] }'
+            return
+        }
         // MNX-142: a copy over a world the game already upgraded mixes versions and stops on a confirmation; start clean.
         delete 'run-ui/saves'
         // session.lock: the world may be open in a running game; a copy for screenshots does not need the lock.
