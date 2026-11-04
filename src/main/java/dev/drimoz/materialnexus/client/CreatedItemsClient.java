@@ -3,7 +3,6 @@ package dev.drimoz.materialnexus.client;
 import com.mojang.blaze3d.platform.NativeImage;
 import dev.drimoz.materialnexus.MaterialNexus;
 import dev.drimoz.materialnexus.item.CreatedItem;
-import dev.drimoz.materialnexus.registry.MnxItems;
 import net.minecraft.client.Minecraft;
 import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
@@ -28,11 +27,23 @@ public final class CreatedItemsClient {
 
     private CreatedItemsClient() { }
 
+    /** MNX-137: on 26.1 the item definitions the created items pack writes name this tint for layer 1. */
     @SubscribeEvent
-    public static void registerColors(RegisterColorHandlersEvent.Item event) {
-        for (var item : MnxItems.CREATED) {
-            event.register((stack, tint) -> tint == 1 ? 0xFF000000 | color(((CreatedItem) stack.getItem()).entry()) : -1, item.get());
+    public static void registerTints(RegisterColorHandlersEvent.ItemTintSources event) {
+        event.register(Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "material"), MaterialTint.CODEC);
+    }
+
+    /** The material colour of a created item; white on any other item. */
+    public record MaterialTint() implements net.minecraft.client.color.item.ItemTintSource {
+        static final com.mojang.serialization.MapCodec<MaterialTint> CODEC = com.mojang.serialization.MapCodec.unit(new MaterialTint());
+
+        @Override
+        public int calculate(net.minecraft.world.item.ItemStack stack, net.minecraft.client.multiplayer.ClientLevel level, net.minecraft.world.entity.LivingEntity owner) {
+            return stack.getItem() instanceof CreatedItem created ? 0xFF000000 | color(created.entry()) : -1;
         }
+
+        @Override
+        public com.mojang.serialization.MapCodec<MaterialTint> type() { return CODEC; }
     }
 
     private static int color(dev.drimoz.materialnexus.item.CreatedItems.Entry entry) {
@@ -49,11 +60,11 @@ public final class CreatedItemsClient {
             long r = 0, g = 0, b = 0, n = 0;
             for (int y = 0; y < image.getHeight(); y++) {
                 for (int x = 0; x < image.getWidth(); x++) {
-                    int abgr = image.getPixelRGBA(x, y);
-                    if ((abgr >>> 24) < 128) continue;
-                    r += abgr & 0xFF;
-                    g += (abgr >> 8) & 0xFF;
-                    b += (abgr >> 16) & 0xFF;
+                    int argb = image.getPixel(x, y);
+                    if ((argb >>> 24) < 128) continue;
+                    r += (argb >> 16) & 0xFF;
+                    g += (argb >> 8) & 0xFF;
+                    b += argb & 0xFF;
                     n++;
                 }
             }
