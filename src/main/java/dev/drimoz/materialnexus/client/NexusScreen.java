@@ -188,6 +188,12 @@ public final class NexusScreen extends Screen {
             case "form" -> openForm(arg);
             case "suggestions" -> ClientPacketDistributor.sendToServer(SuggestionsRequest.INSTANCE);
             case "preview" -> preview();
+            // MNX-143: what the confirmed Revert and Restore buttons do (the oldest copy kept), for the journey captures.
+            case "revert" -> { ClientPacketDistributor.sendToServer(RevertRequest.INSTANCE); minecraft.setScreen(null); }
+            case "restore" -> history.stream().skip(1).filter(e -> e.has("snapshot")).reduce((a, b) -> b).ifPresent(e -> {
+                ClientPacketDistributor.sendToServer(new dev.drimoz.materialnexus.network.RestoreRequest(e.get("snapshot").getAsString()));
+                minecraft.setScreen(null);
+            });
             case "apply" -> {
                 // MNX-139: what the drawer's Apply does, for the full-journey captures.
                 ClientPacketDistributor.sendToServer(PendingChanges.request(true, Optional.empty()));
@@ -197,6 +203,7 @@ public final class NexusScreen extends Screen {
             case "process" -> { tab = Tab.PROCESS; requestProcess(); rebuildWidgets(); }
             case "forms_tab" -> { tab = Tab.FORMS; rebuildWidgets(); }
             case "triage" -> { PendingChanges.clear(); startTriage(); }
+            case "home" -> go(View.HOME);
             case "presets" -> go(View.PRESETS);
             case "data" -> go(View.DATA);
             case "scripts" -> go(View.SCRIPTS);

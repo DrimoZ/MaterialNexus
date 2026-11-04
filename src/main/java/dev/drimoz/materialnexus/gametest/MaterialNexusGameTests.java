@@ -145,26 +145,27 @@ public final class MaterialNexusGameTests {
     }
 
     /**
-     * MNX-076: the fixture script materialnexus_unify.js replaces Mekanism's tin ingot by MI's in recipes and removes
-     * Mekanism's tin dust from its tag; both decisions are read back (run with -Pkubejs, skipped otherwise).
+     * MNX-076: the fixture script materialnexus_unify.js replaces Oritech's copper dust by Occultism's in recipes and takes
+     * Oritech's and Ender IO's iron dusts out of their tag; both decisions are read back (run with -Pkubejs, skipped otherwise).
+     * MNX-143: on the 26.1.2 mods, as Mekanism and MI have no build there.
      */
     public static void scriptDecisionsAreRead(GameTestHelper helper) {
-        if (!ModList.get().isLoaded("kubejs") || !ModList.get().isLoaded("mekanism") || !ModList.get().isLoaded("modern_industrialization")) {
+        if (!ModList.get().isLoaded("kubejs") || !ModList.get().isLoaded("occultism") || !ModList.get().isLoaded("oritech") || !ModList.get().isLoaded("enderio")) {
             helper.succeed();
             return;
         }
         var kept = new java.util.HashMap<String, java.util.Optional<Identifier>>();
         SnapshotManager.current().scriptDecisions().forEach(d -> kept.put(d.key().toString(), d.kept()));
-        helper.assertTrue(kept.getOrDefault("tin/ingot", java.util.Optional.empty())
-                        .equals(java.util.Optional.of(Identifier.fromNamespaceAndPath("modern_industrialization", "tin_ingot"))),
-                "the script's replaceOutput should decide tin/ingot for MI, got " + kept);
-        helper.assertTrue(kept.getOrDefault("tin/dust", java.util.Optional.empty())
-                        .equals(java.util.Optional.of(Identifier.fromNamespaceAndPath("modern_industrialization", "tin_dust"))),
-                "the script's tag removal should decide tin/dust for MI, got " + kept);
+        helper.assertTrue(kept.getOrDefault("copper/dust", java.util.Optional.empty())
+                        .equals(java.util.Optional.of(Identifier.fromNamespaceAndPath("occultism", "copper_dust"))),
+                "the script's replaceOutput should decide copper/dust for Occultism, got " + kept);
+        helper.assertTrue(kept.getOrDefault("iron/dust", java.util.Optional.empty())
+                        .equals(java.util.Optional.of(Identifier.fromNamespaceAndPath("occultism", "iron_dust"))),
+                "the script's tag removal should decide iron/dust for Occultism, got " + kept);
         // MNX-077: and both are placed on the fixture's lines.
         var seen = new java.util.HashMap<String, java.util.List<String>>();
         SnapshotManager.current().scriptDecisions().forEach(d -> seen.put(d.key().toString(), d.seenIn()));
-        helper.assertTrue(seen.get("tin/ingot").contains("materialnexus_unify.js:4") && seen.get("tin/dust").contains("materialnexus_unify.js:8"),
+        helper.assertTrue(seen.get("copper/dust").contains("materialnexus_unify.js:4") && seen.get("iron/dust").contains("materialnexus_unify.js:8"),
                 "decisions should be placed on the fixture's lines, got " + seen);
         helper.succeed();
     }
@@ -411,6 +412,29 @@ public final class MaterialNexusGameTests {
         var selected = helper.getLevel().getServer().getPackRepository().getSelectedIds();
         helper.assertTrue(selected.contains(GeneratedPack.PACK_ID), "generated pack is not enabled: " + selected);
         helper.assertTrue(java.nio.file.Files.exists(MnxPaths.generated().resolve(GeneratedPack.MARKER)), "generated pack marker missing");
+        helper.succeed();
+    }
+
+    /**
+     * MNX-143: the conditions the pack writes load on this NeoForge (26.1 renamed them, and a recipe whose conditions do
+     * not load is dropped from the game): a rewritten recipe stays while its items exist, a duplicate is switched off.
+     */
+    public static void writtenConditionsLoad(GameTestHelper helper) {
+        var server = helper.getLevel().getServer();
+        var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
+        var context = new net.neoforged.neoforge.common.conditions.ConditionContext(java.util.List.of(), server.registryAccess(),
+                server.registryAccess(), server.getWorldData().enabledFeatures());
+        String recipe = "{\"type\":\"minecraft:smelting\",\"ingredient\":\"materialnexus:nexus_terminal\",\"result\":{\"id\":\"materialnexus:nexus_terminal\"}}";
+        var written = PackContent.withItemConditions(new PackContent.Content(java.util.Map.of(
+                "data/test/recipe/kept.json", com.google.gson.JsonParser.parseString(recipe),
+                "data/test/recipe/off.json", RecipeRewrites.disabled()), java.util.List.of()), RecipeFormats.load(server.getResourceManager())).files();
+        for (var e : java.util.Map.of("kept.json", true, "off.json", false).entrySet()) {
+            var conditions = net.neoforged.neoforge.common.conditions.ICondition.LIST_CODEC.parse(ops,
+                    written.get("data/test/recipe/" + e.getKey()).getAsJsonObject().get("neoforge:conditions"));
+            helper.assertTrue(conditions.isSuccess(), e.getKey() + ": the written conditions do not load: " + conditions);
+            helper.assertTrue(conditions.getOrThrow().stream().allMatch(c -> c.test(context)) == e.getValue(),
+                    e.getKey() + " should " + (e.getValue() ? "load" : "be switched off"));
+        }
         helper.succeed();
     }
 

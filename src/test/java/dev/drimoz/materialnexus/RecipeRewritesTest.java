@@ -64,7 +64,7 @@ class RecipeRewritesTest {
     /** MNX-109: a written recipe is skipped, not reported broken, once a mod it names is gone. */
     @Test
     void writtenRecipesLoadOnlyWhileTheirItemsExist() {
-        final String DISABLED = "{\"neoforge:conditions\":[{\"type\":\"neoforge:false\"}]}";
+        final String DISABLED = "{\"neoforge:conditions\":[{\"type\":\"neoforge:never\"}]}";
         String smelting = "{\"type\":\"minecraft:smelting\",\"ingredient\":{\"item\":\"mekanism:dust_bronze\"},\"result\":{\"id\":\"mekanism:ingot_bronze\"},"
                 + "\"neoforge:conditions\":[{\"type\":\"neoforge:mod_loaded\",\"modid\":\"thermal\"}]}";
         var content = new PackContent.Content(Map.of(
@@ -73,7 +73,7 @@ class RecipeRewritesTest {
                 "data/test/recipe/disabled.json", JsonParser.parseString(DISABLED)), List.of());
         var files = PackContent.withItemConditions(content, SHIPPED).files();
         assertEquals(JsonParser.parseString("[{\"type\":\"neoforge:mod_loaded\",\"modid\":\"thermal\"},"
-                        + "{\"type\":\"neoforge:item_exists\",\"item\":\"mekanism:dust_bronze\"},{\"type\":\"neoforge:item_exists\",\"item\":\"mekanism:ingot_bronze\"}]"),
+                        + "{\"type\":\"neoforge:registered\",\"value\":\"mekanism:dust_bronze\"},{\"type\":\"neoforge:registered\",\"value\":\"mekanism:ingot_bronze\"}]"),
                 files.get("data/thermal/recipe/bronze_from_dust.json").getAsJsonObject().get("neoforge:conditions"));
         assertFalse(files.get("data/test/recipe/vanilla_only.json").getAsJsonObject().has("neoforge:conditions"), "vanilla items are always there");
         assertEquals(JsonParser.parseString(DISABLED), files.get("data/test/recipe/disabled.json"));
@@ -213,7 +213,7 @@ class RecipeRewritesTest {
                 new PackContent.Effect(RecipeRewrites.DISABLE, id("ie_from_block"), MEK),
                 new PackContent.Effect(RecipeRewrites.REWRITE, id("ie_smelt"), MEK)), plan.effects());
         assertTrue(plan.files().get("data/test/recipe/ie_smelt.json").toString().contains("\"id\":\"mekanism:ingot_tin\""));
-        assertTrue(plan.files().get("data/test/recipe/ie_from_block.json").toString().contains("neoforge:false"));
+        assertTrue(plan.files().get("data/test/recipe/ie_from_block.json").toString().contains("neoforge:never"));
         assertFalse(plan.files().containsKey("data/test/recipe/mek_from_block.json"), "an untouched recipe is never overridden");
         assertFalse(plan.files().containsKey("data/test/recipe/ie_crusher.json"), "unsupported recipes are never overridden");
     }
