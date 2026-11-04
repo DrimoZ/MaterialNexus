@@ -14,6 +14,7 @@ public final class MaterialNexus {
 
     public MaterialNexus(IEventBus modBus, ModContainer modContainer) {
         MnxItems.register(modBus);
+        dev.drimoz.materialnexus.gametest.MaterialNexusGameTests.register(modBus);
         modBus.addListener(MnxNetwork::register);
         modBus.addListener(GeneratedPack::onAddPackFinders);
     }
