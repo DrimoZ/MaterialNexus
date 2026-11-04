@@ -17,5 +17,6 @@ public final class MaterialNexus {
         dev.drimoz.materialnexus.gametest.MaterialNexusGameTests.register(modBus);
         modBus.addListener(MnxNetwork::register);
         modBus.addListener(GeneratedPack::onAddPackFinders);
+        net.neoforged.neoforge.common.NeoForge.EVENT_BUS.addListener(MnxNetwork::onServerStarted);
     }
 }

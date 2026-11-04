@@ -339,6 +339,33 @@ final class PolicyHandler {
             net.minecraft.world.item.crafting.RecipeType.BLASTING, net.minecraft.world.item.crafting.RecipeType.CAMPFIRE_COOKING,
             net.minecraft.world.item.crafting.RecipeType.SMITHING);
 
+    /**
+     * MNX-142: once the server runs, a generated pack written by another game version (a pack upgraded from 1.21.1) is
+     * written again from the same policy files and loaded; nothing new is decided, the applied choices only change format.
+     */
+    static void rewriteIfStale(MinecraftServer server) {
+        try {
+            if (!GeneratedPack.writtenForAnotherVersion(MnxPaths.generated())) return;
+        } catch (IOException | RuntimeException e) {
+            LOGGER.error("Material Nexus could not read its generated pack", e);
+            return;
+        }
+        if (!BUSY.compareAndSet(false, true)) return;
+        try {
+            var content = packContent(server, PolicyFiles.load(MnxPaths.policies()), PackContent.readManifest(MnxPaths.generated()));
+            GeneratedPack.write(MnxPaths.generated(), content.files(), PackContent.toJson(content.effects()));
+        } catch (IOException | RuntimeException e) {
+            BUSY.set(false);
+            LOGGER.error("Material Nexus could not rewrite its generated pack for this game version", e);
+            return;
+        }
+        LOGGER.info("Material Nexus rewrote its generated pack for this game version from the same choices");
+        server.reloadResources(server.getPackRepository().getSelectedIds()).whenComplete((ignored, error) -> server.execute(() -> {
+            BUSY.set(false);
+            if (error != null) LOGGER.error("Reload after rewriting the generated pack failed", error);
+        }));
+    }
+
     private static void reload(ServerPlayer player, Component success, boolean regenerateAfter) {
         MinecraftServer server = player.level().getServer();
         server.reloadResources(server.getPackRepository().getSelectedIds()).whenComplete((ignored, error) -> server.execute(() -> {
