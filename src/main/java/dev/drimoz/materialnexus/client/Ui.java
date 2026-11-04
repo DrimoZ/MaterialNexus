@@ -62,7 +62,7 @@ final class Ui {
         void tooltip(GuiGraphicsExtractor g, Font font, int mx, int my) {
             for (Hit h : hits) {
                 if (h.contains(mx, my) && !h.tooltip().isEmpty()) {
-                    g.renderComponentTooltip(font, h.tooltip(), mx, my);
+                    g.setComponentTooltipForNextFrame(font, h.tooltip(), mx, my);
                     return;
                 }
             }

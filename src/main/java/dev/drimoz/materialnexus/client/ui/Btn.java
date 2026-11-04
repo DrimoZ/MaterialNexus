@@ -44,7 +44,7 @@ public final class Btn extends Button {
     }
 
     @Override
-    protected void renderWidget(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
+    protected void extractContents(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         boolean over = active && isHoveredOrFocused();
         int fill = switch (kind) {
             case PRIMARY -> !active ? Theme.RAISED : over ? Theme.mix(Theme.ACCENT, Theme.TEXT, 0.18f) : Theme.ACCENT;
