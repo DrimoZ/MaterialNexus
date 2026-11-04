@@ -6,7 +6,7 @@ import dev.drimoz.materialnexus.datapack.PolicyEditor;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 
@@ -15,10 +15,10 @@ import java.util.List;
  * generated pack would gain ({@code added}) or lose ({@code removed}) compared to the current one.
  */
 public record PreviewPayload(List<PolicyEditor.Entry> entries, List<PackContent.Effect> added, List<PackContent.Effect> removed,
-                             java.util.Optional<ResourceLocation> preset)
+                             java.util.Optional<Identifier> preset)
         implements CustomPacketPayload {
     public static final Type<PreviewPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "preview"));
+            new Type<>(Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "preview"));
     public static final StreamCodec<FriendlyByteBuf, PreviewPayload> STREAM_CODEC =
             StreamCodec.of(PreviewPayload::write, PreviewPayload::read);
 
@@ -34,31 +34,31 @@ public record PreviewPayload(List<PolicyEditor.Entry> entries, List<PackContent.
         buf.writeCollection(p.entries(), (b, e) -> {
             b.writeUtf(e.material());
             b.writeUtf(e.form());
-            b.writeOptional(e.from(), FriendlyByteBuf::writeResourceLocation);
-            b.writeResourceLocation(e.to());
+            b.writeOptional(e.from(), FriendlyByteBuf::writeIdentifier);
+            b.writeIdentifier(e.to());
             b.writeBoolean(e.valid());
         });
         buf.writeCollection(p.added(), PreviewPayload::writeEffect);
         buf.writeCollection(p.removed(), PreviewPayload::writeEffect);
-        buf.writeOptional(p.preset(), FriendlyByteBuf::writeResourceLocation);
+        buf.writeOptional(p.preset(), FriendlyByteBuf::writeIdentifier);
     }
 
     private static PreviewPayload read(FriendlyByteBuf buf) {
         return new PreviewPayload(
-                buf.readList(b -> new PolicyEditor.Entry(b.readUtf(), b.readUtf(), b.readOptional(FriendlyByteBuf::readResourceLocation),
-                        b.readResourceLocation(), b.readBoolean())),
+                buf.readList(b -> new PolicyEditor.Entry(b.readUtf(), b.readUtf(), b.readOptional(FriendlyByteBuf::readIdentifier),
+                        b.readIdentifier(), b.readBoolean())),
                 buf.readList(PreviewPayload::readEffect),
                 buf.readList(PreviewPayload::readEffect),
-                buf.readOptional(FriendlyByteBuf::readResourceLocation));
+                buf.readOptional(FriendlyByteBuf::readIdentifier));
     }
 
     private static void writeEffect(FriendlyByteBuf buf, PackContent.Effect e) {
         buf.writeUtf(e.kind());
-        buf.writeResourceLocation(e.target());
-        buf.writeResourceLocation(e.item());
+        buf.writeIdentifier(e.target());
+        buf.writeIdentifier(e.item());
     }
 
     private static PackContent.Effect readEffect(FriendlyByteBuf buf) {
-        return new PackContent.Effect(buf.readUtf(), buf.readResourceLocation(), buf.readResourceLocation());
+        return new PackContent.Effect(buf.readUtf(), buf.readIdentifier(), buf.readIdentifier());
     }
 }

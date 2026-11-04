@@ -15,7 +15,7 @@ import dev.drimoz.materialnexus.core.resolution.CanonicalResolver;
 import dev.drimoz.materialnexus.datapack.PackContent;
 import dev.drimoz.materialnexus.datapack.ProcessPlanner;
 import dev.drimoz.materialnexus.datapack.RecipeRewrites.Source;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -33,7 +33,7 @@ class ProcessPlannerTest {
     private static final MaterialId ALUMINUM = new MaterialId("aluminum");
     private static final MaterialId IRON = new MaterialId("iron");
 
-    private static ResourceLocation rl(String id) { return ResourceLocation.parse(id); }
+    private static Identifier rl(String id) { return Identifier.parse(id); }
 
     private static Source source(String id, String json) {
         return new Source(rl(id), Optional.of(JsonParser.parseString(json).getAsJsonObject()), rl(id));
@@ -54,7 +54,7 @@ class ProcessPlannerTest {
                     {"type":"minecraft:stonecutting","ingredient":{"tag":"c:ingots/iron"},"result":{"count":2,"id":"immersiveengineering:stick_iron"}}"""));
 
     private static PackContent.Content plan(Map<FormId, Rule> rules) {
-        Map<ResourceLocation, List<ResourceLocation>> tags = Map.of(
+        Map<Identifier, List<Identifier>> tags = Map.of(
                 rl("c:ingots/iron"), List.of(rl("minecraft:iron_ingot")),
                 rl("c:rods/iron"), List.of(rl("immersiveengineering:stick_iron")),
                 rl("c:plates/iron"), List.of(rl("create:iron_sheet")),
@@ -92,7 +92,7 @@ class ProcessPlannerTest {
     void templatesCoverWhatExamplesCannot() {
         Route shaped = new Route(rl("minecraft:crafting_shaped"), INGOT, 3, 4);
         Route gear = new Route(rl("immersiveengineering:metal_press"), INGOT, 2, 1);
-        Map<ResourceLocation, List<ResourceLocation>> tags = Map.of(
+        Map<Identifier, List<Identifier>> tags = Map.of(
                 rl("c:ingots/iron"), List.of(rl("minecraft:iron_ingot")),
                 rl("c:rods/iron"), List.of(rl("immersiveengineering:stick_iron")),
                 rl("c:ingots/aluminum"), List.of(rl("immersiveengineering:ingot_aluminum")),

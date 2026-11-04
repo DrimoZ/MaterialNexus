@@ -4,7 +4,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.repository.Pack;
 import net.minecraft.server.packs.repository.PackSource;
@@ -33,7 +33,7 @@ public final class PackEdits {
     public static final String PACK_CONFLICT = "pack_conflict";
 
     /** One datapack's file for an item tag; {@code replace} drops what lower packs put in it. */
-    public record TagEdit(String pack, boolean replace, List<ResourceLocation> added, List<ResourceLocation> removed) {
+    public record TagEdit(String pack, boolean replace, List<Identifier> added, List<Identifier> removed) {
         public TagEdit {
             added = List.copyOf(added);
             removed = List.copyOf(removed);
@@ -41,7 +41,7 @@ public final class PackEdits {
     }
 
     /** {@code recipes}: recipe id to the datapack whose file replaces a lower one. {@code tags}: tag to its datapack edits, lowest first. */
-    public record Edits(Map<ResourceLocation, String> recipes, Map<ResourceLocation, List<TagEdit>> tags) {
+    public record Edits(Map<Identifier, String> recipes, Map<Identifier, List<TagEdit>> tags) {
         public static final Edits NONE = new Edits(Map.of(), Map.of());
 
         public Edits {
@@ -73,8 +73,8 @@ public final class PackEdits {
         if (cache != null && cache.owner().get() == resources) return cache;
         Set<String> authored = server.getPackRepository().getSelectedPacks().stream().filter(PackEdits::authored).map(Pack::getId)
                 .collect(Collectors.toUnmodifiableSet());
-        Map<ResourceLocation, String> recipes = new HashMap<>();
-        Map<ResourceLocation, List<TagEdit>> tags = new HashMap<>();
+        Map<Identifier, String> recipes = new HashMap<>();
+        Map<Identifier, List<TagEdit>> tags = new HashMap<>();
         if (!authored.isEmpty()) {
             resources.listResourceStacks("recipe", f -> f.getPath().endsWith(".json")).forEach((file, stack) -> {
                 List<Resource> below = stack.stream().filter(r -> !r.sourcePackId().equals(GeneratedPack.PACK_ID)).toList();
@@ -98,10 +98,10 @@ public final class PackEdits {
     }
 
     /** The recipe as the mods define it, under the datapack that replaced it: what a recipe the datapack switched off used to make. */
-    public static Optional<JsonObject> beneath(MinecraftServer server, ResourceLocation recipe) {
+    public static Optional<JsonObject> beneath(MinecraftServer server, Identifier recipe) {
         Set<String> authored = cache(server).authored();
         List<Resource> stack = server.getResourceManager().getResourceStack(
-                ResourceLocation.fromNamespaceAndPath(recipe.getNamespace(), "recipe/" + recipe.getPath() + ".json"));
+                Identifier.fromNamespaceAndPath(recipe.getNamespace(), "recipe/" + recipe.getPath() + ".json"));
         for (int i = stack.size() - 1; i >= 0; i--) {
             Resource r = stack.get(i);
             if (!r.sourcePackId().equals(GeneratedPack.PACK_ID) && !authored.contains(r.sourcePackId())) return read(r);
@@ -118,7 +118,7 @@ public final class PackEdits {
      * Tag changes this pack would make against a datapack: taking out of a tag an item a datapack puts in it, or putting in
      * one a datapack takes out. The generated pack is on top, so it wins in the game; the player is told.
      */
-    public static List<PackContent.Effect> conflicts(List<PackContent.Effect> effects, Map<ResourceLocation, List<TagEdit>> tags) {
+    public static List<PackContent.Effect> conflicts(List<PackContent.Effect> effects, Map<Identifier, List<TagEdit>> tags) {
         List<PackContent.Effect> out = new ArrayList<>();
         for (PackContent.Effect e : effects) {
             boolean removal = e.kind().equals(PackContent.TAG_REMOVE);
@@ -129,22 +129,22 @@ public final class PackEdits {
         return out;
     }
 
-    private static List<ResourceLocation> ids(JsonElement list) {
-        List<ResourceLocation> out = new ArrayList<>();
+    private static List<Identifier> ids(JsonElement list) {
+        List<Identifier> out = new ArrayList<>();
         if (!(list instanceof JsonArray array)) return out;
         for (JsonElement e : array) {
             JsonElement id = e.isJsonObject() ? e.getAsJsonObject().get("id") : e;
             if (id == null || !id.isJsonPrimitive() || id.getAsString().startsWith("#")) continue;
-            ResourceLocation item = ResourceLocation.tryParse(id.getAsString());
+            Identifier item = Identifier.tryParse(id.getAsString());
             if (item != null) out.add(item);
         }
         return out;
     }
 
     /** recipe/a/b.json in namespace n to n:a/b. */
-    private static ResourceLocation id(ResourceLocation file, String folder) {
+    private static Identifier id(Identifier file, String folder) {
         String path = file.getPath();
-        return ResourceLocation.fromNamespaceAndPath(file.getNamespace(), path.substring(folder.length(), path.length() - ".json".length()));
+        return Identifier.fromNamespaceAndPath(file.getNamespace(), path.substring(folder.length(), path.length() - ".json".length()));
     }
 
     private static Optional<JsonObject> read(Resource resource) {

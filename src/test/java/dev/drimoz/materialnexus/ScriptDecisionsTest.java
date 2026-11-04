@@ -5,7 +5,7 @@ import dev.drimoz.materialnexus.core.scripts.ScriptChanges;
 import dev.drimoz.materialnexus.core.scripts.ScriptChanges.Kind;
 import dev.drimoz.materialnexus.core.scripts.ScriptChanges.RecipeEdit;
 import dev.drimoz.materialnexus.core.scripts.ScriptDecisions;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,28 +17,28 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** MNX-076: what scripts keep is deduced only from clear evidence; anything ambiguous stays a non-decision. */
 class ScriptDecisionsTest {
-    private static ResourceLocation id(String s) { return ResourceLocation.parse(s); }
+    private static Identifier id(String s) { return Identifier.parse(s); }
 
-    private static final ResourceLocation INGOTS = id("c:ingots/tin");
-    private static final ResourceLocation NUGGETS = id("c:nuggets/tin");
-    private static final ResourceLocation DUSTS = id("c:dusts/tin");
-    private static final ResourceLocation A_INGOT = id("moda:tin_ingot");
-    private static final ResourceLocation B_INGOT = id("modb:tin_ingot");
-    private static final ResourceLocation C_INGOT = id("modc:tin_ingot");
-    private static final ResourceLocation A_NUGGET = id("moda:tin_nugget");
-    private static final ResourceLocation B_NUGGET = id("modb:tin_nugget");
-    private static final ResourceLocation A_DUST = id("moda:tin_dust");
-    private static final ResourceLocation B_DUST = id("modb:tin_dust");
+    private static final Identifier INGOTS = id("c:ingots/tin");
+    private static final Identifier NUGGETS = id("c:nuggets/tin");
+    private static final Identifier DUSTS = id("c:dusts/tin");
+    private static final Identifier A_INGOT = id("moda:tin_ingot");
+    private static final Identifier B_INGOT = id("modb:tin_ingot");
+    private static final Identifier C_INGOT = id("modc:tin_ingot");
+    private static final Identifier A_NUGGET = id("moda:tin_nugget");
+    private static final Identifier B_NUGGET = id("modb:tin_nugget");
+    private static final Identifier A_DUST = id("moda:tin_dust");
+    private static final Identifier B_DUST = id("modb:tin_dust");
 
-    private static final Map<ResourceLocation, List<ResourceLocation>> FILES = Map.of(
+    private static final Map<Identifier, List<Identifier>> FILES = Map.of(
             INGOTS, List.of(A_INGOT, B_INGOT, C_INGOT), NUGGETS, List.of(A_NUGGET, B_NUGGET), DUSTS, List.of(A_DUST, B_DUST));
 
-    private static RecipeEdit changed(String recipe, ResourceLocation gone, ResourceLocation came) {
+    private static RecipeEdit changed(String recipe, Identifier gone, Identifier came) {
         return new RecipeEdit(id(recipe), Kind.CHANGED, Set.of(gone), Set.of(came), Optional.empty());
     }
 
-    private static Map<String, Optional<ResourceLocation>> kept(List<ScriptChanges.TagEdit> tags, List<RecipeEdit> recipes) {
-        Map<String, Optional<ResourceLocation>> out = new java.util.TreeMap<>();
+    private static Map<String, Optional<Identifier>> kept(List<ScriptChanges.TagEdit> tags, List<RecipeEdit> recipes) {
+        Map<String, Optional<Identifier>> out = new java.util.TreeMap<>();
         ScriptDecisions.infer(TagDiscovery.discover(FILES), new ScriptChanges(tags, recipes)).forEach(d -> out.put(d.key().toString(), d.kept()));
         return out;
     }

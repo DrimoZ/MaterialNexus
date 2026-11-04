@@ -5,7 +5,7 @@ import dev.drimoz.materialnexus.datapack.FormPatterns;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 
@@ -14,14 +14,14 @@ import java.util.List;
  * forms a pattern can be declared for.
  */
 public record DataListPayload(List<Item> entries, List<FormPatterns.Candidate> untagged, List<String> forms) implements CustomPacketPayload {
-    public record Item(String kind, ResourceLocation id, String source, boolean edited) { }
+    public record Item(String kind, Identifier id, String source, boolean edited) { }
 
-    public static final Type<DataListPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "data_list"));
+    public static final Type<DataListPayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "data_list"));
     public static final StreamCodec<FriendlyByteBuf, DataListPayload> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {
                 buf.writeCollection(p.entries(), (b, e) -> {
                     b.writeUtf(e.kind());
-                    b.writeResourceLocation(e.id());
+                    b.writeIdentifier(e.id());
                     b.writeUtf(e.source());
                     b.writeBoolean(e.edited());
                 });
@@ -32,7 +32,7 @@ public record DataListPayload(List<Item> entries, List<FormPatterns.Candidate> u
                 buf.writeCollection(p.forms(), FriendlyByteBuf::writeUtf);
             },
             buf -> new DataListPayload(
-                    buf.readList(b -> new Item(b.readUtf(), b.readResourceLocation(), b.readUtf(), b.readBoolean())),
+                    buf.readList(b -> new Item(b.readUtf(), b.readIdentifier(), b.readUtf(), b.readBoolean())),
                     buf.readList(b -> new FormPatterns.Candidate(b.readUtf(), b.readList(FriendlyByteBuf::readUtf))),
                     buf.readList(FriendlyByteBuf::readUtf)));
 

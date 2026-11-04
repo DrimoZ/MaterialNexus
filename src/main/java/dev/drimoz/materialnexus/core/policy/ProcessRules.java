@@ -2,7 +2,7 @@ package dev.drimoz.materialnexus.core.policy;
 
 import dev.drimoz.materialnexus.core.domain.FormId;
 import dev.drimoz.materialnexus.core.domain.MaterialForm;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 import java.util.Map;
@@ -17,7 +17,7 @@ public record ProcessRules(Map<FormId, Rule> forms, Map<MaterialForm, Rule> over
     public static final ProcessRules NONE = new ProcessRules(Map.of(), Map.of());
 
     /** {@code machine} is a recipe type; {@code in} items of the {@code input} form give {@code out} items. */
-    public record Route(ResourceLocation machine, FormId input, int in, int out) {
+    public record Route(Identifier machine, FormId input, int in, int out) {
         public Route {
             if (in < 1 || out < 1 || in > 64 || out > 64) throw new IllegalArgumentException("Process ratio out of range 1..64: " + in + " -> " + out);
         }

@@ -2,7 +2,7 @@ package dev.drimoz.materialnexus;
 
 import com.google.gson.JsonParser;
 import dev.drimoz.materialnexus.diagnostics.TagAudit;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
@@ -14,18 +14,18 @@ import static org.junit.jupiter.api.Assertions.*;
 class TagAuditTest {
     @Test
     void findsForgeAndEmptyMaterialTagsInAnyFormat() {
-        ResourceLocation shaped = ResourceLocation.parse("modx:gear");
-        ResourceLocation machine = ResourceLocation.parse("mody:press");
+        Identifier shaped = Identifier.parse("modx:gear");
+        Identifier machine = Identifier.parse("mody:press");
         var recipes = Map.of(
                 shaped, JsonParser.parseString("{\"pattern\": [\"# #\"], \"key\": {\"#\": {\"tag\": \"forge:ingots/tin\"}}, \"result\": {\"id\": \"modx:gear\"}}"),
                 machine, JsonParser.parseString("{\"input\": {\"ingredient\": \"#c:plates/osmium\"}, \"extra\": [{\"tag\": \"c:ingots/tin\"}, {\"tag\": \"c:ingots\"}]}"));
-        Set<ResourceLocation> filled = Set.of(ResourceLocation.parse("c:ingots/tin"), ResourceLocation.parse("c:ingots"));
+        Set<Identifier> filled = Set.of(Identifier.parse("c:ingots/tin"), Identifier.parse("c:ingots"));
 
         var result = TagAudit.of(recipes, filled::contains, Set.of("ingots", "plates")::contains);
 
-        assertEquals(Set.of(shaped), result.forge().get(ResourceLocation.parse("forge:ingots/tin")));
+        assertEquals(Set.of(shaped), result.forge().get(Identifier.parse("forge:ingots/tin")));
         assertTrue(result.forgeFilled().isEmpty());
         // Only the empty material tag; the folder tag c:ingots and the filled c:ingots/tin are fine.
-        assertEquals(Set.of(ResourceLocation.parse("c:plates/osmium")), result.emptyMaterial().keySet());
+        assertEquals(Set.of(Identifier.parse("c:plates/osmium")), result.emptyMaterial().keySet());
     }
 }

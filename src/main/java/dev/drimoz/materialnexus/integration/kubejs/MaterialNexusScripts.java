@@ -8,7 +8,7 @@ import dev.drimoz.materialnexus.core.resolution.SnapshotManager;
 import dev.drimoz.materialnexus.datapack.GeneratedPack;
 import dev.drimoz.materialnexus.datapack.MnxPaths;
 import dev.drimoz.materialnexus.datapack.PackContent;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -62,11 +62,11 @@ public final class MaterialNexusScripts {
 
     /** The item kept for that material and form, or null when there is none (or no snapshot yet). */
     public static String canonical(String material, String form) {
-        return resolved(material, form).flatMap(ResolvedForm::canonical).map(ResourceLocation::toString).orElse(null);
+        return resolved(material, form).flatMap(ResolvedForm::canonical).map(Identifier::toString).orElse(null);
     }
 
     public static List<String> alternatives(String material, String form) {
-        return resolved(material, form).map(f -> f.alternatives().stream().map(ResourceLocation::toString).toList()).orElse(List.of());
+        return resolved(material, form).map(f -> f.alternatives().stream().map(Identifier::toString).toList()).orElse(List.of());
     }
 
     private static Optional<ResolvedForm> resolved(String material, String form) {

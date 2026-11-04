@@ -9,10 +9,10 @@ import dev.drimoz.materialnexus.item.CreatedItems;
 import dev.drimoz.materialnexus.network.MaterialDetailPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -89,7 +89,7 @@ final class DetailTable {
 
     static Ui.Status status(MaterialDetailPayload.FormView view) {
         ResolvedForm f = view.resolved();
-        Optional<ResourceLocation> pending = PendingChanges.get(view.material(), view.form());
+        Optional<Identifier> pending = PendingChanges.get(view.material(), view.form());
         if (pending.isPresent()) return pending.get().equals(CanonicalChange.RESET) ? Ui.Status.RESET : Ui.Status.PENDING;
         if (f.alternatives().isEmpty()) return f.canonical().isPresent() ? Ui.Status.SINGLE : Ui.Status.NOTHING;
         return f.source() == PolicyPrecedence.DEFAULT ? Ui.Status.SUGGESTION : Ui.Status.UNIFIED;
@@ -172,15 +172,15 @@ final class DetailTable {
 
     private int keptWidth() { return Math.clamp(width / 4, 120, 170); }
 
-    void render(GuiGraphics g, Font font, int mx, int my) {
+    void render(GuiGraphicsExtractor g, Font font, int mx, int my) {
         tableHits.clear();
         inspectorHits.clear();
         if (detail == null) return;
         int kx = x + labelWidth();
         int ox = kx + keptWidth();
-        g.drawString(font, Component.translatable(detail.byForm() ? "screen.materialnexus.col.material" : "screen.materialnexus.col.form"), x + 16, y + 4, Theme.MUTED, false);
-        g.drawString(font, Component.translatable("screen.materialnexus.col.kept"), kx, y + 4, Theme.MUTED, false);
-        g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.col.others").getString(), x + width - ox - 8), ox, y + 4, Theme.MUTED, false);
+        g.text(font, Component.translatable(detail.byForm() ? "screen.materialnexus.col.material" : "screen.materialnexus.col.form"), x + 16, y + 4, Theme.MUTED, false);
+        g.text(font, Component.translatable("screen.materialnexus.col.kept"), kx, y + 4, Theme.MUTED, false);
+        g.text(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.col.others").getString(), x + width - ox - 8), ox, y + 4, Theme.MUTED, false);
 
         List<Line> lines = lines();
         int content = lines.stream().mapToInt(DetailTable::height).sum();
@@ -212,17 +212,17 @@ final class DetailTable {
         else if (inTable) tableHits.tooltip(g, font, mx, my);
     }
 
-    private void groupRow(GuiGraphics g, Font font, GroupLine line, int top, int mx, int my, boolean inTable) {
+    private void groupRow(GuiGraphicsExtractor g, Font font, GroupLine line, int top, int mx, int my, boolean inTable) {
         boolean folded = folded(line.group());
         boolean hover = inTable && my >= top && my < top + GROUP && mx >= x && mx < x + width;
         Component title = Component.translatable("screen.materialnexus.rows." + Names.lowerName(line.group()), line.count());
         Ui.caret(g, x + 5, top + 9, !folded, Theme.MUTED);
-        g.drawString(font, title, x + 16, top + 8, hover ? Theme.TEXT : Theme.MUTED, false);
+        g.text(font, title, x + 16, top + 8, hover ? Theme.TEXT : Theme.MUTED, false);
         Group group = line.group();
         if (inTable) tableHits.add(x, top, width, GROUP, () -> { if (!TOGGLED.remove(group)) TOGGLED.add(group); }, null, List.of());
     }
 
-    private void formRow(GuiGraphics g, Font font, MaterialDetailPayload.FormView view, int top, int kx, int ox, int mx, int my, boolean inTable) {
+    private void formRow(GuiGraphicsExtractor g, Font font, MaterialDetailPayload.FormView view, int top, int kx, int ox, int mx, int my, boolean inTable) {
         ResolvedForm f = view.resolved();
         String material = view.material();
         boolean isSelected = selectedView().map(v -> key(v).equals(key(view))).orElse(false);
@@ -236,25 +236,25 @@ final class DetailTable {
         Ui.Status status = status(view);
         Ui.mark(g, status, x + 5, top + 8);
         Component label = detail.byForm() ? Names.material(material) : Names.form(view.form());
-        g.drawString(font, font.plainSubstrByWidth(label.getString(), labelWidth() - 20), x + 16, top + 7, Theme.TEXT, false);
+        g.text(font, font.plainSubstrByWidth(label.getString(), labelWidth() - 20), x + 16, top + 7, Theme.TEXT, false);
 
-        Optional<ResourceLocation> pending = PendingChanges.get(material, view.form()).filter(p -> !p.equals(CanonicalChange.RESET));
+        Optional<Identifier> pending = PendingChanges.get(material, view.form()).filter(p -> !p.equals(CanonicalChange.RESET));
         boolean decided = f.source() != PolicyPrecedence.DEFAULT && !f.alternatives().isEmpty();
-        Optional<ResourceLocation> kept = pending.or(f::canonical);
+        Optional<Identifier> kept = pending.or(f::canonical);
         if (kept.isPresent()) {
-            ResourceLocation k = kept.get();
+            Identifier k = kept.get();
             slot(g, view, k, kx, top + 2, pending.isPresent() ? Theme.INFO : 0, false, decided, inTable);
             // The name only: the mod is in the tooltip of the icon and in the inspector.
-            g.drawString(font, font.plainSubstrByWidth(Names.stack(k).getHoverName().getString(), keptWidth() - 30), kx + 24, top + 7, Theme.TEXT, false);
+            g.text(font, font.plainSubstrByWidth(Names.stack(k).getHoverName().getString(), keptWidth() - 30), kx + 24, top + 7, Theme.TEXT, false);
         }
 
-        List<ResourceLocation> others = new ArrayList<>();
+        List<Identifier> others = new ArrayList<>();
         f.canonical().filter(c -> !c.equals(kept.orElse(null))).ifPresent(others::add);
         f.alternatives().stream().filter(a -> !a.equals(kept.orElse(null))).forEach(others::add);
         int sx = ox;
         int right = x + width - 28;
         int hidden = 0;
-        for (ResourceLocation item : others) {
+        for (Identifier item : others) {
             if (sx + 18 > right) { hidden++; continue; }
             slot(g, view, item, sx, top + 2, 0, false, decided, inTable);
             sx += 20;
@@ -268,12 +268,12 @@ final class DetailTable {
             slot(g, view, n.item(), sx, top + 2, 0, true, decided, inTable);
             sx += 20;
         }
-        if (hidden > 0) g.drawString(font, "+" + hidden, sx + 2, top + 7, Theme.FAINT, false);
+        if (hidden > 0) g.text(font, "+" + hidden, sx + 2, top + 7, Theme.FAINT, false);
         if (inTable) tableHits.add(x, rowTop, width, Theme.ROW_ITEM, () -> select(view), null, List.of());
     }
 
     /** One item of a row: click keeps it and selects the row, right click marks it, Shift + right click edits the tag. */
-    private void slot(GuiGraphics g, MaterialDetailPayload.FormView view, ResourceLocation item, int sx, int sy, int outline, boolean dim, boolean decided, boolean inTable) {
+    private void slot(GuiGraphicsExtractor g, MaterialDetailPayload.FormView view, Identifier item, int sx, int sy, int outline, boolean dim, boolean decided, boolean inTable) {
         Ui.slot(g, item, sx, sy, outline, dim);
         marks(g, view.material(), view.form(), item, sx, sy);
         if (!inTable) return;
@@ -290,16 +290,16 @@ final class DetailTable {
         inspectorOpen = true;
     }
 
-    private void absentRow(GuiGraphics g, Font font, String form, int top, int kx, int mx, int my, boolean inTable) {
+    private void absentRow(GuiGraphicsExtractor g, Font font, String form, int top, int kx, int mx, int my, boolean inTable) {
         String material = detail.material();
         top += Theme.ROW_PAD;
-        g.drawString(font, font.plainSubstrByWidth(Names.form(form).getString(), labelWidth() - 20), x + 16, top + 7, Theme.MUTED, false);
+        g.text(font, font.plainSubstrByWidth(Names.form(form).getString(), labelWidth() - 20), x + 16, top + 7, Theme.MUTED, false);
         if (readOnly) return;
         boolean pending = PendingChanges.creating(material, form);
         Component label = Component.translatable(pending ? "screen.materialnexus.create.pending" : "screen.materialnexus.create.button");
         int bw = font.width(label) + 12;
         boolean over = inTable && mx >= kx && mx < kx + bw && my >= top + 3 && my < top + 19;
-        if (pending) g.renderOutline(x + 5, top + 8, 6, 6, Theme.INFO);
+        if (pending) g.outline(x + 5, top + 8, 6, 6, Theme.INFO);
         Ui.button(g, font, label, kx, top + 3, bw, 16, false, over, true);
         if (inTable) {
             tableHits.add(kx, top + 3, bw, 16, () -> PendingChanges.toggleCreation(material, form), null,
@@ -308,15 +308,15 @@ final class DetailTable {
     }
 
     /** MNX-050, MNX-079: right click marks an item "not the same", with Shift it takes it out of this form's tag. */
-    private Runnable shortcut(String material, String form, ResourceLocation item) {
+    private Runnable shortcut(String material, String form, Identifier item) {
         return readOnly ? null : () -> {
-            if (Screen.hasShiftDown()) PendingChanges.toggleTagRemoval(material, form, item);
+            if (net.minecraft.client.Minecraft.getInstance().hasShiftDown()) PendingChanges.toggleTagRemoval(material, form, item);
             else PendingChanges.toggleNotSame(item);
         };
     }
 
     /** A pending "not the same" is a cross over the item, a pending tag edit a bar under it. */
-    private static void marks(GuiGraphics g, String material, String form, ResourceLocation item, int x, int y) {
+    private static void marks(GuiGraphicsExtractor g, String material, String form, Identifier item, int x, int y) {
         if (PendingChanges.globalChanged("tag_edits") && PendingChanges.tagRemoved(material, form, item)) g.fill(x, y + 16, x + 18, y + 18, Theme.WARN);
         if (!PendingChanges.globalChanged("not_same") || !PendingChanges.notSame(item)) return;
         for (int i = 0; i < 18; i++) {
@@ -326,7 +326,7 @@ final class DetailTable {
     }
 
     /** Pick an item as the pending kept one; picking the pending one again, or the already decided one, cancels. */
-    private void choose(String material, String form, ResourceLocation item, ResolvedForm f, boolean decided) {
+    private void choose(String material, String form, Identifier item, ResolvedForm f, boolean decided) {
         if (readOnly) return;
         boolean samePending = PendingChanges.get(material, form).map(item::equals).orElse(false);
         boolean alreadyDecided = decided && f.canonical().map(item::equals).orElse(false);
@@ -336,12 +336,12 @@ final class DetailTable {
 
     // ---- inspector -----------------------------------------------------------------------------------------
 
-    private void renderInspector(GuiGraphics g, Font font, int mx, int my) {
+    private void renderInspector(GuiGraphicsExtractor g, Font font, int mx, int my) {
         g.fill(ix, iy, ix + iw, iy + ih, Theme.BG);
         g.fill(ix, iy, ix + 1, iy + ih, Theme.BORDER);
         Optional<MaterialDetailPayload.FormView> shown = selectedView();
         if (shown.isEmpty()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.insp.none"), ix + 12, iy + 10, Theme.MUTED, false);
+            g.text(font, Component.translatable("screen.materialnexus.insp.none"), ix + 12, iy + 10, Theme.MUTED, false);
             return;
         }
         MaterialDetailPayload.FormView view = shown.get();
@@ -351,7 +351,7 @@ final class DetailTable {
         int left = ix + 12;
         int inner = iw - 24;
 
-        g.drawString(font, Component.translatable("screen.materialnexus.triage.item", Names.material(material), Names.form(form)).withStyle(ChatFormatting.BOLD),
+        g.text(font, Component.translatable("screen.materialnexus.triage.item", Names.material(material), Names.form(form)).withStyle(ChatFormatting.BOLD),
                 left, iy + 8, Theme.TEXT, false);
         if (overlay) {
             Component close = Component.translatable("screen.materialnexus.close");
@@ -362,7 +362,7 @@ final class DetailTable {
         }
         Ui.Status status = status(view);
         Ui.mark(g, status, left, iy + 23);
-        g.drawString(font, status.label(), left + 12, iy + 22, status.color(), false);
+        g.text(font, status.label(), left + 12, iy + 22, status.color(), false);
 
         int bodyTop = iy + 36;
         int bodyBottom = iy + ih - FOOT;
@@ -372,7 +372,7 @@ final class DetailTable {
                 Component.translatable("materialnexus.source." + Names.lowerName(f.source())),
                 Component.translatable("materialnexus.confidence." + Names.lowerName(f.confidence())));
         for (var line : font.split(why, inner)) {
-            g.drawString(font, line, left, cy, Theme.MUTED, false);
+            g.text(font, line, left, cy, Theme.MUTED, false);
             cy += 10;
         }
         cy += 6;
@@ -381,23 +381,23 @@ final class DetailTable {
                 new dev.drimoz.materialnexus.core.domain.FormId(form));
         for (var edit : formTag.map(t -> detail.packTags().getOrDefault(t, List.of())).orElse(List.of())) {
             for (var line : font.split(packTagLine(edit), inner)) {
-                g.drawString(font, line, left, cy, Theme.MUTED, false);
+                g.text(font, line, left, cy, Theme.MUTED, false);
                 cy += 10;
             }
             cy += 6;
         }
 
-        Optional<ResourceLocation> pending = PendingChanges.get(material, form).filter(p -> !p.equals(CanonicalChange.RESET));
+        Optional<Identifier> pending = PendingChanges.get(material, form).filter(p -> !p.equals(CanonicalChange.RESET));
         boolean decided = f.source() != PolicyPrecedence.DEFAULT && !f.alternatives().isEmpty();
-        Optional<ResourceLocation> kept = pending.or(f::canonical);
-        List<ResourceLocation> candidates = new ArrayList<>();
+        Optional<Identifier> kept = pending.or(f::canonical);
+        List<Identifier> candidates = new ArrayList<>();
         kept.ifPresent(candidates::add);
         f.canonical().filter(c -> !candidates.contains(c)).ifPresent(candidates::add);
         f.alternatives().stream().filter(a -> !candidates.contains(a)).forEach(candidates::add);
 
-        g.drawString(font, Component.translatable("screen.materialnexus.insp.candidates", candidates.size()), left, cy, Theme.MUTED, false);
+        g.text(font, Component.translatable("screen.materialnexus.insp.candidates", candidates.size()), left, cy, Theme.MUTED, false);
         cy += 12;
-        for (ResourceLocation item : candidates) {
+        for (Identifier item : candidates) {
             boolean isKept = kept.map(item::equals).orElse(false);
             Component tag = !isKept ? Component.empty() : pending.isPresent() ? Ui.Status.PENDING.label()
                     : status == Ui.Status.SUGGESTION ? Component.translatable("screen.materialnexus.insp.suggested") : Component.translatable("screen.materialnexus.col.kept");
@@ -408,7 +408,7 @@ final class DetailTable {
         }
         if (!f.notUnified().isEmpty()) {
             cy += 4;
-            g.drawString(font, Component.translatable("screen.materialnexus.insp.left_alone", f.notUnified().size()), left, cy, Theme.MUTED, false);
+            g.text(font, Component.translatable("screen.materialnexus.insp.left_alone", f.notUnified().size()), left, cy, Theme.MUTED, false);
             cy += 12;
             for (ResolvedForm.NotUnified n : f.notUnified()) {
                 Component reason = Component.translatable(n.reasonKey(), n.reasonArgs().toArray());
@@ -439,7 +439,7 @@ final class DetailTable {
         return Component.translatable("screen.materialnexus.insp.pack_tag", Names.pack(edit.pack()), String.join("; ", parts));
     }
 
-    private static String names(List<ResourceLocation> items) {
+    private static String names(List<Identifier> items) {
         return String.join(", ", items.stream().map(i -> Names.withMod(i).getString()).toList());
     }
 
@@ -448,7 +448,7 @@ final class DetailTable {
             "materialnexus.not_unified.same_mod", "materialnexus.not_unified.more_specific");
 
     /** One candidate: who it is, how central it is, why it is where it is, and what can be done with it. Returns the y below. */
-    private int card(GuiGraphics g, Font font, MaterialDetailPayload.FormView view, ResourceLocation item, Component reason, Component tag, int tagColor,
+    private int card(GuiGraphicsExtractor g, Font font, MaterialDetailPayload.FormView view, Identifier item, Component reason, Component tag, int tagColor,
                      boolean isPending, boolean offerKeep, boolean decided, int top, int mx, int my, int clipTop, int clipBottom) {
         String material = view.material();
         String form = view.form();
@@ -495,19 +495,19 @@ final class DetailTable {
         marks(g, material, form, item, left + 8, top + 8);
         int tagWidth = font.width(tag);
         String name = font.plainSubstrByWidth(Names.stack(item).getHoverName().getString(), textWidth - tagWidth - 12);
-        g.drawString(font, Component.literal(name).withStyle(ChatFormatting.BOLD), tx, top + 8, Theme.TEXT, false);
-        if (tagWidth > 0) g.drawString(font, tag, right - 8 - tagWidth, top + 8, tagColor, false);
+        g.text(font, Component.literal(name).withStyle(ChatFormatting.BOLD), tx, top + 8, Theme.TEXT, false);
+        if (tagWidth > 0) g.text(font, tag, right - 8 - tagWidth, top + 8, tagColor, false);
         var usage = detail.usage().get(item);
         String mod = NexusScreen.modName(item.getNamespace());
-        g.drawString(font, font.plainSubstrByWidth(mod, textWidth), tx, top + 18, Theme.MUTED, false);
+        g.text(font, font.plainSubstrByWidth(mod, textWidth), tx, top + 18, Theme.MUTED, false);
         if (usage != null) {
-            g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.insp.usage", usage.produced(), usage.used()).getString(), textWidth),
+            g.text(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.insp.usage", usage.produced(), usage.used()).getString(), textWidth),
                     tx, top + 28, Theme.MUTED, false);
         }
-        if (idLine > 0) g.drawString(font, font.plainSubstrByWidth(item.toString(), textWidth), tx, top + 38, Theme.FAINT, false);
+        if (idLine > 0) g.text(font, font.plainSubstrByWidth(item.toString(), textWidth), tx, top + 38, Theme.FAINT, false);
         int ly = top + 38 + idLine;
         for (var line : reasonLines) {
-            g.drawString(font, line, tx, ly, Theme.MUTED, false);
+            g.text(font, line, tx, ly, Theme.MUTED, false);
             ly += 10;
         }
         int bx = tx;
@@ -524,7 +524,7 @@ final class DetailTable {
         return top + h;
     }
 
-    private int action(GuiGraphics g, Font font, Component label, int bx, int by, int mx, int my, Runnable run) {
+    private int action(GuiGraphicsExtractor g, Font font, Component label, int bx, int by, int mx, int my, Runnable run) {
         int bw = font.width(label) + 12;
         boolean over = mx >= bx && mx < bx + bw && my >= by && my < by + 16;
         Ui.button(g, font, label, bx, by, bw, 16, false, over, true);

@@ -17,7 +17,7 @@ import dev.drimoz.materialnexus.datapack.RecipeSources;
 import dev.drimoz.materialnexus.integration.RecipeFormats;
 import dev.drimoz.materialnexus.item.CreatedItems;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.level.ServerPlayer;
 import net.neoforged.neoforge.network.PacketDistributor;
@@ -53,10 +53,10 @@ final class PolicyHandler {
             ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies(), preset).withExplicit(explicitChoices(entries)).withoutExplicit(resets(entries))
                     .withProcesses(processes(request));
             current = PackContent.readManifest(MnxPaths.generated());
-            proposed = packContent(player.server, policy, current).effects();
+            proposed = packContent(player.level().getServer(), policy, current).effects();
             conflicts = new java.util.ArrayList<>(scriptConflicts(SnapshotManager.current(), policy));
             // MNX-118: tag changes that go against a datapack of the pack: warnings too, never written.
-            conflicts.addAll(dev.drimoz.materialnexus.datapack.PackEdits.conflicts(proposed, dev.drimoz.materialnexus.datapack.PackEdits.of(player.server).tags()));
+            conflicts.addAll(dev.drimoz.materialnexus.datapack.PackEdits.conflicts(proposed, dev.drimoz.materialnexus.datapack.PackEdits.of(player.level().getServer()).tags()));
         } catch (IOException | RuntimeException e) {
             LOGGER.error("Material Nexus preview failed", e);
             player.sendSystemMessage(Component.translatable("message.materialnexus.apply_failed", e.getMessage()));
@@ -120,16 +120,16 @@ final class PolicyHandler {
      * The valid data edits of a request, keyed by kind and id; each one is listed in {@code effects}. An invalid edit is
      * listed too, and its reason sent to the player when previewing; it is never written.
      */
-    private static Map<Map.Entry<dev.drimoz.materialnexus.datapack.EditableData.Kind, ResourceLocation>, java.util.Optional<String>> dataEdits(
+    private static Map<Map.Entry<dev.drimoz.materialnexus.datapack.EditableData.Kind, Identifier>, java.util.Optional<String>> dataEdits(
             ServerPlayer player, PreviewRequest request, List<PackContent.Effect> effects, boolean tell) {
-        var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, player.server.registryAccess());
-        Map<Map.Entry<dev.drimoz.materialnexus.datapack.EditableData.Kind, ResourceLocation>, java.util.Optional<String>> valid = new java.util.LinkedHashMap<>();
+        var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, player.level().getServer().registryAccess());
+        Map<Map.Entry<dev.drimoz.materialnexus.datapack.EditableData.Kind, Identifier>, java.util.Optional<String>> valid = new java.util.LinkedHashMap<>();
         new java.util.TreeMap<>(request.data()).forEach((key, text) -> {
             String[] parts = key.split("\\|", 2);
             var kind = parts.length == 2 ? dev.drimoz.materialnexus.datapack.EditableData.Kind.byKey(parts[0]) : java.util.Optional.<dev.drimoz.materialnexus.datapack.EditableData.Kind>empty();
-            ResourceLocation id = parts.length == 2 ? ResourceLocation.tryParse(parts[1]) : null;
+            Identifier id = parts.length == 2 ? Identifier.tryParse(parts[1]) : null;
             if (kind.isEmpty() || id == null) return;
-            ResourceLocation tag = ResourceLocation.fromNamespaceAndPath(dev.drimoz.materialnexus.MaterialNexus.MOD_ID, kind.get().key);
+            Identifier tag = Identifier.fromNamespaceAndPath(dev.drimoz.materialnexus.MaterialNexus.MOD_ID, kind.get().key);
             java.util.Optional<String> error = text.flatMap(t -> dev.drimoz.materialnexus.datapack.EditableData.validate(kind.get(), t,
                     json -> net.minecraft.world.item.crafting.Recipe.CODEC.parse(ops, json).isSuccess()));
             if (error.isPresent()) {
@@ -149,8 +149,8 @@ final class PolicyHandler {
         if (form.isEmpty()) return;
         try {
             ResolutionPolicy policy = PolicyFiles.load(MnxPaths.policies());
-            RecipeFormats formats = RecipeFormats.load(player.server.getResourceManager());
-            var sources = RecipeSources.known(player.server, formats, RecipeRewrites.overridden(PackContent.readManifest(MnxPaths.generated())));
+            RecipeFormats formats = RecipeFormats.load(player.level().getServer().getResourceManager());
+            var sources = RecipeSources.known(player.level().getServer(), formats, RecipeRewrites.overridden(PackContent.readManifest(MnxPaths.generated())));
             var examples = dev.drimoz.materialnexus.datapack.ProcessPlanner.samples(sources, formats,
                     CanonicalResolver.resolve(SnapshotManager.current().discovered(), policy), form.get());
             PacketDistributor.sendToPlayer(player, new ProcessPayload(formName, java.util.Optional.ofNullable(policy.processes().forms().get(form.get())),
@@ -211,11 +211,11 @@ final class PolicyHandler {
                 RecipeSources.inputTags(resolved), RecipeSources.decoder(server)),
                 SnapshotManager.current().conventionTags());
         if (!policy.processes().isEmpty()) {
-            var items = server.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.ITEM);
+            var items = server.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ITEM);
             content = PackContent.withProcesses(content, dev.drimoz.materialnexus.datapack.ProcessPlanner.plan(
                     known.get(), formats, resolved, policy,
                     dev.drimoz.materialnexus.datapack.ProcessTemplates.templates(),
-                    tag -> items.getTag(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag)).map(t -> t.size() > 0).orElse(false)));
+                    tag -> items.get(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag)).map(t -> t.size() > 0).orElse(false)));
         }
         content = PackContent.withDisabledRecipes(content, policy.disabledRecipes(), RecipeSources.removable(server, policy.disabledRecipes(), formats));
         var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
@@ -245,8 +245,8 @@ final class PolicyHandler {
         return edits;
     }
 
-    private static Map<MaterialForm, ResourceLocation> explicitChoices(List<PolicyEditor.Entry> entries) {
-        Map<MaterialForm, ResourceLocation> explicit = new HashMap<>();
+    private static Map<MaterialForm, Identifier> explicitChoices(List<PolicyEditor.Entry> entries) {
+        Map<MaterialForm, Identifier> explicit = new HashMap<>();
         for (PolicyEditor.Entry e : entries) {
             if (e.valid() && !e.to().equals(dev.drimoz.materialnexus.datapack.CanonicalChange.RESET)) {
                 explicit.put(new MaterialForm(new MaterialId(e.material()), new FormId(e.form())), e.to());
@@ -284,7 +284,7 @@ final class PolicyHandler {
      * pack is generated a second time after the reload, from the data that reload just loaded (patterns, templates...).
      */
     private static void writeAndReload(ServerPlayer player, PolicyWrite write, Component success, boolean dataChanged) {
-        MinecraftServer server = player.server;
+        MinecraftServer server = player.level().getServer();
         if (server.isDedicatedServer()) {
             player.sendSystemMessage(Component.translatable("message.materialnexus.read_only_apply"));
             return;
@@ -326,7 +326,7 @@ final class PolicyHandler {
     }
 
     private static void reload(ServerPlayer player, Component success, boolean regenerateAfter) {
-        MinecraftServer server = player.server;
+        MinecraftServer server = player.level().getServer();
         server.reloadResources(server.getPackRepository().getSelectedIds()).whenComplete((ignored, error) -> server.execute(() -> {
             if (regenerateAfter && error == null) {
                 try {

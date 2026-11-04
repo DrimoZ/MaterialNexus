@@ -7,7 +7,7 @@ import com.google.gson.JsonParser;
 import com.mojang.serialization.JsonOps;
 import dev.drimoz.materialnexus.core.domain.MaterialDefinition;
 import dev.drimoz.materialnexus.integration.RecipeFormats;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
 
@@ -55,7 +55,7 @@ public final class EditableData {
     }
 
     /** One data file as the game sees it: who provides the version in use, and whether it is an in-game edit. */
-    public record Entry(Kind kind, ResourceLocation id, String source, boolean edited) { }
+    public record Entry(Kind kind, Identifier id, String source, boolean edited) { }
 
     private EditableData() { }
 
@@ -77,7 +77,7 @@ public final class EditableData {
     }
 
     /** The version in use, pretty-printed; empty if there is none. */
-    public static Optional<String> read(ResourceManager resources, Kind kind, ResourceLocation id) {
+    public static Optional<String> read(ResourceManager resources, Kind kind, Identifier id) {
         List<Resource> stack = resources.getResourceStack(file(kind, id));
         if (stack.isEmpty()) return Optional.empty();
         try (Reader reader = stack.getLast().openAsReader()) {
@@ -127,7 +127,7 @@ public final class EditableData {
     }
 
     /** Writes ({@code text} present) or removes (empty: back to the original) in-game edits. */
-    public static void write(Map<Map.Entry<Kind, ResourceLocation>, Optional<String>> edits) throws IOException {
+    public static void write(Map<Map.Entry<Kind, Identifier>, Optional<String>> edits) throws IOException {
         Path pack = userPack();
         ensurePack(pack);
         for (var e : edits.entrySet()) {
@@ -148,18 +148,17 @@ public final class EditableData {
         Files.createDirectories(pack);
         Path meta = pack.resolve("pack.mcmeta");
         if (!Files.exists(meta)) {
-            Files.writeString(meta, "{\"pack\": {\"description\": \"Material Nexus in-game edits\", \"pack_format\": "
-                    + net.minecraft.SharedConstants.getCurrentVersion().getPackVersion(net.minecraft.server.packs.PackType.SERVER_DATA) + "}}",
+            Files.writeString(meta, "{\"pack\": {\"description\": \"Material Nexus in-game edits\", \"min_format\": 82, \"max_format\": 1000}}",
                     StandardCharsets.UTF_8);
         }
     }
 
-    private static ResourceLocation id(Kind kind, ResourceLocation file) {
+    private static Identifier id(Kind kind, Identifier file) {
         String path = file.getPath().substring(kind.directory.length() + 1);
-        return ResourceLocation.fromNamespaceAndPath(file.getNamespace(), path.substring(0, path.length() - ".json".length()));
+        return Identifier.fromNamespaceAndPath(file.getNamespace(), path.substring(0, path.length() - ".json".length()));
     }
 
-    private static ResourceLocation file(Kind kind, ResourceLocation id) {
-        return ResourceLocation.fromNamespaceAndPath(id.getNamespace(), kind.directory + "/" + id.getPath() + ".json");
+    private static Identifier file(Kind kind, Identifier id) {
+        return Identifier.fromNamespaceAndPath(id.getNamespace(), kind.directory + "/" + id.getPath() + ".json");
     }
 }

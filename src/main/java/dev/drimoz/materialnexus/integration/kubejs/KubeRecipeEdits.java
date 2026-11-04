@@ -7,7 +7,7 @@ import dev.drimoz.materialnexus.datapack.RecipeSources;
 import dev.latvian.mods.kubejs.recipe.KubeRecipe;
 import dev.latvian.mods.kubejs.recipe.RecipesKubeEvent;
 import dev.latvian.mods.kubejs.script.SourceLine;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -31,11 +31,11 @@ final class KubeRecipeEdits {
             if (r.removed) {
                 edits.add(new ScriptChanges.RecipeEdit(r.getOrCreateId(), Kind.REMOVED, outputs(r.originalJson), Set.of(), Optional.empty()));
             } else if (r.hasChanged() && r.json != null && r.originalJson != null) {
-                Set<ResourceLocation> before = RecipeSources.ids(r.originalJson.toString());
-                Set<ResourceLocation> after = RecipeSources.ids(r.json.toString());
-                Set<ResourceLocation> gone = new HashSet<>(before);
+                Set<Identifier> before = RecipeSources.ids(r.originalJson.toString());
+                Set<Identifier> after = RecipeSources.ids(r.json.toString());
+                Set<Identifier> gone = new HashSet<>(before);
                 gone.removeAll(after);
-                Set<ResourceLocation> came = new HashSet<>(after);
+                Set<Identifier> came = new HashSet<>(after);
                 came.removeAll(before);
                 if (!gone.isEmpty() || !came.isEmpty()) edits.add(new ScriptChanges.RecipeEdit(r.getOrCreateId(), Kind.CHANGED, gone, came, Optional.empty()));
             }
@@ -49,8 +49,8 @@ final class KubeRecipeEdits {
         return edits;
     }
 
-    private static Set<ResourceLocation> outputs(JsonObject json) {
-        Set<ResourceLocation> out = new HashSet<>();
+    private static Set<Identifier> outputs(JsonObject json) {
+        Set<Identifier> out = new HashSet<>();
         if (json == null) return out;
         for (String key : OUTPUT_KEYS) {
             if (json.has(key)) out.addAll(RecipeSources.ids(json.get(key).toString()));

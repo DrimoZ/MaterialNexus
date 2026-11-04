@@ -5,14 +5,14 @@ import dev.drimoz.materialnexus.MaterialNexus;
 import dev.drimoz.materialnexus.core.scripts.ScriptChanges;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimplePreparableReloadListener;
 import net.minecraft.tags.TagLoader;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import org.slf4j.Logger;
 
 import java.util.Collection;
@@ -27,32 +27,32 @@ import java.util.function.Supplier;
  * KubeJS plugin hands over. Both are taken once by discovery, after the reload.
  */
 @EventBusSubscriber(modid = MaterialNexus.MOD_ID)
-public final class ScriptSources extends SimplePreparableReloadListener<Map<ResourceLocation, Collection<ResourceLocation>>> {
+public final class ScriptSources extends SimplePreparableReloadListener<Map<Identifier, Collection<Identifier>>> {
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static volatile Map<ResourceLocation, Collection<ResourceLocation>> fileTags = Map.of();
+    private static volatile Map<Identifier, Collection<Identifier>> fileTags = Map.of();
     private static volatile Supplier<List<ScriptChanges.RecipeEdit>> recipes;
 
     private ScriptSources() { }
 
     @SubscribeEvent
-    public static void register(AddReloadListenerEvent event) {
-        event.addListener(new ScriptSources());
+    public static void register(AddServerReloadListenersEvent event) {
+        event.addListener(Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "script_sources"), new ScriptSources());
     }
 
     @Override
-    protected Map<ResourceLocation, Collection<ResourceLocation>> prepare(ResourceManager resources, ProfilerFiller profiler) {
+    protected Map<Identifier, Collection<Identifier>> prepare(ResourceManager resources, ProfilerFiller profiler) {
         // ponytail: reads every item tag file a second time per reload (tens of ms); only on reload, never per tick.
-        return new TagLoader<ResourceLocation>(id -> BuiltInRegistries.ITEM.containsKey(id) ? Optional.of(id) : Optional.empty(),
+        return new TagLoader<Identifier>(id -> BuiltInRegistries.ITEM.containsKey(id) ? Optional.of(id) : Optional.empty(),
                 Registries.tagsDirPath(Registries.ITEM)).loadAndBuild(resources);
     }
 
     @Override
-    protected void apply(Map<ResourceLocation, Collection<ResourceLocation>> tags, ResourceManager resources, ProfilerFiller profiler) {
+    protected void apply(Map<Identifier, Collection<Identifier>> tags, ResourceManager resources, ProfilerFiller profiler) {
         fileTags = Map.copyOf(tags);
     }
 
     /** Item tags as the data files of the last load define them, before any script. */
-    public static Map<ResourceLocation, Collection<ResourceLocation>> fileTags() {
+    public static Map<Identifier, Collection<Identifier>> fileTags() {
         return fileTags;
     }
 

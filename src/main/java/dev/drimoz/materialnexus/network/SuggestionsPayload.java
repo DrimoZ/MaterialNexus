@@ -7,7 +7,7 @@ import dev.drimoz.materialnexus.datapack.CanonicalChange;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -15,14 +15,14 @@ import java.util.List;
 /** Server to client: the suggestions to add as pending choices. Nothing is written until Preview / Apply. */
 public record SuggestionsPayload(List<CanonicalChange> changes) implements CustomPacketPayload {
     public static final Type<SuggestionsPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "suggestions"));
+            new Type<>(Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "suggestions"));
     public static final StreamCodec<FriendlyByteBuf, SuggestionsPayload> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> buf.writeCollection(p.changes(), (b, c) -> {
                 b.writeUtf(c.material());
                 b.writeUtf(c.form());
-                b.writeResourceLocation(c.provider());
+                b.writeIdentifier(c.provider());
             }),
-            buf -> new SuggestionsPayload(buf.readList(b -> new CanonicalChange(b.readUtf(), b.readUtf(), b.readResourceLocation()))));
+            buf -> new SuggestionsPayload(buf.readList(b -> new CanonicalChange(b.readUtf(), b.readUtf(), b.readIdentifier()))));
 
     public SuggestionsPayload {
         changes = List.copyOf(changes);

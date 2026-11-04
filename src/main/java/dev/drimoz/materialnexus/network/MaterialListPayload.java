@@ -4,7 +4,7 @@ import dev.drimoz.materialnexus.MaterialNexus;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 
@@ -12,12 +12,12 @@ import java.util.List;
 public record MaterialListPayload(int page, int pageCount, int totalMatches, String query, boolean byForm, List<Summary> entries, Totals totals)
         implements CustomPacketPayload {
     public static final Type<MaterialListPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "material_list"));
+            new Type<>(Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "material_list"));
     public static final StreamCodec<FriendlyByteBuf, MaterialListPayload> STREAM_CODEC =
             StreamCodec.of(MaterialListPayload::write, MaterialListPayload::read);
 
     /** One row: how many forms (materials, by form), items, and of those with more than one provider. */
-    public record Summary(String material, int forms, int providers, int duplicateForms, int unifiedForms, java.util.Optional<ResourceLocation> icon) {
+    public record Summary(String material, int forms, int providers, int duplicateForms, int unifiedForms, java.util.Optional<Identifier> icon) {
         public int toDecide() { return duplicateForms - unifiedForms; }
     }
 
@@ -50,7 +50,7 @@ public record MaterialListPayload(int page, int pageCount, int totalMatches, Str
             b.writeVarInt(e.providers());
             b.writeVarInt(e.duplicateForms());
             b.writeVarInt(e.unifiedForms());
-            b.writeOptional(e.icon(), FriendlyByteBuf::writeResourceLocation);
+            b.writeOptional(e.icon(), FriendlyByteBuf::writeIdentifier);
         });
         buf.writeVarInt(p.totals().toDecide());
         buf.writeVarInt(p.totals().unified());
@@ -61,7 +61,7 @@ public record MaterialListPayload(int page, int pageCount, int totalMatches, Str
 
     private static MaterialListPayload read(FriendlyByteBuf buf) {
         return new MaterialListPayload(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readUtf(NexusQueries.MAX_QUERY), buf.readBoolean(),
-                buf.readList(b -> new Summary(b.readUtf(), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readOptional(FriendlyByteBuf::readResourceLocation))),
+                buf.readList(b -> new Summary(b.readUtf(), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readVarInt(), b.readOptional(FriendlyByteBuf::readIdentifier))),
                 new Totals(buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readVarInt(), buf.readList(FriendlyByteBuf::readUtf)));
     }
 }

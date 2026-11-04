@@ -7,9 +7,9 @@ import com.google.gson.JsonParser;
 import dev.drimoz.materialnexus.client.ui.Theme;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -22,11 +22,11 @@ import java.util.TreeMap;
  * global.json edits: the same Review and apply as any other change, the per-form choices kept and still winning.
  */
 final class PresetPanel {
-    private final Map<ResourceLocation, JsonObject> presets = new TreeMap<>();
+    private final Map<Identifier, JsonObject> presets = new TreeMap<>();
     private final Ui.Hits hits = new Ui.Hits();
-    private ResourceLocation selected;
+    private Identifier selected;
 
-    PresetPanel(Map<ResourceLocation, String> raw) {
+    PresetPanel(Map<Identifier, String> raw) {
         raw.forEach((id, text) -> {
             try {
                 presets.put(id, JsonParser.parseString(text).getAsJsonObject());
@@ -41,7 +41,7 @@ final class PresetPanel {
         return hits.click(mx, my, button);
     }
 
-    private static Component name(ResourceLocation id) {
+    private static Component name(Identifier id) {
         return Component.translatableWithFallback("materialnexus.preset." + id.getPath(), id.getPath());
     }
 
@@ -59,24 +59,24 @@ final class PresetPanel {
         return a.equals(b);
     }
 
-    void render(GuiGraphics g, Font font, int x, int y, int w, int h, int mx, int my) {
+    void render(GuiGraphicsExtractor g, Font font, int x, int y, int w, int h, int mx, int my) {
         hits.clear();
         if (presets.isEmpty()) {
-            g.drawString(font, tr("none"), x, y, Theme.MUTED, false);
+            g.text(font, tr("none"), x, y, Theme.MUTED, false);
             return;
         }
         // The presets, each with whether it is what the pack uses now.
         int listWidth = Math.clamp(w / 4, 150, 216);
         int ly = y;
         for (var entry : presets.entrySet()) {
-            ResourceLocation id = entry.getKey();
+            Identifier id = entry.getKey();
             boolean active = id.equals(selected);
             boolean over = mx >= x && mx < x + listWidth && my >= ly && my < ly + 22;
             if (active) g.fill(x, ly, x + listWidth, ly + 22, Theme.SEL);
             else if (over) g.fill(x, ly, x + listWidth, ly + 22, Theme.RAISED);
             boolean inUse = matches(entry.getValue());
             if (inUse) Ui.mark(g, Ui.Status.UNIFIED, x + 6, ly + 8);
-            g.drawString(font, font.plainSubstrByWidth(name(id).getString(), listWidth - 24), x + 18, ly + 7, active || over ? Theme.TEXT : Theme.MUTED, false);
+            g.text(font, font.plainSubstrByWidth(name(id).getString(), listWidth - 24), x + 18, ly + 7, active || over ? Theme.TEXT : Theme.MUTED, false);
             hits.add(x, ly, listWidth, 22, () -> selected = id, null, List.of());
             ly += 24;
         }
@@ -86,24 +86,24 @@ final class PresetPanel {
         int dx = x + listWidth + 24;
         int dw = Math.min(w - listWidth - 24, 760);
         int dy = y;
-        g.drawString(font, name(selected).copy().withStyle(ChatFormatting.BOLD), dx, dy, Theme.TEXT, false);
+        g.text(font, name(selected).copy().withStyle(ChatFormatting.BOLD), dx, dy, Theme.TEXT, false);
         dy += 12;
         for (var line : font.split(Component.translatableWithFallback("materialnexus.preset." + selected.getPath() + ".desc", ""), dw)) {
-            g.drawString(font, line, dx, dy, Theme.MUTED, false);
+            g.text(font, line, dx, dy, Theme.MUTED, false);
             dy += 10;
         }
         dy += 6;
         var intro = font.split(tr("intro"), dw - 16);
         g.fill(dx, dy, dx + dw, dy + intro.size() * 10 + 8, Theme.RAISED);
-        for (int i = 0; i < intro.size(); i++) g.drawString(font, intro.get(i), dx + 8, dy + 4 + i * 10, Theme.TEXT, false);
+        for (int i = 0; i < intro.size(); i++) g.text(font, intro.get(i), dx + 8, dy + 4 + i * 10, Theme.TEXT, false);
         dy += intro.size() * 10 + 16;
 
         // Value by value: what the pack has now, what the preset would put.
         int c1 = Math.clamp(dw / 3, 130, 220);
         int cw = (dw - c1 - 16) / 2;
-        g.drawString(font, tr("col.setting"), dx, dy, Theme.MUTED, false);
-        g.drawString(font, tr("col.now"), dx + c1, dy, Theme.MUTED, false);
-        g.drawString(font, tr("col.preset"), dx + c1 + cw + 16, dy, Theme.MUTED, false);
+        g.text(font, tr("col.setting"), dx, dy, Theme.MUTED, false);
+        g.text(font, tr("col.now"), dx + c1, dy, Theme.MUTED, false);
+        g.text(font, tr("col.preset"), dx + c1 + cw + 16, dy, Theme.MUTED, false);
         dy += 14;
         int changed = 0;
         for (var e : preset.entrySet()) {
@@ -118,24 +118,24 @@ final class PresetPanel {
             int rows = Math.max(title.size() + help.size(), Math.max(current.size(), next.size()));
             g.fill(dx, dy, dx + dw, dy + rows * 10 + 8, Theme.SURFACE);
             int ty = dy + 4;
-            for (var line : title) { g.drawString(font, line, dx + 6, ty, Theme.TEXT, false); ty += 10; }
-            for (var line : help) { g.drawString(font, line, dx + 6, ty, Theme.FAINT, false); ty += 10; }
-            for (int i = 0; i < current.size(); i++) g.drawString(font, current.get(i), dx + c1, dy + 4 + i * 10, Theme.MUTED, false);
-            if (differs) g.renderOutline(dx + c1 + cw + 16, dy + 5, 6, 6, Theme.INFO);
-            for (int i = 0; i < next.size(); i++) g.drawString(font, next.get(i), dx + c1 + cw + 28, dy + 4 + i * 10, differs ? Theme.TEXT : Theme.FAINT, false);
+            for (var line : title) { g.text(font, line, dx + 6, ty, Theme.TEXT, false); ty += 10; }
+            for (var line : help) { g.text(font, line, dx + 6, ty, Theme.FAINT, false); ty += 10; }
+            for (int i = 0; i < current.size(); i++) g.text(font, current.get(i), dx + c1, dy + 4 + i * 10, Theme.MUTED, false);
+            if (differs) g.outline(dx + c1 + cw + 16, dy + 5, 6, 6, Theme.INFO);
+            for (int i = 0; i < next.size(); i++) g.text(font, next.get(i), dx + c1 + cw + 28, dy + 4 + i * 10, differs ? Theme.TEXT : Theme.FAINT, false);
             dy += rows * 10 + 10;
         }
         dy += 6;
         if (matches(preset)) {
             Ui.mark(g, Ui.Status.UNIFIED, dx, dy + 5);
-            g.drawString(font, tr("in_use"), dx + 12, dy + 4, Theme.OK, false);
+            g.text(font, tr("in_use"), dx + 12, dy + 4, Theme.OK, false);
         } else {
             Component label = tr("use");
             int bw = font.width(label) + 16;
             boolean over = mx >= dx && mx < dx + bw && my >= dy && my < dy + 18;
             Ui.button(g, font, label, dx, dy, bw, 18, false, over, true);
             hits.add(dx, dy, bw, 18, () -> preset.entrySet().forEach(e -> PendingChanges.setGlobal(e.getKey(), e.getValue().deepCopy())), null, List.of());
-            g.drawString(font, font.plainSubstrByWidth(tr("use_effect", changed).getString(), dw - bw - 12), dx + bw + 8, dy + 5, Theme.MUTED, false);
+            g.text(font, font.plainSubstrByWidth(tr("use_effect", changed).getString(), dw - bw - 12), dx + bw + 8, dy + 5, Theme.MUTED, false);
         }
     }
 

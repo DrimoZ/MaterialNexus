@@ -3,7 +3,7 @@ package dev.drimoz.materialnexus.client;
 import dev.drimoz.materialnexus.client.ui.Theme;
 import dev.drimoz.materialnexus.network.MaterialListPayload;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
@@ -50,7 +50,7 @@ final class MaterialSidebar {
         return true;
     }
 
-    void render(GuiGraphics g, Font font, int mx, int my) {
+    void render(GuiGraphicsExtractor g, Font font, int mx, int my) {
         hits.clear();
         int content = entries.size() * Theme.ROW_ITEM;
         scroll = Math.clamp(scroll, 0, Math.max(0, content - height));
@@ -69,9 +69,9 @@ final class MaterialSidebar {
                 String count = s.toDecide() > 0 ? String.valueOf(s.toDecide()) : "";
                 int countWidth = font.width(count);
                 Component name = Names.material(s.material());
-                g.drawString(font, font.plainSubstrByWidth(name.getString(), rowWidth - 36 - countWidth - 8), x + 30, top + 7 + Theme.ROW_PAD,
+                g.text(font, font.plainSubstrByWidth(name.getString(), rowWidth - 36 - countWidth - 8), x + 30, top + 7 + Theme.ROW_PAD,
                         isSelected || s.duplicateForms() > 0 ? Theme.TEXT : Theme.MUTED, false);
-                if (!count.isEmpty()) g.drawString(font, count, x + rowWidth - countWidth - 8, top + 7 + Theme.ROW_PAD, Theme.WARN, false);
+                if (!count.isEmpty()) g.text(font, count, x + rowWidth - countWidth - 8, top + 7 + Theme.ROW_PAD, Theme.WARN, false);
                 if (inside) hits.add(x, top, rowWidth, Theme.ROW_ITEM, () -> { selected = s.material(); onSelect.accept(s.material()); }, null, List.of());
             }
             top += Theme.ROW_ITEM;

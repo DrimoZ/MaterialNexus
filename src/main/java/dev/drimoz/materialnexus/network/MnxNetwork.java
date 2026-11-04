@@ -42,16 +42,16 @@ public final class MnxNetwork {
                 var snapshot = SnapshotManager.current();
                 NexusQueries.detail(snapshot, req.material(), req.byForm()).ifPresent(d -> {
                     // One pass over the recipes serves both the missing conversions and the per-item counts (MNX-052).
-                    var edges = dev.drimoz.materialnexus.datapack.RecipeEdges.edges(player.server);
-                    java.util.Set<net.minecraft.resources.ResourceLocation> items = new java.util.HashSet<>();
+                    var edges = dev.drimoz.materialnexus.datapack.RecipeEdges.edges(player.level().getServer());
+                    java.util.Set<net.minecraft.resources.Identifier> items = new java.util.HashSet<>();
                     d.forms().forEach(v -> {
                         v.resolved().canonical().ifPresent(items::add);
                         items.addAll(v.resolved().alternatives());
                         v.resolved().notUnified().forEach(n -> items.add(n.item()));
                     });
                     // MNX-118: what datapacks do to the convention tag of each form shown.
-                    var packTags = dev.drimoz.materialnexus.datapack.PackEdits.of(player.server).tags();
-                    java.util.Map<net.minecraft.resources.ResourceLocation, java.util.List<dev.drimoz.materialnexus.datapack.PackEdits.TagEdit>> shown = new java.util.HashMap<>();
+                    var packTags = dev.drimoz.materialnexus.datapack.PackEdits.of(player.level().getServer()).tags();
+                    java.util.Map<net.minecraft.resources.Identifier, java.util.List<dev.drimoz.materialnexus.datapack.PackEdits.TagEdit>> shown = new java.util.HashMap<>();
                     d.forms().forEach(v -> dev.drimoz.materialnexus.core.discovery.TagDiscovery.conventionTag(new dev.drimoz.materialnexus.core.domain.MaterialId(v.material()),
                             new dev.drimoz.materialnexus.core.domain.FormId(v.form())).filter(packTags::containsKey).ifPresent(tag -> shown.put(tag, packTags.get(tag))));
                     var withUsage = d.withUsage(dev.drimoz.materialnexus.datapack.RecipeEdges.usage(edges, items)).withPackTags(shown);
@@ -82,7 +82,7 @@ public final class MnxNetwork {
             var resolved = SnapshotManager.current().materials().get(material.get());
             var f = resolved == null ? null : resolved.forms().get(form.get());
             if (f != null) PacketDistributor.sendToPlayer(player, new RecipeFamilyPayload(req.material(), req.form(),
-                    dev.drimoz.materialnexus.datapack.RecipeFamilies.family(player.server, f)));
+                    dev.drimoz.materialnexus.datapack.RecipeFamilies.family(player.level().getServer(), f)));
         });
         registrar.playToServer(ProcessRequest.TYPE, ProcessRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
@@ -91,7 +91,7 @@ public final class MnxNetwork {
         registrar.playToServer(DataListRequest.TYPE, DataListRequest.STREAM_CODEC, (req, ctx) -> {
             ServerPlayer player = authorized(ctx);
             if (player == null) return;
-            var resources = player.server.getResourceManager();
+            var resources = player.level().getServer().getResourceManager();
             var entries = dev.drimoz.materialnexus.datapack.EditableData.list(resources).stream()
                     .map(e -> new DataListPayload.Item(e.kind().key, e.id(), e.source(), e.edited())).toList();
             var forms = SnapshotManager.current().discovered().materials().values().stream()
@@ -102,7 +102,7 @@ public final class MnxNetwork {
             ServerPlayer player = authorized(ctx);
             if (player == null) return;
             dev.drimoz.materialnexus.datapack.EditableData.Kind.byKey(req.kind()).ifPresent(kind -> {
-                var resources = player.server.getResourceManager();
+                var resources = player.level().getServer().getResourceManager();
                 var text = dev.drimoz.materialnexus.datapack.EditableData.read(resources, kind, req.id());
                 boolean edited = dev.drimoz.materialnexus.datapack.EditableData.list(resources).stream()
                         .anyMatch(e -> e.kind() == kind && e.id().equals(req.id()) && e.edited());
@@ -126,6 +126,6 @@ public final class MnxNetwork {
 
     /** Permission is re-checked on every request; opening the screen once grants nothing. */
     private static ServerPlayer authorized(IPayloadContext ctx) {
-        return ctx.player() instanceof ServerPlayer player && player.hasPermissions(MaterialsCommand.PERMISSION_LEVEL) ? player : null;
+        return ctx.player() instanceof ServerPlayer player && player.permissions().hasPermission(MaterialsCommand.PERMISSION) ? player : null;
     }
 }

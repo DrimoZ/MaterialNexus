@@ -9,7 +9,7 @@ import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 
@@ -18,11 +18,11 @@ import java.util.List;
  * {@code byForm} one form across every material (MNX-035). {@code material} is the name of whichever was asked.
  */
 public record MaterialDetailPayload(String material, boolean byForm, List<FormView> forms, List<FamilyRelations.Relation> missing,
-                                    java.util.Map<ResourceLocation, dev.drimoz.materialnexus.datapack.RecipeEdges.Usage> usage,
-                                    java.util.Map<ResourceLocation, List<dev.drimoz.materialnexus.datapack.PackEdits.TagEdit>> packTags)
+                                    java.util.Map<Identifier, dev.drimoz.materialnexus.datapack.RecipeEdges.Usage> usage,
+                                    java.util.Map<Identifier, List<dev.drimoz.materialnexus.datapack.PackEdits.TagEdit>> packTags)
         implements CustomPacketPayload {
     public static final Type<MaterialDetailPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "material_detail"));
+            new Type<>(Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "material_detail"));
     public static final StreamCodec<FriendlyByteBuf, MaterialDetailPayload> STREAM_CODEC =
             StreamCodec.of(MaterialDetailPayload::write, MaterialDetailPayload::read);
 
@@ -41,12 +41,12 @@ public record MaterialDetailPayload(String material, boolean byForm, List<FormVi
     }
 
     /** The same detail with each item's recipe counts (MNX-052). */
-    public MaterialDetailPayload withUsage(java.util.Map<ResourceLocation, dev.drimoz.materialnexus.datapack.RecipeEdges.Usage> counts) {
+    public MaterialDetailPayload withUsage(java.util.Map<Identifier, dev.drimoz.materialnexus.datapack.RecipeEdges.Usage> counts) {
         return new MaterialDetailPayload(material, byForm, forms, missing, counts, packTags);
     }
 
     /** The same detail with what datapacks do to the convention tag of each of its forms (MNX-118). */
-    public MaterialDetailPayload withPackTags(java.util.Map<ResourceLocation, List<dev.drimoz.materialnexus.datapack.PackEdits.TagEdit>> tags) {
+    public MaterialDetailPayload withPackTags(java.util.Map<Identifier, List<dev.drimoz.materialnexus.datapack.PackEdits.TagEdit>> tags) {
         return new MaterialDetailPayload(material, byForm, forms, missing, usage, tags);
     }
 
@@ -59,10 +59,10 @@ public record MaterialDetailPayload(String material, boolean byForm, List<FormVi
             ResolvedForm f = view.resolved();
             b.writeUtf(view.material());
             b.writeUtf(view.form());
-            b.writeOptional(f.canonical(), FriendlyByteBuf::writeResourceLocation);
-            b.writeCollection(f.alternatives(), FriendlyByteBuf::writeResourceLocation);
+            b.writeOptional(f.canonical(), FriendlyByteBuf::writeIdentifier);
+            b.writeCollection(f.alternatives(), FriendlyByteBuf::writeIdentifier);
             b.writeCollection(f.notUnified(), (bb, n) -> {
-                bb.writeResourceLocation(n.item());
+                bb.writeIdentifier(n.item());
                 bb.writeUtf(n.reasonKey());
                 bb.writeCollection(n.reasonArgs(), FriendlyByteBuf::writeUtf);
             });
@@ -70,37 +70,37 @@ public record MaterialDetailPayload(String material, boolean byForm, List<FormVi
             b.writeEnum(f.confidence());
             b.writeUtf(f.reasonKey());
             b.writeCollection(f.reasonArgs(), FriendlyByteBuf::writeUtf);
-            b.writeOptional(f.ignoredOverride(), FriendlyByteBuf::writeResourceLocation);
+            b.writeOptional(f.ignoredOverride(), FriendlyByteBuf::writeIdentifier);
         });
         buf.writeCollection(p.missing(), (b, r) -> {
             b.writeUtf(r.from().name());
             b.writeUtf(r.to().name());
         });
-        buf.writeMap(p.usage(), FriendlyByteBuf::writeResourceLocation, (b, u) -> {
+        buf.writeMap(p.usage(), FriendlyByteBuf::writeIdentifier, (b, u) -> {
             b.writeVarInt(u.produced());
             b.writeVarInt(u.used());
         });
-        buf.writeMap(p.packTags(), FriendlyByteBuf::writeResourceLocation, (b, edits) -> b.writeCollection(edits, (bb, e) -> {
+        buf.writeMap(p.packTags(), FriendlyByteBuf::writeIdentifier, (b, edits) -> b.writeCollection(edits, (bb, e) -> {
             bb.writeUtf(e.pack());
             bb.writeBoolean(e.replace());
-            bb.writeCollection(e.added(), FriendlyByteBuf::writeResourceLocation);
-            bb.writeCollection(e.removed(), FriendlyByteBuf::writeResourceLocation);
+            bb.writeCollection(e.added(), FriendlyByteBuf::writeIdentifier);
+            bb.writeCollection(e.removed(), FriendlyByteBuf::writeIdentifier);
         }));
     }
 
     private static MaterialDetailPayload read(FriendlyByteBuf buf) {
         return new MaterialDetailPayload(buf.readUtf(), buf.readBoolean(), buf.readList(b -> new FormView(b.readUtf(), b.readUtf(), new ResolvedForm(
-                b.readOptional(FriendlyByteBuf::readResourceLocation),
-                b.readList(FriendlyByteBuf::readResourceLocation),
-                b.readList(bb -> new ResolvedForm.NotUnified(bb.readResourceLocation(), bb.readUtf(), bb.readList(FriendlyByteBuf::readUtf))),
+                b.readOptional(FriendlyByteBuf::readIdentifier),
+                b.readList(FriendlyByteBuf::readIdentifier),
+                b.readList(bb -> new ResolvedForm.NotUnified(bb.readIdentifier(), bb.readUtf(), bb.readList(FriendlyByteBuf::readUtf))),
                 b.readEnum(PolicyPrecedence.class),
                 b.readEnum(Confidence.class),
                 b.readUtf(),
                 b.readList(FriendlyByteBuf::readUtf),
-                b.readOptional(FriendlyByteBuf::readResourceLocation)))),
+                b.readOptional(FriendlyByteBuf::readIdentifier)))),
                 buf.readList(b -> new FamilyRelations.Relation(new FormId(b.readUtf()), new FormId(b.readUtf()))),
-                buf.readMap(FriendlyByteBuf::readResourceLocation, b -> new dev.drimoz.materialnexus.datapack.RecipeEdges.Usage(b.readVarInt(), b.readVarInt())),
-                buf.readMap(FriendlyByteBuf::readResourceLocation, b -> b.readList(bb -> new dev.drimoz.materialnexus.datapack.PackEdits.TagEdit(
-                        bb.readUtf(), bb.readBoolean(), bb.readList(FriendlyByteBuf::readResourceLocation), bb.readList(FriendlyByteBuf::readResourceLocation)))));
+                buf.readMap(FriendlyByteBuf::readIdentifier, b -> new dev.drimoz.materialnexus.datapack.RecipeEdges.Usage(b.readVarInt(), b.readVarInt())),
+                buf.readMap(FriendlyByteBuf::readIdentifier, b -> b.readList(bb -> new dev.drimoz.materialnexus.datapack.PackEdits.TagEdit(
+                        bb.readUtf(), bb.readBoolean(), bb.readList(FriendlyByteBuf::readIdentifier), bb.readList(FriendlyByteBuf::readIdentifier)))));
     }
 }

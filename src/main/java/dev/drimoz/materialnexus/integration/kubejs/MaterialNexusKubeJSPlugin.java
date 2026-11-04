@@ -6,7 +6,7 @@ import dev.latvian.mods.kubejs.core.RecipeManagerKJS;
 import dev.latvian.mods.kubejs.plugin.KubeJSPlugin;
 import dev.latvian.mods.kubejs.recipe.RecipesKubeEvent;
 import dev.latvian.mods.kubejs.script.BindingRegistry;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.Map;
 
@@ -23,7 +23,7 @@ public final class MaterialNexusKubeJSPlugin implements KubeJSPlugin {
 
     /** MNX-076: keeps the event to read what scripts changed once the reload is done (read-only, ADR-022). */
     @Override
-    public void beforeRecipeLoading(RecipesKubeEvent event, RecipeManagerKJS manager, Map<ResourceLocation, JsonElement> recipes) {
+    public void beforeRecipeLoading(RecipesKubeEvent event, RecipeManagerKJS manager, Map<Identifier, JsonElement> recipes) {
         ScriptSources.recipes(() -> KubeRecipeEdits.read(event));
     }
 }

@@ -1,7 +1,7 @@
 package dev.drimoz.materialnexus.diagnostics;
 
 import com.google.gson.JsonElement;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.Map;
 import java.util.Set;
@@ -20,21 +20,21 @@ public final class TagAudit {
      * {@code forge}: recipes asking for a {@code forge:} tag (1.21 uses {@code c:}), with whether the tag has items.
      * {@code emptyMaterial}: recipes asking for a {@code c:<folder>/<material>} tag with no item: they cannot be made.
      */
-    public record Result(SortedMap<ResourceLocation, SortedSet<ResourceLocation>> forge, Set<ResourceLocation> forgeFilled,
-                         SortedMap<ResourceLocation, SortedSet<ResourceLocation>> emptyMaterial) {
+    public record Result(SortedMap<Identifier, SortedSet<Identifier>> forge, Set<Identifier> forgeFilled,
+                         SortedMap<Identifier, SortedSet<Identifier>> emptyMaterial) {
         public static final Result NONE = new Result(new TreeMap<>(), Set.of(), new TreeMap<>());
     }
 
     private TagAudit() { }
 
-    public static Result of(Map<ResourceLocation, JsonElement> recipes, Predicate<ResourceLocation> hasItems, Predicate<String> isFolder) {
-        SortedMap<ResourceLocation, SortedSet<ResourceLocation>> forge = new TreeMap<>();
-        SortedMap<ResourceLocation, SortedSet<ResourceLocation>> empty = new TreeMap<>();
-        Set<ResourceLocation> filled = new TreeSet<>();
+    public static Result of(Map<Identifier, JsonElement> recipes, Predicate<Identifier> hasItems, Predicate<String> isFolder) {
+        SortedMap<Identifier, SortedSet<Identifier>> forge = new TreeMap<>();
+        SortedMap<Identifier, SortedSet<Identifier>> empty = new TreeMap<>();
+        Set<Identifier> filled = new TreeSet<>();
         recipes.forEach((id, json) -> {
-            Set<ResourceLocation> tags = new TreeSet<>();
+            Set<Identifier> tags = new TreeSet<>();
             tagRefs(json, tags);
-            for (ResourceLocation tag : tags) {
+            for (Identifier tag : tags) {
                 if (tag.getNamespace().equals("forge")) {
                     forge.computeIfAbsent(tag, t -> new TreeSet<>()).add(id);
                     if (hasItems.test(tag)) filled.add(tag);
@@ -47,13 +47,13 @@ public final class TagAudit {
     }
 
     /** c:ingots/tin, not c:ingots nor c:tools/... */
-    private static boolean materialTag(ResourceLocation tag, Predicate<String> isFolder) {
+    private static boolean materialTag(Identifier tag, Predicate<String> isFolder) {
         String[] parts = tag.getPath().split("/");
         return parts.length == 2 && isFolder.test(parts[0]);
     }
 
     /** {@code "tag": "c:ingots/tin"} anywhere (vanilla, Create, Mekanism...) and {@code "#c:ingots/tin"} strings. */
-    static void tagRefs(JsonElement json, Set<ResourceLocation> out) {
+    static void tagRefs(JsonElement json, Set<Identifier> out) {
         if (json.isJsonObject()) {
             json.getAsJsonObject().entrySet().forEach(e -> {
                 if (e.getKey().equals("tag") && e.getValue().isJsonPrimitive()) add(e.getValue().getAsString(), out);
@@ -66,8 +66,8 @@ public final class TagAudit {
         }
     }
 
-    private static void add(String id, Set<ResourceLocation> out) {
-        ResourceLocation tag = ResourceLocation.tryParse(id);
+    private static void add(String id, Set<Identifier> out) {
+        Identifier tag = Identifier.tryParse(id);
         if (tag != null) out.add(tag);
     }
 }

@@ -5,7 +5,6 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
-import net.minecraft.SharedConstants;
 import net.minecraft.network.chat.Component;
 import net.minecraft.server.packs.PackLocationInfo;
 import net.minecraft.server.packs.PackSelectionConfig;
@@ -45,7 +44,7 @@ public final class GeneratedPack {
             // MNX-039: the created items' models live in the same pack, so the client loads it as a resource pack too.
             if (prepareItems(items)) add(event, ITEMS_PACK_ID, items, PackType.CLIENT_RESOURCES);
             // MNX-107: the templates as drawn, before their levels were stretched; off unless the player picks it.
-            event.addPackFinders(net.minecraft.resources.ResourceLocation.fromNamespaceAndPath("materialnexus", "resourcepacks/soft_templates"),
+            event.addPackFinders(net.minecraft.resources.Identifier.fromNamespaceAndPath("materialnexus", "resourcepacks/soft_templates"),
                     PackType.CLIENT_RESOURCES, Component.translatable("materialnexus.pack.soft_templates"), PackSource.BUILT_IN,
                     false, Pack.Position.TOP);
             return;
@@ -112,7 +111,7 @@ public final class GeneratedPack {
         return Map.copyOf(files);
     }
 
-    private static Path droppedTexture(net.minecraft.resources.ResourceLocation item) {
+    private static Path droppedTexture(net.minecraft.resources.Identifier item) {
         return MnxPaths.root().resolve("textures").resolve(item.getPath() + ".png");
     }
 
@@ -231,12 +230,10 @@ public final class GeneratedPack {
         description.addProperty("translate", "materialnexus.pack.generated");
         JsonObject pack = new JsonObject();
         pack.add("description", description);
-        pack.addProperty("pack_format", SharedConstants.getCurrentVersion().getPackVersion(PackType.SERVER_DATA));
-        // The created items pack is also a resource pack, whose format number differs.
-        JsonArray supported = new JsonArray();
-        supported.add(0);
-        supported.add(1000);
-        pack.add("supported_formats", supported);
+        // The created items pack is also a resource pack, whose format number differs: from 82, above the last data (81)
+        // and resource (64) formats that needed the old fields, both current formats are in range.
+        pack.addProperty("min_format", 82);
+        pack.addProperty("max_format", 1000);
         JsonObject root = new JsonObject();
         root.add("pack", pack);
         return root;

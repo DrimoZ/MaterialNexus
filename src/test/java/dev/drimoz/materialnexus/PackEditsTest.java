@@ -3,7 +3,7 @@ package dev.drimoz.materialnexus;
 import com.google.gson.JsonParser;
 import dev.drimoz.materialnexus.datapack.PackContent;
 import dev.drimoz.materialnexus.datapack.PackEdits;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -13,10 +13,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** MNX-118: a datapack's tag file is read as what it puts in and takes out, and Preview warns where Apply goes against it. */
 class PackEditsTest {
-    private static final ResourceLocation TIN = ResourceLocation.fromNamespaceAndPath("c", "ingots/tin");
-    private static final ResourceLocation MEK = ResourceLocation.fromNamespaceAndPath("mekanism", "ingot_tin");
-    private static final ResourceLocation MI = ResourceLocation.fromNamespaceAndPath("modern_industrialization", "tin_ingot");
-    private static final ResourceLocation IE = ResourceLocation.fromNamespaceAndPath("immersiveengineering", "ingot_tin");
+    private static final Identifier TIN = Identifier.fromNamespaceAndPath("c", "ingots/tin");
+    private static final Identifier MEK = Identifier.fromNamespaceAndPath("mekanism", "ingot_tin");
+    private static final Identifier MI = Identifier.fromNamespaceAndPath("modern_industrialization", "tin_ingot");
+    private static final Identifier IE = Identifier.fromNamespaceAndPath("immersiveengineering", "ingot_tin");
 
     @Test
     void tagEditsAreReadAndOppositeChangesWarned() {

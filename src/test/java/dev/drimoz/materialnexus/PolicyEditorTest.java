@@ -10,7 +10,7 @@ import dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot;
 import dev.drimoz.materialnexus.datapack.CanonicalChange;
 import dev.drimoz.materialnexus.datapack.PolicyEditor;
 import dev.drimoz.materialnexus.datapack.PolicyFiles;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -25,12 +25,12 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Apply writes the pack author's files: validate first, never duplicate a material, keep what was there. */
 class PolicyEditorTest {
-    private static final ResourceLocation MEK = ResourceLocation.fromNamespaceAndPath("mekanism", "ingot_tin");
-    private static final ResourceLocation TE = ResourceLocation.fromNamespaceAndPath("thermal", "tin_ingot");
+    private static final Identifier MEK = Identifier.fromNamespaceAndPath("mekanism", "ingot_tin");
+    private static final Identifier TE = Identifier.fromNamespaceAndPath("thermal", "tin_ingot");
 
     @Test
     void applyRoundTripsThroughThePolicyFiles(@TempDir Path root) throws IOException {
-        var discovered = TagDiscovery.discover(Map.of(ResourceLocation.fromNamespaceAndPath("c", "ingots/tin"), List.of(MEK, TE)));
+        var discovered = TagDiscovery.discover(Map.of(Identifier.fromNamespaceAndPath("c", "ingots/tin"), List.of(MEK, TE)));
         var snapshot = new ResolvedSnapshot(1, Instant.EPOCH, discovered, CanonicalResolver.resolve(discovered, ResolutionPolicy.NONE));
 
         Path policies = root.resolve("policies");
@@ -40,7 +40,7 @@ class PolicyEditorTest {
 
         List<PolicyEditor.Entry> entries = PolicyEditor.preview(snapshot, List.of(
                 new CanonicalChange("tin", "ingot", MEK),
-                new CanonicalChange("tin", "plate", ResourceLocation.fromNamespaceAndPath("ghost", "tin_plate"))));
+                new CanonicalChange("tin", "plate", Identifier.fromNamespaceAndPath("ghost", "tin_plate"))));
         assertTrue(entries.stream().filter(e -> e.form().equals("ingot")).allMatch(PolicyEditor.Entry::valid));
         assertTrue(entries.stream().filter(e -> e.form().equals("plate")).noneMatch(PolicyEditor.Entry::valid));
 

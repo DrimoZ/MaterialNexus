@@ -2,13 +2,13 @@ package dev.drimoz.materialnexus.core.domain;
 
 import dev.drimoz.materialnexus.core.discovery.DiscoveryEvidence;
 import dev.drimoz.materialnexus.core.discovery.DiscoveryEvidence.Confidence;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.Comparator;
 import java.util.List;
 
 public record Provider(
-        ResourceLocation resource,
+        Identifier resource,
         MaterialId material,
         FormId form,
         List<DiscoveryEvidence> evidence) {

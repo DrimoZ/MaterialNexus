@@ -1,7 +1,7 @@
 package dev.drimoz.materialnexus.client.ui;
 
 import net.minecraft.client.Minecraft;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.network.chat.Component;
 
@@ -44,7 +44,7 @@ public final class Btn extends Button {
     }
 
     @Override
-    protected void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    protected void renderWidget(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         boolean over = active && isHoveredOrFocused();
         int fill = switch (kind) {
             case PRIMARY -> !active ? Theme.RAISED : over ? Theme.mix(Theme.ACCENT, Theme.TEXT, 0.18f) : Theme.ACCENT;
@@ -58,8 +58,8 @@ public final class Btn extends Button {
             case DANGER -> Theme.BAD;
         };
         if (fill != 0) g.fill(getX(), getY(), getX() + width, getY() + height, fill);
-        if (isFocused()) g.renderOutline(getX(), getY(), width, height, Theme.INFO);
+        if (isFocused()) g.outline(getX(), getY(), width, height, Theme.INFO);
         var font = UiFont.current();
-        g.drawString(font, getMessage(), getX() + (width - font.width(getMessage())) / 2, getY() + (height - 8) / 2, text, false);
+        g.text(font, getMessage(), getX() + (width - font.width(getMessage())) / 2, getY() + (height - 8) / 2, text, false);
     }
 }

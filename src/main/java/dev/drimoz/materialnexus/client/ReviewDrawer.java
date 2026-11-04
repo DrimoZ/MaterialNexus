@@ -6,11 +6,11 @@ import dev.drimoz.materialnexus.datapack.PackContent;
 import dev.drimoz.materialnexus.datapack.PolicyEditor;
 import dev.drimoz.materialnexus.network.PreviewPayload;
 import net.minecraft.ChatFormatting;
-import net.minecraft.Util;
+import net.minecraft.util.Util;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -42,7 +42,7 @@ final class ReviewDrawer {
     private record Group(String key, int level, List<Component> lines) { }
 
     private final Runnable requestEffects;
-    private final Consumer<Optional<ResourceLocation>> apply;
+    private final Consumer<Optional<Identifier>> apply;
     private final Runnable close;
     private final Ui.Hits hits = new Ui.Hits();
     private final Set<String> open = new HashSet<>();
@@ -53,7 +53,7 @@ final class ReviewDrawer {
     private int x, y, width, height;
     private double scroll;
 
-    ReviewDrawer(boolean effects, Runnable requestEffects, Consumer<Optional<ResourceLocation>> apply, Runnable close) {
+    ReviewDrawer(boolean effects, Runnable requestEffects, Consumer<Optional<Identifier>> apply, Runnable close) {
         this.requestEffects = requestEffects;
         this.apply = apply;
         this.close = close;
@@ -161,11 +161,11 @@ final class ReviewDrawer {
 
     // ---- render --------------------------------------------------------------------------------------------
 
-    public void render(GuiGraphics g, Font font, int mx, int my) {
+    public void render(GuiGraphicsExtractor g, Font font, int mx, int my) {
         hits.clear();
         g.fill(x, y, x + width, y + height, Theme.SURFACE);
         g.fill(x, y, x + 1, y + height, Theme.BORDER);
-        g.drawString(font, Component.translatable("screen.materialnexus.preview_short").withStyle(ChatFormatting.BOLD), x + 12, y + 8, Theme.TEXT, false);
+        g.text(font, Component.translatable("screen.materialnexus.preview_short").withStyle(ChatFormatting.BOLD), x + 12, y + 8, Theme.TEXT, false);
 
         // The two steps, as tabs.
         int tx = x + 12;
@@ -198,7 +198,7 @@ final class ReviewDrawer {
             if (preview != null) {
                 long disabled = preview.added().stream().filter(e -> e.kind().endsWith("disable")).count();
                 Component summary = Component.translatable("screen.materialnexus.review.summary", preview.added().size(), disabled);
-                g.drawString(font, font.plainSubstrByWidth(summary.getString(), right - aw - cw - 20 - x - 12), x + 12, by + 5, Theme.MUTED, false);
+                g.text(font, font.plainSubstrByWidth(summary.getString(), right - aw - cw - 20 - x - 12), x + 12, by + 5, Theme.MUTED, false);
             }
         } else {
             Component next = Component.translatable("screen.materialnexus.review.see_effects");
@@ -210,21 +210,21 @@ final class ReviewDrawer {
         hits.tooltip(g, font, mx, my);
     }
 
-    private int tab(GuiGraphics g, Font font, Component label, int tx, boolean active, int mx, int my, Runnable action) {
+    private int tab(GuiGraphicsExtractor g, Font font, Component label, int tx, boolean active, int mx, int my, Runnable action) {
         int w = font.width(label) + 12;
         boolean over = mx >= tx && mx < tx + w && my >= y + 22 && my < y + 40;
         if (active) g.fill(tx, y + 38, tx + w, y + 40, Theme.ACCENT);
-        g.drawString(font, label, tx + 6, y + 27, active || over ? Theme.TEXT : Theme.MUTED, false);
+        g.text(font, label, tx + 6, y + 27, active || over ? Theme.TEXT : Theme.MUTED, false);
         if (!active) hits.add(tx, y + 22, w, 18, action, null, List.of());
         return tx + w + 4;
     }
 
-    private int renderChanges(GuiGraphics g, Font font, int top, int bottom, int mx, int my, boolean inList) {
+    private int renderChanges(GuiGraphicsExtractor g, Font font, int top, int bottom, int mx, int my, boolean inList) {
         int ly = top + 4 - (int) scroll;
-        g.drawString(font, Component.translatable("screen.materialnexus.review.changes.hint"), x + 12, ly, Theme.MUTED, false);
+        g.text(font, Component.translatable("screen.materialnexus.review.changes.hint"), x + 12, ly, Theme.MUTED, false);
         ly += 16;
         List<Change> lines = changes();
-        if (lines.isEmpty()) g.drawString(font, Component.translatable("screen.materialnexus.pending.none"), x + 12, ly, Theme.FAINT, false);
+        if (lines.isEmpty()) g.text(font, Component.translatable("screen.materialnexus.pending.none"), x + 12, ly, Theme.FAINT, false);
         Component remove = Component.translatable("screen.materialnexus.review.remove");
         Component removeAll = Component.translatable("screen.materialnexus.review.remove_all");
         for (Change line : lines) {
@@ -235,14 +235,14 @@ final class ReviewDrawer {
                 Component label = line.group() ? removeAll : remove;
                 int bw = font.width(label) + 12;
                 int bx = x + width - 12 - bw;
-                if (!line.group()) g.renderOutline(lx, ly + 6, 6, 6, Theme.INFO);
-                g.drawString(font, font.plainSubstrByWidth(line.text().getString(), bx - lx - (line.group() ? 4 : 16)), line.group() ? lx : lx + 12, ly + 5,
+                if (!line.group()) g.outline(lx, ly + 6, 6, 6, Theme.INFO);
+                g.text(font, font.plainSubstrByWidth(line.text().getString(), bx - lx - (line.group() ? 4 : 16)), line.group() ? lx : lx + 12, ly + 5,
                         line.group() ? Theme.TEXT : Theme.MUTED, false);
                 // The way back is shown on the row under the pointer, and on every group.
                 if (over || line.depth() == 0) {
                     boolean overButton = over && mx >= bx && mx < bx + bw;
                     if (overButton) g.fill(bx, ly + 1, bx + bw, ly + 17, Theme.SEL);
-                    g.drawString(font, label, bx + 6, ly + 5, overButton ? Theme.TEXT : Theme.MUTED, false);
+                    g.text(font, label, bx + 6, ly + 5, overButton ? Theme.TEXT : Theme.MUTED, false);
                 }
                 if (inList) hits.add(bx, ly + 1, bw, 16, line.discard(), null, List.of());
             }
@@ -251,11 +251,11 @@ final class ReviewDrawer {
         return ly;
     }
 
-    private int renderEffects(GuiGraphics g, Font font, int top, int bottom, int mx, int my, boolean inList) {
+    private int renderEffects(GuiGraphicsExtractor g, Font font, int top, int bottom, int mx, int my, boolean inList) {
         int ly = top + 4 - (int) scroll;
         if (preview == null) {
             // The server is working it out: several seconds on a large pack.
-            g.drawString(font, Component.translatable("screen.materialnexus.review.computing"), x + 12, ly, Theme.MUTED, false);
+            g.text(font, Component.translatable("screen.materialnexus.review.computing"), x + 12, ly, Theme.MUTED, false);
             int w = width - 24;
             int at = (int) ((Util.getMillis() - asked) / 6 % (w + 60)) - 60;
             g.fill(x + 12, ly + 14, x + 12 + w, ly + 16, Theme.RAISED);
@@ -263,12 +263,12 @@ final class ReviewDrawer {
             return ly + 20;
         }
         if (preview.preset().isPresent()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.preview_preset",
+            g.text(font, Component.translatable("screen.materialnexus.preview_preset",
                     Component.translatableWithFallback("materialnexus.preset." + preview.preset().get().getPath(), preview.preset().get().getPath())), x + 12, ly, Theme.INFO, false);
             ly += 14;
         }
         if (!hasChanges()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.no_changes"), x + 12, ly, Theme.MUTED, false);
+            g.text(font, Component.translatable("screen.materialnexus.no_changes"), x + 12, ly, Theme.MUTED, false);
             return ly + 12;
         }
         ly = section(g, font, "look", groups.stream().filter(gr -> gr.level() > 0).toList(), ly, top, bottom, my, inList);
@@ -276,9 +276,9 @@ final class ReviewDrawer {
         return section(g, font, "undone", groups.stream().filter(gr -> gr.level() < 0).toList(), ly, top, bottom, my, inList);
     }
 
-    private int section(GuiGraphics g, Font font, String key, List<Group> list, int ly, int top, int bottom, int my, boolean inList) {
+    private int section(GuiGraphicsExtractor g, Font font, String key, List<Group> list, int ly, int top, int bottom, int my, boolean inList) {
         if (list.isEmpty()) return ly;
-        g.drawString(font, Component.translatable("screen.materialnexus.review.section." + key).withStyle(ChatFormatting.BOLD), x + 12, ly + 4, Theme.TEXT, false);
+        g.text(font, Component.translatable("screen.materialnexus.review.section." + key).withStyle(ChatFormatting.BOLD), x + 12, ly + 4, Theme.TEXT, false);
         ly += 18;
         for (Group group : list) {
             boolean expanded = open.contains(group.key());
@@ -288,14 +288,14 @@ final class ReviewDrawer {
                 Ui.caret(g, x + 12, ly + 6, expanded, Theme.MUTED);
                 mark(g, group.level(), x + 22, ly + 6);
                 Component title = Component.translatable("screen.materialnexus.group." + group.key(), group.lines().size());
-                g.drawString(font, font.plainSubstrByWidth(title.getString(), width - 48), x + 34, ly + 5, Theme.TEXT, false);
+                g.text(font, font.plainSubstrByWidth(title.getString(), width - 48), x + 34, ly + 5, Theme.TEXT, false);
                 String groupKey = group.key();
                 if (inList) hits.add(x, ly, width, 18, () -> { if (!open.remove(groupKey)) open.add(groupKey); }, null, List.of());
             }
             ly += 18;
             if (!expanded) continue;
             for (Component line : group.lines()) {
-                if (ly + LINE > top && ly < bottom) g.drawString(font, font.plainSubstrByWidth(line.getString(), width - 48), x + 34, ly + 1, Theme.MUTED, false);
+                if (ly + LINE > top && ly < bottom) g.text(font, font.plainSubstrByWidth(line.getString(), width - 48), x + 34, ly + 1, Theme.MUTED, false);
                 ly += LINE;
             }
             ly += 4;
@@ -304,7 +304,7 @@ final class ReviewDrawer {
     }
 
     /** Shape and colour together: a cross for what is switched off, a dot for what needs a look, a tick for a change. */
-    private static void mark(GuiGraphics g, int level, int x, int y) {
+    private static void mark(GuiGraphicsExtractor g, int level, int x, int y) {
         if (level == 2) {
             for (int i = 0; i < 6; i++) {
                 g.fill(x + i, y + i, x + i + 1, y + i + 1, Theme.BAD);
@@ -314,7 +314,7 @@ final class ReviewDrawer {
         else if (level == 0) Ui.mark(g, Ui.Status.UNIFIED, x, y);
     }
 
-    private void button(GuiGraphics g, Font font, Component label, int bx, int by, int bw, boolean primary, boolean active, int mx, int my, Runnable action) {
+    private void button(GuiGraphicsExtractor g, Font font, Component label, int bx, int by, int bw, boolean primary, boolean active, int mx, int my, Runnable action) {
         boolean over = active && mx >= bx && mx < bx + bw && my >= by && my < by + 16;
         Ui.button(g, font, label, bx, by, bw, 16, primary, over, active);
         if (active) hits.add(bx, by, bw, 16, action, null, List.of());

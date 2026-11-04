@@ -2,7 +2,7 @@ package dev.drimoz.materialnexus.client;
 
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.Locale;
@@ -19,12 +19,12 @@ final class Names {
         return Component.translatableWithFallback("materialnexus.form." + name, name);
     }
 
-    static ItemStack stack(ResourceLocation item) {
+    static ItemStack stack(Identifier item) {
         return BuiltInRegistries.ITEM.getOptional(item).map(ItemStack::new).orElse(ItemStack.EMPTY);
     }
 
     /** "Tin Ingot (Mekanism)": duplicates usually share their display name (MNX-076). */
-    static Component withMod(ResourceLocation item) {
+    static Component withMod(Identifier item) {
         return Component.empty().append(stack(item).getHoverName()).append(" (" + NexusScreen.modName(item.getNamespace()) + ")");
     }
 

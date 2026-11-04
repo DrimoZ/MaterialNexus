@@ -3,7 +3,7 @@ package dev.drimoz.materialnexus.datapack;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
 import dev.drimoz.materialnexus.integration.RecipeFormats;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.RecipeHolder;
@@ -34,19 +34,19 @@ public final class RecipeFamilies {
      * {@code replaced}: for a rewritten recipe, the alternative it made before Material Nexus (MNX-088). {@code editedBy}:
      * who else already changes this recipe: "kubejs" for a script (MNX-117), else the id of the datapack replacing it (MNX-118).
      */
-    public record Row(ResourceLocation recipe, ResourceLocation type, ResourceLocation output, Status status, java.util.Optional<ResourceLocation> replaced,
+    public record Row(Identifier recipe, Identifier type, Identifier output, Status status, java.util.Optional<Identifier> replaced,
                       Removal removal, java.util.Optional<String> editedBy) { }
 
     private RecipeFamilies() { }
 
-    private static Removal removal(MinecraftServer server, ResourceLocation id) {
+    private static Removal removal(MinecraftServer server, Identifier id) {
         List<String> packs = RecipeSources.packs(server, id);
         return RecipeSources.removable(packs) ? Removal.ALLOWED : packs.isEmpty() ? Removal.IN_MEMORY : Removal.GENERATED;
     }
 
     public static List<Row> family(MinecraftServer server, ResolvedForm form) {
-        Set<ResourceLocation> alternatives = new HashSet<>(form.alternatives());
-        Set<ResourceLocation> members = new HashSet<>(alternatives);
+        Set<Identifier> alternatives = new HashSet<>(form.alternatives());
+        Set<Identifier> members = new HashSet<>(alternatives);
         form.canonical().ifPresent(members::add);
         form.notUnified().forEach(n -> members.add(n.item()));
 
@@ -56,20 +56,20 @@ public final class RecipeFamilies {
         } catch (java.io.IOException e) {
             manifest = List.of();
         }
-        Set<ResourceLocation> rewritten = new HashSet<>();
-        Set<ResourceLocation> scripted = new HashSet<>();
+        Set<Identifier> rewritten = new HashSet<>();
+        Set<Identifier> scripted = new HashSet<>();
         dev.drimoz.materialnexus.core.resolution.SnapshotManager.current().scripts().recipes().stream()
                 .filter(r -> r.kind() == dev.drimoz.materialnexus.core.scripts.ScriptChanges.Kind.CHANGED).forEach(r -> scripted.add(r.recipe()));
         PackEdits.Edits packs = PackEdits.of(server);
         List<Row> rows = new ArrayList<>();
-        ResourceLocation disabledType = ResourceLocation.fromNamespaceAndPath("materialnexus", "disabled");
+        Identifier disabledType = Identifier.fromNamespaceAndPath("materialnexus", "disabled");
         for (PackContent.Effect e : manifest) {
             if (e.kind().equals(RecipeRewrites.REWRITE)) rewritten.add(e.target());
             boolean player = e.kind().equals(PackContent.PLAYER_DISABLE);
             if ((player || e.kind().equals(RecipeRewrites.DISABLE)) && members.contains(e.item())) {
                 // Not loaded any more: the type comes from the file beneath the generated pack.
-                ResourceLocation type = !player ? disabledType : RecipeSources.originalJson(server, e.target())
-                        .map(json -> json.has("type") ? ResourceLocation.tryParse(json.get("type").getAsString()) : null).orElse(disabledType);
+                Identifier type = !player ? disabledType : RecipeSources.originalJson(server, e.target())
+                        .map(json -> json.has("type") ? Identifier.tryParse(json.get("type").getAsString()) : null).orElse(disabledType);
                 rows.add(new Row(e.target(), type == null ? disabledType : type, e.item(), player ? Status.REMOVED : Status.DISABLED,
                         java.util.Optional.empty(), removal(server, e.target()), editedBy(e.target(), scripted, packs)));
             }
@@ -80,26 +80,26 @@ public final class RecipeFamilies {
         packs.recipes().forEach((id, pack) -> {
             if (server.getRecipeManager().byKey(id).isPresent()) return;
             PackEdits.beneath(server, id).ifPresent(json -> RecipeRewrites.outputIds(json, formats).stream().filter(members::contains).findFirst()
-                    .ifPresent(output -> rows.add(new Row(id, json.has("type") ? java.util.Objects.requireNonNullElse(ResourceLocation.tryParse(json.get("type").getAsString()), disabledType) : disabledType,
+                    .ifPresent(output -> rows.add(new Row(id, json.has("type") ? java.util.Objects.requireNonNullElse(Identifier.tryParse(json.get("type").getAsString()), disabledType) : disabledType,
                             output, Status.PACK_DISABLED, java.util.Optional.empty(), Removal.PACK, java.util.Optional.of(pack)))));
         });
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
-            ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
+            Identifier type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
             ItemStack out = holder.value().getResultItem(server.registryAccess());
-            List<ResourceLocation> outputs = new ArrayList<>();
+            List<Identifier> outputs = new ArrayList<>();
             if (!out.isEmpty()) {
                 outputs.add(BuiltInRegistries.ITEM.getKey(out.getItem()));
             } else if (type != null && formats.forType(type).isPresent()) {
                 RecipeSources.originalJson(server, holder.id()).ifPresent(json -> outputs.addAll(RecipeRewrites.outputIds(json, formats)));
             }
-            for (ResourceLocation output : outputs) {
+            for (Identifier output : outputs) {
                 if (!members.contains(output)) continue;
                 boolean known = type != null && formats.forType(type).isPresent();
                 Status status = rewritten.contains(holder.id()) ? Status.REWRITTEN
                         : form.canonical().map(output::equals).orElse(false) ? Status.CANONICAL
                         : alternatives.contains(output) ? (known ? Status.ALTERNATIVE : Status.UNSUPPORTED)
                         : Status.OTHER;
-                java.util.Optional<ResourceLocation> replaced = status != Status.REWRITTEN ? java.util.Optional.empty()
+                java.util.Optional<Identifier> replaced = status != Status.REWRITTEN ? java.util.Optional.empty()
                         : RecipeSources.originalJson(server, holder.id()).stream()
                                 .flatMap(json -> RecipeRewrites.outputIds(json, formats).stream()).filter(alternatives::contains).findFirst();
                 rows.add(new Row(holder.id(), type == null ? holder.id() : type, output, status, replaced, removal(server, holder.id()), editedBy(holder.id(), scripted, packs)));
@@ -111,7 +111,7 @@ public final class RecipeFamilies {
     }
 
     /** A script first: it acts on what the datapacks left. */
-    private static java.util.Optional<String> editedBy(ResourceLocation recipe, Set<ResourceLocation> scripted, PackEdits.Edits packs) {
+    private static java.util.Optional<String> editedBy(Identifier recipe, Set<Identifier> scripted, PackEdits.Edits packs) {
         return scripted.contains(recipe) ? java.util.Optional.of("kubejs") : java.util.Optional.ofNullable(packs.recipes().get(recipe));
     }
 }

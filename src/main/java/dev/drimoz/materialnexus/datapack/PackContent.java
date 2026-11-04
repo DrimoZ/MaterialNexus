@@ -11,7 +11,7 @@ import dev.drimoz.materialnexus.core.policy.PolicyPrecedence;
 import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
 import dev.drimoz.materialnexus.core.resolution.ResolvedMaterial;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -51,10 +51,10 @@ public final class PackContent {
     public static final String PLAYER_DISABLE = "player_disable";
     /** MNX-117: a removed recipe with no file to override (made in memory by a script, or by Material Nexus): nothing written. */
     public static final String PLAYER_DISABLE_INVALID = "player_disable_invalid";
-    private static final ResourceLocation AU_ID = ResourceLocation.fromNamespaceAndPath(AlmostUnified.MOD_ID, "owner");
+    private static final Identifier AU_ID = Identifier.fromNamespaceAndPath(AlmostUnified.MOD_ID, "owner");
 
     /** One generated change; for both conversions, {@code target} is the canonical item. */
-    public record Effect(String kind, ResourceLocation target, ResourceLocation item) { }
+    public record Effect(String kind, Identifier target, Identifier item) { }
 
     public record Content(Map<String, JsonElement> files, List<Effect> effects) { }
 
@@ -64,15 +64,15 @@ public final class PackContent {
     private PackContent() { }
 
     /** Alternative to canonical item, from the applied pack only: nothing converts before an apply. */
-    public static Map<ResourceLocation, ResourceLocation> itemConversions(List<Effect> effects) {
-        Map<ResourceLocation, ResourceLocation> conversions = new TreeMap<>();
+    public static Map<Identifier, Identifier> itemConversions(List<Effect> effects) {
+        Map<Identifier, Identifier> conversions = new TreeMap<>();
         for (Effect e : effects) if (e.kind().equals(ITEM_CONVERSION)) conversions.put(e.item(), e.target());
         return conversions;
     }
 
     /** Recipe side of {@link #full}: given the conversions and what Material Nexus may do, the recipe content. */
     public interface RecipePlanner {
-        Content plan(Map<ResourceLocation, ResourceLocation> conversions, AlmostUnified.Ownership ownership);
+        Content plan(Map<Identifier, Identifier> conversions, AlmostUnified.Ownership ownership);
     }
 
     /**
@@ -85,17 +85,17 @@ public final class PackContent {
 
     /** {@code conventionTags}: see {@link #conventionMembers}, for the tags added under {@code add_missing_tags}. */
     public static Content full(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy, boolean auPresent, RecipePlanner recipes,
-                               Map<ResourceLocation, Set<ResourceLocation>> conventionTags) {
+                               Map<Identifier, Set<Identifier>> conventionTags) {
         AlmostUnified.Ownership ownership = policy.almostUnified().ownership(auPresent);
         Content base = generate(resolved, policy, ownership, conventionTags);
         List<Effect> effects = new ArrayList<>(base.effects());
         Map<String, JsonElement> files = new TreeMap<>(base.files());
         if (auPresent) {
             for (AlmostUnified.Domain d : AlmostUnified.Domain.values()) {
-                if (!policy.almostUnified().mnxOwns(d, true)) effects.add(new Effect(ALMOST_UNIFIED, ResourceLocation.fromNamespaceAndPath("materialnexus", d.key), AU_ID));
+                if (!policy.almostUnified().mnxOwns(d, true)) effects.add(new Effect(ALMOST_UNIFIED, Identifier.fromNamespaceAndPath("materialnexus", d.key), AU_ID));
             }
         }
-        Map<ResourceLocation, ResourceLocation> conversions = itemConversions(base.effects());
+        Map<Identifier, Identifier> conversions = itemConversions(base.effects());
         if (!conversions.isEmpty()) {
             Content recipe = recipes.plan(conversions, ownership);
             files.putAll(recipe.files());
@@ -112,7 +112,7 @@ public final class PackContent {
     public static Content withProcesses(Content base, Content processes) {
         Map<String, JsonElement> files = new TreeMap<>(base.files());
         files.putAll(processes.files());
-        java.util.Set<ResourceLocation> disabled = new java.util.HashSet<>();
+        java.util.Set<Identifier> disabled = new java.util.HashSet<>();
         processes.effects().stream().filter(e -> e.kind().equals(ProcessPlanner.DISABLE)).forEach(e -> disabled.add(e.target()));
         List<Effect> effects = new ArrayList<>(base.effects().stream()
                 .filter(e -> !(disabled.contains(e.target()) && (e.kind().equals(RecipeRewrites.REWRITE) || e.kind().equals(RecipeRewrites.DISABLE))))
@@ -127,14 +127,14 @@ public final class PackContent {
      * over a rewrite or a disable of the same recipe by unification or process rules. {@code removable}: recipe to what it
      * made, for the removed ids that have a file to override; any other removed id is reported and writes nothing.
      */
-    public static Content withDisabledRecipes(Content base, Set<ResourceLocation> disabled, Map<ResourceLocation, ResourceLocation> removable) {
+    public static Content withDisabledRecipes(Content base, Set<Identifier> disabled, Map<Identifier, Identifier> removable) {
         if (disabled.isEmpty()) return base;
         Set<String> overriding = Set.of(RecipeRewrites.REWRITE, RecipeRewrites.DISABLE, ProcessPlanner.DISABLE);
         Map<String, JsonElement> files = new TreeMap<>(base.files());
         List<Effect> effects = new ArrayList<>(base.effects().stream()
                 .filter(e -> !(removable.containsKey(e.target()) && overriding.contains(e.kind()))).toList());
-        for (ResourceLocation id : new TreeSet<>(disabled)) {
-            ResourceLocation output = removable.get(id);
+        for (Identifier id : new TreeSet<>(disabled)) {
+            Identifier output = removable.get(id);
             if (output == null) {
                 effects.add(new Effect(PLAYER_DISABLE_INVALID, id, id));
                 continue;
@@ -187,7 +187,7 @@ public final class PackContent {
             for (var e : element.getAsJsonObject().entrySet()) {
                 if (e.getKey().equals("neoforge:conditions")) continue;
                 if (e.getKey().equals("item") && e.getValue().isJsonPrimitive()) {
-                    ResourceLocation id = ResourceLocation.tryParse(e.getValue().getAsString());
+                    Identifier id = Identifier.tryParse(e.getValue().getAsString());
                     if (id != null) items.add(id.toString());
                 } else {
                     collectItems(e.getValue(), items);
@@ -198,7 +198,7 @@ public final class PackContent {
 
     public static Content withValidRecipes(Content content, java.util.function.Predicate<JsonObject> decodes) {
         Map<String, JsonElement> files = new TreeMap<>(content.files());
-        java.util.Set<ResourceLocation> invalid = new java.util.HashSet<>();
+        java.util.Set<Identifier> invalid = new java.util.HashSet<>();
         for (var e : content.files().entrySet()) {
             String[] parts = e.getKey().split("/", 4);
             if (parts.length < 4 || !parts[0].equals("data") || !parts[2].equals("recipe") || !(e.getValue() instanceof JsonObject json) || !json.has("type")) continue;
@@ -206,7 +206,7 @@ public final class PackContent {
             recipe.remove("neoforge:conditions");
             if (decodes.test(recipe)) continue;
             files.remove(e.getKey());
-            invalid.add(ResourceLocation.fromNamespaceAndPath(parts[1], parts[3].substring(0, parts[3].length() - ".json".length())));
+            invalid.add(Identifier.fromNamespaceAndPath(parts[1], parts[3].substring(0, parts[3].length() - ".json".length())));
         }
         if (invalid.isEmpty()) return content;
         List<Effect> effects = new ArrayList<>();
@@ -231,22 +231,22 @@ public final class PackContent {
     }
 
     public static Content generate(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy, AlmostUnified.Ownership ownership,
-                                   Map<ResourceLocation, Set<ResourceLocation>> conventionTags) {
-        SortedMap<ResourceLocation, TreeSet<ResourceLocation>> removals = new TreeMap<>();
-        SortedMap<ResourceLocation, TreeSet<ResourceLocation>> additions = new TreeMap<>();
+                                   Map<Identifier, Set<Identifier>> conventionTags) {
+        SortedMap<Identifier, TreeSet<Identifier>> removals = new TreeMap<>();
+        SortedMap<Identifier, TreeSet<Identifier>> additions = new TreeMap<>();
         if (policy.addMissingTags() && ownership.tags()) missingTags(resolved, policy, conventionTags, additions);
         Map<String, JsonElement> files = new TreeMap<>();
         List<Effect> effects = new ArrayList<>();
         resolved.forEach((material, rm) -> rm.forms().forEach((form, f) -> {
             if (!isUnified(f)) return;
-            ResourceLocation canonical = f.canonical().orElseThrow();
-            for (ResourceLocation alt : f.alternatives()) effects.add(new Effect(ITEM_CONVERSION, canonical, alt));
+            Identifier canonical = f.canonical().orElseThrow();
+            for (Identifier alt : f.alternatives()) effects.add(new Effect(ITEM_CONVERSION, canonical, alt));
             if (ownership.tags()) {
                 TagDiscovery.conventionTag(material, form)
                         .ifPresent(tag -> removals.computeIfAbsent(tag, t -> new TreeSet<>()).addAll(f.alternatives()));
             }
             if (policy.conversionRecipeForms().contains(form)) {
-                for (ResourceLocation alt : f.alternatives()) {
+                for (Identifier alt : f.alternatives()) {
                     String id = "convert/" + material.name() + "/" + form.name() + "/" + alt.getNamespace() + "_" + alt.getPath().replace('/', '_');
                     files.put("data/materialnexus/recipe/" + id + ".json", conversionRecipe(alt, canonical));
                     effects.add(new Effect(CONVERSION, canonical, alt));
@@ -262,11 +262,11 @@ public final class PackContent {
         }));
         additions.values().removeIf(java.util.Collection::isEmpty);
         removals.values().removeIf(java.util.Collection::isEmpty);
-        Set<ResourceLocation> tags = new TreeSet<>(removals.keySet());
+        Set<Identifier> tags = new TreeSet<>(removals.keySet());
         tags.addAll(additions.keySet());
-        for (ResourceLocation tag : tags) {
-            Collection<ResourceLocation> removed = removals.getOrDefault(tag, new TreeSet<>());
-            Collection<ResourceLocation> added = additions.getOrDefault(tag, new TreeSet<>());
+        for (Identifier tag : tags) {
+            Collection<Identifier> removed = removals.getOrDefault(tag, new TreeSet<>());
+            Collection<Identifier> added = additions.getOrDefault(tag, new TreeSet<>());
             files.put("data/" + tag.getNamespace() + "/tags/item/" + tag.getPath() + ".json", tagFile(added, removed));
             removed.forEach(item -> effects.add(new Effect(TAG_REMOVE, tag, item)));
             added.forEach(item -> effects.add(new Effect(TAG_ADD, tag, item)));
@@ -282,16 +282,16 @@ public final class PackContent {
      * variant or an excluded form, never an alternative that is about to leave the tag.
      */
     public static void missingTags(SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy,
-                                    Map<ResourceLocation, Set<ResourceLocation>> members, SortedMap<ResourceLocation, TreeSet<ResourceLocation>> out) {
+                                    Map<Identifier, Set<Identifier>> members, SortedMap<Identifier, TreeSet<Identifier>> out) {
         resolved.forEach((material, rm) -> rm.forms().forEach((form, f) -> {
             if (f.canonical().isEmpty() || policy.isExcluded(new dev.drimoz.materialnexus.core.domain.MaterialForm(material, form))) return;
             var tag = TagDiscovery.conventionTag(material, form);
             if (tag.isEmpty()) return;
-            ResourceLocation folder = folderTag(tag.get());
+            Identifier folder = folderTag(tag.get());
             if (!members.containsKey(tag.get()) && !members.containsKey(folder)) return;
-            List<ResourceLocation> items = new ArrayList<>(List.of(f.canonical().get()));
+            List<Identifier> items = new ArrayList<>(List.of(f.canonical().get()));
             if (!isUnified(f)) items.addAll(f.alternatives());
-            for (ResourceLocation item : items) {
+            for (Identifier item : items) {
                 if (!members.getOrDefault(tag.get(), Set.of()).contains(item)) out.computeIfAbsent(tag.get(), t -> new TreeSet<>()).add(item);
                 if (members.containsKey(folder) && !members.get(folder).contains(item)) out.computeIfAbsent(folder, t -> new TreeSet<>()).add(item);
             }
@@ -302,30 +302,30 @@ public final class PackContent {
      * MNX-079: discovery sees the items the player added to a form's tag as members of it (call after
      * {@link #restoreRemovedMembers}). Removed ones stay: the resolver lists them as taken out of the tag.
      */
-    public static void addPlayerTags(Map<ResourceLocation, List<ResourceLocation>> tagMembers, ResolutionPolicy policy) {
+    public static void addPlayerTags(Map<Identifier, List<Identifier>> tagMembers, ResolutionPolicy policy) {
         policy.tagEdits().forEach((key, edit) -> TagDiscovery.conventionTag(key.material(), key.form()).ifPresent(tag -> {
-            List<ResourceLocation> members = new ArrayList<>(tagMembers.getOrDefault(tag, List.of()));
+            List<Identifier> members = new ArrayList<>(tagMembers.getOrDefault(tag, List.of()));
             edit.add().stream().sorted().filter(i -> !members.contains(i)).forEach(members::add);
             if (!members.isEmpty()) tagMembers.put(tag, members);
         }));
     }
 
     /** c:ingots/tin to c:ingots. */
-    private static ResourceLocation folderTag(ResourceLocation tag) {
-        return ResourceLocation.fromNamespaceAndPath(tag.getNamespace(), tag.getPath().substring(0, tag.getPath().indexOf('/')));
+    private static Identifier folderTag(Identifier tag) {
+        return Identifier.fromNamespaceAndPath(tag.getNamespace(), tag.getPath().substring(0, tag.getPath().indexOf('/')));
     }
 
     /**
      * What {@link #missingTags} reads: the members of each discovered form's convention tag and folder tag, as they are
      * without Material Nexus (call after {@link #restoreRemovedMembers}). A tag the game does not have is absent.
      */
-    public static Map<ResourceLocation, Set<ResourceLocation>> conventionMembers(
-            dev.drimoz.materialnexus.core.discovery.DiscoveredMaterials discovered, Map<ResourceLocation, ? extends Collection<ResourceLocation>> tagMembers) {
-        Map<ResourceLocation, Set<ResourceLocation>> out = new java.util.HashMap<>();
+    public static Map<Identifier, Set<Identifier>> conventionMembers(
+            dev.drimoz.materialnexus.core.discovery.DiscoveredMaterials discovered, Map<Identifier, ? extends Collection<Identifier>> tagMembers) {
+        Map<Identifier, Set<Identifier>> out = new java.util.HashMap<>();
         discovered.materials().forEach((material, forms) -> forms.keySet().forEach(form ->
                 TagDiscovery.conventionTag(material, form).ifPresent(tag -> {
-                    for (ResourceLocation t : List.of(tag, folderTag(tag))) {
-                        Collection<ResourceLocation> m = tagMembers.get(t);
+                    for (Identifier t : List.of(tag, folderTag(tag))) {
+                        Collection<Identifier> m = tagMembers.get(t);
                         if (m != null && !m.isEmpty()) out.put(t, Set.copyOf(m));
                     }
                 })));
@@ -333,7 +333,7 @@ public final class PackContent {
     }
 
     /** NeoForge tag file that appends and removes: the items keep every other tag they have. */
-    private static JsonObject tagFile(Collection<ResourceLocation> added, Collection<ResourceLocation> removed) {
+    private static JsonObject tagFile(Collection<Identifier> added, Collection<Identifier> removed) {
         JsonObject tag = new JsonObject();
         tag.addProperty("replace", false);
         JsonArray values = new JsonArray();
@@ -353,7 +353,7 @@ public final class PackContent {
         return tag;
     }
 
-    private static JsonObject conversionRecipe(ResourceLocation from, ResourceLocation to) {
+    private static JsonObject conversionRecipe(Identifier from, Identifier to) {
         JsonObject ingredient = new JsonObject();
         ingredient.addProperty("item", from.toString());
         JsonArray ingredients = new JsonArray();
@@ -391,7 +391,7 @@ public final class PackContent {
         for (JsonElement el : root.getAsJsonArray("changes")) {
             JsonObject o = el.getAsJsonObject();
             effects.add(new Effect(o.get("kind").getAsString(),
-                    ResourceLocation.parse(o.get("target").getAsString()), ResourceLocation.parse(o.get("item").getAsString())));
+                    Identifier.parse(o.get("target").getAsString()), Identifier.parse(o.get("item").getAsString())));
         }
         return effects;
     }
@@ -401,11 +401,11 @@ public final class PackContent {
      * seeing the pre-MNX state and the next apply regenerates the same removals. The members it added (MNX-078) are
      * taken out the same way; a tag left with no member is dropped, as it did not exist.
      */
-    public static void restoreRemovedMembers(Map<ResourceLocation, List<ResourceLocation>> tagMembers, List<Effect> effects) {
+    public static void restoreRemovedMembers(Map<Identifier, List<Identifier>> tagMembers, List<Effect> effects) {
         for (Effect e : effects) {
             boolean removed = e.kind().equals(TAG_REMOVE);
             if (!removed && !e.kind().equals(TAG_ADD)) continue;
-            List<ResourceLocation> members = new ArrayList<>(tagMembers.getOrDefault(e.target(), List.of()));
+            List<Identifier> members = new ArrayList<>(tagMembers.getOrDefault(e.target(), List.of()));
             if (removed && !members.contains(e.item())) members.add(e.item());
             if (!removed) members.remove(e.item());
             if (members.isEmpty()) tagMembers.remove(e.target());

@@ -6,7 +6,7 @@ import dev.drimoz.materialnexus.core.domain.MaterialId;
 import dev.drimoz.materialnexus.core.domain.Provider;
 import dev.drimoz.materialnexus.core.recipe.FamilyRelations;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.world.item.ItemStack;
 import net.minecraft.world.item.crafting.Ingredient;
@@ -31,12 +31,12 @@ public final class RecipeEdges {
 
     /** Missing relations for every material at once: the recipes are scanned a single time. */
     public static Map<MaterialId, List<FamilyRelations.Relation>> missingAll(MinecraftServer server, DiscoveredMaterials discovered) {
-        Set<ResourceLocation> all = new HashSet<>();
+        Set<Identifier> all = new HashSet<>();
         discovered.materials().values().forEach(forms -> forms.values().forEach(list -> list.forEach(p -> all.add(p.resource()))));
         List<FamilyRelations.Edge> edges = edges(server, all);
         Map<MaterialId, List<FamilyRelations.Relation>> result = new java.util.TreeMap<>();
         discovered.materials().forEach((material, forms) -> {
-            Map<FormId, Set<ResourceLocation>> providers = new HashMap<>();
+            Map<FormId, Set<Identifier>> providers = new HashMap<>();
             forms.forEach((form, list) -> providers.put(form, list.stream().map(Provider::resource).collect(Collectors.toSet())));
             result.put(material, FamilyRelations.missing(providers, edges));
         });
@@ -50,21 +50,21 @@ public final class RecipeEdges {
     /** How many recipes make an item, and how many accept it as an input (MNX-052: what to keep). */
     public record Usage(int produced, int used) { }
 
-    public static Map<ResourceLocation, Usage> usage(List<FamilyRelations.Edge> edges, Set<ResourceLocation> items) {
-        Map<ResourceLocation, int[]> counts = new HashMap<>();
-        for (ResourceLocation item : items) counts.put(item, new int[2]);
+    public static Map<Identifier, Usage> usage(List<FamilyRelations.Edge> edges, Set<Identifier> items) {
+        Map<Identifier, int[]> counts = new HashMap<>();
+        for (Identifier item : items) counts.put(item, new int[2]);
         for (FamilyRelations.Edge edge : edges) {
             int[] made = counts.get(edge.result());
             if (made != null) made[0]++;
-            Set<ResourceLocation> seen = new HashSet<>();
-            for (Set<ResourceLocation> ingredient : edge.ingredients()) {
-                for (ResourceLocation item : ingredient) {
+            Set<Identifier> seen = new HashSet<>();
+            for (Set<Identifier> ingredient : edge.ingredients()) {
+                for (Identifier item : ingredient) {
                     int[] used = counts.get(item);
                     if (used != null && seen.add(item)) used[1]++;
                 }
             }
         }
-        Map<ResourceLocation, Usage> result = new HashMap<>();
+        Map<Identifier, Usage> result = new HashMap<>();
         counts.forEach((item, c) -> result.put(item, new Usage(c[0], c[1])));
         return result;
     }
@@ -77,10 +77,10 @@ public final class RecipeEdges {
     public static List<FamilyRelations.Relation> missing(List<FamilyRelations.Edge> edges, DiscoveredMaterials discovered, MaterialId material) {
         var forms = discovered.materials().get(material);
         if (forms == null) return List.of();
-        Map<FormId, Set<ResourceLocation>> providers = new HashMap<>();
-        Set<ResourceLocation> all = new HashSet<>();
+        Map<FormId, Set<Identifier>> providers = new HashMap<>();
+        Set<Identifier> all = new HashSet<>();
         forms.forEach((form, list) -> {
-            Set<ResourceLocation> ids = list.stream().map(Provider::resource).collect(Collectors.toSet());
+            Set<Identifier> ids = list.stream().map(Provider::resource).collect(Collectors.toSet());
             providers.put(form, ids);
             all.addAll(ids);
         });
@@ -88,7 +88,7 @@ public final class RecipeEdges {
         return FamilyRelations.missing(providers, edges);
     }
 
-    private static List<FamilyRelations.Edge> edges(MinecraftServer server, Set<ResourceLocation> all) {
+    private static List<FamilyRelations.Edge> edges(MinecraftServer server, Set<Identifier> all) {
         List<FamilyRelations.Edge> edges = new ArrayList<>();
         dev.drimoz.materialnexus.integration.RecipeFormats formats = dev.drimoz.materialnexus.integration.RecipeFormats.load(server.getResourceManager());
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
@@ -96,14 +96,14 @@ public final class RecipeEdges {
             if (out.isEmpty() || holder.value().getIngredients().isEmpty()) {
                 // Machine recipes (MI, Mekanism...) often hide their result or ingredients from vanilla APIs: read their JSON.
                 // ponytail: reads those files on each request; index them on reload if this shows up in a profile.
-                ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
+                Identifier type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
                 if (type != null && formats.forType(type).isPresent()) {
                     RecipeSources.originalJson(server, holder.id()).ifPresent(json -> edges.addAll(fromJson(json, formats)));
                 }
                 if (out.isEmpty()) continue;
             }
-            ResourceLocation result = BuiltInRegistries.ITEM.getKey(out.getItem());
-            List<Set<ResourceLocation>> ingredients = new ArrayList<>();
+            Identifier result = BuiltInRegistries.ITEM.getKey(out.getItem());
+            List<Set<Identifier>> ingredients = new ArrayList<>();
             for (Ingredient ingredient : holder.value().getIngredients()) {
                 ingredients.add(Arrays.stream(ingredient.getItems()).map(s -> BuiltInRegistries.ITEM.getKey(s.getItem())).collect(Collectors.toSet()));
             }
@@ -117,8 +117,8 @@ public final class RecipeEdges {
     private static List<FamilyRelations.Edge> fromJson(com.google.gson.JsonObject json, dev.drimoz.materialnexus.integration.RecipeFormats formats) {
         var format = RecipeRewrites.format(json, formats);
         if (format.isEmpty()) return List.of();
-        Set<ResourceLocation> accepted = new HashSet<>();
-        Set<ResourceLocation> produced = new HashSet<>();
+        Set<Identifier> accepted = new HashSet<>();
+        Set<Identifier> produced = new HashSet<>();
         json.entrySet().forEach(e -> {
             boolean output = format.get().outputKeys().contains(e.getKey());
             collectInputs(e.getValue(), output ? produced : accepted, output);
@@ -126,19 +126,19 @@ public final class RecipeEdges {
         return produced.stream().map(result -> new FamilyRelations.Edge(result, List.of(accepted))).toList();
     }
 
-    private static void collectInputs(com.google.gson.JsonElement element, Set<ResourceLocation> accepted, boolean output) {
+    private static void collectInputs(com.google.gson.JsonElement element, Set<Identifier> accepted, boolean output) {
         if (element.isJsonArray()) {
             element.getAsJsonArray().forEach(e -> collectInputs(e, accepted, output));
         } else if (element.isJsonObject()) {
             var o = element.getAsJsonObject();
-            if (o.has("item") && o.get("item").isJsonPrimitive()) java.util.Optional.ofNullable(ResourceLocation.tryParse(o.get("item").getAsString())).ifPresent(accepted::add);
+            if (o.has("item") && o.get("item").isJsonPrimitive()) java.util.Optional.ofNullable(Identifier.tryParse(o.get("item").getAsString())).ifPresent(accepted::add);
             if (o.has("tag") && o.get("tag").isJsonPrimitive()) {
-                ResourceLocation tag = ResourceLocation.tryParse(o.get("tag").getAsString());
+                Identifier tag = Identifier.tryParse(o.get("tag").getAsString());
                 if (tag != null) BuiltInRegistries.ITEM.getTag(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag))
-                        .ifPresent(set -> set.forEach(h -> h.unwrapKey().ifPresent(k -> accepted.add(k.location()))));
+                        .ifPresent(set -> set.forEach(h -> h.unwrapKey().ifPresent(k -> accepted.add(k.identifier()))));
             }
             // Outputs name items with "id" (Create, Mekanism); in inputs "id" may name a fluid or chemical, so it is ignored there.
-            if (output && o.has("id") && o.get("id").isJsonPrimitive()) java.util.Optional.ofNullable(ResourceLocation.tryParse(o.get("id").getAsString())).ifPresent(accepted::add);
+            if (output && o.has("id") && o.get("id").isJsonPrimitive()) java.util.Optional.ofNullable(Identifier.tryParse(o.get("id").getAsString())).ifPresent(accepted::add);
             o.entrySet().forEach(e -> collectInputs(e.getValue(), accepted, output));
         }
     }

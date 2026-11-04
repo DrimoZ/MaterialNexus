@@ -1,7 +1,7 @@
 package dev.drimoz.materialnexus.conversion;
 
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.Container;
 import net.minecraft.world.item.Item;
 import net.minecraft.world.item.ItemStack;
@@ -21,7 +21,7 @@ public final class ItemConversions {
     private ItemConversions() { }
 
     /** Unknown ids (a mod removed since the apply) are skipped. */
-    public static void install(Map<ResourceLocation, ResourceLocation> byId) {
+    public static void install(Map<Identifier, Identifier> byId) {
         Map<Item, Item> items = new IdentityHashMap<>();
         byId.forEach((from, to) -> BuiltInRegistries.ITEM.getOptional(from).ifPresent(f ->
                 BuiltInRegistries.ITEM.getOptional(to).ifPresent(t -> items.put(f, t))));
@@ -34,14 +34,14 @@ public final class ItemConversions {
     }
 
     /** The alternatives currently converted, for recipe viewers on the client. */
-    public static java.util.List<ResourceLocation> alternatives() {
+    public static java.util.List<Identifier> alternatives() {
         if (!viewerHiding) return java.util.List.of();
         return active.keySet().stream().map(BuiltInRegistries.ITEM::getKey).sorted().toList();
     }
 
     /** Every alternative with the item it becomes (MNX-054: in-game tooltips), whatever owns viewer hiding. */
-    public static Map<ResourceLocation, ResourceLocation> mapping() {
-        Map<ResourceLocation, ResourceLocation> byId = new java.util.TreeMap<>();
+    public static Map<Identifier, Identifier> mapping() {
+        Map<Identifier, Identifier> byId = new java.util.TreeMap<>();
         active.forEach((from, to) -> byId.put(BuiltInRegistries.ITEM.getKey(from), BuiltInRegistries.ITEM.getKey(to)));
         return byId;
     }

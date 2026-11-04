@@ -12,7 +12,7 @@ import dev.drimoz.materialnexus.core.discovery.TagDiscovery;
 import dev.drimoz.materialnexus.core.domain.FormId;
 import dev.drimoz.materialnexus.core.domain.MaterialId;
 import dev.drimoz.materialnexus.core.resolution.ResolvedMaterial;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.slf4j.Logger;
 
 import java.io.IOException;
@@ -68,23 +68,23 @@ public final class CreatedItems {
      * {@code colorFrom}: an item of the material whose texture gives the tint, unless {@code color} (0xRRGGBB) is set.
      * {@code texture} (MNX-073): the pack's own texture for the item, drawn as it is, instead of the tinted template.
      */
-    public record Entry(MaterialId material, FormId form, Optional<ResourceLocation> colorFrom, Optional<Integer> color,
-                        Optional<ResourceLocation> texture) {
+    public record Entry(MaterialId material, FormId form, Optional<Identifier> colorFrom, Optional<Integer> color,
+                        Optional<Identifier> texture) {
         static final Codec<Entry> CODEC = RecordCodecBuilder.create(i -> i.group(
                 MaterialId.CODEC.fieldOf("material").forGetter(Entry::material),
                 FormId.CODEC.fieldOf("form").forGetter(Entry::form),
-                ResourceLocation.CODEC.optionalFieldOf("color_from").forGetter(Entry::colorFrom),
+                Identifier.CODEC.optionalFieldOf("color_from").forGetter(Entry::colorFrom),
                 Codec.STRING.xmap(s -> Integer.parseInt(s.replace("#", ""), 16), c -> String.format("#%06X", c))
                         .optionalFieldOf("color").forGetter(Entry::color),
-                ResourceLocation.CODEC.optionalFieldOf("texture").forGetter(Entry::texture)
+                Identifier.CODEC.optionalFieldOf("texture").forGetter(Entry::texture)
         ).apply(i, Entry::new));
 
-        public ResourceLocation id() {
-            return ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, material.name() + "_" + form.name());
+        public Identifier id() {
+            return Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, material.name() + "_" + form.name());
         }
 
         /** The convention tag that makes discovery see the item as this material's form. */
-        public ResourceLocation tag() {
+        public Identifier tag() {
             return TagDiscovery.conventionTag(material, form).orElseThrow();
         }
     }
@@ -129,7 +129,7 @@ public final class CreatedItems {
         Optional<FormId> f = FormId.read(form).result();
         if (m.isEmpty() || f.isEmpty() || resolved == null || !resolved.material().equals(m.get()) || !FORMS.contains(f.get())) return Optional.empty();
         if (!creatable(resolved.forms().keySet()).contains(f.get()) || !discovered.providers(m.get(), f.get()).isEmpty()) return Optional.empty();
-        Optional<ResourceLocation> colorFrom = Stream.of("ingot", "gem")
+        Optional<Identifier> colorFrom = Stream.of("ingot", "gem")
                 .map(name -> resolved.forms().get(new FormId(name)))
                 .filter(Objects::nonNull)
                 .flatMap(x -> x.canonical().stream())

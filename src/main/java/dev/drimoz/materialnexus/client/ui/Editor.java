@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonParseException;
 import com.google.gson.TypeAdapter;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.network.chat.Component;
 
@@ -25,9 +25,9 @@ public final class Editor extends MultiLineEditBox {
     }
 
     @Override
-    protected void renderBorder(GuiGraphics g, int x, int y, int width, int height) {
+    protected void renderBorder(GuiGraphicsExtractor g, int x, int y, int width, int height) {
         g.fill(x, y, x + width, y + height, Theme.GRAPHITE.bg);
-        g.renderOutline(x, y, width, height, isFocused() ? Theme.INFO : Theme.CTRL);
+        g.outline(x, y, width, height, isFocused() ? Theme.INFO : Theme.CTRL);
     }
 
     /** What is wrong with {@code text} as JSON ("... at line 9 column 5"), or empty when it reads. */

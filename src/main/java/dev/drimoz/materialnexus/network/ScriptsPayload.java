@@ -8,7 +8,7 @@ import dev.drimoz.materialnexus.core.scripts.ScriptDecisions;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 import java.util.Optional;
@@ -21,10 +21,10 @@ public record ScriptsPayload(List<Row> rows, int addedRecipes) implements Custom
     /** Evidence lines sent per row; the report has them all. */
     static final int MAX_EVIDENCE = 6;
 
-    public record Row(String material, String form, Optional<ResourceLocation> kept, Optional<ResourceLocation> current,
+    public record Row(String material, String form, Optional<Identifier> kept, Optional<Identifier> current,
                       ScriptDecisions.Status status, List<ScriptDecisions.Evidence> evidence, int evidenceCount, List<String> seenIn) { }
 
-    public static final Type<ScriptsPayload> TYPE = new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "scripts"));
+    public static final Type<ScriptsPayload> TYPE = new Type<>(Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "scripts"));
     public static final StreamCodec<FriendlyByteBuf, ScriptsPayload> STREAM_CODEC = StreamCodec.of(ScriptsPayload::write, ScriptsPayload::read);
 
     public ScriptsPayload {
@@ -47,14 +47,14 @@ public record ScriptsPayload(List<Row> rows, int addedRecipes) implements Custom
         buf.writeCollection(p.rows(), (b, r) -> {
             b.writeUtf(r.material());
             b.writeUtf(r.form());
-            b.writeOptional(r.kept(), FriendlyByteBuf::writeResourceLocation);
-            b.writeOptional(r.current(), FriendlyByteBuf::writeResourceLocation);
+            b.writeOptional(r.kept(), FriendlyByteBuf::writeIdentifier);
+            b.writeOptional(r.current(), FriendlyByteBuf::writeIdentifier);
             b.writeEnum(r.status());
             b.writeCollection(r.evidence(), (e, ev) -> {
                 e.writeUtf(ev.kind());
-                e.writeResourceLocation(ev.where());
-                e.writeResourceLocation(ev.from());
-                e.writeOptional(ev.to(), FriendlyByteBuf::writeResourceLocation);
+                e.writeIdentifier(ev.where());
+                e.writeIdentifier(ev.from());
+                e.writeOptional(ev.to(), FriendlyByteBuf::writeIdentifier);
             });
             b.writeVarInt(r.evidenceCount());
             b.writeCollection(r.seenIn(), FriendlyByteBuf::writeUtf);
@@ -64,10 +64,10 @@ public record ScriptsPayload(List<Row> rows, int addedRecipes) implements Custom
 
     private static ScriptsPayload read(FriendlyByteBuf buf) {
         List<Row> rows = buf.readList(b -> new Row(b.readUtf(), b.readUtf(),
-                b.readOptional(FriendlyByteBuf::readResourceLocation), b.readOptional(FriendlyByteBuf::readResourceLocation),
+                b.readOptional(FriendlyByteBuf::readIdentifier), b.readOptional(FriendlyByteBuf::readIdentifier),
                 b.readEnum(ScriptDecisions.Status.class),
-                b.readList(e -> new ScriptDecisions.Evidence(e.readUtf(), e.readResourceLocation(), e.readResourceLocation(),
-                        e.readOptional(FriendlyByteBuf::readResourceLocation))),
+                b.readList(e -> new ScriptDecisions.Evidence(e.readUtf(), e.readIdentifier(), e.readIdentifier(),
+                        e.readOptional(FriendlyByteBuf::readIdentifier))),
                 b.readVarInt(), b.readList(FriendlyByteBuf::readUtf)));
         return new ScriptsPayload(rows, buf.readVarInt());
     }

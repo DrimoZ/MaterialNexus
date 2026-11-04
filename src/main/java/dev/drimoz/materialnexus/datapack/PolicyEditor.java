@@ -9,7 +9,7 @@ import dev.drimoz.materialnexus.core.domain.MaterialId;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
 import dev.drimoz.materialnexus.core.resolution.ResolvedMaterial;
 import dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -29,7 +29,7 @@ public final class PolicyEditor {
     public static final int MAX_CHANGES = 4096;
 
     /** One line of the preview. {@code from} is empty when the form had no canonical yet. */
-    public record Entry(String material, String form, Optional<ResourceLocation> from, ResourceLocation to, boolean valid) { }
+    public record Entry(String material, String form, Optional<Identifier> from, Identifier to, boolean valid) { }
 
     private PolicyEditor() { }
 

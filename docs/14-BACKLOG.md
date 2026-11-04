@@ -78,7 +78,7 @@
 | MNX-129 | P1 | 0.5.0 prepared | mod_version, changelog, store description (recipes of any mod, formats for nearly thirty mods) and release checklist |
 | MNX-130 | P1 | Texts and images match 0.5.0 | The two game messages and the wiki and README passages that said an unknown recipe type is left untouched now say what happens (usual keys, then format or skip); store art and wiki images retaken (Review and apply, Rule files, Recipes, Process) |
 | MNX-131 | P1 | 26.1.2 spike (vanilla) | Builds against NeoForge 26.1.2 with `-Pvanilla` on a throwaway branch; compile errors counted per area; client recipe access option chosen; estimate in `23-PORT-26.1.md` corrected |
-| MNX-132 | P1 | 26.1.2 toolchain and renames | Java 25, MDG/Gradle updated, no Parchment, `Identifier`, event/annotation renames, `UiFont` without reflection; `mc/26.1.2` compiles |
+| MNX-132 | P1 | 26.1.2 toolchain and renames | Java 25, MDG/Gradle updated, no Parchment, `Identifier`, `GuiGraphicsExtractor` (`text`, `outline`, `item`, `nextStratum` for layers), client packets, `GAMEMASTERS` permission, server reload listeners, 26.1 pack format; `UiFont` reads the font provider by its plain name (no public path); the 73 compile errors left belong to MNX-133 to MNX-138, so `mc/26.1.2` compiles only once they land |
 | MNX-133 | P1 | 26.1.2 recipe analysis | Sources, edges, families and `/materials` on the new recipe API; vanilla adapters verified on 26.1.2 vanilla recipes |
 | MNX-134 | P1 | 26.1.2 reload and sync | Reload listeners and generated pack injection work; MNX-060 resync removed or rebuilt, with the reason written down |
 | MNX-135 | P1 | 26.1.2 GameTests | All 20 GameTest behaviors on the new framework; `runGameTestServer` green |
