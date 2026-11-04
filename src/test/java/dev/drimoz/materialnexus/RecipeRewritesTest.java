@@ -157,6 +157,40 @@ class RecipeRewritesTest {
                 .isEmpty(), "a tag holding another material keeps the item");
     }
 
+    /**
+     * MNX-133: 26.1 recipes name ingredients by bare id ({@code "ns:id"}, lists of them, grid symbols) and tags as {@code "#ns:tag"}.
+     * They get the tag at those spots; a bare id elsewhere (a block) is left and listed.
+     */
+    @Test
+    void bareIdIngredientsOfTheNewSpelling() {
+        var all = dev.drimoz.materialnexus.core.policy.AlmostUnified.Ownership.ALL;
+        var alt = Identifier.parse("mekanism:ingot_tin");
+        var kept = Identifier.parse("immersiveengineering:ingot_tin");
+        var tag = Identifier.parse("c:ingots/tin");
+        var form = new RecipeRewrites.UnifiedForm(tag, kept, List.of(alt), java.util.Set.of(alt, kept));
+        var inputTags = RecipeRewrites.inputTags(List.of(form), Map.of(tag, java.util.Set.of(alt, kept)));
+        RecipeRewrites.Decoder accepts = json -> Optional.of(new RecipeRewrites.Decoded() {
+            public boolean exposed() { return true; }
+            public boolean produces(Identifier item) { return false; }
+            public boolean consumes(Identifier item) { return true; }
+        });
+        var sources = List.of(
+                new Source(id("block"), json("{\"type\":\"minecraft:crafting_shaped\",\"key\":{\"#\":\"%s\"},\"pattern\":[\"###\",\"###\",\"###\"],\"result\":{\"id\":\"minecraft:stone\"}}".formatted(alt)), alt),
+                new Source(id("mixed"), json("{\"type\":\"minecraft:crafting_shapeless\",\"ingredients\":[\"%s\",[\"minecraft:stone\",\"%1$s\"],\"#c:dusts/coal\"],\"result\":{\"id\":\"minecraft:stone\"}}".formatted(alt)), alt),
+                new Source(id("foundry"), json("{\"type\":\"othermod:foundry\",\"ingredient\":\"%s\",\"block\":\"%1$s\",\"result\":{\"id\":\"minecraft:stone\"}}".formatted(alt)), alt));
+
+        var plan = RecipeRewrites.plan(sources, Map.of(alt, kept), SHIPPED, all, inputTags, accepts);
+        assertEquals(JsonParser.parseString("{\"#\":\"#c:ingots/tin\"}"), plan.files().get("data/test/recipe/block.json").getAsJsonObject().get("key"));
+        assertEquals(JsonParser.parseString("[\"#c:ingots/tin\",[\"minecraft:stone\",\"#c:ingots/tin\"],\"#c:dusts/coal\"]"),
+                plan.files().get("data/test/recipe/mixed.json").getAsJsonObject().get("ingredients"));
+        JsonObject foundry = plan.files().get("data/test/recipe/foundry.json").getAsJsonObject();
+        assertEquals("#c:ingots/tin", foundry.get("ingredient").getAsString());
+        assertEquals(alt.toString(), foundry.get("block").getAsString(), "a bare id outside an ingredient spot is not rewritten");
+        assertTrue(plan.effects().contains(new PackContent.Effect(RecipeRewrites.UNSUPPORTED, id("foundry"), alt)));
+        assertEquals(kept.toString(), RecipeRewrites.plan(sources, Map.of(alt, kept), SHIPPED, all, inputTags, RecipeRewrites.Decoder.NONE)
+                .files().get("data/test/recipe/foundry.json").getAsJsonObject().get("ingredient").getAsString(), "no tag the game refuses");
+    }
+
     @Test
     void rewritesVanillaOutputsAndDisablesOnlyNewDuplicates() {
         String block = "{\"type\":\"minecraft:crafting_shapeless\",\"ingredients\":[{\"tag\":\"c:storage_blocks/tin\"}],\"result\":{\"count\":9,\"id\":\"%s\"}}";
