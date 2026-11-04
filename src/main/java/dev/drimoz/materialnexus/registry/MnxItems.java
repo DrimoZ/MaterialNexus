@@ -13,7 +13,7 @@ public final class MnxItems {
     private static final DeferredRegister.Items ITEMS = DeferredRegister.createItems(MaterialNexus.MOD_ID);
 
     public static final DeferredItem<NexusTerminalItem> NEXUS_TERMINAL =
-            ITEMS.register("nexus_terminal", () -> new NexusTerminalItem(new Item.Properties().stacksTo(1)));
+            ITEMS.registerItem("nexus_terminal", NexusTerminalItem::new, p -> p.stacksTo(1));
 
     /** Items created for missing forms (MNX-039), read once from config at startup. */
     public static final java.util.List<DeferredItem<dev.drimoz.materialnexus.item.CreatedItem>> CREATED = new java.util.ArrayList<>();
@@ -23,7 +23,7 @@ public final class MnxItems {
     public static void register(IEventBus modBus) {
         for (var entry : dev.drimoz.materialnexus.item.CreatedItems.load(
                 dev.drimoz.materialnexus.datapack.MnxPaths.root().resolve(dev.drimoz.materialnexus.item.CreatedItems.FILE))) {
-            CREATED.add(ITEMS.register(entry.id().getPath(), () -> new dev.drimoz.materialnexus.item.CreatedItem(entry)));
+            CREATED.add(ITEMS.registerItem(entry.id().getPath(), p -> new dev.drimoz.materialnexus.item.CreatedItem(entry, p)));
         }
         ITEMS.register(modBus);
         modBus.addListener(MnxItems::addToCreativeTab);

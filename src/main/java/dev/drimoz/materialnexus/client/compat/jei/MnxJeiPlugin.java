@@ -91,9 +91,7 @@ public final class MnxJeiPlugin implements IModPlugin {
         }
 
         private java.util.Optional<Layout> find(Identifier id) {
-            var level = net.minecraft.client.Minecraft.getInstance().level;
-            if (level == null) return java.util.Optional.empty();
-            var holder = level.getRecipeManager().byKey(id);
+            var holder = dev.drimoz.materialnexus.client.ClientRecipes.byId(id);
             if (holder.isEmpty()) return java.util.Optional.empty();
             var focus = runtime.getJeiHelpers().getFocusFactory().getEmptyFocusGroup();
             for (mezz.jei.api.recipe.category.IRecipeCategory<?> category : runtime.getRecipeManager().createRecipeCategoryLookup().get().toList()) {

@@ -2,7 +2,6 @@ package dev.drimoz.materialnexus.integration.kubejs;
 
 import com.google.gson.JsonElement;
 import dev.drimoz.materialnexus.integration.ScriptSources;
-import dev.latvian.mods.kubejs.core.RecipeManagerKJS;
 import dev.latvian.mods.kubejs.plugin.KubeJSPlugin;
 import dev.latvian.mods.kubejs.recipe.RecipesKubeEvent;
 import dev.latvian.mods.kubejs.script.BindingRegistry;
@@ -23,7 +22,7 @@ public final class MaterialNexusKubeJSPlugin implements KubeJSPlugin {
 
     /** MNX-076: keeps the event to read what scripts changed once the reload is done (read-only, ADR-022). */
     @Override
-    public void beforeRecipeLoading(RecipesKubeEvent event, RecipeManagerKJS manager, Map<Identifier, JsonElement> recipes) {
+    public void beforeRecipeLoading(RecipesKubeEvent event, Map<Identifier, JsonElement> recipes) {
         ScriptSources.recipes(() -> KubeRecipeEdits.read(event));
     }
 }
