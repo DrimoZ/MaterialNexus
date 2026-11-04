@@ -6,7 +6,7 @@ import dev.drimoz.materialnexus.core.resolution.CanonicalResolver;
 import dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot;
 import dev.drimoz.materialnexus.network.MaterialListPayload;
 import dev.drimoz.materialnexus.network.NexusQueries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import java.time.Instant;
@@ -20,10 +20,10 @@ import static org.junit.jupiter.api.Assertions.*;
 class NexusQueriesTest {
     @Test
     void untrustedRequestsAreClampedOrIgnored() {
-        Map<ResourceLocation, List<ResourceLocation>> tags = new HashMap<>();
+        Map<Identifier, List<Identifier>> tags = new HashMap<>();
         for (int i = 0; i < NexusQueries.PAGE_SIZE + 5; i++) {
-            tags.put(ResourceLocation.fromNamespaceAndPath("c", "ingots/metal" + i),
-                    List.of(ResourceLocation.fromNamespaceAndPath("moda", "metal" + i), ResourceLocation.fromNamespaceAndPath("modb", "metal" + i)));
+            tags.put(Identifier.fromNamespaceAndPath("c", "ingots/metal" + i),
+                    List.of(Identifier.fromNamespaceAndPath("moda", "metal" + i), Identifier.fromNamespaceAndPath("modb", "metal" + i)));
         }
         var discovered = TagDiscovery.discover(tags);
         var snapshot = new ResolvedSnapshot(1, Instant.EPOCH, discovered, CanonicalResolver.resolve(discovered, ResolutionPolicy.NONE));

@@ -3,7 +3,7 @@ package dev.drimoz.materialnexus.client;
 import dev.drimoz.materialnexus.client.ui.Theme;
 import dev.drimoz.materialnexus.network.MatrixPayload;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
 
@@ -65,7 +65,7 @@ final class FormMatrix {
     void scroll(double delta) {
         if (data == null) return;
         int step = (int) -Math.signum(delta) * 3;
-        if (Screen.hasShiftDown()) firstCol = Math.clamp(firstCol + step, 0, Math.max(0, data.forms().size() - visibleCols()));
+        if (net.minecraft.client.Minecraft.getInstance().hasShiftDown()) firstCol = Math.clamp(firstCol + step, 0, Math.max(0, data.forms().size() - visibleCols()));
         else firstRow = Math.clamp(firstRow + step, 0, Math.max(0, rows().size() - visibleRows()));
     }
 
@@ -73,10 +73,10 @@ final class FormMatrix {
         return hits.click(mx, my, button);
     }
 
-    void render(GuiGraphics g, Font font, int mx, int my) {
+    void render(GuiGraphicsExtractor g, Font font, int mx, int my) {
         hits.clear();
         if (data == null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x, y, Theme.MUTED, false);
+            g.text(font, Component.translatable("screen.materialnexus.process.loading"), x, y, Theme.MUTED, false);
             return;
         }
         List<Integer> shown = rows();
@@ -90,15 +90,15 @@ final class FormMatrix {
         // Toolbar: the filter, then the legend, each state with its mark.
         Component only = Component.translatable("screen.materialnexus.matrix.only");
         Ui.toggle(g, x, y + 4, onlyDuplicates);
-        g.drawString(font, only, x + 26, y + 5, Theme.TEXT, false);
+        g.text(font, only, x + 26, y + 5, Theme.TEXT, false);
         hits.add(x, y, 30 + font.width(only), 18, () -> { onlyDuplicates = !onlyDuplicates; firstRow = 0; }, null, List.of());
         Component count = Component.translatable("screen.materialnexus.matrix.count", shown.size(), data.materials().size(), forms.size());
-        g.drawString(font, count, x + width - font.width(count), y + 5, Theme.MUTED, false);
+        g.text(font, count, x + width - font.width(count), y + 5, Theme.MUTED, false);
         int lx = x;
         for (Ui.Status s : List.of(Ui.Status.SUGGESTION, Ui.Status.PENDING, Ui.Status.UNIFIED, Ui.Status.SINGLE)) {
             if (s == Ui.Status.SINGLE) g.fill(lx, y + 23, lx + 8, y + 31, Theme.RAISED);
             else Ui.mark(g, s, lx + 1, y + 24);
-            g.drawString(font, s.label(), lx + 12, y + 23, Theme.MUTED, false);
+            g.text(font, s.label(), lx + 12, y + 23, Theme.MUTED, false);
             lx += font.width(s.label()) + 24;
         }
 
@@ -115,7 +115,7 @@ final class FormMatrix {
             var lines = font.split(Names.form(form), stride - 4);
             int count2 = Math.min(2, lines.size());
             for (int i = 0; i < count2; i++) {
-                g.drawString(font, lines.get(i), cx + 2, gy - 2 - (count2 - i) * 10, c == overCol ? Theme.TEXT : Theme.MUTED, false);
+                g.text(font, lines.get(i), cx + 2, gy - 2 - (count2 - i) * 10, c == overCol ? Theme.TEXT : Theme.MUTED, false);
             }
             hits.add(cx, y + TOOLBAR, stride, HEADER, () -> openForm.accept(form), null, List.of(Names.form(form)));
         }
@@ -125,7 +125,7 @@ final class FormMatrix {
             String material = data.materials().get(index);
             int ry = gy + r * ROW;
             if (r == overRow) g.fill(x, ry, gx - 1, ry + ROW - 1, Theme.RAISED);
-            g.drawString(font, font.plainSubstrByWidth(Names.material(material).getString(), LABEL - 8), x + 4, ry + 4, r == overRow ? Theme.TEXT : Theme.MUTED, false);
+            g.text(font, font.plainSubstrByWidth(Names.material(material).getString(), LABEL - 8), x + 4, ry + 4, r == overRow ? Theme.TEXT : Theme.MUTED, false);
             hits.add(x, ry, LABEL, ROW, () -> openMaterial.accept(material), null, List.of());
             for (int c = 0; c < cols; c++) {
                 String form = forms.get(firstCol + c);
@@ -137,7 +137,7 @@ final class FormMatrix {
                 int fill = status == Ui.Status.SINGLE ? Theme.RAISED : Theme.mix(Theme.BG, status.color(), 0.28f);
                 g.fill(cx, ry, cx + stride - 1, ry + ROW - 1, fill);
                 Ui.mark(g, status, cx + (stride - 7) / 2, ry + 4);
-                if (r == overRow && c == overCol) g.renderOutline(cx, ry, stride - 1, ROW - 1, Theme.TEXT);
+                if (r == overRow && c == overCol) g.outline(cx, ry, stride - 1, ROW - 1, Theme.TEXT);
                 hits.add(cx, ry, stride - 1, ROW - 1, () -> openMaterial.accept(material), null,
                         List.of(Component.translatable("screen.materialnexus.matrix.cell", Names.material(material), Names.form(form), status.label())));
             }

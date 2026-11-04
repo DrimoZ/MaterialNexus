@@ -17,7 +17,7 @@ import dev.drimoz.materialnexus.datapack.PolicyFiles;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.core.registries.Registries;
 import net.minecraft.resources.ResourceKey;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
 import net.neoforged.neoforge.event.TagsUpdatedEvent;
@@ -41,15 +41,15 @@ public final class DiscoveryEvents {
         if (event.getUpdateCause() != TagsUpdatedEvent.UpdateCause.SERVER_DATA_LOAD) return;
         long start = System.nanoTime();
         try {
-            Map<ResourceLocation, List<ResourceLocation>> tagMembers = new HashMap<>();
-            event.getRegistryAccess().registryOrThrow(Registries.ITEM).getTags().forEach(pair ->
-                    tagMembers.put(pair.getFirst().location(), pair.getSecond().stream()
+            Map<Identifier, List<Identifier>> tagMembers = new HashMap<>();
+            event.getRegistries().lookupOrThrow(Registries.ITEM).getTags().forEach(set ->
+                    tagMembers.put(set.key().location(), set.stream()
                             .flatMap(holder -> holder.unwrapKey().stream())
-                            .map(ResourceKey::location)
+                            .map(ResourceKey::identifier)
                             .toList()));
 
             // MNX-076: what scripts changed in the tags, before both views are completed the same way below.
-            Map<ResourceLocation, List<ResourceLocation>> fileTags = new HashMap<>();
+            Map<Identifier, List<Identifier>> fileTags = new HashMap<>();
             ScriptSources.fileTags().forEach((tag, items) -> fileTags.put(tag, new java.util.ArrayList<>(items)));
             // No file view (listener not run): nothing to compare, rather than every tag entry read as added by a script.
             ScriptChanges scripts = new ScriptChanges(fileTags.isEmpty() ? List.of() : ScriptChanges.tagEdits(fileTags, tagMembers),
@@ -87,7 +87,7 @@ public final class DiscoveryEvents {
      * Tags as discovery reads them: our own removals restored (ADR-010), the player's tag additions in (MNX-079), untagged
      * forms injected by name (MNX-040).
      */
-    private static DiscoveredMaterials discover(Map<ResourceLocation, List<ResourceLocation>> tagMembers, List<PackContent.Effect> applied,
+    private static DiscoveredMaterials discover(Map<Identifier, List<Identifier>> tagMembers, List<PackContent.Effect> applied,
                                                 ResolutionPolicy policy) {
         PackContent.restoreRemovedMembers(tagMembers, applied);
         PackContent.addPlayerTags(tagMembers, policy);

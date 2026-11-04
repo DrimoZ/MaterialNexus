@@ -4,10 +4,10 @@ import dev.drimoz.materialnexus.client.ui.Theme;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.util.FormattedCharSequence;
 
 import java.util.List;
@@ -20,7 +20,7 @@ import java.util.Optional;
 final class RecipeHover {
     private RecipeHover() { }
 
-    static Optional<RecipeViewer.Layout> layout(ResourceLocation recipe) {
+    static Optional<RecipeViewer.Layout> layout(Identifier recipe) {
         RecipeViewer viewer = RecipeViewer.Slot.current;
         return viewer == null || recipe == null ? Optional.empty() : viewer.layout(recipe);
     }
@@ -35,7 +35,7 @@ final class RecipeHover {
      * vanilla slot: its slots, arrows and texts keep their own colours, so the ground is made for them rather than
      * taken from the theme. Returns the height used.
      */
-    static int stage(GuiGraphics g, RecipeViewer.Layout l, int x, int y, int mx, int my) {
+    static int stage(GuiGraphicsExtractor g, RecipeViewer.Layout l, int x, int y, int mx, int my) {
         int p = pad(l);
         if (!l.framed()) {
             g.fill(x, y, x + width(l), y + l.height() + 2 * p, Theme.BORDER);
@@ -49,7 +49,7 @@ final class RecipeHover {
      * False when no viewer can draw this recipe. {@code caption} may be null; an id (no space in it) is cut with an
      * ellipsis, never broken in the middle.
      */
-    static boolean draw(GuiGraphics g, Font font, ResourceLocation recipe, Component caption, int mx, int my) {
+    static boolean draw(GuiGraphicsExtractor g, Font font, Identifier recipe, Component caption, int mx, int my) {
         Optional<RecipeViewer.Layout> found = layout(recipe);
         if (found.isEmpty()) return false;
         RecipeViewer.Layout l = found.get();
@@ -67,18 +67,18 @@ final class RecipeHover {
         // Beside the pointer, on the side that has room.
         int x = Math.max(4, mx + 12 + w > sw ? mx - 12 - w : mx + 12);
         int y = Math.clamp(my + 14, 4, Math.max(4, sh - h - 4));
-        g.pose().pushPose();
-        g.pose().translate(0, 0, 400);
+        g.nextStratum();
+        g.pose().pushMatrix();
         g.fill(x - 1, y - 1, x + w + 1, y + h + 1, Theme.BORDER);
         g.fill(x, y, x + w, y + h, Theme.RAISED);
-        g.drawString(font, title, x + 8, y + 8, Theme.TEXT, false);
+        g.text(font, title, x + 8, y + 8, Theme.TEXT, false);
         // The pointer is never over the box: no slot of the layout is highlighted.
         int cy = y + 24 + stage(g, l, x + 8, y + 24, -1, -1) + 6;
         for (FormattedCharSequence line : lines) {
-            g.drawString(font, line, x + 8, cy, Theme.MUTED, false);
+            g.text(font, line, x + 8, cy, Theme.MUTED, false);
             cy += 10;
         }
-        g.pose().popPose();
+        g.pose().popMatrix();
         return true;
     }
 }

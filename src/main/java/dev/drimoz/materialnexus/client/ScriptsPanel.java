@@ -6,7 +6,7 @@ import dev.drimoz.materialnexus.core.scripts.ScriptDecisions.Status;
 import dev.drimoz.materialnexus.network.ScriptsPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
 
 import java.util.List;
@@ -68,14 +68,14 @@ final class ScriptsPanel {
         return Component.translatable("screen.materialnexus.scripts." + key, args);
     }
 
-    void render(GuiGraphics g, Font font, int x, int y, int w, int h, int mx, int my) {
+    void render(GuiGraphicsExtractor g, Font font, int x, int y, int w, int h, int mx, int my) {
         hits.clear();
-        g.drawString(font, tr("title").copy().withStyle(ChatFormatting.BOLD), x, y, Theme.TEXT, false);
+        g.text(font, tr("title").copy().withStyle(ChatFormatting.BOLD), x, y, Theme.TEXT, false);
         if (payload == null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x, y + 16, Theme.MUTED, false);
+            g.text(font, Component.translatable("screen.materialnexus.process.loading"), x, y + 16, Theme.MUTED, false);
             return;
         }
-        g.drawString(font, tr("count", decided(), differing()), x + font.width(tr("title").copy().withStyle(ChatFormatting.BOLD)) + 14, y, Theme.MUTED, false);
+        g.text(font, tr("count", decided(), differing()), x + font.width(tr("title").copy().withStyle(ChatFormatting.BOLD)) + 14, y, Theme.MUTED, false);
         long open = payload.rows().stream().filter(r -> offered(r) && !pending(r)).count();
         if (!readOnly && open > 0) {
             Component all = tr("keep_all.count", open);
@@ -83,11 +83,11 @@ final class ScriptsPanel {
         }
         int ty = y + 16;
         for (var line : font.split(tr("intro"), Math.min(w, 720))) {
-            g.drawString(font, line, x, ty, Theme.MUTED, false);
+            g.text(font, line, x, ty, Theme.MUTED, false);
             ty += 10;
         }
         if (payload.addedRecipes() > 0) {
-            g.drawString(font, font.plainSubstrByWidth(tr("added", payload.addedRecipes()).getString(), w), x, ty + 2, Theme.FAINT, false);
+            g.text(font, font.plainSubstrByWidth(tr("added", payload.addedRecipes()).getString(), w), x, ty + 2, Theme.FAINT, false);
             ty += 12;
         }
         ty += 8;
@@ -105,9 +105,9 @@ final class ScriptsPanel {
         int c2 = x + Math.clamp(tw / 4, 110, 170);
         int c3 = c2 + (tw - (c2 - x) - 100) / 2;
         int c4 = x + tw - 100;
-        g.drawString(font, tr("col.form"), x + 16, ty + 4, Theme.MUTED, false);
-        g.drawString(font, tr("col.scripts"), c2, ty + 4, Theme.MUTED, false);
-        g.drawString(font, font.plainSubstrByWidth(tr("col.ours").getString(), c4 - c3 - 4), c3, ty + 4, Theme.MUTED, false);
+        g.text(font, tr("col.form"), x + 16, ty + 4, Theme.MUTED, false);
+        g.text(font, tr("col.scripts"), c2, ty + 4, Theme.MUTED, false);
+        g.text(font, font.plainSubstrByWidth(tr("col.ours").getString(), c4 - c3 - 4), c3, ty + 4, Theme.MUTED, false);
         int top = ty + Theme.ROW_TEXT;
         view = bottom - top;
         boolean inList = my >= top && my < bottom && mx >= x && mx < x + tw;
@@ -116,7 +116,7 @@ final class ScriptsPanel {
         for (Status status : ORDER) {
             List<ScriptsPayload.Row> rows = payload.rows().stream().filter(r -> r.status() == status).toList();
             if (rows.isEmpty()) continue;
-            g.drawString(font, tr("group." + Names.lowerName(status), rows.size()), x + 4, ry + 8, Theme.MUTED, false);
+            g.text(font, tr("group." + Names.lowerName(status), rows.size()), x + 4, ry + 8, Theme.MUTED, false);
             ry += 20;
             for (ScriptsPayload.Row r : rows) {
                 if (ry + ROW > top && ry < bottom) row(g, font, r, x, ry, tw, c2, c3, c4, mx, my, inList);
@@ -136,32 +136,32 @@ final class ScriptsPanel {
         hits.tooltip(g, font, mx, my);
     }
 
-    private void row(GuiGraphics g, Font font, ScriptsPayload.Row r, int x, int ry, int tw, int c2, int c3, int c4, int mx, int my, boolean inList) {
+    private void row(GuiGraphicsExtractor g, Font font, ScriptsPayload.Row r, int x, int ry, int tw, int c2, int c3, int c4, int mx, int my, boolean inList) {
         boolean hover = inList && my >= ry && my < ry + ROW;
         if (r == selected) g.fill(x, ry, x + tw - 6, ry + ROW, Theme.SEL);
         else if (hover) g.fill(x, ry, x + tw - 6, ry + ROW, Theme.RAISED);
         Ui.mark(g, pending(r) ? Ui.Status.PENDING : r.status() == Status.DIFFERS ? Ui.Status.SUGGESTION : r.status() == Status.UNDECIDED ? Ui.Status.NOTHING : Ui.Status.UNIFIED, x + 5, ry + 8);
         Component title = Component.translatable("screen.materialnexus.triage.item", Names.material(r.material()), Names.form(r.form()));
-        g.drawString(font, font.plainSubstrByWidth(title.getString(), c2 - x - 20), x + 16, ry + 7, Theme.TEXT, false);
+        g.text(font, font.plainSubstrByWidth(title.getString(), c2 - x - 20), x + 16, ry + 7, Theme.TEXT, false);
         r.kept().ifPresent(item -> {
             // The form is named in the first column: what tells two items apart here is the mod.
             Ui.slot(g, item, c2, ry + 2, 0, false);
-            g.drawString(font, Ui.fit(font, NexusScreen.modName(item.getNamespace()), c3 - c2 - 28), c2 + 24, ry + 7, Theme.TEXT, false);
+            g.text(font, Ui.fit(font, NexusScreen.modName(item.getNamespace()), c3 - c2 - 28), c2 + 24, ry + 7, Theme.TEXT, false);
         });
         if (r.status() == Status.DIFFERS) {
             if (r.current().isPresent()) {
                 Ui.slot(g, r.current().get(), c3, ry + 2, 0, false);
-                g.drawString(font, Ui.fit(font, NexusScreen.modName(r.current().get().getNamespace()), c4 - c3 - 28), c3 + 24, ry + 7, Theme.MUTED, false);
+                g.text(font, Ui.fit(font, NexusScreen.modName(r.current().get().getNamespace()), c4 - c3 - 28), c3 + 24, ry + 7, Theme.MUTED, false);
             } else {
-                g.drawString(font, tr("current_none"), c3, ry + 7, Theme.MUTED, false);
+                g.text(font, tr("current_none"), c3, ry + 7, Theme.MUTED, false);
             }
         } else if (r.status() == Status.SAME || r.status() == Status.RECORDED) {
-            g.drawString(font, tr("same_item"), c3, ry + 7, Theme.FAINT, false);
+            g.text(font, tr("same_item"), c3, ry + 7, Theme.FAINT, false);
         }
         if (inList) hits.add(x, ry, tw - 6, ROW, () -> selected = r, null, List.of());
         if (readOnly || !offered(r)) return;
         if (pending(r)) {
-            g.drawString(font, Ui.Status.PENDING.label(), c4, ry + 7, Theme.INFO, false);
+            g.text(font, Ui.Status.PENDING.label(), c4, ry + 7, Theme.INFO, false);
         } else {
             // Always drawn: an action that only appears under the pointer is a hidden one. Clickable only inside the list.
             Component keep = tr("keep");
@@ -172,20 +172,20 @@ final class ScriptsPanel {
     }
 
     /** Why the scripts are read this way: the lines to delete once applied, and the recipes they touched. */
-    private void inspector(GuiGraphics g, Font font, ScriptsPayload.Row r, int ix, int iy, int iw, int ih, boolean wide, int mx, int my) {
+    private void inspector(GuiGraphicsExtractor g, Font font, ScriptsPayload.Row r, int ix, int iy, int iw, int ih, boolean wide, int mx, int my) {
         g.fill(ix, iy, ix + iw, iy + ih, Theme.SURFACE);
         int left = ix + 10;
         int inner = iw - 20;
         int cy = iy + 8;
-        g.drawString(font, Component.translatable("screen.materialnexus.triage.item", Names.material(r.material()), Names.form(r.form())).withStyle(ChatFormatting.BOLD), left, cy, Theme.TEXT, false);
+        g.text(font, Component.translatable("screen.materialnexus.triage.item", Names.material(r.material()), Names.form(r.form())).withStyle(ChatFormatting.BOLD), left, cy, Theme.TEXT, false);
         Component status = tr("status." + Names.lowerName(r.status()));
-        g.drawString(font, status, ix + iw - 10 - font.width(status), cy, r.status() == Status.DIFFERS ? Theme.WARN : Theme.MUTED, false);
+        g.text(font, status, ix + iw - 10 - font.width(status), cy, r.status() == Status.DIFFERS ? Theme.WARN : Theme.MUTED, false);
         cy += 14;
         g.enableScissor(ix, cy, ix + iw, iy + ih - (wide ? 28 : 4));
         if (r.status() == Status.DIFFERS) {
             Component current = r.current().map(c -> tr("current", Names.withMod(c))).orElse(tr("current_none"));
             for (var line : font.split(current, inner)) {
-                g.drawString(font, line, left, cy, Theme.TEXT, false);
+                g.text(font, line, left, cy, Theme.TEXT, false);
                 cy += 10;
             }
             cy += 4;
@@ -193,7 +193,7 @@ final class ScriptsPanel {
         if (!r.seenIn().isEmpty()) {
             // MNX-077: the script lines to delete once the choice is applied.
             for (var line : font.split(tr("seen_in", String.join(", ", r.seenIn())), inner)) {
-                g.drawString(font, line, left, cy, Theme.INFO, false);
+                g.text(font, line, left, cy, Theme.INFO, false);
                 cy += 10;
             }
             cy += 4;
@@ -201,19 +201,19 @@ final class ScriptsPanel {
         for (ScriptDecisions.Evidence e : r.evidence()) {
             Component text = tr("evidence." + e.kind(), e.where().toString(), Names.withMod(e.from()), e.to().map(Names::withMod).orElse(Component.empty()));
             for (var line : font.split(text, inner)) {
-                g.drawString(font, line, left, cy, Theme.MUTED, false);
+                g.text(font, line, left, cy, Theme.MUTED, false);
                 cy += 10;
             }
             cy += 2;
         }
         if (r.evidenceCount() > r.evidence().size()) {
-            g.drawString(font, tr("more", r.evidenceCount() - r.evidence().size()), left, cy, Theme.FAINT, false);
+            g.text(font, tr("more", r.evidenceCount() - r.evidence().size()), left, cy, Theme.FAINT, false);
         }
         g.disableScissor();
         if (wide && !readOnly && offered(r) && !pending(r)) button(g, font, tr("keep.this"), left, iy + ih - 22, mx, my, () -> keep(r));
     }
 
-    private void button(GuiGraphics g, Font font, Component label, int bx, int by, int mx, int my, Runnable action) {
+    private void button(GuiGraphicsExtractor g, Font font, Component label, int bx, int by, int mx, int my, Runnable action) {
         int bw = font.width(label) + 12;
         boolean over = mx >= bx && mx < bx + bw && my >= by && my < by + 16;
         Ui.button(g, font, label, bx, by, bw, 16, false, over, true);

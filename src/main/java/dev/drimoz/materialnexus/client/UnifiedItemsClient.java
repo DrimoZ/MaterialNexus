@@ -1,6 +1,6 @@
 package dev.drimoz.materialnexus.client;
 
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 import java.util.Set;
@@ -12,37 +12,37 @@ import java.util.function.Consumer;
  * never references them, so it is safe whichever viewer (or none) is installed.
  */
 public final class UnifiedItemsClient {
-    private static volatile Set<ResourceLocation> alternatives = Set.of();
-    private static volatile java.util.Map<ResourceLocation, ResourceLocation> becomes = java.util.Map.of();
-    private static volatile Set<ResourceLocation> kept = Set.of();
+    private static volatile Set<Identifier> alternatives = Set.of();
+    private static volatile java.util.Map<Identifier, Identifier> becomes = java.util.Map.of();
+    private static volatile Set<Identifier> kept = Set.of();
 
     /** MNX-054: what an alternative becomes, for tooltips. */
-    public static java.util.Map<ResourceLocation, ResourceLocation> becomes() {
+    public static java.util.Map<Identifier, Identifier> becomes() {
         return becomes;
     }
 
-    public static boolean kept(ResourceLocation item) {
+    public static boolean kept(Identifier item) {
         return kept.contains(item);
     }
 
-    public static void conversions(java.util.Map<ResourceLocation, ResourceLocation> latest) {
+    public static void conversions(java.util.Map<Identifier, Identifier> latest) {
         becomes = java.util.Map.copyOf(latest);
         kept = Set.copyOf(latest.values());
     }
-    private static final List<Consumer<Set<ResourceLocation>>> LISTENERS = new CopyOnWriteArrayList<>();
+    private static final List<Consumer<Set<Identifier>>> LISTENERS = new CopyOnWriteArrayList<>();
 
     private UnifiedItemsClient() { }
 
-    public static Set<ResourceLocation> alternatives() {
+    public static Set<Identifier> alternatives() {
         return alternatives;
     }
 
-    public static void update(Set<ResourceLocation> latest) {
+    public static void update(Set<Identifier> latest) {
         alternatives = Set.copyOf(latest);
         LISTENERS.forEach(l -> l.accept(alternatives));
     }
 
-    public static void subscribe(Consumer<Set<ResourceLocation>> listener) {
+    public static void subscribe(Consumer<Set<Identifier>> listener) {
         LISTENERS.add(listener);
     }
 }

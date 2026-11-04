@@ -4,7 +4,7 @@ import dev.drimoz.materialnexus.core.domain.MaterialId;
 import dev.drimoz.materialnexus.core.recipe.FamilyRelations;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
 import dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 import java.util.Map;
@@ -33,14 +33,14 @@ public final class DiagnosticsReport {
      */
     public static String build(ResolvedSnapshot snapshot, Map<MaterialId, List<FamilyRelations.Relation>> missing,
                                List<dev.drimoz.materialnexus.datapack.FormPatterns.Candidate> untagged, TagAudit.Result audit,
-                               java.util.SortedMap<ResourceLocation, ? extends java.util.Collection<ResourceLocation>> missingTags, boolean addingMissingTags) {
+                               java.util.SortedMap<Identifier, ? extends java.util.Collection<Identifier>> missingTags, boolean addingMissingTags) {
         return build(snapshot, missing, untagged, audit, missingTags, addingMissingTags, List.of());
     }
 
     /** With the recipe types no format covers (MNX-090), those with the most material recipes first. */
     public static String build(ResolvedSnapshot snapshot, Map<MaterialId, List<FamilyRelations.Relation>> missing,
                                List<dev.drimoz.materialnexus.datapack.FormPatterns.Candidate> untagged, TagAudit.Result audit,
-                               java.util.SortedMap<ResourceLocation, ? extends java.util.Collection<ResourceLocation>> missingTags, boolean addingMissingTags,
+                               java.util.SortedMap<Identifier, ? extends java.util.Collection<Identifier>> missingTags, boolean addingMissingTags,
                                List<UnhandledTypes.Row> unhandled) {
         StringBuilder out = new StringBuilder();
         long unified = snapshot.materials().values().stream().flatMap(m -> m.forms().values().stream())
@@ -56,10 +56,10 @@ public final class DiagnosticsReport {
                     .append("| Form | Canonical | Source | Why | Alternatives | Not unified |\n")
                     .append("|---|---|---|---|---|---|\n");
             resolved.forms().forEach((form, f) -> out.append("| ").append(form)
-                    .append(" | ").append(f.canonical().map(ResourceLocation::toString).orElse("-"))
+                    .append(" | ").append(f.canonical().map(Identifier::toString).orElse("-"))
                     .append(" | ").append(f.source().name().toLowerCase())
                     .append(" | ").append(f.reasonKey().replace("materialnexus.why.", "")).append(args(f))
-                    .append(" | ").append(f.alternatives().stream().map(ResourceLocation::toString).collect(Collectors.joining(", ")))
+                    .append(" | ").append(f.alternatives().stream().map(Identifier::toString).collect(Collectors.joining(", ")))
                     .append(" | ").append(f.notUnified().stream()
                             .map(n -> n.item() + " (" + n.reasonKey().replace("materialnexus.not_unified.", "") + args(n.reasonArgs()) + ")")
                             .collect(Collectors.joining(", ")))
@@ -98,8 +98,8 @@ public final class DiagnosticsReport {
             for (var d : snapshot.scriptDecisions()) {
                 var current = snapshot.form(d.key());
                 out.append("| ").append(d.key())
-                        .append(" | ").append(d.kept().map(ResourceLocation::toString).orElse("-"))
-                        .append(" | ").append(current.flatMap(ResolvedForm::canonical).map(ResourceLocation::toString).orElse("-"))
+                        .append(" | ").append(d.kept().map(Identifier::toString).orElse("-"))
+                        .append(" | ").append(current.flatMap(ResolvedForm::canonical).map(Identifier::toString).orElse("-"))
                         .append(" | ").append(dev.drimoz.materialnexus.core.scripts.ScriptDecisions.status(d, current).name().toLowerCase())
                         .append(" | ").append(d.seenIn().isEmpty() ? "-" : String.join(", ", d.seenIn()))
                         .append(" | ").append(d.evidence().stream().map(e -> e.kind() + " " + e.where() + ": " + e.from() + e.to().map(t -> " -> " + t).orElse(""))
@@ -125,7 +125,7 @@ public final class DiagnosticsReport {
         if (!added.isEmpty()) {
             out.append("Recipes created by scripts (not unification; they stay in the scripts):\n\n");
             added.forEach((source, ids) -> out.append("- `").append(source).append("`: ")
-                    .append(ids.stream().map(ResourceLocation::toString).collect(Collectors.joining(", "))).append('\n'));
+                    .append(ids.stream().map(Identifier::toString).collect(Collectors.joining(", "))).append('\n'));
             out.append('\n');
         }
     }
@@ -154,14 +154,14 @@ public final class DiagnosticsReport {
 
     /** MNX-080: tags items lack, recipes asking for a material tag nothing is in, recipes still on forge: tags. */
     private static void tags(StringBuilder out, TagAudit.Result audit,
-                             java.util.SortedMap<ResourceLocation, ? extends java.util.Collection<ResourceLocation>> missingTags, boolean adding) {
+                             java.util.SortedMap<Identifier, ? extends java.util.Collection<Identifier>> missingTags, boolean adding) {
         if (missingTags.isEmpty() && audit.forge().isEmpty() && audit.emptyMaterial().isEmpty()) return;
         out.append("## Tags\n\n");
         if (!missingTags.isEmpty()) {
             out.append(adding ? "Missing tags, added by \"Add missing tags\" (on):\n\n"
                     : "Missing tags: items known as a form (name pattern, alias) without its tag. \"Add missing tags\" (Data view, off) would add them:\n\n");
             missingTags.forEach((tag, items) -> out.append("- `#").append(tag).append("`: ")
-                    .append(items.stream().map(ResourceLocation::toString).collect(Collectors.joining(", "))).append('\n'));
+                    .append(items.stream().map(Identifier::toString).collect(Collectors.joining(", "))).append('\n'));
             out.append('\n');
         }
         if (!audit.emptyMaterial().isEmpty()) {
@@ -179,8 +179,8 @@ public final class DiagnosticsReport {
     }
 
     /** At most 10 ids, then how many more. */
-    private static String list(java.util.Collection<ResourceLocation> ids) {
-        String shown = ids.stream().limit(10).map(ResourceLocation::toString).collect(Collectors.joining(", "));
+    private static String list(java.util.Collection<Identifier> ids) {
+        String shown = ids.stream().limit(10).map(Identifier::toString).collect(Collectors.joining(", "));
         return ids.size() > 10 ? shown + " (+" + (ids.size() - 10) + ")" : shown;
     }
 }

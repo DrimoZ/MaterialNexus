@@ -7,9 +7,9 @@ import dev.drimoz.materialnexus.network.MaterialDetailPayload;
 import dev.drimoz.materialnexus.network.RecipeFamilyPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 import java.util.Optional;
@@ -84,7 +84,7 @@ final class RecipesPanel {
         return words.isEmpty() ? row.type().toString() : Character.toUpperCase(words.charAt(0)) + words.substring(1);
     }
 
-    void render(GuiGraphics g, Font font, int mx, int my) {
+    void render(GuiGraphicsExtractor g, Font font, int mx, int my) {
         hits.clear();
         if (detail == null) return;
         // The forms of the material, as chips that wrap: every one can be reached.
@@ -100,22 +100,22 @@ final class RecipesPanel {
             boolean active = v.form().equals(form);
             boolean over = mx >= cx && mx < cx + w && my >= cy && my < cy + 18;
             g.fill(cx, cy, cx + w, cy + 18, active ? Theme.SEL : over ? Theme.RAISED : Theme.SURFACE);
-            g.drawString(font, name, cx + 6, cy + 5, active || over ? Theme.TEXT : Theme.MUTED, false);
+            g.text(font, name, cx + 6, cy + 5, active || over ? Theme.TEXT : Theme.MUTED, false);
             String target = v.form();
             hits.add(cx, cy, w, 18, () -> select(target), null, List.of());
             cx += w + 4;
         }
         int top = cy + 26;
         if (form == null) {
-            g.drawString(font, tr("select_form"), x, top, Theme.MUTED, false);
+            g.text(font, tr("select_form"), x, top, Theme.MUTED, false);
             return;
         }
         if (family == null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x, top, Theme.MUTED, false);
+            g.text(font, Component.translatable("screen.materialnexus.process.loading"), x, top, Theme.MUTED, false);
             return;
         }
         if (family.rows().isEmpty()) {
-            g.drawString(font, tr("empty"), x, top, Theme.MUTED, false);
+            g.text(font, tr("empty"), x, top, Theme.MUTED, false);
             return;
         }
         if (selected == null || !family.rows().contains(selected)) {
@@ -134,7 +134,7 @@ final class RecipesPanel {
         for (Status status : ORDER) {
             List<RecipeFamilies.Row> rows = family.rows().stream().filter(r -> r.status() == status).toList();
             if (rows.isEmpty()) continue;
-            g.drawString(font, tr("group." + Names.lowerName(status), rows.size()), x + 4, ry + 8, Theme.MUTED, false);
+            g.text(font, tr("group." + Names.lowerName(status), rows.size()), x + 4, ry + 8, Theme.MUTED, false);
             ry += 20;
             for (RecipeFamilies.Row row : rows) {
                 if (ry + Theme.ROW_ITEM > top && ry < bottom) {
@@ -146,8 +146,8 @@ final class RecipesPanel {
                     else mark(g, status, x + 5, ry + 8 + Theme.ROW_PAD);
                     Ui.slot(g, row.output(), x + 16, ry + 2 + Theme.ROW_PAD, 0, switchedOff(row));
                     String name = machine(row);
-                    g.drawString(font, font.plainSubstrByWidth(name, tw / 2 - 44), x + 40, ry + 7 + Theme.ROW_PAD, Theme.TEXT, false);
-                    g.drawString(font, font.plainSubstrByWidth(Names.withMod(row.output()).getString(), tw / 2 - 34), x + tw / 2, ry + 7 + Theme.ROW_PAD, Theme.MUTED, false);
+                    g.text(font, font.plainSubstrByWidth(name, tw / 2 - 44), x + 40, ry + 7 + Theme.ROW_PAD, Theme.TEXT, false);
+                    g.text(font, font.plainSubstrByWidth(Names.withMod(row.output()).getString(), tw / 2 - 34), x + tw / 2, ry + 7 + Theme.ROW_PAD, Theme.MUTED, false);
                     // MNX-117: the bin, always shown (R2), on every recipe that can be removed; red once removed.
                     if (row.removal() == RecipeFamilies.Removal.ALLOWED) {
                         int bx = x + tw - 28;
@@ -155,7 +155,7 @@ final class RecipesPanel {
                         boolean onBin = inList && mx >= bx && mx < bx + 16 && my >= by && my < by + 16;
                         boolean removed = PendingChanges.recipeRemoved(row.recipe());
                         Ui.bin(g, bx + 4, by + 3, removed ? Theme.BAD : onBin ? Theme.TEXT : Theme.MUTED);
-                        ResourceLocation recipe = row.recipe();
+                        Identifier recipe = row.recipe();
                         if (inList) hits.add(bx, by, 16, 16, () -> PendingChanges.toggleRecipeRemoval(recipe), null, List.of(tr(removed ? "restore" : "remove")));
                     }
                     // The selected row is already drawn in the inspector.
@@ -180,19 +180,19 @@ final class RecipesPanel {
     }
 
     /** The item this form keeps, as it will be after Apply. */
-    private Optional<ResourceLocation> kept() {
+    private Optional<Identifier> kept() {
         return detail.forms().stream().filter(v -> v.form().equals(form)).findFirst()
                 .flatMap(v -> PendingChanges.get(v.material(), v.form()).filter(p -> !p.equals(dev.drimoz.materialnexus.datapack.CanonicalChange.RESET))
                         .or(() -> v.resolved().canonical()));
     }
 
     /** The recipe as the viewer draws it, then what Material Nexus does to it. */
-    private void inspector(GuiGraphics g, Font font, RecipeFamilies.Row row, int ix, int iy, int iw, int ih, int mx, int my) {
+    private void inspector(GuiGraphicsExtractor g, Font font, RecipeFamilies.Row row, int ix, int iy, int iw, int ih, int mx, int my) {
         g.fill(ix, iy, ix + iw, iy + ih, Theme.SURFACE);
         int left = ix + 12;
         int inner = iw - 24;
         int cy = iy + 8;
-        g.drawString(font, Component.literal(font.plainSubstrByWidth(machine(row), inner)).withStyle(ChatFormatting.BOLD), left, cy, Theme.TEXT, false);
+        g.text(font, Component.literal(font.plainSubstrByWidth(machine(row), inner)).withStyle(ChatFormatting.BOLD), left, cy, Theme.TEXT, false);
         cy += 16;
         RecipeViewer viewer = RecipeViewer.Slot.current;
         Optional<RecipeViewer.Layout> layout = RecipeHover.layout(row.recipe());
@@ -202,14 +202,14 @@ final class RecipesPanel {
         } else {
             Component why = viewer == null ? tr("no_viewer") : tr(row.status() == Status.DISABLED || row.status() == Status.REMOVED || row.status() == Status.PACK_DISABLED ? "not_loaded" : "not_drawable", viewer.name());
             for (var line : font.split(why, inner)) {
-                g.drawString(font, line, left, cy, Theme.MUTED, false);
+                g.text(font, line, left, cy, Theme.MUTED, false);
                 cy += 10;
             }
             cy += 8;
         }
         mark(g, row.status(), left, cy + 1);
         for (var line : font.split(Component.translatable("screen.materialnexus.family." + Names.lowerName(row.status())), inner - 12)) {
-            g.drawString(font, line, left + 12, cy, Theme.TEXT, false);
+            g.text(font, line, left + 12, cy, Theme.TEXT, false);
             cy += 10;
         }
         cy += 6;
@@ -223,30 +223,30 @@ final class RecipesPanel {
                 : tr(row.status() == Status.PACK_DISABLED ? "edited.pack_off" : "edited.pack", Names.pack(by))));
         for (Component note : notes) {
             for (var line : font.split(note, inner)) {
-                g.drawString(font, line, left, cy, Theme.MUTED, false);
+                g.text(font, line, left, cy, Theme.MUTED, false);
                 cy += 10;
             }
             cy += 4;
         }
         // What no viewer shows: the item the recipe made (or still makes), struck, next to the one it makes once applied.
-        Optional<ResourceLocation> before = row.status() == Status.ALTERNATIVE ? Optional.of(row.output()) : row.replaced();
-        Optional<ResourceLocation> after = row.status() == Status.ALTERNATIVE ? kept() : Optional.of(row.output());
+        Optional<Identifier> before = row.status() == Status.ALTERNATIVE ? Optional.of(row.output()) : row.replaced();
+        Optional<Identifier> after = row.status() == Status.ALTERNATIVE ? kept() : Optional.of(row.output());
         if (before.isPresent() && after.isPresent() && !before.equals(after)) {
             Ui.slot(g, before.get(), left, cy, 0, true);
             g.fill(left, cy + 8, left + 18, cy + 10, Theme.BAD);
-            g.drawString(font, "→", left + 22, cy + 5, Theme.MUTED, false);
+            g.text(font, "→", left + 22, cy + 5, Theme.MUTED, false);
             Ui.slot(g, after.get(), left + 34, cy, 0, false);
-            g.drawString(font, font.plainSubstrByWidth(Names.withMod(after.get()).getString(), inner - 58), left + 58, cy, Theme.TEXT, false);
-            g.drawString(font, font.plainSubstrByWidth(tr("replaced", Names.withMod(before.get())).getString(), inner - 58), left + 58, cy + 10, Theme.MUTED, false);
+            g.text(font, font.plainSubstrByWidth(Names.withMod(after.get()).getString(), inner - 58), left + 58, cy, Theme.TEXT, false);
+            g.text(font, font.plainSubstrByWidth(tr("replaced", Names.withMod(before.get())).getString(), inner - 58), left + 58, cy + 10, Theme.MUTED, false);
         } else {
             Ui.slot(g, row.output(), left, cy, 0, false);
-            g.drawString(font, font.plainSubstrByWidth(Names.withMod(row.output()).getString(), inner - 26), left + 24, cy + 5, Theme.MUTED, false);
+            g.text(font, font.plainSubstrByWidth(Names.withMod(row.output()).getString(), inner - 26), left + 24, cy + 5, Theme.MUTED, false);
         }
         cy += 28;
         // MNX-101: technical ids are a setting.
         if (dev.drimoz.materialnexus.client.ui.ScreenSettings.get().showIds()) {
-            g.drawString(font, font.plainSubstrByWidth(row.recipe().toString(), inner), left, cy, Theme.FAINT, false);
-            g.drawString(font, font.plainSubstrByWidth(row.type().toString(), inner), left, cy + 10, Theme.FAINT, false);
+            g.text(font, font.plainSubstrByWidth(row.recipe().toString(), inner), left, cy, Theme.FAINT, false);
+            g.text(font, font.plainSubstrByWidth(row.type().toString(), inner), left, cy + 10, Theme.FAINT, false);
         }
         int by = iy + ih - 22;
         int bw = 0;
@@ -255,7 +255,7 @@ final class RecipesPanel {
             bw = font.width(open) + 12;
             boolean over = mx >= left && mx < left + bw && my >= by && my < by + 16;
             Ui.button(g, font, open, left, by, bw, 16, false, over, true);
-            ResourceLocation item = row.output();
+            Identifier item = row.output();
             hits.add(left, by, bw, 16, () -> viewer.open(item), null, List.of());
         }
         // MNX-117 (R10): the destructive action on the right, away from the safe one; Review and Apply confirm it.
@@ -268,7 +268,7 @@ final class RecipesPanel {
         boolean over = allowed && mx >= rx && mx < rx + rw && my >= ry && my < ry + 16;
         if (removed || !allowed) Ui.button(g, font, action, rx, ry, rw, 16, false, over, allowed);
         else Ui.dangerButton(g, font, action, rx, ry, rw, 16, over);
-        ResourceLocation recipe = row.recipe();
+        Identifier recipe = row.recipe();
         if (allowed) hits.add(rx, ry, rw, 16, () -> PendingChanges.toggleRecipeRemoval(recipe), null, List.of());
     }
 
@@ -279,7 +279,7 @@ final class RecipesPanel {
     }
 
     /** A tick for what is rewritten, a cross for what is switched off, a dot for what is not handled, a ring for what will be rewritten. */
-    private static void mark(GuiGraphics g, Status status, int x, int y) {
+    private static void mark(GuiGraphicsExtractor g, Status status, int x, int y) {
         switch (status) {
             case REWRITTEN -> Ui.mark(g, Ui.Status.UNIFIED, x, y);
             case UNSUPPORTED -> Ui.mark(g, Ui.Status.SUGGESTION, x, y);

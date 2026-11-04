@@ -6,7 +6,7 @@ import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
 import dev.drimoz.materialnexus.core.resolution.CanonicalResolver;
 import dev.drimoz.materialnexus.datapack.GeneratedPack;
 import dev.drimoz.materialnexus.datapack.PackContent;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -21,15 +21,15 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** What MNX-007 writes into a pack: only player decisions, only real alternatives, and stable across applies. */
 class PackContentTest {
-    private static final ResourceLocation INGOTS_TIN = ResourceLocation.fromNamespaceAndPath("c", "ingots/tin");
-    private static final ResourceLocation MEK = ResourceLocation.fromNamespaceAndPath("mekanism", "ingot_tin");
-    private static final ResourceLocation MI = ResourceLocation.fromNamespaceAndPath("modern_industrialization", "tin_ingot");
-    private static final ResourceLocation MI_VARIANT = ResourceLocation.fromNamespaceAndPath("modern_industrialization", "tin_ingot_alt");
-    private static final ResourceLocation IE = ResourceLocation.fromNamespaceAndPath("immersiveengineering", "ingot_tin");
+    private static final Identifier INGOTS_TIN = Identifier.fromNamespaceAndPath("c", "ingots/tin");
+    private static final Identifier MEK = Identifier.fromNamespaceAndPath("mekanism", "ingot_tin");
+    private static final Identifier MI = Identifier.fromNamespaceAndPath("modern_industrialization", "tin_ingot");
+    private static final Identifier MI_VARIANT = Identifier.fromNamespaceAndPath("modern_industrialization", "tin_ingot_alt");
+    private static final Identifier IE = Identifier.fromNamespaceAndPath("immersiveengineering", "ingot_tin");
 
     @Test
     void onlyPlayerDecisionsGenerateAndTheyStayStable(@TempDir Path root) throws IOException {
-        Map<ResourceLocation, List<ResourceLocation>> tags = new HashMap<>(Map.of(INGOTS_TIN, List.of(MEK, MI, MI_VARIANT, IE)));
+        Map<Identifier, List<Identifier>> tags = new HashMap<>(Map.of(INGOTS_TIN, List.of(MEK, MI, MI_VARIANT, IE)));
 
         // No policy: the default canonical is only a suggestion, nothing is generated.
         var none = TagDiscovery.discover(tags);
@@ -49,7 +49,7 @@ class PackContentTest {
         // After the reload the tag no longer contains IE; restoring from the manifest yields the same pack again.
         Path pack = root.resolve("generated");
         GeneratedPack.write(pack, content.files(), PackContent.toJson(content.effects()));
-        Map<ResourceLocation, List<ResourceLocation>> afterReload = new HashMap<>(Map.of(INGOTS_TIN, List.of(MEK, MI, MI_VARIANT)));
+        Map<Identifier, List<Identifier>> afterReload = new HashMap<>(Map.of(INGOTS_TIN, List.of(MEK, MI, MI_VARIANT)));
         PackContent.restoreRemovedMembers(afterReload, PackContent.readManifest(pack));
         var again = PackContent.generate(CanonicalResolver.resolve(TagDiscovery.discover(afterReload), policy), policy);
         assertEquals(content.effects(), again.effects());
@@ -57,13 +57,13 @@ class PackContentTest {
 
     @Test
     void missingTagsAreAddedOnlyWhereThePackUsesThemAndStayStable(@TempDir Path root) throws IOException {
-        ResourceLocation ingots = ResourceLocation.fromNamespaceAndPath("c", "ingots");
-        ResourceLocation modx = ResourceLocation.fromNamespaceAndPath("modx", "tin_ingot");
-        ResourceLocation modxDouble = ResourceLocation.fromNamespaceAndPath("modx", "tin_double_ingot");
+        Identifier ingots = Identifier.fromNamespaceAndPath("c", "ingots");
+        Identifier modx = Identifier.fromNamespaceAndPath("modx", "tin_ingot");
+        Identifier modxDouble = Identifier.fromNamespaceAndPath("modx", "tin_double_ingot");
         // modx items are only known by name pattern; nobody uses c:double_ingots, so that form gets no tag.
-        Map<ResourceLocation, List<ResourceLocation>> before = Map.of(INGOTS_TIN, List.of(MEK), ingots, List.of(MEK),
-                ResourceLocation.fromNamespaceAndPath("materialnexus", "pattern/ingots/tin"), List.of(modx),
-                ResourceLocation.fromNamespaceAndPath("materialnexus", "pattern/double_ingots/tin"), List.of(modxDouble));
+        Map<Identifier, List<Identifier>> before = Map.of(INGOTS_TIN, List.of(MEK), ingots, List.of(MEK),
+                Identifier.fromNamespaceAndPath("materialnexus", "pattern/ingots/tin"), List.of(modx),
+                Identifier.fromNamespaceAndPath("materialnexus", "pattern/double_ingots/tin"), List.of(modxDouble));
         var policy = new ResolutionPolicy(List.of(), Map.of(), Map.of(), Map.of(), Set.of(), Set.of(), Set.of(),
                 dev.drimoz.materialnexus.core.policy.AlmostUnified.NONE, dev.drimoz.materialnexus.core.policy.ProcessRules.NONE, Set.of(), true, Map.of(), Set.of(), Set.of());
 
@@ -77,7 +77,7 @@ class PackContentTest {
         // After the reload both tags hold modx; seen without Material Nexus, the same pack comes out again.
         Path pack = root.resolve("generated");
         GeneratedPack.write(pack, content.files(), PackContent.toJson(content.effects()));
-        Map<ResourceLocation, List<ResourceLocation>> after = new HashMap<>(before);
+        Map<Identifier, List<Identifier>> after = new HashMap<>(before);
         after.put(INGOTS_TIN, List.of(MEK, modx));
         after.put(ingots, List.of(MEK, modx));
         PackContent.restoreRemovedMembers(after, PackContent.readManifest(pack));
@@ -88,10 +88,10 @@ class PackContentTest {
 
     @Test
     void playerTagEditsAreWrittenSeenByDiscoveryAndStayStable(@TempDir Path root) throws IOException {
-        ResourceLocation modx = ResourceLocation.fromNamespaceAndPath("modx", "tin_ingot");
+        Identifier modx = Identifier.fromNamespaceAndPath("modx", "tin_ingot");
         var policy = dev.drimoz.materialnexus.datapack.PolicyFiles.parse(com.google.gson.JsonParser.parseString(
                 "{\"tag_edits\": {\"tin/ingot\": {\"add\": [\"modx:tin_ingot\"], \"remove\": [\"immersiveengineering:ingot_tin\"]}}}"), Map.of());
-        Map<ResourceLocation, List<ResourceLocation>> tags = new HashMap<>(Map.of(INGOTS_TIN, List.of(MEK, IE)));
+        Map<Identifier, List<Identifier>> tags = new HashMap<>(Map.of(INGOTS_TIN, List.of(MEK, IE)));
         PackContent.addPlayerTags(tags, policy);
         var resolved = CanonicalResolver.resolve(TagDiscovery.discover(tags), policy);
         var tin = resolved.get(new dev.drimoz.materialnexus.core.domain.MaterialId("tin")).forms().get(new FormId("ingot"));
@@ -105,7 +105,7 @@ class PackContentTest {
 
         Path pack = root.resolve("generated");
         GeneratedPack.write(pack, content.files(), PackContent.toJson(content.effects()));
-        Map<ResourceLocation, List<ResourceLocation>> after = new HashMap<>(Map.of(INGOTS_TIN, List.of(MEK, modx)));
+        Map<Identifier, List<Identifier>> after = new HashMap<>(Map.of(INGOTS_TIN, List.of(MEK, modx)));
         PackContent.restoreRemovedMembers(after, PackContent.readManifest(pack));
         PackContent.addPlayerTags(after, policy);
         assertEquals(content.effects(), PackContent.generate(CanonicalResolver.resolve(TagDiscovery.discover(after), policy), policy).effects());
@@ -114,8 +114,8 @@ class PackContentTest {
     /** MNX-117: a removed recipe is switched off over any rewrite of it, one with no file writes nothing, and its original stays readable. */
     @Test
     void removedRecipesWinAndOnlyFilesAreSwitchedOff() {
-        ResourceLocation press = ResourceLocation.fromNamespaceAndPath("mekanism", "tin_plate");
-        ResourceLocation scripted = ResourceLocation.fromNamespaceAndPath("kubejs", "made_in_memory");
+        Identifier press = Identifier.fromNamespaceAndPath("mekanism", "tin_plate");
+        Identifier scripted = Identifier.fromNamespaceAndPath("kubejs", "made_in_memory");
         String file = "data/mekanism/recipe/tin_plate.json";
         var rewritten = new PackContent.Content(Map.of(file, new com.google.gson.JsonObject()),
                 List.of(new PackContent.Effect(dev.drimoz.materialnexus.datapack.RecipeRewrites.REWRITE, press, MEK)));

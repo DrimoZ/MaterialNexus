@@ -6,7 +6,7 @@ import dev.drimoz.materialnexus.datapack.PackContent;
 import dev.drimoz.materialnexus.datapack.RecipeRewrites;
 import dev.drimoz.materialnexus.datapack.RecipeRewrites.Source;
 import dev.drimoz.materialnexus.integration.RecipeFormats;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -17,18 +17,18 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** Recipes are the balance of the pack: rewrite only what we understand, never drop an untouched recipe. */
 class RecipeRewritesTest {
-    private static final ResourceLocation MEK = ResourceLocation.fromNamespaceAndPath("mekanism", "ingot_tin");
-    private static final ResourceLocation IE = ResourceLocation.fromNamespaceAndPath("immersiveengineering", "ingot_tin");
+    private static final Identifier MEK = Identifier.fromNamespaceAndPath("mekanism", "ingot_tin");
+    private static final Identifier IE = Identifier.fromNamespaceAndPath("immersiveengineering", "ingot_tin");
 
     /** The formats Material Nexus ships, read from the same files the game loads. */
     static final RecipeFormats SHIPPED = shipped();
 
     private static RecipeFormats shipped() {
-        Map<ResourceLocation, com.google.gson.JsonElement> files = new java.util.HashMap<>();
+        Map<Identifier, com.google.gson.JsonElement> files = new java.util.HashMap<>();
         for (String name : List.of("vanilla", "create", "mekanism", "immersiveengineering", "modern_industrialization")) {
             try (var in = RecipeRewritesTest.class.getResourceAsStream("/data/materialnexus/material_nexus/recipe_formats/" + name + ".json")) {
                 assertNotNull(in, name);
-                files.put(ResourceLocation.fromNamespaceAndPath("materialnexus", name),
+                files.put(Identifier.fromNamespaceAndPath("materialnexus", name),
                         JsonParser.parseReader(new java.io.InputStreamReader(in, java.nio.charset.StandardCharsets.UTF_8)));
             } catch (java.io.IOException e) {
                 throw new java.io.UncheckedIOException(e);
@@ -43,7 +43,7 @@ class RecipeRewritesTest {
      */
     @Test
     void everyShippedFormatReadsAndNoTypeIsClaimedTwice() throws Exception {
-        Map<ResourceLocation, String> owner = new java.util.HashMap<>();
+        Map<Identifier, String> owner = new java.util.HashMap<>();
         var directory = java.nio.file.Path.of(RecipeRewritesTest.class.getResource("/data/materialnexus/material_nexus/recipe_formats").toURI());
         try (var files = java.nio.file.Files.list(directory)) {
             for (java.nio.file.Path file : files.filter(f -> f.toString().endsWith(".json")).sorted().toList()) {
@@ -51,7 +51,7 @@ class RecipeRewritesTest {
                 assertTrue(RecipeFormats.validate(json).isEmpty(), file + ": " + RecipeFormats.validate(json));
                 if (!json.getAsJsonObject().has("types")) continue;
                 for (var type : json.getAsJsonObject().getAsJsonArray("types")) {
-                    String previous = owner.put(ResourceLocation.parse(type.getAsString()), file.getFileName().toString());
+                    String previous = owner.put(Identifier.parse(type.getAsString()), file.getFileName().toString());
                     assertNull(previous, type.getAsString() + " is in " + previous + " and in " + file.getFileName());
                 }
             }
@@ -81,8 +81,8 @@ class RecipeRewritesTest {
         return Optional.of(JsonParser.parseString(text).getAsJsonObject());
     }
 
-    private static ResourceLocation id(String path) {
-        return ResourceLocation.fromNamespaceAndPath("test", path);
+    private static Identifier id(String path) {
+        return Identifier.fromNamespaceAndPath("test", path);
     }
 
     /**
@@ -92,9 +92,9 @@ class RecipeRewritesTest {
     @Test
     void wrappersGridKeysAndSkippedTypes() {
         var all = dev.drimoz.materialnexus.core.policy.AlmostUnified.Ownership.ALL;
-        var alt = ResourceLocation.parse("mekanism:dust_tin");
-        var kept = ResourceLocation.parse("immersiveengineering:dust_tin");
-        Map<ResourceLocation, ResourceLocation> conversions = Map.of(alt, kept);
+        var alt = Identifier.parse("mekanism:dust_tin");
+        var kept = Identifier.parse("immersiveengineering:dust_tin");
+        Map<Identifier, Identifier> conversions = Map.of(alt, kept);
         String wrapped = "{\"type\":\"forge:conditional\",\"recipes\":[{\"conditions\":[{\"type\":\"forge:mod_loaded\",\"modid\":\"othermod\"}],"
                 + "\"recipe\":{\"type\":\"othermod:grinder\",\"ingredient\":{\"item\":\"%1$s\"},\"result\":{\"item\":\"%1$s\"}}}]}";
         String grid = "{\"type\":\"othermod:shaped_table\",\"pattern\":[\"#\"],\"key\":{\"#\":{\"item\":\"%1$s\"}},\"result\":{\"item\":\"othermod:thing\"}}";
@@ -123,19 +123,19 @@ class RecipeRewritesTest {
      */
     @Test
     void recipesWithoutAFormatAreRewrittenByTheirKeys() {
-        var igPlate = ResourceLocation.parse("immersivegeology:plate_chromium");
-        var kept = ResourceLocation.parse("modern_industrialization:chromium_plate");
-        var tag = ResourceLocation.parse("c:plates/chromium");
+        var igPlate = Identifier.parse("immersivegeology:plate_chromium");
+        var kept = Identifier.parse("modern_industrialization:chromium_plate");
+        var tag = Identifier.parse("c:plates/chromium");
         var all = dev.drimoz.materialnexus.core.policy.AlmostUnified.Ownership.ALL;
-        Map<ResourceLocation, ResourceLocation> conversions = Map.of(igPlate, kept);
+        Map<Identifier, Identifier> conversions = Map.of(igPlate, kept);
         String foundry = "{\"type\":\"immersivegeology:foundry\",\"inputs\":[{\"item\":\"%1$s\"},{\"tag\":\"c:dusts/coal\"}],"
                 + "\"result\":{\"id\":\"%1$s\",\"count\":2},\"block\":{\"item\":\"%1$s\"}}";
         var source = new Source(id("foundry"), json(foundry.formatted(igPlate)), igPlate);
         // A machine that hides its recipe from the game (GregTech-like): it decodes, nothing more is known.
         RecipeRewrites.Decoder hidden = json -> Optional.of(new RecipeRewrites.Decoded() {
             public boolean exposed() { return false; }
-            public boolean produces(ResourceLocation item) { return false; }
-            public boolean consumes(ResourceLocation item) { return false; }
+            public boolean produces(Identifier item) { return false; }
+            public boolean consumes(Identifier item) { return false; }
         });
         var form = new RecipeRewrites.UnifiedForm(tag, kept, List.of(igPlate), java.util.Set.of(igPlate, kept));
         var inputTags = RecipeRewrites.inputTags(List.of(form), Map.of(tag, java.util.Set.of(igPlate, kept)));
@@ -145,7 +145,7 @@ class RecipeRewritesTest {
         assertEquals(JsonParser.parseString("[{\"tag\":\"c:plates/chromium\"},{\"tag\":\"c:dusts/coal\"}]"), written.get("inputs"));
         assertEquals(JsonParser.parseString("{\"id\":\"" + kept + "\",\"count\":2}"), written.get("result"));
         assertEquals(JsonParser.parseString("{\"item\":\"" + igPlate + "\"}"), written.get("block"), "an unknown key is not rewritten");
-        assertTrue(plan.effects().contains(new PackContent.Effect(RecipeRewrites.BY_KEYS, id("foundry"), ResourceLocation.parse("immersivegeology:foundry"))));
+        assertTrue(plan.effects().contains(new PackContent.Effect(RecipeRewrites.BY_KEYS, id("foundry"), Identifier.parse("immersivegeology:foundry"))));
         assertTrue(plan.effects().contains(new PackContent.Effect(RecipeRewrites.UNSUPPORTED, id("foundry"), igPlate)));
 
         assertTrue(RecipeRewrites.plan(List.of(new Source(id("foundry"), Optional.of(written), kept)), conversions, SHIPPED, all, inputTags, hidden)
@@ -153,7 +153,7 @@ class RecipeRewritesTest {
         assertEquals(JsonParser.parseString("{\"item\":\"" + kept + "\"}"),
                 RecipeRewrites.plan(List.of(source), conversions, SHIPPED, all, inputTags, RecipeRewrites.Decoder.NONE)
                         .files().get("data/test/recipe/foundry.json").getAsJsonObject().getAsJsonArray("inputs").get(0), "no tag the game refuses");
-        assertTrue(RecipeRewrites.inputTags(List.of(form), Map.of(tag, java.util.Set.of(igPlate, kept, ResourceLocation.parse("othermod:plate_iron"))))
+        assertTrue(RecipeRewrites.inputTags(List.of(form), Map.of(tag, java.util.Set.of(igPlate, kept, Identifier.parse("othermod:plate_iron"))))
                 .isEmpty(), "a tag holding another material keeps the item");
     }
 
@@ -185,10 +185,10 @@ class RecipeRewritesTest {
     /** Reported in game: IE "ingot to nuggets" became IE ingot -> MI nuggets. Inputs must follow the unification too. */
     @Test
     void alternativeInputsAreRewrittenSoTheRecipeCanCollapseIntoItsDuplicate() {
-        ResourceLocation ieIngot = ResourceLocation.fromNamespaceAndPath("immersiveengineering", "ingot_aluminum");
-        ResourceLocation ieNugget = ResourceLocation.fromNamespaceAndPath("immersiveengineering", "nugget_aluminum");
-        ResourceLocation miIngot = ResourceLocation.fromNamespaceAndPath("modern_industrialization", "aluminum_ingot");
-        ResourceLocation miNugget = ResourceLocation.fromNamespaceAndPath("modern_industrialization", "aluminum_nugget");
+        Identifier ieIngot = Identifier.fromNamespaceAndPath("immersiveengineering", "ingot_aluminum");
+        Identifier ieNugget = Identifier.fromNamespaceAndPath("immersiveengineering", "nugget_aluminum");
+        Identifier miIngot = Identifier.fromNamespaceAndPath("modern_industrialization", "aluminum_ingot");
+        Identifier miNugget = Identifier.fromNamespaceAndPath("modern_industrialization", "aluminum_nugget");
         String toNuggets = "{\"type\":\"minecraft:crafting_shapeless\",\"ingredients\":[{\"item\":\"%s\"}],\"result\":{\"count\":9,\"id\":\"%s\"}}";
         String fromTag = "{\"type\":\"minecraft:crafting_shapeless\",\"ingredients\":[{\"tag\":\"c:ingots/aluminum\"}],\"result\":{\"count\":9,\"id\":\"%s\"}}";
         var sources = List.of(
@@ -206,16 +206,16 @@ class RecipeRewritesTest {
     /** MNX-015/016: Create and Mekanism formats as shipped (Create 6.0.10, Mekanism 10.7.19). */
     @Test
     void createAndMekanismOutputsAndInputsAreRewritten() {
-        ResourceLocation createSheet = ResourceLocation.fromNamespaceAndPath("create", "copper_sheet");
-        ResourceLocation iePlate = ResourceLocation.fromNamespaceAndPath("immersiveengineering", "plate_copper");
-        ResourceLocation mekDust = ResourceLocation.fromNamespaceAndPath("mekanism", "dust_copper");
-        ResourceLocation miDust = ResourceLocation.fromNamespaceAndPath("modern_industrialization", "copper_dust");
+        Identifier createSheet = Identifier.fromNamespaceAndPath("create", "copper_sheet");
+        Identifier iePlate = Identifier.fromNamespaceAndPath("immersiveengineering", "plate_copper");
+        Identifier mekDust = Identifier.fromNamespaceAndPath("mekanism", "dust_copper");
+        Identifier miDust = Identifier.fromNamespaceAndPath("modern_industrialization", "copper_dust");
         var conversions = Map.of(createSheet, iePlate, mekDust, miDust);
         var sources = List.of(
                 new Source(id("create_pressing"), json("{\"type\":\"create:pressing\",\"ingredients\":[{\"tag\":\"c:ingots/copper\"}],"
                         + "\"results\":[{\"id\":\"create:copper_sheet\"},{\"chance\":0.5,\"id\":\"minecraft:copper_nugget\"}]}"), createSheet),
                 new Source(id("mek_enriching"), json("{\"type\":\"mekanism:enriching\",\"input\":{\"count\":1,\"item\":\"mekanism:dust_copper\"},"
-                        + "\"output\":{\"count\":1,\"id\":\"minecraft:copper_ingot\"}}"), ResourceLocation.withDefaultNamespace("copper_ingot")),
+                        + "\"output\":{\"count\":1,\"id\":\"minecraft:copper_ingot\"}}"), Identifier.withDefaultNamespace("copper_ingot")),
                 new Source(id("mek_sawing"), json("{\"type\":\"mekanism:sawing\",\"input\":{\"count\":1,\"tag\":\"c:ores/copper\"},"
                         + "\"main_output\":{\"count\":2,\"id\":\"mekanism:dust_copper\"},\"secondary_output\":{\"chance\":0.1,\"id\":\"create:copper_sheet\"}}"), mekDust),
                 // Chemical output: its id is never an item to convert, so the recipe is untouched.
@@ -236,13 +236,13 @@ class RecipeRewritesTest {
     /** MNX-017/018: IE nested secondaries and MI item_outputs, plus a pack-author format overriding a shipped one. */
     @Test
     void ieAndMiFormatsAndAuthorOverrides() {
-        ResourceLocation mekDust = ResourceLocation.fromNamespaceAndPath("mekanism", "dust_copper");
-        ResourceLocation miDust = ResourceLocation.fromNamespaceAndPath("modern_industrialization", "copper_dust");
+        Identifier mekDust = Identifier.fromNamespaceAndPath("mekanism", "dust_copper");
+        Identifier miDust = Identifier.fromNamespaceAndPath("modern_industrialization", "copper_dust");
         var conversions = Map.of(mekDust, miDust);
         var sources = List.of(
                 new Source(id("ie_crusher"), json("{\"type\":\"immersiveengineering:crusher\",\"input\":{\"tag\":\"c:ores/copper\"},"
                         + "\"result\":{\"id\":\"minecraft:raw_copper\"},\"secondaries\":[{\"chance\":0.1,\"output\":{\"id\":\"mekanism:dust_copper\"}}]}"),
-                        ResourceLocation.withDefaultNamespace("raw_copper")),
+                        Identifier.withDefaultNamespace("raw_copper")),
                 new Source(id("mi_macerator"), json("{\"type\":\"modern_industrialization:macerator\",\"item_inputs\":[{\"amount\":1,\"item\":\"mekanism:dust_copper\"}],"
                         + "\"item_outputs\":[{\"amount\":2,\"item\":\"mekanism:dust_copper\"}]}"), mekDust));
 
@@ -251,8 +251,8 @@ class RecipeRewritesTest {
         assertFalse(plan.files().get("data/test/recipe/mi_macerator.json").toString().contains("mekanism:dust_copper"));
 
         // A pack author describes another mod's recipe type in their own datapack; it is then rewritten too.
-        var withAuthor = new java.util.HashMap<ResourceLocation, com.google.gson.JsonElement>();
-        withAuthor.put(ResourceLocation.fromNamespaceAndPath("mypack", "othermod"),
+        var withAuthor = new java.util.HashMap<Identifier, com.google.gson.JsonElement>();
+        withAuthor.put(Identifier.fromNamespaceAndPath("mypack", "othermod"),
                 JsonParser.parseString("{\"types\":[\"othermod:grinder\"],\"outputs\":[\"product\"]}"));
         var custom = new Source(id("other_grinder"), json("{\"type\":\"othermod:grinder\",\"product\":{\"id\":\"mekanism:dust_copper\"}}"), mekDust);
         assertEquals(List.of(new PackContent.Effect(RecipeRewrites.UNSUPPORTED, id("other_grinder"), mekDust)),

@@ -2,11 +2,9 @@ package dev.drimoz.materialnexus.client.ui;
 
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.font.FontSet;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.network.chat.FontDescription;
+import net.minecraft.resources.Identifier;
 import net.neoforged.fml.util.ObfuscationReflectionHelper;
-
-import java.util.function.Function;
 
 /**
  * The font of the Material Nexus screen (MNX-103): the game's, or the bundled smooth one (IBM Plex Sans, OFL, declared
@@ -14,7 +12,7 @@ import java.util.function.Function;
  * the default font swapped, so every draw and every width goes through it without a change at the call sites.
  */
 public final class UiFont {
-    private static final ResourceLocation SMOOTH = ResourceLocation.fromNamespaceAndPath("materialnexus", "ui");
+    private static final FontDescription SMOOTH = new FontDescription.Resource(Identifier.fromNamespaceAndPath("materialnexus", "ui"));
     private static Font smooth;
 
     private UiFont() { }
@@ -24,8 +22,12 @@ public final class UiFont {
         if (!ScreenSettings.get().smoothFont()) return game;
         if (smooth == null) {
             try {
-                Function<ResourceLocation, FontSet> fonts = ObfuscationReflectionHelper.getPrivateValue(Font.class, game, "fonts");
-                smooth = new Font(id -> fonts.apply(Minecraft.DEFAULT_FONT.equals(id) ? SMOOTH : id), false);
+                // No public path to the game font's glyph lookup; the game is unobfuscated, so the name is stable.
+                Font.Provider glyphs = ObfuscationReflectionHelper.getPrivateValue(Font.class, game, "provider");
+                smooth = new Font(new Font.Provider() {
+                    @Override public net.minecraft.client.gui.GlyphSource glyphs(FontDescription font) { return glyphs.glyphs(FontDescription.DEFAULT.equals(font) ? SMOOTH : font); }
+                    @Override public net.minecraft.client.gui.font.glyphs.EffectGlyph effect() { return glyphs.effect(); }
+                });
             } catch (RuntimeException e) {
                 // The game's font is always there.
                 return game;

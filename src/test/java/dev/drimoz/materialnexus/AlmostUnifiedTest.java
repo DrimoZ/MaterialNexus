@@ -6,7 +6,7 @@ import dev.drimoz.materialnexus.core.policy.AlmostUnified;
 import dev.drimoz.materialnexus.core.resolution.CanonicalResolver;
 import dev.drimoz.materialnexus.datapack.PackContent;
 import dev.drimoz.materialnexus.datapack.PolicyFiles;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import java.util.ArrayList;
@@ -17,9 +17,9 @@ import static org.junit.jupiter.api.Assertions.*;
 
 /** ADR-012: two unifiers must never act on the same domain by accident. */
 class AlmostUnifiedTest {
-    private static final ResourceLocation INGOTS_TIN = ResourceLocation.fromNamespaceAndPath("c", "ingots/tin");
-    private static final ResourceLocation MEK = ResourceLocation.fromNamespaceAndPath("mekanism", "ingot_tin");
-    private static final ResourceLocation MI = ResourceLocation.fromNamespaceAndPath("modern_industrialization", "tin_ingot");
+    private static final Identifier INGOTS_TIN = Identifier.fromNamespaceAndPath("c", "ingots/tin");
+    private static final Identifier MEK = Identifier.fromNamespaceAndPath("mekanism", "ingot_tin");
+    private static final Identifier MI = Identifier.fromNamespaceAndPath("modern_industrialization", "tin_ingot");
 
     private static List<String> kinds(String global, boolean auPresent, List<AlmostUnified.Ownership> seen) {
         var policy = PolicyFiles.parse(JsonParser.parseString(global), Map.of());

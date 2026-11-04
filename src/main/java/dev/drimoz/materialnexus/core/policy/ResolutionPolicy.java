@@ -3,7 +3,7 @@ package dev.drimoz.materialnexus.core.policy;
 import dev.drimoz.materialnexus.core.domain.FormId;
 import dev.drimoz.materialnexus.core.domain.MaterialForm;
 import dev.drimoz.materialnexus.core.domain.MaterialId;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.HashMap;
 import java.util.List;
@@ -22,19 +22,19 @@ public record ResolutionPolicy(
         List<String> globalModPriority,
         Map<MaterialId, List<String>> materialModPriority,
         Map<MaterialForm, List<String>> formModPriority,
-        Map<MaterialForm, ResourceLocation> explicitProviders,
+        Map<MaterialForm, Identifier> explicitProviders,
         Set<MaterialId> excludedMaterials,
         Set<MaterialForm> excludedForms,
         Set<FormId> conversionRecipeForms,
         AlmostUnified almostUnified,
         ProcessRules processes,
-        Set<ResourceLocation> notSame,
+        Set<Identifier> notSame,
         boolean addMissingTags,
         Map<MaterialForm, TagEdit> tagEdits,
-        Set<ResourceLocation> same,
-        Set<ResourceLocation> disabledRecipes) {
+        Set<Identifier> same,
+        Set<Identifier> disabledRecipes) {
     /** MNX-079: items the player adds to or removes from a form's convention tag. */
-    public record TagEdit(Set<ResourceLocation> add, Set<ResourceLocation> remove) {
+    public record TagEdit(Set<Identifier> add, Set<Identifier> remove) {
         public TagEdit {
             add = Set.copyOf(add);
             remove = Set.copyOf(remove);
@@ -58,16 +58,16 @@ public record ResolutionPolicy(
     }
 
     public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
-                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, ResourceLocation> explicitProviders,
+                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, Identifier> explicitProviders,
                             Set<MaterialId> excludedMaterials, Set<MaterialForm> excludedForms, Set<FormId> conversionRecipeForms,
-                            AlmostUnified almostUnified, ProcessRules processes, Set<ResourceLocation> notSame) {
+                            AlmostUnified almostUnified, ProcessRules processes, Set<Identifier> notSame) {
         this(globalModPriority, materialModPriority, formModPriority, explicitProviders, excludedMaterials, excludedForms,
                 conversionRecipeForms, almostUnified, processes, notSame, false, Map.of(), Set.of(), Set.of());
     }
 
     /** Without items marked "not the same" (MNX-050). */
     public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
-                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, ResourceLocation> explicitProviders,
+                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, Identifier> explicitProviders,
                             Set<MaterialId> excludedMaterials, Set<MaterialForm> excludedForms, Set<FormId> conversionRecipeForms,
                             AlmostUnified almostUnified, ProcessRules processes) {
         this(globalModPriority, materialModPriority, formModPriority, explicitProviders, excludedMaterials, excludedForms,
@@ -75,7 +75,7 @@ public record ResolutionPolicy(
     }
 
     public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
-                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, ResourceLocation> explicitProviders,
+                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, Identifier> explicitProviders,
                             Set<MaterialId> excludedMaterials, Set<MaterialForm> excludedForms, Set<FormId> conversionRecipeForms,
                             AlmostUnified almostUnified) {
         this(globalModPriority, materialModPriority, formModPriority, explicitProviders, excludedMaterials, excludedForms,
@@ -83,25 +83,25 @@ public record ResolutionPolicy(
     }
 
     public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
-                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, ResourceLocation> explicitProviders,
+                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, Identifier> explicitProviders,
                             Set<MaterialId> excludedMaterials, Set<MaterialForm> excludedForms, Set<FormId> conversionRecipeForms) {
         this(globalModPriority, materialModPriority, formModPriority, explicitProviders, excludedMaterials, excludedForms,
                 conversionRecipeForms, AlmostUnified.NONE);
     }
 
     public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
-                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, ResourceLocation> explicitProviders,
+                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, Identifier> explicitProviders,
                             Set<MaterialId> excludedMaterials, Set<MaterialForm> excludedForms) {
         this(globalModPriority, materialModPriority, formModPriority, explicitProviders, excludedMaterials, excludedForms, Set.of());
     }
 
     public ResolutionPolicy(List<String> globalModPriority, Map<MaterialId, List<String>> materialModPriority,
-                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, ResourceLocation> explicitProviders) {
+                            Map<MaterialForm, List<String>> formModPriority, Map<MaterialForm, Identifier> explicitProviders) {
         this(globalModPriority, materialModPriority, formModPriority, explicitProviders, Set.of(), Set.of());
     }
 
     /** True when the player took this item out of the form's tag (MNX-079). */
-    public boolean tagRemoved(MaterialForm key, ResourceLocation item) {
+    public boolean tagRemoved(MaterialForm key, Identifier item) {
         TagEdit edit = tagEdits.get(key);
         return edit != null && edit.remove().contains(item);
     }
@@ -119,14 +119,14 @@ public record ResolutionPolicy(
     /** This policy plus extra explicit choices, used to preview pending GUI changes before they are written. */
     /** The policy without these explicit choices (MNX-058: back to default, previewed). */
     public ResolutionPolicy withoutExplicit(java.util.Set<MaterialForm> forms) {
-        Map<MaterialForm, ResourceLocation> kept = new HashMap<>(explicitProviders);
+        Map<MaterialForm, Identifier> kept = new HashMap<>(explicitProviders);
         kept.keySet().removeAll(forms);
         return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, kept,
                 excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes, notSame, addMissingTags, tagEdits, same, disabledRecipes);
     }
 
-    public ResolutionPolicy withExplicit(Map<MaterialForm, ResourceLocation> extra) {
-        Map<MaterialForm, ResourceLocation> merged = new HashMap<>(explicitProviders);
+    public ResolutionPolicy withExplicit(Map<MaterialForm, Identifier> extra) {
+        Map<MaterialForm, Identifier> merged = new HashMap<>(explicitProviders);
         merged.putAll(extra);
         return new ResolutionPolicy(globalModPriority, materialModPriority, formModPriority, merged,
                 excludedMaterials, excludedForms, conversionRecipeForms, almostUnified, processes, notSame, addMissingTags, tagEdits, same, disabledRecipes);

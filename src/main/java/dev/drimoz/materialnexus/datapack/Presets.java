@@ -5,13 +5,13 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.mojang.logging.LogUtils;
 import dev.drimoz.materialnexus.MaterialNexus;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import org.slf4j.Logger;
 
 import java.util.Map;
@@ -24,31 +24,31 @@ import java.util.TreeMap;
  * Preview / Apply / Revert flow. Names come from {@code materialnexus.preset.<path>} lang keys.
  */
 @EventBusSubscriber(modid = MaterialNexus.MOD_ID)
-public final class Presets extends SimpleJsonResourceReloadListener {
+public final class Presets extends SimpleJsonResourceReloadListener<JsonElement> {
     public static final String DIRECTORY = "material_nexus/presets";
     private static final Logger LOGGER = LogUtils.getLogger();
-    private static volatile Map<ResourceLocation, JsonObject> presets = Map.of();
+    private static volatile Map<Identifier, JsonObject> presets = Map.of();
 
     private Presets() {
-        super(new Gson(), DIRECTORY);
+        super(net.minecraft.util.ExtraCodecs.JSON, net.minecraft.resources.FileToIdConverter.json(DIRECTORY));
     }
 
     @SubscribeEvent
-    public static void register(AddReloadListenerEvent event) {
-        event.addListener(new Presets());
+    public static void register(AddServerReloadListenersEvent event) {
+        event.addListener(Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "presets"), new Presets());
     }
 
-    public static Map<ResourceLocation, JsonObject> all() {
+    public static Map<Identifier, JsonObject> all() {
         return presets;
     }
 
-    public static Optional<JsonObject> get(ResourceLocation id) {
+    public static Optional<JsonObject> get(Identifier id) {
         return Optional.ofNullable(presets.get(id));
     }
 
     @Override
-    protected void apply(Map<ResourceLocation, JsonElement> files, ResourceManager resources, ProfilerFiller profiler) {
-        Map<ResourceLocation, JsonObject> loaded = new TreeMap<>();
+    protected void apply(Map<Identifier, JsonElement> files, ResourceManager resources, ProfilerFiller profiler) {
+        Map<Identifier, JsonObject> loaded = new TreeMap<>();
         files.forEach((id, json) -> {
             if (json.isJsonObject()) loaded.put(id, json.getAsJsonObject());
             else LOGGER.warn("Ignoring preset {}: not a JSON object", id);

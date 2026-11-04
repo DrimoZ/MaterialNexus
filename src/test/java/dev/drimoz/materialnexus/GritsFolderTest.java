@@ -3,7 +3,7 @@ package dev.drimoz.materialnexus;
 import dev.drimoz.materialnexus.core.discovery.TagDiscovery;
 import dev.drimoz.materialnexus.core.domain.FormId;
 import dev.drimoz.materialnexus.core.domain.MaterialId;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 
@@ -23,10 +23,10 @@ class GritsFolderTest {
     void gritsAreDustsAndTheDustFolderStaysTheCanonicalOne() {
         TagDiscovery.setDataFolders(Map.of("grits", new FormId("dust")), List.of());
 
-        var discovered = TagDiscovery.discover(Map.of(ResourceLocation.parse("c:grits/chromium"),
-                List.of(ResourceLocation.parse("immersivegeology:grit_chromium"))));
+        var discovered = TagDiscovery.discover(Map.of(Identifier.parse("c:grits/chromium"),
+                List.of(Identifier.parse("immersivegeology:grit_chromium"))));
 
         assertEquals(1, discovered.providers(new MaterialId("chromium"), new FormId("dust")).size());
-        assertEquals(ResourceLocation.parse("c:dusts/chromium"), TagDiscovery.conventionTag(new MaterialId("chromium"), new FormId("dust")).orElseThrow());
+        assertEquals(Identifier.parse("c:dusts/chromium"), TagDiscovery.conventionTag(new MaterialId("chromium"), new FormId("dust")).orElseThrow());
     }
 }

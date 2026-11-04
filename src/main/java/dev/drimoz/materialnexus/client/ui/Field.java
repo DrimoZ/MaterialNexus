@@ -1,7 +1,7 @@
 package dev.drimoz.materialnexus.client.ui;
 
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.network.chat.Component;
 
@@ -34,13 +34,13 @@ public final class Field extends EditBox {
     }
 
     @Override
-    public void renderWidget(GuiGraphics g, int mouseX, int mouseY, float partialTick) {
+    public void renderWidget(GuiGraphicsExtractor g, int mouseX, int mouseY, float partialTick) {
         if (!isVisible()) return;
         g.fill(getX(), getY(), getX() + width, getY() + height, Theme.RAISED);
-        g.renderOutline(getX(), getY(), width, height, isFocused() ? Theme.INFO : Theme.CTRL);
-        g.pose().pushPose();
-        g.pose().translate(PAD, (height - 8) / 2, 0);
+        g.outline(getX(), getY(), width, height, isFocused() ? Theme.INFO : Theme.CTRL);
+        g.pose().pushMatrix();
+        g.pose().translate(PAD, (height - 8) / 2);
         super.renderWidget(g, mouseX, mouseY, partialTick);
-        g.pose().popPose();
+        g.pose().popMatrix();
     }
 }

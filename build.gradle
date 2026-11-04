@@ -2,22 +2,17 @@ plugins {
     id 'java-library'
     id 'maven-publish'
     // Matches the ModDevGradle line used by Immaterial Drawers for NeoForge 1.21.1.
-    id 'net.neoforged.moddev' version '2.0.75'
+    id 'net.neoforged.moddev' version '2.0.148'
 }
 
 version = "${mod_version}+${minecraft_version}"
 group = mod_group_id
 base { archivesName = mod_id }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(25)
 
 neoForge {
     version = project.neo_version
-
-    parchment {
-        minecraftVersion = project.parchment_minecraft_version
-        mappingsVersion = project.parchment_mappings_version
-    }
 
     runs {
         client {
@@ -92,7 +87,7 @@ dependencies {
     compileOnly "mezz.jei:jei-${jei_minecraft_version}-common-api:${jei_version}"
     compileOnly "mezz.jei:jei-${jei_minecraft_version}-neoforge-api:${jei_version}"
     // EMI: compiled against for the viewer adapter only; `-Pemi` adds it to the dev run.
-    compileOnly "maven.modrinth:emi:${emi_version}"
+    // MNX-140: no official EMI for 26.1.2, adapter excluded below.
     if (project.hasProperty('emi')) {
         runtimeOnly "maven.modrinth:emi:${emi_version}"
     }
@@ -228,7 +223,7 @@ tasks.named('jar', Jar) {
 
 tasks.withType(JavaCompile).configureEach {
     options.encoding = 'UTF-8'
-    options.release = 21
+    options.release = 25
     options.compilerArgs << '-Xlint:deprecation'
 }
 
@@ -240,3 +235,6 @@ publishing {
         maven { url = "file://${project.projectDir}/repo" }
     }
 }
+
+// MNX-140: EMI has no official 26.1.2 build; the adapter is left out until one exists.
+sourceSets.main.java.exclude 'dev/drimoz/materialnexus/client/compat/emi/**'

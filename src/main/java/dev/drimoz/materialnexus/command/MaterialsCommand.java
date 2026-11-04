@@ -13,14 +13,14 @@ import net.neoforged.neoforge.network.PacketDistributor;
 /** {@code /materials} and the single server-side gate for opening the screen (ADR-013). */
 @EventBusSubscriber(modid = MaterialNexus.MOD_ID)
 public final class MaterialsCommand {
-    public static final int PERMISSION_LEVEL = 2;
+    public static final net.minecraft.server.permissions.Permission PERMISSION = net.minecraft.server.permissions.Permissions.COMMANDS_GAMEMASTER;
 
     private MaterialsCommand() { }
 
     @SubscribeEvent
     public static void register(RegisterCommandsEvent event) {
         event.getDispatcher().register(Commands.literal("materials")
-                .requires(source -> source.hasPermission(PERMISSION_LEVEL))
+                .requires(source -> source.permissions().hasPermission(PERMISSION))
                 .executes(ctx -> tryOpen(ctx.getSource().getPlayerOrException()) ? 1 : 0)
                 .then(Commands.literal("report").executes(ctx -> report(ctx.getSource()))));
     }
@@ -35,7 +35,7 @@ public final class MaterialsCommand {
             java.nio.file.Files.createDirectories(file.getParent());
             // MNX-080: tags items lack (as "Add missing tags" sees them) and tags recipes ask for in vain.
             var policy = dev.drimoz.materialnexus.datapack.PolicyFiles.load(dev.drimoz.materialnexus.datapack.MnxPaths.policies());
-            java.util.SortedMap<net.minecraft.resources.ResourceLocation, java.util.TreeSet<net.minecraft.resources.ResourceLocation>> missingTags = new java.util.TreeMap<>();
+            java.util.SortedMap<net.minecraft.resources.Identifier, java.util.TreeSet<net.minecraft.resources.Identifier>> missingTags = new java.util.TreeMap<>();
             dev.drimoz.materialnexus.datapack.PackContent.missingTags(snapshot.materials(), policy, snapshot.conventionTags(), missingTags);
             var recipes = recipeJson(source.getServer());
             java.nio.file.Files.writeString(file, dev.drimoz.materialnexus.diagnostics.DiagnosticsReport.build(snapshot, missing, untagged,
@@ -50,8 +50,8 @@ public final class MaterialsCommand {
     }
 
     /** MNX-080: the tags every loaded recipe asks for, from its JSON file (recipes scripts made in memory have none). */
-    private static java.util.Map<net.minecraft.resources.ResourceLocation, com.google.gson.JsonElement> recipeJson(net.minecraft.server.MinecraftServer server) {
-        java.util.Map<net.minecraft.resources.ResourceLocation, com.google.gson.JsonElement> recipes = new java.util.HashMap<>();
+    private static java.util.Map<net.minecraft.resources.Identifier, com.google.gson.JsonElement> recipeJson(net.minecraft.server.MinecraftServer server) {
+        java.util.Map<net.minecraft.resources.Identifier, com.google.gson.JsonElement> recipes = new java.util.HashMap<>();
         // ponytail: reads every recipe file (~0.5 s on 13k recipes); /materials report only, an explicit command.
         for (var holder : server.getRecipeManager().getRecipes()) {
             dev.drimoz.materialnexus.datapack.RecipeSources.originalJson(server, holder.id()).ifPresent(json -> recipes.put(holder.id(), json));
@@ -61,10 +61,10 @@ public final class MaterialsCommand {
 
     /** MNX-090: recipe types no format covers, by how many of their recipes name a material item. */
     private static java.util.List<dev.drimoz.materialnexus.diagnostics.UnhandledTypes.Row> unhandled(net.minecraft.server.MinecraftServer server,
-            dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot snapshot, java.util.Map<net.minecraft.resources.ResourceLocation, com.google.gson.JsonElement> recipes) {
+            dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot snapshot, java.util.Map<net.minecraft.resources.Identifier, com.google.gson.JsonElement> recipes) {
         var formats = dev.drimoz.materialnexus.integration.RecipeFormats.load(server.getResourceManager());
-        java.util.Set<net.minecraft.resources.ResourceLocation> items = new java.util.HashSet<>();
-        java.util.Set<net.minecraft.resources.ResourceLocation> alternatives = new java.util.HashSet<>();
+        java.util.Set<net.minecraft.resources.Identifier> items = new java.util.HashSet<>();
+        java.util.Set<net.minecraft.resources.Identifier> alternatives = new java.util.HashSet<>();
         snapshot.materials().values().forEach(m -> m.forms().values().forEach(f -> {
             f.canonical().ifPresent(items::add);
             f.notUnified().forEach(n -> items.add(n.item()));
@@ -74,10 +74,10 @@ public final class MaterialsCommand {
         return dev.drimoz.materialnexus.diagnostics.UnhandledTypes.rank(recipes, type -> formats.forType(type).isPresent(), items, alternatives);
     }
 
-    private static dev.drimoz.materialnexus.diagnostics.TagAudit.Result tagAudit(net.minecraft.server.MinecraftServer server, java.util.Map<net.minecraft.resources.ResourceLocation, com.google.gson.JsonElement> recipes) {
-        var items = server.registryAccess().registryOrThrow(net.minecraft.core.registries.Registries.ITEM);
+    private static dev.drimoz.materialnexus.diagnostics.TagAudit.Result tagAudit(net.minecraft.server.MinecraftServer server, java.util.Map<net.minecraft.resources.Identifier, com.google.gson.JsonElement> recipes) {
+        var items = server.registryAccess().lookupOrThrow(net.minecraft.core.registries.Registries.ITEM);
         return dev.drimoz.materialnexus.diagnostics.TagAudit.of(recipes,
-                tag -> items.getTag(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag)).map(t -> t.size() > 0).orElse(false),
+                tag -> items.get(net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, tag)).map(t -> t.size() > 0).orElse(false),
                 dev.drimoz.materialnexus.core.discovery.TagDiscovery::isFolder);
     }
 
@@ -86,7 +86,7 @@ public final class MaterialsCommand {
             dev.drimoz.materialnexus.core.resolution.ResolvedSnapshot snapshot) {
         java.util.Set<String> names = new java.util.HashSet<>(dev.drimoz.materialnexus.datapack.MaterialDefinitions.aliases().keySet());
         snapshot.materials().keySet().forEach(m -> names.add(m.name()));
-        java.util.Set<net.minecraft.resources.ResourceLocation> discovered = new java.util.HashSet<>();
+        java.util.Set<net.minecraft.resources.Identifier> discovered = new java.util.HashSet<>();
         snapshot.discovered().materials().values().forEach(forms -> forms.values().forEach(list -> list.forEach(p -> discovered.add(p.resource()))));
         return dev.drimoz.materialnexus.datapack.FormPatterns.candidates(
                 net.minecraft.core.registries.BuiltInRegistries.ITEM.keySet(), names, discovered, 3);
@@ -94,7 +94,7 @@ public final class MaterialsCommand {
 
     /** Every entry point (command, item) goes through here; the client is never trusted. */
     public static boolean tryOpen(ServerPlayer player) {
-        if (!player.hasPermissions(PERMISSION_LEVEL)) {
+        if (!player.permissions().hasPermission(MaterialsCommand.PERMISSION)) {
             player.sendSystemMessage(Component.translatable("message.materialnexus.no_permission"));
             return false;
         }

@@ -5,7 +5,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import dev.drimoz.materialnexus.core.policy.AlmostUnified;
 import dev.drimoz.materialnexus.integration.RecipeFormats;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -42,13 +42,13 @@ public final class RecipeRewrites {
      * One recipe as it was before Material Nexus. {@code json} is absent for a recipe with no file (made in memory);
      * {@code result} is the (first) item it produces.
      */
-    public record Source(ResourceLocation id, Optional<JsonObject> json, ResourceLocation result) { }
+    public record Source(Identifier id, Optional<JsonObject> json, Identifier result) { }
 
     /** A recipe as the game reads it. {@code exposed}: the recipe tells its ingredients or result (GregTech, Thermal do not). */
     public interface Decoded {
         boolean exposed();
-        boolean produces(ResourceLocation item);
-        boolean consumes(ResourceLocation item);
+        boolean produces(Identifier item);
+        boolean consumes(Identifier item);
     }
 
     /** Reads a recipe the way the game would; empty when the game refuses it. */
@@ -59,11 +59,11 @@ public final class RecipeRewrites {
 
     private RecipeRewrites() { }
 
-    public static PackContent.Content plan(List<Source> sources, Map<ResourceLocation, ResourceLocation> conversions, RecipeFormats formats) {
+    public static PackContent.Content plan(List<Source> sources, Map<Identifier, Identifier> conversions, RecipeFormats formats) {
         return plan(sources, conversions, formats, AlmostUnified.Ownership.ALL);
     }
 
-    public static PackContent.Content plan(List<Source> sources, Map<ResourceLocation, ResourceLocation> conversions, RecipeFormats formats,
+    public static PackContent.Content plan(List<Source> sources, Map<Identifier, Identifier> conversions, RecipeFormats formats,
                                            AlmostUnified.Ownership ownership) {
         return plan(sources, conversions, formats, ownership, Map.of(), Decoder.NONE);
     }
@@ -72,12 +72,12 @@ public final class RecipeRewrites {
      * With Almost Unified owning recipe rewriting, nothing is planned; owning only disabling, duplicates are rewritten, not disabled.
      * {@code inputTags}: alternative to the tag an input naming it may become ({@link #inputTags}); {@code decoder} checks that tag.
      */
-    public static PackContent.Content plan(List<Source> sources, Map<ResourceLocation, ResourceLocation> conversions, RecipeFormats formats,
-                                           AlmostUnified.Ownership ownership, Map<ResourceLocation, ResourceLocation> inputTags, Decoder decoder) {
+    public static PackContent.Content plan(List<Source> sources, Map<Identifier, Identifier> conversions, RecipeFormats formats,
+                                           AlmostUnified.Ownership ownership, Map<Identifier, Identifier> inputTags, Decoder decoder) {
         if (!ownership.outputRewrite()) return new PackContent.Content(Map.of(), List.of());
         Map<String, JsonElement> files = new TreeMap<>();
         List<PackContent.Effect> effects = new ArrayList<>();
-        Map<ResourceLocation, JsonObject> rewritten = new TreeMap<>();
+        Map<Identifier, JsonObject> rewritten = new TreeMap<>();
 
         for (Source s : sources) {
             if (s.json().isEmpty()) {
@@ -92,22 +92,22 @@ public final class RecipeRewrites {
                         .ifPresent(type -> effects.add(new PackContent.Effect(BY_KEYS, s.id(), type)));
             }
             // What is left names an alternative where no role is known (a structure block, a group): listed, untouched.
-            Optional<ResourceLocation> left = firstMention(json, conversions.keySet());
+            Optional<Identifier> left = firstMention(json, conversions.keySet());
             if (left.isPresent()) effects.add(new PackContent.Effect(UNSUPPORTED, s.id(), left.get()));
             if (!json.equals(original)) rewritten.put(s.id(), json);
         }
 
         // Exact duplicates after rewrite: an untouched recipe, or a rewritten one with a smaller id, wins.
-        Map<JsonElement, ResourceLocation> keeper = new HashMap<>();
+        Map<JsonElement, Identifier> keeper = new HashMap<>();
         sources.stream()
                 .filter(s -> s.json().isPresent() && !rewritten.containsKey(s.id()))
                 .sorted(Comparator.comparing(Source::id))
                 .forEach(s -> keeper.putIfAbsent(normalized(s.json().get()), s.id()));
 
-        Map<ResourceLocation, ResourceLocation> resultOf = new HashMap<>();
+        Map<Identifier, Identifier> resultOf = new HashMap<>();
         sources.forEach(s -> resultOf.put(s.id(), conversions.getOrDefault(s.result(), s.result())));
         rewritten.forEach((id, json) -> {
-            ResourceLocation result = resultOf.get(id);
+            Identifier result = resultOf.get(id);
             if (keeper.putIfAbsent(normalized(json), id) != null && ownership.recipeDisable()) {
                 files.put(path(id), disabled());
                 effects.add(new PackContent.Effect(DISABLE, id, result));
@@ -122,7 +122,7 @@ public final class RecipeRewrites {
     /** A format file said never to touch this type (MNX-125). */
     private static boolean skipped(JsonObject recipe, RecipeFormats formats) {
         JsonElement type = recipe.get("type");
-        ResourceLocation id = type != null && type.isJsonPrimitive() ? ResourceLocation.tryParse(type.getAsString()) : null;
+        Identifier id = type != null && type.isJsonPrimitive() ? Identifier.tryParse(type.getAsString()) : null;
         return id != null && formats.skips(id);
     }
 
@@ -145,8 +145,8 @@ public final class RecipeRewrites {
      * One recipe, in place: with a format, every key outside its outputs is an input; without, the role comes from the key and
      * the game, when it shows the recipe, must not say otherwise (ADR-025). The type when keys alone made the change.
      */
-    private static Optional<ResourceLocation> rewrite(JsonObject json, Map<ResourceLocation, ResourceLocation> conversions, RecipeFormats formats,
-                                                      Map<ResourceLocation, ResourceLocation> inputTags, Decoder decoder) {
+    private static Optional<Identifier> rewrite(JsonObject json, Map<Identifier, Identifier> conversions, RecipeFormats formats,
+                                                      Map<Identifier, Identifier> inputTags, Decoder decoder) {
         JsonObject before = json.deepCopy();
         if (skipped(json, formats)) return Optional.empty();
         Optional<RecipeFormats.Format> format = format(json, formats);
@@ -173,7 +173,7 @@ public final class RecipeRewrites {
     }
 
     /** Recipe ids this pack overrides; their pre-MNX JSON must be read beneath it (ADR-010). */
-    public static List<ResourceLocation> overridden(List<PackContent.Effect> manifest) {
+    public static List<Identifier> overridden(List<PackContent.Effect> manifest) {
         return manifest.stream().filter(e -> e.kind().equals(REWRITE) || e.kind().equals(DISABLE) || e.kind().equals(ProcessPlanner.DISABLE)
                         || e.kind().equals(PackContent.PLAYER_DISABLE))
                 .map(PackContent.Effect::target).toList();
@@ -182,20 +182,20 @@ public final class RecipeRewrites {
     public static Optional<RecipeFormats.Format> format(JsonObject recipe, RecipeFormats formats) {
         JsonElement type = recipe.get("type");
         if (type == null || !type.isJsonPrimitive()) return Optional.empty();
-        ResourceLocation id = ResourceLocation.tryParse(type.getAsString());
+        Identifier id = Identifier.tryParse(type.getAsString());
         return id == null ? Optional.empty() : formats.forType(id);
     }
 
     /** Every item a recipe produces, in output-key order: the format's keys, else the known output keys (ADR-025). */
-    public static List<ResourceLocation> outputIds(JsonObject recipe, RecipeFormats formats) {
-        List<ResourceLocation> ids = new ArrayList<>();
+    public static List<Identifier> outputIds(JsonObject recipe, RecipeFormats formats) {
+        List<Identifier> ids = new ArrayList<>();
         format(recipe, formats).map(RecipeFormats.Format::outputKeys).orElse(OUTPUT_KEYS).forEach(key -> collectIds(recipe.get(key), ids));
         return ids;
     }
 
-    private static ResourceLocation type(JsonObject recipe) {
+    private static Identifier type(JsonObject recipe) {
         return Optional.ofNullable(recipe.get("type")).filter(JsonElement::isJsonPrimitive)
-                .map(t -> ResourceLocation.tryParse(t.getAsString())).orElse(ResourceLocation.withDefaultNamespace("unknown"));
+                .map(t -> Identifier.tryParse(t.getAsString())).orElse(Identifier.withDefaultNamespace("unknown"));
     }
 
     /**
@@ -203,12 +203,12 @@ public final class RecipeRewrites {
      * item. {@code forms}: per unified form, its tag, kept item and alternatives; {@code tags}: tag members without Material
      * Nexus; {@code materialItems}: every item discovered as that form's material (aliases included).
      */
-    public record UnifiedForm(ResourceLocation tag, ResourceLocation kept, List<ResourceLocation> alternatives, java.util.Set<ResourceLocation> materialItems) { }
+    public record UnifiedForm(Identifier tag, Identifier kept, List<Identifier> alternatives, java.util.Set<Identifier> materialItems) { }
 
-    public static Map<ResourceLocation, ResourceLocation> inputTags(List<UnifiedForm> forms, Map<ResourceLocation, java.util.Set<ResourceLocation>> tags) {
-        Map<ResourceLocation, ResourceLocation> out = new TreeMap<>();
+    public static Map<Identifier, Identifier> inputTags(List<UnifiedForm> forms, Map<Identifier, java.util.Set<Identifier>> tags) {
+        Map<Identifier, Identifier> out = new TreeMap<>();
         for (UnifiedForm f : forms) {
-            java.util.Set<ResourceLocation> members = tags.get(f.tag());
+            java.util.Set<Identifier> members = tags.get(f.tag());
             if (members == null || !members.contains(f.kept()) || !f.materialItems().containsAll(members)) continue;
             f.alternatives().stream().filter(members::contains).forEach(alt -> out.put(alt, f.tag()));
         }
@@ -219,14 +219,14 @@ public final class RecipeRewrites {
      * The inputs just set to the kept item become the form's tag, one at a time, when the game still reads the recipe and,
      * if it shows its ingredients, accepts both items there; otherwise they stay the kept item.
      */
-    private static void toTags(JsonObject recipe, List<JsonObject> inputs, Map<ResourceLocation, ResourceLocation> conversions,
-                               Map<ResourceLocation, ResourceLocation> inputTags, Decoder decoder) {
+    private static void toTags(JsonObject recipe, List<JsonObject> inputs, Map<Identifier, Identifier> conversions,
+                               Map<Identifier, Identifier> inputTags, Decoder decoder) {
         if (inputTags.isEmpty()) return;
-        Map<ResourceLocation, ResourceLocation> alternativeOf = new HashMap<>();
+        Map<Identifier, Identifier> alternativeOf = new HashMap<>();
         conversions.forEach((alt, kept) -> { if (inputTags.containsKey(alt)) alternativeOf.putIfAbsent(kept, alt); });
         for (JsonObject input : inputs) {
-            ResourceLocation kept = ResourceLocation.tryParse(input.get("item").getAsString());
-            ResourceLocation alt = kept == null ? null : alternativeOf.get(kept);
+            Identifier kept = Identifier.tryParse(input.get("item").getAsString());
+            Identifier alt = kept == null ? null : alternativeOf.get(kept);
             if (alt == null) continue;
             input.remove("item");
             input.addProperty("tag", inputTags.get(alt).toString());
@@ -239,14 +239,14 @@ public final class RecipeRewrites {
     }
 
     /** The first namespaced string naming one of {@code ids}, anywhere in the recipe. */
-    private static Optional<ResourceLocation> firstMention(JsonElement element, java.util.Set<ResourceLocation> ids) {
+    private static Optional<Identifier> firstMention(JsonElement element, java.util.Set<Identifier> ids) {
         if (element.isJsonPrimitive()) {
             if (!element.getAsJsonPrimitive().isString() || element.getAsString().indexOf(':') <= 0) return Optional.empty();
-            return Optional.ofNullable(ResourceLocation.tryParse(element.getAsString())).filter(ids::contains);
+            return Optional.ofNullable(Identifier.tryParse(element.getAsString())).filter(ids::contains);
         }
         if (element.isJsonArray()) {
             for (JsonElement e : element.getAsJsonArray()) {
-                Optional<ResourceLocation> found = firstMention(e, ids);
+                Optional<Identifier> found = firstMention(e, ids);
                 if (found.isPresent()) return found;
             }
         } else if (element.isJsonObject()) {
@@ -254,7 +254,7 @@ public final class RecipeRewrites {
                 // A group is a label, a tag may be spelled like an item, a load condition tests an item without using it:
                 // none of them is an item left behind.
                 if (COSMETIC.contains(e.getKey()) || e.getKey().equals("tag") || e.getKey().endsWith("conditions")) continue;
-                Optional<ResourceLocation> found = firstMention(e.getValue(), ids);
+                Optional<Identifier> found = firstMention(e.getValue(), ids);
                 if (found.isPresent()) return found;
             }
         }
@@ -262,27 +262,27 @@ public final class RecipeRewrites {
     }
 
     /** Item ids under an output key: a stack ({@code "id"} or {@code "item"}), a bare id, or nested in lists and objects. */
-    private static void collectIds(JsonElement output, List<ResourceLocation> ids) {
+    private static void collectIds(JsonElement output, List<Identifier> ids) {
         if (output == null) return;
         if (output.isJsonArray()) {
             output.getAsJsonArray().forEach(e -> collectIds(e, ids));
         } else if (output.isJsonPrimitive()) {
-            Optional.ofNullable(ResourceLocation.tryParse(output.getAsString())).ifPresent(ids::add);
+            Optional.ofNullable(Identifier.tryParse(output.getAsString())).ifPresent(ids::add);
         } else if (output.isJsonObject()) {
             JsonObject o = output.getAsJsonObject();
             JsonElement id = o.has("id") ? o.get("id") : o.get("item");
-            if (id != null && id.isJsonPrimitive()) Optional.ofNullable(ResourceLocation.tryParse(id.getAsString())).ifPresent(ids::add);
+            if (id != null && id.isJsonPrimitive()) Optional.ofNullable(Identifier.tryParse(id.getAsString())).ifPresent(ids::add);
             else o.entrySet().forEach(e -> { if (!e.getValue().isJsonPrimitive()) collectIds(e.getValue(), ids); });
         }
     }
 
     /** Replaces alternatives in the outputs (a stack, a bare id, or nested in lists and objects such as IE secondaries), in place. */
-    private static void replaceOutputs(JsonObject copy, List<String> outputKeys, Map<ResourceLocation, ResourceLocation> conversions) {
+    private static void replaceOutputs(JsonObject copy, List<String> outputKeys, Map<Identifier, Identifier> conversions) {
         for (String key : outputKeys) {
             JsonElement output = copy.get(key);
             if (output == null) continue;
             if (output.isJsonPrimitive()) {
-                ResourceLocation id = ResourceLocation.tryParse(output.getAsString());
+                Identifier id = Identifier.tryParse(output.getAsString());
                 if (id != null && conversions.containsKey(id)) copy.addProperty(key, conversions.get(id).toString());
             } else {
                 replaceStacks(output, conversions, id -> true);
@@ -291,7 +291,7 @@ public final class RecipeRewrites {
     }
 
     /** Stacks ({@code "id"} or {@code "item"}) naming an alternative {@code allowed} lets through, in lists and nested objects. */
-    private static void replaceStacks(JsonElement output, Map<ResourceLocation, ResourceLocation> conversions, java.util.function.Predicate<ResourceLocation> allowed) {
+    private static void replaceStacks(JsonElement output, Map<Identifier, Identifier> conversions, java.util.function.Predicate<Identifier> allowed) {
         if (output.isJsonArray()) {
             output.getAsJsonArray().forEach(e -> replaceStacks(e, conversions, allowed));
         } else if (output.isJsonObject()) {
@@ -299,7 +299,7 @@ public final class RecipeRewrites {
             String field = o.has("id") ? "id" : o.has("item") ? "item" : null;
             JsonElement id = field == null ? null : o.get(field);
             if (id != null && id.isJsonPrimitive()) {
-                ResourceLocation item = ResourceLocation.tryParse(id.getAsString());
+                Identifier item = Identifier.tryParse(id.getAsString());
                 if (item != null && conversions.containsKey(item) && allowed.test(item)) o.addProperty(field, conversions.get(item).toString());
             } else {
                 o.entrySet().forEach(e -> replaceStacks(e.getValue(), conversions, allowed));
@@ -311,16 +311,16 @@ public final class RecipeRewrites {
      * Replaces every literal {@code "item": <alternative>} {@code allowed} lets through, in place, and collects the objects
      * changed (candidates for the form's tag); tag ingredients are left as they are.
      */
-    private static void replaceItems(JsonElement element, Map<ResourceLocation, ResourceLocation> conversions,
-                                     java.util.function.Predicate<ResourceLocation> allowed, List<JsonObject> changed) {
+    private static void replaceItems(JsonElement element, Map<Identifier, Identifier> conversions,
+                                     java.util.function.Predicate<Identifier> allowed, List<JsonObject> changed) {
         if (element.isJsonArray()) {
             element.getAsJsonArray().forEach(e -> replaceItems(e, conversions, allowed, changed));
         } else if (element.isJsonObject()) {
             JsonObject o = element.getAsJsonObject();
             JsonElement item = o.get("item");
             if (item != null && item.isJsonPrimitive()) {
-                ResourceLocation id = ResourceLocation.tryParse(item.getAsString());
-                ResourceLocation canonical = id == null ? null : conversions.get(id);
+                Identifier id = Identifier.tryParse(item.getAsString());
+                Identifier canonical = id == null ? null : conversions.get(id);
                 if (canonical != null && allowed.test(id)) {
                     o.addProperty("item", canonical.toString());
                     changed.add(o);
@@ -349,7 +349,7 @@ public final class RecipeRewrites {
         return recipe;
     }
 
-    static String path(ResourceLocation id) {
+    static String path(Identifier id) {
         return "data/" + id.getNamespace() + "/recipe/" + id.getPath() + ".json";
     }
 }

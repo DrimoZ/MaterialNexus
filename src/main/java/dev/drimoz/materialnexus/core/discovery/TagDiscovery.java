@@ -4,7 +4,7 @@ import dev.drimoz.materialnexus.core.discovery.DiscoveryEvidence.Confidence;
 import dev.drimoz.materialnexus.core.domain.FormId;
 import dev.drimoz.materialnexus.core.domain.MaterialId;
 import dev.drimoz.materialnexus.core.domain.Provider;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -86,7 +86,7 @@ public final class TagDiscovery {
 
     private TagDiscovery() { }
 
-    public static DiscoveredMaterials discover(Map<ResourceLocation, ? extends Collection<ResourceLocation>> tagMembers) {
+    public static DiscoveredMaterials discover(Map<Identifier, ? extends Collection<Identifier>> tagMembers) {
         return discover(tagMembers, Map.of());
     }
 
@@ -94,10 +94,10 @@ public final class TagDiscovery {
      * With explicit aliases (MNX-033): a material named by an alias (aluminium) is merged into the material that
      * declares it (aluminum). Aliases are pack-author data, never guessed from names.
      */
-    public static DiscoveredMaterials discover(Map<ResourceLocation, ? extends Collection<ResourceLocation>> tagMembers,
+    public static DiscoveredMaterials discover(Map<Identifier, ? extends Collection<Identifier>> tagMembers,
                                                Map<String, MaterialId> aliases) {
-        Map<ResourceLocation, String> groundOf = groundsByItem(tagMembers);
-        SortedMap<MaterialId, SortedMap<FormId, SortedMap<ResourceLocation, List<DiscoveryEvidence>>>> found = new TreeMap<>();
+        Map<Identifier, String> groundOf = groundsByItem(tagMembers);
+        SortedMap<MaterialId, SortedMap<FormId, SortedMap<Identifier, List<DiscoveryEvidence>>>> found = new TreeMap<>();
 
         tagMembers.forEach((tag, members) -> {
             boolean byPattern = tag.getNamespace().equals("materialnexus") && tag.getPath().startsWith(PATTERN_PREFIX);
@@ -118,7 +118,7 @@ public final class TagDiscovery {
             if (material.isEmpty()) return;
 
             var byForm = found.computeIfAbsent(material.get(), m -> new TreeMap<>());
-            for (ResourceLocation item : members) {
+            for (Identifier item : members) {
                 FormId form = tagForm;
                 String explanation = (byPattern ? "item name pattern" : "#" + tag) + (aliasOf != null ? " (alias of " + aliasOf + ")" : "");
                 if (tagForm.equals(ORE)) {
@@ -144,12 +144,12 @@ public final class TagDiscovery {
         return new DiscoveredMaterials(Collections.unmodifiableSortedMap(materials));
     }
 
-    private static Map<ResourceLocation, String> groundsByItem(Map<ResourceLocation, ? extends Collection<ResourceLocation>> tagMembers) {
-        Map<ResourceLocation, String> ground = new HashMap<>();
+    private static Map<Identifier, String> groundsByItem(Map<Identifier, ? extends Collection<Identifier>> tagMembers) {
+        Map<Identifier, String> ground = new HashMap<>();
         tagMembers.forEach((tag, members) -> {
             if (tag.getNamespace().equals(CONVENTION_NAMESPACE) && tag.getPath().startsWith(ORES_IN_GROUND)) {
                 String name = tag.getPath().substring(ORES_IN_GROUND.length());
-                for (ResourceLocation item : members) ground.merge(item, name, (a, b) -> a.compareTo(b) <= 0 ? a : b);
+                for (Identifier item : members) ground.merge(item, name, (a, b) -> a.compareTo(b) <= 0 ? a : b);
             }
         });
         return ground;
@@ -161,7 +161,7 @@ public final class TagDiscovery {
     }
 
     /** Fallback when a mod does not tag the host rock: conservative name check, stone otherwise. */
-    private static FormId oreFormByName(ResourceLocation item) {
+    private static FormId oreFormByName(Identifier item) {
         String path = item.getPath();
         if (path.contains("deepslate")) return oreForm("deepslate");
         if (path.contains("nether")) return oreForm("netherrack");
@@ -184,10 +184,10 @@ public final class TagDiscovery {
     }
 
     /** The convention tag a material/form was discovered from, e.g. c:ingots/tin or c:storage_blocks/raw_tin. */
-    public static java.util.Optional<ResourceLocation> conventionTag(MaterialId material, FormId form) {
-        if (form.equals(RAW_BLOCK)) return java.util.Optional.of(ResourceLocation.fromNamespaceAndPath(CONVENTION_NAMESPACE, "storage_blocks/" + RAW_PREFIX + material.name()));
-        if (form.equals(ORE) || form.name().endsWith("_ore")) return java.util.Optional.of(ResourceLocation.fromNamespaceAndPath(CONVENTION_NAMESPACE, "ores/" + material.name()));
+    public static java.util.Optional<Identifier> conventionTag(MaterialId material, FormId form) {
+        if (form.equals(RAW_BLOCK)) return java.util.Optional.of(Identifier.fromNamespaceAndPath(CONVENTION_NAMESPACE, "storage_blocks/" + RAW_PREFIX + material.name()));
+        if (form.equals(ORE) || form.name().endsWith("_ore")) return java.util.Optional.of(Identifier.fromNamespaceAndPath(CONVENTION_NAMESPACE, "ores/" + material.name()));
         return folderOf(form)
-                .map(folder -> ResourceLocation.fromNamespaceAndPath(CONVENTION_NAMESPACE, folder + "/" + material.name()));
+                .map(folder -> Identifier.fromNamespaceAndPath(CONVENTION_NAMESPACE, folder + "/" + material.name()));
     }
 }

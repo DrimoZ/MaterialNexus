@@ -7,11 +7,11 @@ import dev.drimoz.materialnexus.network.MaterialDetailRequest;
 import dev.drimoz.materialnexus.network.MatrixPayload;
 import net.minecraft.ChatFormatting;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.screens.Screen;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.resources.Identifier;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -60,7 +60,7 @@ final class TriagePanel {
     private void request() {
         current().ifPresent(item -> {
             if (detail == null || !detail.material().equals(item.material())) {
-                PacketDistributor.sendToServer(new MaterialDetailRequest(item.material(), false));
+                ClientPacketDistributor.sendToServer(new MaterialDetailRequest(item.material(), false));
             }
         });
     }
@@ -81,8 +81,8 @@ final class TriagePanel {
     }
 
     /** Candidates of the current form: the suggestion first, then the alternatives. */
-    private List<ResourceLocation> candidates() {
-        List<ResourceLocation> list = new ArrayList<>();
+    private List<Identifier> candidates() {
+        List<Identifier> list = new ArrayList<>();
         resolved().ifPresent(f -> {
             f.canonical().ifPresent(list::add);
             list.addAll(f.alternatives());
@@ -91,7 +91,7 @@ final class TriagePanel {
     }
 
     private void pick(int n, boolean notSame) {
-        List<ResourceLocation> list = candidates();
+        List<Identifier> list = candidates();
         if (n < 0 || n >= list.size()) return;
         Item item = current().orElseThrow();
         if (notSame) {
@@ -104,7 +104,7 @@ final class TriagePanel {
 
     boolean key(int key) {
         if (key >= 49 && key <= 57) {
-            pick(key - 49, Screen.hasShiftDown());
+            pick(key - 49, net.minecraft.client.Minecraft.getInstance().hasShiftDown());
             return true;
         }
         switch (key) {
@@ -124,7 +124,7 @@ final class TriagePanel {
         return Component.translatable("screen.materialnexus.triage." + key, args);
     }
 
-    void render(GuiGraphics g, Font font, int x, int y, int w, int h, int mx, int my) {
+    void render(GuiGraphicsExtractor g, Font font, int x, int y, int w, int h, int mx, int my) {
         hits.clear();
         int queueWidth = w >= 700 ? 260 : 0;
         int mw = Math.min(720, w - queueWidth - (queueWidth > 0 ? 24 : 0));
@@ -132,29 +132,29 @@ final class TriagePanel {
         if (queue.isEmpty() || item.isEmpty()) {
             // Nothing left: say so, and offer what comes next.
             Ui.mark(g, Ui.Status.UNIFIED, x, y + 1);
-            g.drawString(font, tr(queue.isEmpty() ? "empty" : "done", queue.size()).copy().withStyle(ChatFormatting.BOLD), x + 12, y, Theme.TEXT, false);
+            g.text(font, tr(queue.isEmpty() ? "empty" : "done", queue.size()).copy().withStyle(ChatFormatting.BOLD), x + 12, y, Theme.TEXT, false);
             int bx = x;
             if (PendingChanges.size() > 0) bx = button(g, font, Component.translatable("screen.materialnexus.preview_short"), bx, y + 20, true, mx, my, review);
             button(g, font, tr("back"), bx, y + 20, false, mx, my, exit);
             return;
         }
         int done = (int) queue.stream().filter(i -> PendingChanges.get(i.material(), i.form()).isPresent()).count();
-        g.drawString(font, tr("position", index + 1, queue.size()), x, y, Theme.MUTED, false);
+        g.text(font, tr("position", index + 1, queue.size()), x, y, Theme.MUTED, false);
         Component chosen = tr("chosen", done);
-        g.drawString(font, chosen, x + mw - font.width(chosen), y, Theme.MUTED, false);
+        g.text(font, chosen, x + mw - font.width(chosen), y, Theme.MUTED, false);
         g.fill(x, y + 12, x + mw, y + 16, Theme.RAISED);
         g.fill(x, y + 12, x + mw * done / queue.size(), y + 16, Theme.ACCENT);
 
-        g.drawString(font, tr("item", Names.material(item.get().material()), Names.form(item.get().form())).copy().withStyle(ChatFormatting.BOLD), x, y + 28, Theme.TEXT, false);
-        List<ResourceLocation> list = candidates();
+        g.text(font, tr("item", Names.material(item.get().material()), Names.form(item.get().form())).copy().withStyle(ChatFormatting.BOLD), x, y + 28, Theme.TEXT, false);
+        List<Identifier> list = candidates();
         if (list.isEmpty()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x, y + 44, Theme.MUTED, false);
+            g.text(font, Component.translatable("screen.materialnexus.process.loading"), x, y + 44, Theme.MUTED, false);
             renderQueue(g, font, x + w - queueWidth, y, queueWidth, h, mx, my);
             return;
         }
-        g.drawString(font, tr("ask", list.size()), x, y + 40, Theme.MUTED, false);
+        g.text(font, tr("ask", list.size()), x, y + 40, Theme.MUTED, false);
 
-        Optional<ResourceLocation> pending = PendingChanges.get(item.get().material(), item.get().form());
+        Optional<Identifier> pending = PendingChanges.get(item.get().material(), item.get().form());
         int cardWidth = Math.clamp((mw - 16) / 3, 150, 232);
         int cx = x;
         int cy = y + 58;
@@ -171,15 +171,15 @@ final class TriagePanel {
         // What is left alone is shown, with its reason: it is not a candidate unless picked in the Materials view.
         List<ResolvedForm.NotUnified> aside = resolved().map(ResolvedForm::notUnified).orElse(List.of());
         if (!aside.isEmpty() && cy + 34 < y + h - 24) {
-            g.drawString(font, Component.translatable("screen.materialnexus.insp.left_alone", aside.size()), x, cy, Theme.MUTED, false);
+            g.text(font, Component.translatable("screen.materialnexus.insp.left_alone", aside.size()), x, cy, Theme.MUTED, false);
             cy += 12;
             for (ResolvedForm.NotUnified n : aside) {
                 if (cy + 22 > y + h - 24) break;
                 g.fill(x, cy, x + mw, cy + 22, Theme.SURFACE);
                 Ui.slot(g, n.item(), x + 4, cy + 2, 0, true);
                 String name = Names.stack(n.item()).getHoverName().getString();
-                g.drawString(font, name, x + 28, cy + 7, Theme.TEXT, false);
-                g.drawString(font, font.plainSubstrByWidth(" · " + NexusScreen.modName(n.item().getNamespace()) + " · "
+                g.text(font, name, x + 28, cy + 7, Theme.TEXT, false);
+                g.text(font, font.plainSubstrByWidth(" · " + NexusScreen.modName(n.item().getNamespace()) + " · "
                         + Component.translatable(n.reasonKey(), n.reasonArgs().toArray()).getString(), mw - 36 - font.width(name)), x + 28 + font.width(name), cy + 7, Theme.MUTED, false);
                 cy += 24;
             }
@@ -198,28 +198,28 @@ final class TriagePanel {
         hits.tooltip(g, font, mx, my);
     }
 
-    private void card(GuiGraphics g, Font font, ResourceLocation candidate, int i, boolean chosen, int cx, int cy, int cw, int mx, int my) {
+    private void card(GuiGraphicsExtractor g, Font font, Identifier candidate, int i, boolean chosen, int cx, int cy, int cw, int mx, int my) {
         g.fill(cx, cy, cx + cw, cy + 110, Theme.SURFACE);
-        if (chosen) g.renderOutline(cx, cy, cw, 110, Theme.INFO);
+        if (chosen) g.outline(cx, cy, cw, 110, Theme.INFO);
         // The item, twice its size, on the slot well.
         g.fill(cx + 8, cy + 8, cx + 44, cy + 44, Theme.WELL);
-        g.pose().pushPose();
-        g.pose().translate(cx + 10, cy + 10, 0);
-        g.pose().scale(2, 2, 1);
-        g.renderItem(Names.stack(candidate), 0, 0);
-        g.pose().popPose();
+        g.pose().pushMatrix();
+        g.pose().translate(cx + 10, cy + 10);
+        g.pose().scale(2, 2);
+        g.item(Names.stack(candidate), 0, 0);
+        g.pose().popMatrix();
         String key = String.valueOf(i + 1);
         int kw = font.width(key) + 8;
-        g.renderOutline(cx + cw - 8 - kw, cy + 8, kw, 14, Theme.CTRL);
-        g.drawString(font, key, cx + cw - 4 - kw, cy + 11, Theme.TEXT, false);
+        g.outline(cx + cw - 8 - kw, cy + 8, kw, 14, Theme.CTRL);
+        g.text(font, key, cx + cw - 4 - kw, cy + 11, Theme.TEXT, false);
         Component tag = chosen ? Ui.Status.PENDING.label() : i == 0 ? Component.translatable("screen.materialnexus.insp.suggested") : Component.empty();
-        g.drawString(font, tag, cx + cw - 14 - kw - font.width(tag), cy + 11, chosen ? Theme.INFO : Theme.WARN, false);
+        g.text(font, tag, cx + cw - 14 - kw - font.width(tag), cy + 11, chosen ? Theme.INFO : Theme.WARN, false);
 
-        g.drawString(font, Component.literal(font.plainSubstrByWidth(Names.stack(candidate).getHoverName().getString(), cw - 16)).withStyle(ChatFormatting.BOLD), cx + 8, cy + 50, Theme.TEXT, false);
-        g.drawString(font, font.plainSubstrByWidth(NexusScreen.modName(candidate.getNamespace()), cw - 16), cx + 8, cy + 61, Theme.MUTED, false);
+        g.text(font, Component.literal(font.plainSubstrByWidth(Names.stack(candidate).getHoverName().getString(), cw - 16)).withStyle(ChatFormatting.BOLD), cx + 8, cy + 50, Theme.TEXT, false);
+        g.text(font, font.plainSubstrByWidth(NexusScreen.modName(candidate.getNamespace()), cw - 16), cx + 8, cy + 61, Theme.MUTED, false);
         var usage = detail.usage().get(candidate);
         if (usage != null) {
-            g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.insp.usage", usage.produced(), usage.used()).getString(), cw - 16),
+            g.text(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.insp.usage", usage.produced(), usage.used()).getString(), cw - 16),
                     cx + 8, cy + 72, Theme.MUTED, false);
         }
         int n = i;
@@ -232,10 +232,10 @@ final class TriagePanel {
     }
 
     /** The whole queue, so the player sees how much is left and what was skipped. */
-    private void renderQueue(GuiGraphics g, Font font, int qx, int qy, int qw, int qh, int mx, int my) {
+    private void renderQueue(GuiGraphicsExtractor g, Font font, int qx, int qy, int qw, int qh, int mx, int my) {
         if (qw == 0) return;
         g.fill(qx - 12, qy - 12, qx - 11, qy + qh + 8, Theme.BORDER);
-        g.drawString(font, tr("queue", queue.size()).copy().withStyle(ChatFormatting.BOLD), qx, qy, Theme.TEXT, false);
+        g.text(font, tr("queue", queue.size()).copy().withStyle(ChatFormatting.BOLD), qx, qy, Theme.TEXT, false);
         int rows = (qh - 20) / 16;
         int first = Math.clamp(index - rows / 2, 0, Math.max(0, queue.size() - rows));
         for (int i = first; i < Math.min(queue.size(), first + rows); i++) {
@@ -246,25 +246,25 @@ final class TriagePanel {
             if (i == index) g.fill(qx, ry, qx + qw, ry + 16, Theme.SEL);
             else if (over) g.fill(qx, ry, qx + qw, ry + 16, Theme.RAISED);
             Ui.mark(g, decided ? Ui.Status.PENDING : Ui.Status.SUGGESTION, qx + 4, ry + 5);
-            g.drawString(font, font.plainSubstrByWidth(tr("item", Names.material(it.material()), Names.form(it.form())).getString(), qw - 24), qx + 16, ry + 4,
+            g.text(font, font.plainSubstrByWidth(tr("item", Names.material(it.material()), Names.form(it.form())).getString(), qw - 24), qx + 16, ry + 4,
                     i == index ? Theme.TEXT : Theme.MUTED, false);
             int target = i;
             hits.add(qx, ry, qw, 16, () -> { index = target; request(); }, null, List.of());
         }
     }
 
-    private int keys(GuiGraphics g, Font font, int kx, int ky, Component what, String... caps) {
+    private int keys(GuiGraphicsExtractor g, Font font, int kx, int ky, Component what, String... caps) {
         for (String cap : caps) {
             int kw = font.width(cap) + 6;
-            g.renderOutline(kx, ky - 2, kw, 12, Theme.CTRL);
-            g.drawString(font, cap, kx + 3, ky, Theme.TEXT, false);
+            g.outline(kx, ky - 2, kw, 12, Theme.CTRL);
+            g.text(font, cap, kx + 3, ky, Theme.TEXT, false);
             kx += kw + 2;
         }
-        g.drawString(font, what, kx + 2, ky, Theme.MUTED, false);
+        g.text(font, what, kx + 2, ky, Theme.MUTED, false);
         return kx + font.width(what) + 14;
     }
 
-    private int button(GuiGraphics g, Font font, Component label, int bx, int by, boolean primary, int mx, int my, Runnable action) {
+    private int button(GuiGraphicsExtractor g, Font font, Component label, int bx, int by, boolean primary, int mx, int my, Runnable action) {
         int bw = font.width(label) + 12;
         boolean over = mx >= bx && mx < bx + bw && my >= by && my < by + 16;
         Ui.button(g, font, label, bx, by, bw, 16, primary, over, true);

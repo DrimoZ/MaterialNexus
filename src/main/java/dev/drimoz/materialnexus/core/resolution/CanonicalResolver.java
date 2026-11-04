@@ -9,7 +9,7 @@ import dev.drimoz.materialnexus.core.domain.Provider;
 import dev.drimoz.materialnexus.core.policy.PolicyPrecedence;
 import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm.NotUnified;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -46,7 +46,7 @@ public final class CanonicalResolver {
     public static SortedMap<MaterialId, ResolvedMaterial> resolve(DiscoveredMaterials discovered, ResolutionPolicy policy) {
         Specificity specificity = new Specificity(discovered);
         // MNX-086: the materials each item is tagged as, in any form.
-        Map<ResourceLocation, java.util.Set<String>> names = new HashMap<>();
+        Map<Identifier, java.util.Set<String>> names = new HashMap<>();
         discovered.materials().forEach((material, forms) -> forms.values().forEach(list -> list.forEach(
                 p -> names.computeIfAbsent(p.resource(), r -> new java.util.HashSet<>()).add(material.name()))));
         // The words of a material's vanilla items name it too: lazuli for lapis.
@@ -67,10 +67,10 @@ public final class CanonicalResolver {
     }
 
     private static ResolvedForm resolveForm(MaterialForm key, List<Provider> providers, ResolutionPolicy policy, Specificity specificity,
-                                            Map<ResourceLocation, java.util.Set<String>> names, java.util.Set<String> vanillaWords) {
-        ResourceLocation explicit = policy.explicitProviders().get(key);
+                                            Map<Identifier, java.util.Set<String>> names, java.util.Set<String> vanillaWords) {
+        Identifier explicit = policy.explicitProviders().get(key);
         boolean excluded = policy.isExcluded(key);
-        Map<ResourceLocation, Optional<MaterialId>> elsewhereOf = new HashMap<>();
+        Map<Identifier, Optional<MaterialId>> elsewhereOf = new HashMap<>();
         for (Provider p : providers) elsewhereOf.put(p.resource(), specificity.moreSpecific(p.resource(), key));
         // Items that belong to another material do not make their mod look like it has several variants here.
         Map<String, Long> perMod = providers.stream()
@@ -78,7 +78,7 @@ public final class CanonicalResolver {
                 .collect(Collectors.groupingBy(Provider::sourceMod, Collectors.counting()));
 
         List<Provider> candidates = new ArrayList<>();
-        Map<ResourceLocation, NotUnified> notUnified = new TreeMap<>();
+        Map<Identifier, NotUnified> notUnified = new TreeMap<>();
         for (Provider p : providers) {
             Optional<MaterialId> elsewhere = elsewhereOf.get(p.resource());
             if (excluded) {
@@ -103,7 +103,7 @@ public final class CanonicalResolver {
         }
 
         // MNX-047: tags say "usable as", names say what the item is. Only when a plainly named candidate exists.
-        Map<ResourceLocation, String[]> oddNames = new HashMap<>();
+        Map<Identifier, String[]> oddNames = new HashMap<>();
         for (Provider p : candidates) {
             if (policy.same().contains(p.resource())) continue;
             Names.odd(p.resource(), key, names.getOrDefault(p.resource(), java.util.Set.of()), vanillaWords).ifPresent(why -> oddNames.put(p.resource(), why));
@@ -133,7 +133,7 @@ public final class CanonicalResolver {
             }
         }
         // An override naming an undiscovered item is reported, never turned into a provider.
-        Optional<ResourceLocation> ignored = Optional.ofNullable(explicit);
+        Optional<Identifier> ignored = Optional.ofNullable(explicit);
 
         if (candidates.isEmpty()) {
             return new ResolvedForm(Optional.empty(), List.of(), List.copyOf(notUnified.values()), PolicyPrecedence.DEFAULT,
@@ -153,8 +153,8 @@ public final class CanonicalResolver {
         return result(candidates.stream().min(TIE_BREAK).orElseThrow(), candidates, notUnified, PolicyPrecedence.DEFAULT, ignored, "fallback");
     }
 
-    private static ResolvedForm firstByModPriority(List<Provider> candidates, Map<ResourceLocation, NotUnified> notUnified, List<String> priority,
-                                                   PolicyPrecedence source, String reason, String scope, Optional<ResourceLocation> ignored) {
+    private static ResolvedForm firstByModPriority(List<Provider> candidates, Map<Identifier, NotUnified> notUnified, List<String> priority,
+                                                   PolicyPrecedence source, String reason, String scope, Optional<Identifier> ignored) {
         if (priority == null) return null;
         for (String mod : priority) {
             var match = candidates.stream().filter(p -> p.sourceMod().equals(mod)).min(TIE_BREAK);
@@ -163,9 +163,9 @@ public final class CanonicalResolver {
         return null;
     }
 
-    private static ResolvedForm result(Provider canonical, List<Provider> candidates, Map<ResourceLocation, NotUnified> notUnified,
-                                       PolicyPrecedence source, Optional<ResourceLocation> ignored, String reason, String... args) {
-        List<ResourceLocation> alternatives = candidates.stream()
+    private static ResolvedForm result(Provider canonical, List<Provider> candidates, Map<Identifier, NotUnified> notUnified,
+                                       PolicyPrecedence source, Optional<Identifier> ignored, String reason, String... args) {
+        List<Identifier> alternatives = candidates.stream()
                 .map(Provider::resource)
                 .filter(r -> !r.equals(canonical.resource()))
                 .sorted()
@@ -191,7 +191,7 @@ public final class CanonicalResolver {
          * is left that is neither a form word nor the material (yellow_amethyst); vanilla ids are the reference names
          * and never count as variants. Words close to the material's (golden for gold, aluminium for aluminum) are fine.
          */
-        static Optional<String[]> odd(ResourceLocation item, MaterialForm key, java.util.Set<String> memberOf, java.util.Set<String> vanillaWords) {
+        static Optional<String[]> odd(Identifier item, MaterialForm key, java.util.Set<String> memberOf, java.util.Set<String> vanillaWords) {
             List<String> words = words(item);
             String rest = String.join("_", words);
             if (!rest.isEmpty() && !rest.equals(key.material().name()) && memberOf.contains(rest)) return Optional.of(new String[] {"names_other", rest});
@@ -203,7 +203,7 @@ public final class CanonicalResolver {
         }
 
         /** The words of an id that are not form words. */
-        static List<String> words(ResourceLocation item) {
+        static List<String> words(Identifier item) {
             List<String> words = new ArrayList<>();
             for (String w : item.getPath().split("[_/]")) {
                 if (!w.isEmpty() && !isFormWord(w)) words.add(w);
@@ -230,7 +230,7 @@ public final class CanonicalResolver {
      * specific): stick_treated is a treated_wood rod before it is a wooden rod.
      */
     private static final class Specificity {
-        private final Map<FormId, Map<ResourceLocation, List<MaterialId>>> materialsOf = new HashMap<>();
+        private final Map<FormId, Map<Identifier, List<MaterialId>>> materialsOf = new HashMap<>();
         private final Map<MaterialForm, Integer> size = new HashMap<>();
 
         Specificity(DiscoveredMaterials discovered) {
@@ -241,7 +241,7 @@ public final class CanonicalResolver {
             }));
         }
 
-        Optional<MaterialId> moreSpecific(ResourceLocation item, MaterialForm key) {
+        Optional<MaterialId> moreSpecific(Identifier item, MaterialForm key) {
             int own = size.get(key);
             Function<MaterialId, Integer> sizeOf = m -> size.get(new MaterialForm(m, key.form()));
             return materialsOf.getOrDefault(key.form(), Map.of()).getOrDefault(item, List.of()).stream()

@@ -3,7 +3,7 @@ package dev.drimoz.materialnexus;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonParser;
 import dev.drimoz.materialnexus.diagnostics.UnhandledTypes;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -14,11 +14,11 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** MNX-090: the report ranks the recipe types worth a format; a wrong count sends compat work to the wrong mod. */
 class UnhandledTypesTest {
-    private static ResourceLocation rl(String id) { return ResourceLocation.parse(id); }
+    private static Identifier rl(String id) { return Identifier.parse(id); }
 
     @Test
     void typesWithoutFormatAreRankedByTheRecipesThatMatter() {
-        Map<ResourceLocation, JsonElement> recipes = Map.of(
+        Map<Identifier, JsonElement> recipes = Map.of(
                 rl("thermal:a"), JsonParser.parseString("{\"type\":\"thermal:pulverizer\",\"ingredient\":{\"item\":\"minecraft:raw_copper\"},\"result\":[{\"item\":\"modb:copper_dust\"}]}"),
                 rl("thermal:b"), JsonParser.parseString("{\"type\":\"thermal:pulverizer\",\"result\":[{\"item\":\"moda:copper_dust\"}]}"),
                 rl("thermal:c"), JsonParser.parseString("{\"type\":\"thermal:pulverizer\",\"result\":[{\"item\":\"minecraft:gravel\"}]}"),

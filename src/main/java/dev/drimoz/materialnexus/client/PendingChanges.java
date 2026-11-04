@@ -2,7 +2,7 @@ package dev.drimoz.materialnexus.client;
 
 import dev.drimoz.materialnexus.core.policy.ProcessRules;
 import dev.drimoz.materialnexus.datapack.CanonicalChange;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -19,12 +19,12 @@ final class PendingChanges {
 
     private PendingChanges() { }
 
-    static Optional<ResourceLocation> get(String material, String form) {
+    static Optional<Identifier> get(String material, String form) {
         return Optional.ofNullable(CHANGES.get(key(material, form))).map(CanonicalChange::provider);
     }
 
     /** A pending choice; accepting a suggestion is a choice too, so the provider may equal the shown canonical. */
-    static void set(String material, String form, ResourceLocation provider) {
+    static void set(String material, String form, Identifier provider) {
         CHANGES.put(key(material, form), new CanonicalChange(material, form, provider));
     }
 
@@ -152,7 +152,7 @@ final class PendingChanges {
             after.forEach(e -> { if (!before.contains(e)) changed.add(e.getAsString()); });
             before.forEach(e -> { if (!after.contains(e)) changed.add(e.getAsString()); });
             for (String item : changed) {
-                ResourceLocation id = ResourceLocation.tryParse(item);
+                Identifier id = Identifier.tryParse(item);
                 if (id == null) continue;
                 // A recipe has no name of its own outside the viewer: its id.
                 if (field.equals("disabled_recipes")) {
@@ -168,36 +168,36 @@ final class PendingChanges {
     }
 
     /** "Not the same item" (MNX-050), as it will be after Apply. */
-    static boolean notSame(ResourceLocation item) { return listed("not_same", item); }
+    static boolean notSame(Identifier item) { return listed("not_same", item); }
 
-    static void toggleNotSame(ResourceLocation item) { toggle("not_same", item); }
+    static void toggleNotSame(Identifier item) { toggle("not_same", item); }
 
     /** "Same item after all" (MNX-086), as it will be after Apply. */
-    static boolean same(ResourceLocation item) { return listed("same", item); }
+    static boolean same(Identifier item) { return listed("same", item); }
 
-    static void toggleSame(ResourceLocation item) { toggle("same", item); }
+    static void toggleSame(Identifier item) { toggle("same", item); }
 
     /** global.json fields that are lists of ids, shown and dropped one id at a time. */
     private static final java.util.Set<String> ID_LISTS = java.util.Set.of("not_same", "same", "disabled_recipes");
 
     /** "Remove this recipe" (MNX-117), as it will be after Apply. */
-    static boolean recipeRemoved(ResourceLocation recipe) { return listed("disabled_recipes", recipe); }
+    static boolean recipeRemoved(Identifier recipe) { return listed("disabled_recipes", recipe); }
 
-    static void toggleRecipeRemoval(ResourceLocation recipe) { toggle("disabled_recipes", recipe); }
+    static void toggleRecipeRemoval(Identifier recipe) { toggle("disabled_recipes", recipe); }
 
     /** True when the recipe's removal changes at Apply: removed now and not before, or back again. */
-    static boolean recipeRemovalPending(ResourceLocation recipe) {
+    static boolean recipeRemovalPending(Identifier recipe) {
         com.google.gson.JsonPrimitive id = new com.google.gson.JsonPrimitive(recipe.toString());
         boolean before = baseGlobal.get("disabled_recipes") instanceof com.google.gson.JsonArray a && a.contains(id);
         return globalChanged("disabled_recipes") && before != recipeRemoved(recipe);
     }
 
-    private static boolean listed(String field, ResourceLocation item) {
+    private static boolean listed(String field, Identifier item) {
         com.google.gson.JsonElement list = global(field);
         return list != null && list.isJsonArray() && list.getAsJsonArray().contains(new com.google.gson.JsonPrimitive(item.toString()));
     }
 
-    private static void toggle(String field, ResourceLocation item) {
+    private static void toggle(String field, Identifier item) {
         com.google.gson.JsonArray list = global(field) instanceof com.google.gson.JsonArray a ? a.deepCopy() : new com.google.gson.JsonArray();
         com.google.gson.JsonPrimitive id = new com.google.gson.JsonPrimitive(item.toString());
         if (!list.remove(id)) list.add(id);
@@ -237,7 +237,7 @@ final class PendingChanges {
     }
 
     /** Every pending change as one request (Preview, or Apply with {@code apply}). */
-    static dev.drimoz.materialnexus.network.PreviewRequest request(boolean apply, Optional<ResourceLocation> preset) {
+    static dev.drimoz.materialnexus.network.PreviewRequest request(boolean apply, Optional<Identifier> preset) {
         return new dev.drimoz.materialnexus.network.PreviewRequest(all(), apply, preset, processes(), creations(), data(),
                 GLOBAL_PATCH.isEmpty() ? Optional.empty() : Optional.of(GLOBAL_PATCH.toString()));
     }
@@ -246,17 +246,17 @@ final class PendingChanges {
 
     // ---- tag edits (MNX-079): global.json "tag_edits": {"tin/ingot": {"add": [...], "remove": [...]}} ----
 
-    private static boolean tagListed(String material, String form, String list, ResourceLocation item) {
+    private static boolean tagListed(String material, String form, String list, Identifier item) {
         return global("tag_edits") instanceof com.google.gson.JsonObject edits && edits.get(material + "/" + form) instanceof com.google.gson.JsonObject edit
                 && edit.get(list) instanceof com.google.gson.JsonArray a && a.contains(new com.google.gson.JsonPrimitive(item.toString()));
     }
 
-    static boolean tagRemoved(String material, String form, ResourceLocation item) { return tagListed(material, form, "remove", item); }
+    static boolean tagRemoved(String material, String form, Identifier item) { return tagListed(material, form, "remove", item); }
 
-    static boolean tagAdded(String material, String form, ResourceLocation item) { return tagListed(material, form, "add", item); }
+    static boolean tagAdded(String material, String form, Identifier item) { return tagListed(material, form, "add", item); }
 
     /** Puts the item in or out of one list of the form's edit; empty lists and edits are dropped. */
-    private static void toggleTagEdit(String material, String form, String list, ResourceLocation item) {
+    private static void toggleTagEdit(String material, String form, String list, Identifier item) {
         com.google.gson.JsonObject edits = global("tag_edits") instanceof com.google.gson.JsonObject o ? o.deepCopy() : new com.google.gson.JsonObject();
         String key = material + "/" + form;
         com.google.gson.JsonObject edit = edits.get(key) instanceof com.google.gson.JsonObject o ? o : new com.google.gson.JsonObject();
@@ -271,12 +271,12 @@ final class PendingChanges {
     }
 
     /** Shift + right click: undoes an addition, else takes the item out of the form's tag (or puts it back). */
-    static void toggleTagRemoval(String material, String form, ResourceLocation item) {
+    static void toggleTagRemoval(String material, String form, Identifier item) {
         toggleTagEdit(material, form, tagAdded(material, form, item) ? "add" : "remove", item);
     }
 
     /** Data view: puts an item in a form's tag (pending); a pending removal of it is cancelled instead. */
-    static void addToTag(String material, String form, ResourceLocation item) {
+    static void addToTag(String material, String form, Identifier item) {
         if (tagRemoved(material, form, item)) toggleTagEdit(material, form, "remove", item);
         else if (!tagAdded(material, form, item)) toggleTagEdit(material, form, "add", item);
     }

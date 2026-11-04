@@ -4,7 +4,7 @@ import dev.drimoz.materialnexus.core.domain.FormId;
 import dev.drimoz.materialnexus.core.recipe.FamilyRelations;
 import dev.drimoz.materialnexus.core.recipe.FamilyRelations.Edge;
 import dev.drimoz.materialnexus.core.recipe.FamilyRelations.Relation;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -15,8 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 /** ADR-003: only report conversions that exist nowhere, and only between forms the material actually has. */
 class FamilyRelationsTest {
-    private static ResourceLocation rl(String path) {
-        return ResourceLocation.fromNamespaceAndPath("modx", path);
+    private static Identifier rl(String path) {
+        return Identifier.fromNamespaceAndPath("modx", path);
     }
 
     @Test

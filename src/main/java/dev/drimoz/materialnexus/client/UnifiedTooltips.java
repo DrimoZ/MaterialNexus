@@ -4,7 +4,7 @@ import dev.drimoz.materialnexus.MaterialNexus;
 import net.minecraft.ChatFormatting;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -21,8 +21,8 @@ public final class UnifiedTooltips {
     @SubscribeEvent
     public static void onTooltip(ItemTooltipEvent event) {
         if (event.getItemStack().isEmpty()) return;
-        ResourceLocation id = BuiltInRegistries.ITEM.getKey(event.getItemStack().getItem());
-        ResourceLocation target = UnifiedItemsClient.becomes().get(id);
+        Identifier id = BuiltInRegistries.ITEM.getKey(event.getItemStack().getItem());
+        Identifier target = UnifiedItemsClient.becomes().get(id);
         if (target != null) {
             event.getToolTip().add(Component.translatable("tooltip.materialnexus.becomes", Names.stack(target).getHoverName())
                     .withStyle(ChatFormatting.DARK_GRAY));

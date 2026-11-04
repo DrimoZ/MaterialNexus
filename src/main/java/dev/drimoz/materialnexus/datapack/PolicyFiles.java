@@ -12,7 +12,7 @@ import dev.drimoz.materialnexus.core.domain.MaterialId;
 import dev.drimoz.materialnexus.core.policy.AlmostUnified;
 import dev.drimoz.materialnexus.core.policy.ProcessRules;
 import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -39,7 +39,7 @@ public final class PolicyFiles {
     public static final String MATERIALS_DIR = "materials";
 
     private static final Codec<ProcessRules.Route> ROUTE = RecordCodecBuilder.create(i -> i.group(
-            ResourceLocation.CODEC.fieldOf("machine").forGetter(ProcessRules.Route::machine),
+            Identifier.CODEC.fieldOf("machine").forGetter(ProcessRules.Route::machine),
             FormId.CODEC.fieldOf("input").forGetter(ProcessRules.Route::input),
             Codec.intRange(1, 64).fieldOf("in").forGetter(ProcessRules.Route::in),
             Codec.intRange(1, 64).fieldOf("out").forGetter(ProcessRules.Route::out)
@@ -52,9 +52,9 @@ public final class PolicyFiles {
             Codec.BOOL.optionalFieldOf("enforce_ratio", false).forGetter(ProcessRules.Rule::enforceRatio)
     ).apply(i, ProcessRules.Rule::new));
 
-    private record FormPolicy(Optional<ResourceLocation> preferredProvider, List<String> modPriority, Optional<ProcessRules.Rule> process) {
+    private record FormPolicy(Optional<Identifier> preferredProvider, List<String> modPriority, Optional<ProcessRules.Rule> process) {
         static final Codec<FormPolicy> CODEC = RecordCodecBuilder.create(i -> i.group(
-                ResourceLocation.CODEC.optionalFieldOf("preferred_provider").forGetter(FormPolicy::preferredProvider),
+                Identifier.CODEC.optionalFieldOf("preferred_provider").forGetter(FormPolicy::preferredProvider),
                 Codec.STRING.listOf().optionalFieldOf("mod_priority", List.of()).forGetter(FormPolicy::modPriority),
                 PROCESS.optionalFieldOf("process").forGetter(FormPolicy::process)
         ).apply(i, FormPolicy::new));
@@ -70,8 +70,8 @@ public final class PolicyFiles {
 
     /** {@code {"add": ["modx:tin_ingot"], "remove": ["ie:ingot_tin"]}} (MNX-079). */
     private static final Codec<ResolutionPolicy.TagEdit> TAG_EDIT = RecordCodecBuilder.create(i -> i.group(
-            ResourceLocation.CODEC.listOf().xmap(Set::copyOf, List::copyOf).optionalFieldOf("add", Set.of()).forGetter(ResolutionPolicy.TagEdit::add),
-            ResourceLocation.CODEC.listOf().xmap(Set::copyOf, List::copyOf).optionalFieldOf("remove", Set.of()).forGetter(ResolutionPolicy.TagEdit::remove)
+            Identifier.CODEC.listOf().xmap(Set::copyOf, List::copyOf).optionalFieldOf("add", Set.of()).forGetter(ResolutionPolicy.TagEdit::add),
+            Identifier.CODEC.listOf().xmap(Set::copyOf, List::copyOf).optionalFieldOf("remove", Set.of()).forGetter(ResolutionPolicy.TagEdit::remove)
     ).apply(i, ResolutionPolicy.TagEdit::new));
 
     /** {@code "tag_edits": {"tin/ingot": {...}}}: keyed like {@code exclude} entries, one form each. */
@@ -91,20 +91,20 @@ public final class PolicyFiles {
 
     /** Unknown fields are ignored so later sections (e.g. almost_unified) do not break older readers. */
     private record GlobalPolicy(List<String> modPriority, List<String> exclude, List<String> conversionRecipes,
-                                Map<String, String> almostUnified, Map<FormId, ProcessRules.Rule> processes, List<ResourceLocation> notSame,
-                                boolean addMissingTags, Map<String, ResolutionPolicy.TagEdit> tagEdits, List<ResourceLocation> same,
-                                List<ResourceLocation> disabledRecipes) {
+                                Map<String, String> almostUnified, Map<FormId, ProcessRules.Rule> processes, List<Identifier> notSame,
+                                boolean addMissingTags, Map<String, ResolutionPolicy.TagEdit> tagEdits, List<Identifier> same,
+                                List<Identifier> disabledRecipes) {
         static final Codec<GlobalPolicy> CODEC = RecordCodecBuilder.create(i -> i.group(
                 Codec.STRING.listOf().optionalFieldOf("mod_priority", List.of()).forGetter(GlobalPolicy::modPriority),
                 Codec.STRING.listOf().optionalFieldOf("exclude", List.of()).forGetter(GlobalPolicy::exclude),
                 Codec.STRING.listOf().optionalFieldOf("conversion_recipes", List.of()).forGetter(GlobalPolicy::conversionRecipes),
                 Codec.unboundedMap(Codec.STRING, Codec.STRING).optionalFieldOf("almost_unified", Map.of()).forGetter(GlobalPolicy::almostUnified),
                 Codec.unboundedMap(FormId.CODEC, PROCESS).optionalFieldOf("processes", Map.of()).forGetter(GlobalPolicy::processes),
-                ResourceLocation.CODEC.listOf().optionalFieldOf("not_same", List.of()).forGetter(GlobalPolicy::notSame),
+                Identifier.CODEC.listOf().optionalFieldOf("not_same", List.of()).forGetter(GlobalPolicy::notSame),
                 Codec.BOOL.optionalFieldOf("add_missing_tags", false).forGetter(GlobalPolicy::addMissingTags),
                 Codec.unboundedMap(Codec.STRING, TAG_EDIT).optionalFieldOf("tag_edits", Map.of()).forGetter(GlobalPolicy::tagEdits),
-                ResourceLocation.CODEC.listOf().optionalFieldOf("same", List.of()).forGetter(GlobalPolicy::same),
-                ResourceLocation.CODEC.listOf().optionalFieldOf("disabled_recipes", List.of()).forGetter(GlobalPolicy::disabledRecipes)
+                Identifier.CODEC.listOf().optionalFieldOf("same", List.of()).forGetter(GlobalPolicy::same),
+                Identifier.CODEC.listOf().optionalFieldOf("disabled_recipes", List.of()).forGetter(GlobalPolicy::disabledRecipes)
         ).apply(i, GlobalPolicy::new));
     }
 
@@ -168,7 +168,7 @@ public final class PolicyFiles {
         Map<MaterialId, String> seen = new HashMap<>();
         Map<MaterialId, List<String>> materialPriority = new HashMap<>();
         Map<MaterialForm, List<String>> formPriority = new HashMap<>();
-        Map<MaterialForm, ResourceLocation> explicit = new HashMap<>();
+        Map<MaterialForm, Identifier> explicit = new HashMap<>();
         Map<MaterialForm, ProcessRules.Rule> processOverrides = new HashMap<>();
 
         materialsByFile.forEach((file, json) -> {

@@ -13,7 +13,7 @@ import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
 import dev.drimoz.materialnexus.core.resolution.ResolvedMaterial;
 import dev.drimoz.materialnexus.integration.RecipeFormats;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -59,8 +59,8 @@ public final class ProcessPlanner {
     }
 
     private static final class Index {
-        final Map<ResourceLocation, MaterialForm> items = new HashMap<>();
-        final Map<ResourceLocation, MaterialForm> tags = new HashMap<>();
+        final Map<Identifier, MaterialForm> items = new HashMap<>();
+        final Map<Identifier, MaterialForm> tags = new HashMap<>();
         final SortedMap<MaterialId, ResolvedMaterial> resolved;
 
         Index(SortedMap<MaterialId, ResolvedMaterial> resolved) {
@@ -91,29 +91,29 @@ public final class ProcessPlanner {
      */
     public static PackContent.Content plan(List<RecipeRewrites.Source> sources, RecipeFormats formats,
                                            SortedMap<MaterialId, ResolvedMaterial> resolved, ResolutionPolicy policy,
-                                           List<ProcessTemplates.Template> templates, java.util.function.Predicate<ResourceLocation> tagExists) {
+                                           List<ProcessTemplates.Template> templates, java.util.function.Predicate<Identifier> tagExists) {
         ProcessRules rules = policy.processes();
         if (rules.isEmpty()) return new PackContent.Content(Map.of(), List.of());
         Index index = new Index(resolved);
         Map<String, JsonElement> files = new TreeMap<>();
         List<PackContent.Effect> effects = new ArrayList<>();
 
-        record Known(RecipeRewrites.Source source, ResourceLocation type, List<String> outputKeys, Reading reading) { }
+        record Known(RecipeRewrites.Source source, Identifier type, List<String> outputKeys, Reading reading) { }
         // Readings are independent and the index is read only: read in parallel, kept in source order (MNX-113).
         List<Known> readings = sources.parallelStream()
                 .filter(s -> s.json().isPresent())
                 .flatMap(s -> RecipeRewrites.format(s.json().get(), formats).stream().map(format -> new Known(s,
-                        ResourceLocation.parse(s.json().get().get("type").getAsString()), format.outputKeys(),
+                        Identifier.parse(s.json().get().get("type").getAsString()), format.outputKeys(),
                         read(s.json().get(), format.outputKeys(), index))))
                 .toList();
-        Map<ResourceLocation, List<Known>> byType = new TreeMap<>();
+        Map<Identifier, List<Known>> byType = new TreeMap<>();
         readings.forEach(k -> byType.computeIfAbsent(k.type(), t -> new ArrayList<>()).add(k));
         // Recipes by what they make, in byType order: each target looks only at its own producers instead of every recipe.
         Map<MaterialForm, List<Known>> byOutput = new HashMap<>();
         byType.values().forEach(recipes -> recipes.forEach(k -> k.reading().output()
                 .ifPresent(o -> byOutput.computeIfAbsent(o.target(), t -> new ArrayList<>()).add(k))));
         // Possible examples: recipes of one machine making one form, in source order.
-        Map<Map.Entry<ResourceLocation, FormId>, List<Known>> byMachineForm = new HashMap<>();
+        Map<Map.Entry<Identifier, FormId>, List<Known>> byMachineForm = new HashMap<>();
         readings.forEach(k -> k.reading().output().ifPresent(o -> byMachineForm
                 .computeIfAbsent(Map.entry(k.type(), o.target().form()), t -> new ArrayList<>()).add(k)));
 
@@ -121,7 +121,7 @@ public final class ProcessPlanner {
             MaterialForm target = new MaterialForm(material, form);
             Optional<ProcessRules.Rule> rule = rules.ruleFor(target);
             if (rule.isEmpty() || policy.isExcluded(target) || f.canonical().isEmpty()) return;
-            ResourceLocation product = f.canonical().get();
+            Identifier product = f.canonical().get();
             List<Known> producers = byOutput.getOrDefault(target, List.of());
 
             for (ProcessRules.Route route : rule.get().routes()) {
@@ -149,7 +149,7 @@ public final class ProcessPlanner {
                     continue;
                 }
                 existing.forEach(k -> disable(k.source().id(), product, files, effects));
-                ResourceLocation id = recipeId(target, route);
+                Identifier id = recipeId(target, route);
                 files.put(path(id), recipe.get());
                 effects.add(new PackContent.Effect(PROCESS, id, product));
             }
@@ -174,11 +174,11 @@ public final class ProcessPlanner {
     }
 
     /** {@link #examples} in the same order, each with one recipe that follows it (the smallest id), for the GUI to show (MNX-088). */
-    public static Map<ProcessRules.Route, ResourceLocation> samples(List<RecipeRewrites.Source> sources, RecipeFormats formats,
+    public static Map<ProcessRules.Route, Identifier> samples(List<RecipeRewrites.Source> sources, RecipeFormats formats,
                                                                     SortedMap<MaterialId, ResolvedMaterial> resolved, FormId form) {
         Index index = new Index(resolved);
         Map<ProcessRules.Route, Integer> seen = new HashMap<>();
-        Map<ProcessRules.Route, ResourceLocation> sample = new HashMap<>();
+        Map<ProcessRules.Route, Identifier> sample = new HashMap<>();
         for (RecipeRewrites.Source s : sources) {
             if (s.json().isEmpty()) continue;
             var format = RecipeRewrites.format(s.json().get(), formats);
@@ -186,7 +186,7 @@ public final class ProcessPlanner {
             Reading r = read(s.json().get(), format.get().outputKeys(), index);
             Optional<MaterialId> material = r.onlyMaterial();
             if (material.isEmpty() || !r.makes(new MaterialForm(material.get(), form))) continue;
-            ResourceLocation type = ResourceLocation.parse(s.json().get().get("type").getAsString());
+            Identifier type = Identifier.parse(s.json().get().get("type").getAsString());
             int out = count(r.output().get());
             r.inputs().stream().map(i -> i.target().form()).distinct().forEach(input -> {
                 int in = inputCount(r, new MaterialForm(material.get(), input));
@@ -197,7 +197,7 @@ public final class ProcessPlanner {
                 }
             });
         }
-        Map<ProcessRules.Route, ResourceLocation> ordered = new java.util.LinkedHashMap<>();
+        Map<ProcessRules.Route, Identifier> ordered = new java.util.LinkedHashMap<>();
         seen.entrySet().stream()
                 .sorted(Map.Entry.<ProcessRules.Route, Integer>comparingByValue().reversed()
                         .thenComparing(e -> e.getKey().machine().toString()).thenComparing(e -> e.getKey().input().name()))
@@ -207,15 +207,15 @@ public final class ProcessPlanner {
 
     /** A template filled for this route, kept only if reading it back gives exactly the requested ratio. */
     private static Optional<JsonObject> fromTemplate(ProcessTemplates.Template template, MaterialForm target, MaterialForm input,
-                                                     ResourceLocation product, ProcessRules.Route route, Index index, RecipeFormats formats,
-                                                     java.util.function.Predicate<ResourceLocation> tagExists) {
-        Optional<ResourceLocation> inputTag = TagDiscovery.conventionTag(input.material(), input.form()).filter(tagExists);
-        Optional<ResourceLocation> inputItem = index.form(input).flatMap(ResolvedForm::canonical);
+                                                     Identifier product, ProcessRules.Route route, Index index, RecipeFormats formats,
+                                                     java.util.function.Predicate<Identifier> tagExists) {
+        Optional<Identifier> inputTag = TagDiscovery.conventionTag(input.material(), input.form()).filter(tagExists);
+        Optional<Identifier> inputItem = index.form(input).flatMap(ResolvedForm::canonical);
         if (inputTag.isEmpty() && inputItem.isEmpty()) return Optional.empty();
         JsonObject ingredient = new JsonObject();
         if (inputTag.isPresent()) ingredient.addProperty("tag", inputTag.get().toString());
         else ingredient.addProperty("item", inputItem.get().toString());
-        String outputTag = TagDiscovery.conventionTag(target.material(), target.form()).filter(tagExists).map(ResourceLocation::toString).orElse("");
+        String outputTag = TagDiscovery.conventionTag(target.material(), target.form()).filter(tagExists).map(Identifier::toString).orElse("");
         return ProcessTemplates.fill(template, new ProcessTemplates.Values(target.material().name(), target.form().name(), ingredient,
                         route.in(), route.out(), product.toString(), outputTag))
                 .filter(json -> RecipeRewrites.format(json, formats)
@@ -224,17 +224,17 @@ public final class ProcessPlanner {
     }
 
     /** {@code materialnexus:process/<form>/<material>/<input>/<in>/<out>/<machine namespace>/<machine path>}. */
-    public static ResourceLocation recipeId(MaterialForm target, ProcessRules.Route route) {
-        return ResourceLocation.fromNamespaceAndPath("materialnexus", String.join("/", "process", target.form().name(),
+    public static Identifier recipeId(MaterialForm target, ProcessRules.Route route) {
+        return Identifier.fromNamespaceAndPath("materialnexus", String.join("/", "process", target.form().name(),
                 target.material().name(), route.input().name(), String.valueOf(route.in()), String.valueOf(route.out()),
                 route.machine().getNamespace(), route.machine().getPath()));
     }
 
-    private static String path(ResourceLocation id) {
+    private static String path(Identifier id) {
         return "data/" + id.getNamespace() + "/recipe/" + id.getPath() + ".json";
     }
 
-    private static void disable(ResourceLocation id, ResourceLocation product, Map<String, JsonElement> files, List<PackContent.Effect> effects) {
+    private static void disable(Identifier id, Identifier product, Map<String, JsonElement> files, List<PackContent.Effect> effects) {
         if (files.putIfAbsent(path(id), RecipeRewrites.disabled()) == null) effects.add(new PackContent.Effect(DISABLE, id, product));
     }
 
@@ -256,7 +256,7 @@ public final class ProcessPlanner {
         for (Ref ref : read(recipe, outputKeys, index).all()) {
             MaterialForm swapped = new MaterialForm(material, ref.target().form());
             Optional<ResolvedForm> form = index.form(swapped);
-            Optional<ResourceLocation> id = ref.tag()
+            Optional<Identifier> id = ref.tag()
                     ? form.flatMap(x -> TagDiscovery.conventionTag(material, swapped.form()))
                     : form.flatMap(ResolvedForm::canonical);
             if (id.isEmpty()) return Optional.empty();
@@ -329,7 +329,7 @@ public final class ProcessPlanner {
     private static void ref(String value, boolean tagField, boolean output, boolean condition, JsonObject node, String field,
                             JsonObject wrapper, JsonArray list, int index, int uses, Index idx, List<Ref> refs) {
         boolean tag = tagField || value.startsWith("#");
-        ResourceLocation id = ResourceLocation.tryParse(value.startsWith("#") ? value.substring(1) : value);
+        Identifier id = Identifier.tryParse(value.startsWith("#") ? value.substring(1) : value);
         MaterialForm target = id == null ? null : tag ? idx.tags.get(id) : idx.items.get(id);
         if (target != null) refs.add(new Ref(target, tag, output, condition, node, field, wrapper, list, index, uses));
     }

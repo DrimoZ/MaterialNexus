@@ -8,7 +8,7 @@ import dev.drimoz.materialnexus.core.domain.MaterialId;
 import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
 import dev.drimoz.materialnexus.datapack.GeneratedPack;
 import dev.drimoz.materialnexus.datapack.PolicyFiles;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -34,7 +34,7 @@ class PolicyFilesTest {
 
         assertEquals(List.of("minecraft"), policy.globalModPriority());
         assertEquals(List.of("mekanism"), policy.materialModPriority().get(COPPER));
-        assertEquals(ResourceLocation.fromNamespaceAndPath("create", "copper_sheet"),
+        assertEquals(Identifier.fromNamespaceAndPath("create", "copper_sheet"),
                 policy.explicitProviders().get(new MaterialForm(COPPER, new FormId("plate"))));
         assertEquals(List.of("immersiveengineering"), policy.formModPriority().get(new MaterialForm(COPPER, new FormId("wire"))));
     }

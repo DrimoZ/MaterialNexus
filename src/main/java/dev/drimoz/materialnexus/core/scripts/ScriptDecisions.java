@@ -6,7 +6,7 @@ import dev.drimoz.materialnexus.core.domain.MaterialForm;
 import dev.drimoz.materialnexus.core.domain.Provider;
 import dev.drimoz.materialnexus.core.policy.PolicyPrecedence;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,13 +26,13 @@ public final class ScriptDecisions {
     public static final String RECIPE_REMOVED = "recipe_removed";
 
     /** {@code where}: the recipe or tag; {@code from}: the item set aside; {@code to}: the item put in its place. */
-    public record Evidence(String kind, ResourceLocation where, ResourceLocation from, Optional<ResourceLocation> to) { }
+    public record Evidence(String kind, Identifier where, Identifier from, Optional<Identifier> to) { }
 
     /**
      * {@code kept} is empty when scripts only set items aside, or disagree. {@code seenIn}: script lines naming an item
      * set aside ("unify.js:12"), found by text search (MNX-077); empty when ids are built in code.
      */
-    public record Decision(MaterialForm key, Optional<ResourceLocation> kept, List<ResourceLocation> setAside, List<Evidence> evidence,
+    public record Decision(MaterialForm key, Optional<Identifier> kept, List<Identifier> setAside, List<Evidence> evidence,
                            List<String> seenIn) {
         public Decision {
             setAside = List.copyOf(setAside);
@@ -40,7 +40,7 @@ public final class ScriptDecisions {
             seenIn = List.copyOf(seenIn);
         }
 
-        public Decision(MaterialForm key, Optional<ResourceLocation> kept, List<ResourceLocation> setAside, List<Evidence> evidence) {
+        public Decision(MaterialForm key, Optional<Identifier> kept, List<Identifier> setAside, List<Evidence> evidence) {
             this(key, kept, setAside, evidence, List.of());
         }
     }
@@ -80,17 +80,17 @@ public final class ScriptDecisions {
         files.materials().forEach((material, forms) -> forms.forEach((form, providers) -> {
             if (providers.size() < 2) return;
             MaterialForm key = new MaterialForm(material, form);
-            Set<ResourceLocation> members = new TreeSet<>(providers.stream().map(Provider::resource).toList());
-            Set<ResourceLocation> wanted = new TreeSet<>();
-            Set<ResourceLocation> against = new TreeSet<>();
+            Set<Identifier> members = new TreeSet<>(providers.stream().map(Provider::resource).toList());
+            Set<Identifier> wanted = new TreeSet<>();
+            Set<Identifier> against = new TreeSet<>();
             List<Evidence> evidence = new ArrayList<>();
 
             for (ScriptChanges.RecipeEdit r : changes.recipes()) {
                 if (r.kind() == ScriptChanges.Kind.CHANGED) {
-                    List<ResourceLocation> in = r.came().stream().filter(members::contains).sorted().toList();
-                    for (ResourceLocation out : r.gone().stream().filter(members::contains).sorted().toList()) {
+                    List<Identifier> in = r.came().stream().filter(members::contains).sorted().toList();
+                    for (Identifier out : r.gone().stream().filter(members::contains).sorted().toList()) {
                         // Both ends in the same group: X replaced by Y. One end only says nothing about this group.
-                        for (ResourceLocation to : in) {
+                        for (Identifier to : in) {
                             wanted.add(to);
                             against.add(out);
                             evidence.add(new Evidence(REPLACED, r.recipe(), out, Optional.of(to)));
@@ -103,7 +103,7 @@ public final class ScriptDecisions {
                     });
                 }
             }
-            Optional<ResourceLocation> tag = TagDiscovery.conventionTag(material, form);
+            Optional<Identifier> tag = TagDiscovery.conventionTag(material, form);
             for (ScriptChanges.TagEdit t : changes.tags()) {
                 if (!t.added() && tag.isPresent() && t.tag().equals(tag.get()) && members.contains(t.item())) {
                     against.add(t.item());
@@ -112,7 +112,7 @@ public final class ScriptDecisions {
             }
             if (evidence.isEmpty()) return;
 
-            Set<ResourceLocation> keep = new TreeSet<>(wanted.isEmpty() ? members : wanted);
+            Set<Identifier> keep = new TreeSet<>(wanted.isEmpty() ? members : wanted);
             keep.removeAll(against);
             // With no replacement, setting every item aside but one keeps that one; otherwise one clear winner only.
             boolean decided = keep.size() == 1;
@@ -123,7 +123,7 @@ public final class ScriptDecisions {
 
     public static Status status(Decision decision, Optional<ResolvedForm> current) {
         if (decision.kept().isEmpty()) return Status.UNDECIDED;
-        Optional<ResourceLocation> canonical = current.flatMap(ResolvedForm::canonical);
+        Optional<Identifier> canonical = current.flatMap(ResolvedForm::canonical);
         if (!canonical.equals(decision.kept())) return Status.DIFFERS;
         return current.get().source() == PolicyPrecedence.EXPLICIT_RESOURCE_OVERRIDE ? Status.RECORDED : Status.SAME;
     }

@@ -5,7 +5,7 @@ import dev.drimoz.materialnexus.MaterialNexus;
 import dev.drimoz.materialnexus.item.CreatedItem;
 import dev.drimoz.materialnexus.registry.MnxItems;
 import net.minecraft.client.Minecraft;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.neoforged.api.distmarker.Dist;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
@@ -21,10 +21,10 @@ import java.util.Map;
  * Only layer 1, where the templates put their texture, is tinted (MNX-073): an item with its own texture, or whose
  * model a resource pack replaced, keeps its colours.
  */
-@EventBusSubscriber(modid = MaterialNexus.MOD_ID, bus = EventBusSubscriber.Bus.MOD, value = Dist.CLIENT)
+@EventBusSubscriber(modid = MaterialNexus.MOD_ID, value = Dist.CLIENT)
 public final class CreatedItemsClient {
     private static final int FALLBACK = 0xA0A0A0;
-    private static final Map<ResourceLocation, Integer> COLORS = new HashMap<>();
+    private static final Map<Identifier, Integer> COLORS = new HashMap<>();
 
     private CreatedItemsClient() { }
 
@@ -41,8 +41,8 @@ public final class CreatedItemsClient {
     }
 
     /** Average of the opaque pixels of {@code <ns>:textures/item/<path>.png}, the usual place of an item texture. */
-    private static int averageColor(ResourceLocation item) {
-        var texture = ResourceLocation.fromNamespaceAndPath(item.getNamespace(), "textures/item/" + item.getPath() + ".png");
+    private static int averageColor(Identifier item) {
+        var texture = Identifier.fromNamespaceAndPath(item.getNamespace(), "textures/item/" + item.getPath() + ".png");
         var resource = Minecraft.getInstance().getResourceManager().getResource(texture);
         if (resource.isEmpty()) return FALLBACK;
         try (InputStream in = resource.get().open(); NativeImage image = NativeImage.read(in)) {

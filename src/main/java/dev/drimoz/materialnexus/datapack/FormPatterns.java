@@ -8,13 +8,13 @@ import com.mojang.serialization.JsonOps;
 import dev.drimoz.materialnexus.MaterialNexus;
 import dev.drimoz.materialnexus.core.discovery.TagDiscovery;
 import dev.drimoz.materialnexus.core.domain.FormId;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ import java.util.TreeMap;
  * not a guess: a pattern item only counts when {@code {material}} names a material the tags already know.
  */
 @EventBusSubscriber(modid = MaterialNexus.MOD_ID)
-public final class FormPatterns extends SimpleJsonResourceReloadListener {
+public final class FormPatterns extends SimpleJsonResourceReloadListener<JsonElement> {
     public static final String DIRECTORY = "material_nexus/forms";
     private static final String MATERIAL = "{material}";
     private static final Logger LOGGER = LogUtils.getLogger();
@@ -60,12 +60,12 @@ public final class FormPatterns extends SimpleJsonResourceReloadListener {
     private static volatile Map<FormId, List<String>> patterns = Map.of();
 
     private FormPatterns() {
-        super(new Gson(), DIRECTORY);
+        super(net.minecraft.util.ExtraCodecs.JSON, net.minecraft.resources.FileToIdConverter.json(DIRECTORY));
     }
 
     @SubscribeEvent
-    public static void register(AddReloadListenerEvent event) {
-        event.addListener(new FormPatterns());
+    public static void register(AddServerReloadListenersEvent event) {
+        event.addListener(Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "form_patterns"), new FormPatterns());
     }
 
     /** Why this forms file cannot be read, or empty (MNX-046 in-game edits). */
@@ -78,8 +78,8 @@ public final class FormPatterns extends SimpleJsonResourceReloadListener {
     }
 
     @Override
-    protected void apply(Map<ResourceLocation, JsonElement> files, ResourceManager resources, ProfilerFiller profiler) {
-        Map<ResourceLocation, FormsFile> parsed = new TreeMap<>();
+    protected void apply(Map<Identifier, JsonElement> files, ResourceManager resources, ProfilerFiller profiler) {
+        Map<Identifier, FormsFile> parsed = new TreeMap<>();
         new TreeMap<>(files).forEach((file, json) -> CODEC.parse(JsonOps.INSTANCE, json)
                 .resultOrPartial(error -> LOGGER.warn("Ignoring invalid forms file {}: {}", file, error))
                 .ifPresent(f -> parsed.put(file, f)));
@@ -101,7 +101,7 @@ public final class FormPatterns extends SimpleJsonResourceReloadListener {
      * Adds every item matching a pattern for a known material under {@code materialnexus:pattern/<folder>/<material>},
      * which discovery reads like a convention tag. Pure. {@code knownNames}: material names (and aliases) from the tags.
      */
-    public static void inject(Map<ResourceLocation, List<ResourceLocation>> tagMembers, Collection<ResourceLocation> items,
+    public static void inject(Map<Identifier, List<Identifier>> tagMembers, Collection<Identifier> items,
                               Map<FormId, List<String>> patterns, Set<String> knownNames) {
         patterns.forEach((form, list) -> TagDiscovery.folder(form).ifPresent(folder -> {
             for (String pattern : list) {
@@ -111,14 +111,14 @@ public final class FormPatterns extends SimpleJsonResourceReloadListener {
                 String namespace = pattern.substring(0, colon);
                 String prefix = pattern.substring(colon + 1, at);
                 String suffix = pattern.substring(at + MATERIAL.length());
-                for (ResourceLocation item : items) {
+                for (Identifier item : items) {
                     String path = item.getPath();
                     if (!item.getNamespace().equals(namespace) || !path.startsWith(prefix) || !path.endsWith(suffix)
                             || path.length() <= prefix.length() + suffix.length()) continue;
                     String name = path.substring(prefix.length(), path.length() - suffix.length());
                     if (!knownNames.contains(name)) continue;
-                    ResourceLocation key = ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, TagDiscovery.PATTERN_PREFIX + folder + "/" + name);
-                    List<ResourceLocation> members = tagMembers.computeIfAbsent(key, k -> new ArrayList<>());
+                    Identifier key = Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, TagDiscovery.PATTERN_PREFIX + folder + "/" + name);
+                    List<Identifier> members = tagMembers.computeIfAbsent(key, k -> new ArrayList<>());
                     if (!members.contains(item)) members.add(item);
                 }
             }
@@ -132,10 +132,10 @@ public final class FormPatterns extends SimpleJsonResourceReloadListener {
      * MNX-041 audit: undiscovered items whose name contains a known material (longest match), grouped by the shape of
      * the rest of the name; shapes seen for at least {@code minMaterials} materials, most common first.
      */
-    public static List<Candidate> candidates(Collection<ResourceLocation> items, Set<String> knownNames, Set<ResourceLocation> discovered,
+    public static List<Candidate> candidates(Collection<Identifier> items, Set<String> knownNames, Set<Identifier> discovered,
                                              int minMaterials) {
         Map<String, Set<String>> byPattern = new TreeMap<>();
-        for (ResourceLocation item : items) {
+        for (Identifier item : items) {
             if (discovered.contains(item)) continue;
             String[] tokens = item.getPath().split("_");
             int bestFrom = -1, bestTo = -1;
@@ -161,9 +161,9 @@ public final class FormPatterns extends SimpleJsonResourceReloadListener {
     }
 
     /** Material names the convention tags already name: {@code c:<known folder>/<name>}. */
-    public static Set<String> knownNames(Collection<ResourceLocation> tags, Collection<String> aliases) {
+    public static Set<String> knownNames(Collection<Identifier> tags, Collection<String> aliases) {
         Set<String> names = new HashSet<>(aliases);
-        for (ResourceLocation tag : tags) {
+        for (Identifier tag : tags) {
             String[] parts = tag.getPath().split("/");
             if (tag.getNamespace().equals("c") && parts.length == 2 && TagDiscovery.isFolder(parts[0])) names.add(parts[1]);
         }

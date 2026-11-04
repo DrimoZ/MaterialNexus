@@ -5,7 +5,7 @@ import dev.drimoz.materialnexus.core.policy.ProcessRules;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.Optional;
 
@@ -13,18 +13,18 @@ import java.util.Optional;
  * Server to client: the form's rule as written in global.json, and existing routes to pick from (MNX-036).
  * {@code samples}: one loaded recipe per example route, in the same order, for the viewer to draw (MNX-088).
  */
-public record ProcessPayload(String form, Optional<ProcessRules.Rule> rule, ProcessRules.Rule examples, java.util.List<ResourceLocation> samples) implements CustomPacketPayload {
+public record ProcessPayload(String form, Optional<ProcessRules.Rule> rule, ProcessRules.Rule examples, java.util.List<Identifier> samples) implements CustomPacketPayload {
     public static final Type<ProcessPayload> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "process"));
+            new Type<>(Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "process"));
     public static final StreamCodec<FriendlyByteBuf, ProcessPayload> STREAM_CODEC = StreamCodec.of(
             (buf, p) -> {
                 buf.writeUtf(p.form(), NexusQueries.MAX_QUERY);
                 buf.writeOptional(p.rule(), PreviewRequest::writeRule);
                 PreviewRequest.writeRule(buf, p.examples());
-                buf.writeCollection(p.samples(), (b, id) -> b.writeResourceLocation(id));
+                buf.writeCollection(p.samples(), (b, id) -> b.writeIdentifier(id));
             },
             buf -> new ProcessPayload(buf.readUtf(NexusQueries.MAX_QUERY), buf.readOptional(PreviewRequest::readRule), PreviewRequest.readRule(buf),
-                    buf.readList(b -> b.readResourceLocation())));
+                    buf.readList(b -> b.readIdentifier())));
 
     public ProcessPayload {
         samples = java.util.List.copyOf(samples);

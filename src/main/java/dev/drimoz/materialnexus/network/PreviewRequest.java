@@ -9,7 +9,7 @@ import io.netty.handler.codec.DecoderException;
 import net.minecraft.network.FriendlyByteBuf;
 import net.minecraft.network.codec.StreamCodec;
 import net.minecraft.network.protocol.common.custom.CustomPacketPayload;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -20,12 +20,12 @@ import java.util.List;
  * and fields of global.json to replace (a JSON object, MNX-050: not_same, mod_priority), either to preview or (with
  * {@code apply}) to write.
  */
-public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.util.Optional<ResourceLocation> preset,
+public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.util.Optional<Identifier> preset,
                              java.util.Map<String, ProcessRules.Rule> processes, List<String> creations,
                              java.util.Map<String, java.util.Optional<String>> data, java.util.Optional<String> globalPatch)
         implements CustomPacketPayload {
     public static final Type<PreviewRequest> TYPE =
-            new Type<>(ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "preview_request"));
+            new Type<>(Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "preview_request"));
     public static final StreamCodec<FriendlyByteBuf, PreviewRequest> STREAM_CODEC =
             StreamCodec.of(PreviewRequest::write, PreviewRequest::read);
 
@@ -41,7 +41,7 @@ public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.
 
     static void writeRule(FriendlyByteBuf buf, ProcessRules.Rule rule) {
         buf.writeCollection(rule.routes(), (b, r) -> {
-            b.writeResourceLocation(r.machine());
+            b.writeIdentifier(r.machine());
             b.writeUtf(r.input().name(), NexusQueries.MAX_QUERY);
             b.writeVarInt(r.in());
             b.writeVarInt(r.out());
@@ -56,7 +56,7 @@ public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.
         if (count < 0 || count > MAX_ROUTES) throw new DecoderException("Too many routes: " + count);
         List<ProcessRules.Route> routes = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            ResourceLocation machine = buf.readResourceLocation();
+            Identifier machine = buf.readIdentifier();
             FormId input = FormId.read(buf.readUtf(NexusQueries.MAX_QUERY)).result().orElseThrow(() -> new DecoderException("Bad form"));
             try {
                 routes.add(new ProcessRules.Route(machine, input, buf.readVarInt(), buf.readVarInt()));
@@ -74,10 +74,10 @@ public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.
         for (CanonicalChange c : req.changes()) {
             buf.writeUtf(c.material(), NexusQueries.MAX_QUERY);
             buf.writeUtf(c.form(), NexusQueries.MAX_QUERY);
-            buf.writeResourceLocation(c.provider());
+            buf.writeIdentifier(c.provider());
         }
         buf.writeBoolean(req.apply());
-        buf.writeOptional(req.preset(), FriendlyByteBuf::writeResourceLocation);
+        buf.writeOptional(req.preset(), FriendlyByteBuf::writeIdentifier);
         buf.writeMap(req.processes(), (b, form) -> b.writeUtf(form, NexusQueries.MAX_QUERY), PreviewRequest::writeRule);
         buf.writeCollection(req.creations(), (b, c) -> b.writeUtf(c, NexusQueries.MAX_QUERY * 2));
         buf.writeMap(req.data(), (b, k) -> b.writeUtf(k, 256),
@@ -90,10 +90,10 @@ public record PreviewRequest(List<CanonicalChange> changes, boolean apply, java.
         if (count < 0 || count > PolicyEditor.MAX_CHANGES) throw new DecoderException("Too many changes: " + count);
         List<CanonicalChange> changes = new ArrayList<>(count);
         for (int i = 0; i < count; i++) {
-            changes.add(new CanonicalChange(buf.readUtf(NexusQueries.MAX_QUERY), buf.readUtf(NexusQueries.MAX_QUERY), buf.readResourceLocation()));
+            changes.add(new CanonicalChange(buf.readUtf(NexusQueries.MAX_QUERY), buf.readUtf(NexusQueries.MAX_QUERY), buf.readIdentifier()));
         }
         boolean apply = buf.readBoolean();
-        var preset = buf.readOptional(FriendlyByteBuf::readResourceLocation);
+        var preset = buf.readOptional(FriendlyByteBuf::readIdentifier);
         int rules = buf.readVarInt();
         if (rules < 0 || rules > MAX_RULES) throw new DecoderException("Too many process rules: " + rules);
         java.util.Map<String, ProcessRules.Rule> processes = new java.util.HashMap<>();

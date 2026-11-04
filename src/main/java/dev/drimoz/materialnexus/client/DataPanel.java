@@ -14,14 +14,14 @@ import dev.drimoz.materialnexus.network.DataListRequest;
 import dev.drimoz.materialnexus.network.DataReadPayload;
 import dev.drimoz.materialnexus.network.DataReadRequest;
 import net.minecraft.client.gui.Font;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.client.gui.components.AbstractWidget;
 import net.minecraft.client.gui.components.Button;
 import net.minecraft.client.gui.components.EditBox;
 import net.minecraft.client.gui.components.MultiLineEditBox;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
-import net.neoforged.neoforge.network.PacketDistributor;
+import net.minecraft.resources.Identifier;
+import net.neoforged.neoforge.client.network.ClientPacketDistributor;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -38,7 +38,7 @@ import java.util.function.Consumer;
  */
 final class DataPanel {
     /** Patterns declared from the audit go to this file of the edits pack. */
-    static final ResourceLocation DECLARED = ResourceLocation.fromNamespaceAndPath("materialnexus_user", "declared_patterns");
+    static final Identifier DECLARED = Identifier.fromNamespaceAndPath("materialnexus_user", "declared_patterns");
     private static final int ROW = 12;
 
     private record Row(EditableData.Kind kind, DataListPayload.Item item) { }
@@ -79,7 +79,7 @@ final class DataPanel {
     void init(Consumer<AbstractWidget> add, Font font, int x, int y, int w, int h) {
         this.x = x; this.y = y; this.w = w; this.h = h;
         if (list == null) {
-            PacketDistributor.sendToServer(DataListRequest.INSTANCE);
+            ClientPacketDistributor.sendToServer(DataListRequest.INSTANCE);
             return;
         }
         if (untagged) initUntagged(add, font);
@@ -105,7 +105,7 @@ final class DataPanel {
         id.setResponder(v -> newId = v);
         add.accept(id);
         add.accept(Btn.of(Component.translatable("screen.materialnexus.data.new"), b -> {
-            ResourceLocation rl = ResourceLocation.tryParse(newId.strip().toLowerCase(Locale.ROOT));
+            Identifier rl = Identifier.tryParse(newId.strip().toLowerCase(Locale.ROOT));
             if (rl != null) select(new DataListPayload.Item(newKind.key, rl, EditableData.USER_PACK_ID, false));
         }).bounds(x + 8, by + 22, side - 16, 18).build());
 
@@ -184,7 +184,7 @@ final class DataPanel {
         target.setValue(tagForm);
         Button addTag = Btn.of(Component.translatable("screen.materialnexus.data.tag_add"), b -> {
             String[] parts = tagForm.strip().toLowerCase(Locale.ROOT).split("/", -1);
-            PendingChanges.addToTag(parts[0], parts[1], ResourceLocation.parse(tagItem.strip().toLowerCase(Locale.ROOT)));
+            PendingChanges.addToTag(parts[0], parts[1], Identifier.parse(tagItem.strip().toLowerCase(Locale.ROOT)));
             tagItem = "";
             rebuild.run();
         }).bounds(x + 296, ay, 120, 18).build();
@@ -245,7 +245,7 @@ final class DataPanel {
 
     /** A registered item and a material/form whose form has a convention tag folder; the server checks again. */
     private boolean validTagAdd() {
-        ResourceLocation id = ResourceLocation.tryParse(tagItem.strip().toLowerCase(Locale.ROOT));
+        Identifier id = Identifier.tryParse(tagItem.strip().toLowerCase(Locale.ROOT));
         String[] parts = tagForm.strip().toLowerCase(Locale.ROOT).split("/", -1);
         return id != null && net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(id) && parts.length == 2
                 && dev.drimoz.materialnexus.core.domain.MaterialId.read(parts[0]).result().isPresent()
@@ -259,7 +259,7 @@ final class DataPanel {
         loadedText = "";
         draft = null;
         selectedEdited = item.edited();
-        PacketDistributor.sendToServer(new DataReadRequest(item.kind(), item.id()));
+        ClientPacketDistributor.sendToServer(new DataReadRequest(item.kind(), item.id()));
         rebuild.run();
     }
 
@@ -297,9 +297,9 @@ final class DataPanel {
 
     // ---- render --------------------------------------------------------------------------------------------
 
-    void render(GuiGraphics g, Font font, int mx, int my) {
+    void render(GuiGraphicsExtractor g, Font font, int mx, int my) {
         hits.clear();
-        g.drawString(font, Component.translatable("screen.materialnexus.data_title"), x + 12, y + 6, Theme.TEXT, false);
+        g.text(font, Component.translatable("screen.materialnexus.data_title"), x + 12, y + 6, Theme.TEXT, false);
         int tx = x + 10;
         int ty = y + 20;
         for (boolean mode : new boolean[] {false, true}) {
@@ -309,19 +309,19 @@ final class DataPanel {
             boolean active = untagged == mode;
             boolean over = mx >= tx && mx < tx + tw && my >= ty && my < ty + 16;
             if (active) g.fill(tx, ty + 14, tx + tw, ty + 16, Theme.ACCENT);
-            g.drawString(font, label, tx + 6, ty + 4, active ? Theme.TEXT : over ? Theme.MUTED : Theme.MUTED, false);
+            g.text(font, label, tx + 6, ty + 4, active ? Theme.TEXT : over ? Theme.MUTED : Theme.MUTED, false);
             hits.add(tx, ty, tw, 16, () -> {
                 untagged = mode;
-                if (mode && declared == null) PacketDistributor.sendToServer(new DataReadRequest(EditableData.Kind.FORMS.key, DECLARED));
+                if (mode && declared == null) ClientPacketDistributor.sendToServer(new DataReadRequest(EditableData.Kind.FORMS.key, DECLARED));
                 rebuild.run();
             }, null, List.of());
             tx += tw + 2;
         }
         g.fill(x + 8, ty + 16, x + w - 8, ty + 17, Theme.BORDER);
         Component intro = Component.translatable(untagged ? "screen.materialnexus.data.untagged_intro" : "screen.materialnexus.data.intro");
-        g.drawString(font, font.plainSubstrByWidth(intro.getString(), w - 24), x + 12, y + 44, Theme.MUTED, false);
+        g.text(font, font.plainSubstrByWidth(intro.getString(), w - 24), x + 12, y + 44, Theme.MUTED, false);
         if (list == null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.process.loading"), x + 12, y + 64, Theme.MUTED, false);
+            g.text(font, Component.translatable("screen.materialnexus.process.loading"), x + 12, y + 64, Theme.MUTED, false);
             return;
         }
         if (untagged) renderUntagged(g, font);
@@ -342,7 +342,7 @@ final class DataPanel {
         return rows;
     }
 
-    private void renderFiles(GuiGraphics g, Font font, int mx, int my) {
+    private void renderFiles(GuiGraphicsExtractor g, Font font, int mx, int my) {
         int side = side();
         int top = y + 84;
         int bottom = y + h - 50;
@@ -355,7 +355,7 @@ final class DataPanel {
             if (ry + ROW > top && ry < bottom) {
                 if (row.item() == null) {
                     long count = list.entries().stream().filter(e -> e.kind().equals(row.kind().key)).count();
-                    g.drawString(font, Component.translatable("screen.materialnexus.data.kind." + row.kind().key).getString() + " (" + count + ")",
+                    g.text(font, Component.translatable("screen.materialnexus.data.kind." + row.kind().key).getString() + " (" + count + ")",
                             x + 10, ry + 2, Theme.MUTED, false);
                 } else {
                     DataListPayload.Item item = row.item();
@@ -370,7 +370,7 @@ final class DataPanel {
                     String words = item.id().getPath().replace("_", " ");
                     String label = item.id().getNamespace().equals(dev.drimoz.materialnexus.MaterialNexus.MOD_ID) ? words
                             : words + " · " + item.id().getNamespace();
-                    g.drawString(font, font.plainSubstrByWidth(label, side - 30), x + 18, ry + 2, isSelected ? Theme.TEXT : Theme.MUTED, false);
+                    g.text(font, font.plainSubstrByWidth(label, side - 30), x + 18, ry + 2, isSelected ? Theme.TEXT : Theme.MUTED, false);
                     if (my >= top && my < bottom) {
                         hits.add(x + 4, ry, side - 6, ROW, () -> select(item), null,
                                 List.of(Component.literal(item.id().toString()), Component.translatable("screen.materialnexus.data.source", item.source()).withColor(Theme.TIP_FAINT)));
@@ -380,18 +380,18 @@ final class DataPanel {
             ry += ROW;
         }
         g.disableScissor();
-        if (rows.isEmpty()) g.drawString(font, Component.translatable("screen.materialnexus.data.no_match"), x + 10, top + 2, Theme.FAINT, false);
+        if (rows.isEmpty()) g.text(font, Component.translatable("screen.materialnexus.data.no_match"), x + 10, top + 2, Theme.FAINT, false);
 
         int ex = x + side + 10;
         if (selected == null) {
-            g.drawString(font, Component.translatable("screen.materialnexus.data.select"), ex, y + 66, Theme.MUTED, false);
+            g.text(font, Component.translatable("screen.materialnexus.data.select"), ex, y + 66, Theme.MUTED, false);
             int ky = y + 84;
             for (EditableData.Kind kind : EditableData.Kind.values()) {
                 g.fill(ex, ky, ex + 2, ky + 8, Theme.INFO);
-                g.drawString(font, Component.translatable("screen.materialnexus.data.kind." + kind.key), ex + 6, ky, Theme.TEXT, false);
+                g.text(font, Component.translatable("screen.materialnexus.data.kind." + kind.key), ex + 6, ky, Theme.TEXT, false);
                 ky += 11;
                 for (var line : font.split(Component.translatable("screen.materialnexus.data.kind." + kind.key + ".desc"), x + w - ex - 16)) {
-                    g.drawString(font, line, ex + 6, ky, Theme.FAINT, false);
+                    g.text(font, line, ex + 6, ky, Theme.FAINT, false);
                     ky += 10;
                 }
                 ky += 6;
@@ -400,31 +400,31 @@ final class DataPanel {
         }
         EditableData.Kind kind = EditableData.Kind.byKey(selected.kind()).orElse(EditableData.Kind.FORMS);
         Component title = Component.translatable("screen.materialnexus.data.kind." + kind.key).copy().append(" · " + selected.id());
-        g.drawString(font, font.plainSubstrByWidth(title.getString(), x + w - ex - 120), ex, y + 64, Theme.TEXT, false);
+        g.text(font, font.plainSubstrByWidth(title.getString(), x + w - ex - 120), ex, y + 64, Theme.TEXT, false);
         int s = status(selected);
         Ui.pill(g, font, Component.translatable(s == 2 ? "screen.materialnexus.data.status.pending" : s == 1 ? "screen.materialnexus.data.status.edited"
                 : "screen.materialnexus.data.status.original"), x + w - 8 - pillWidth(font, s), y + 62, s == 2 ? Theme.INFO : s == 1 ? Theme.OK : Theme.FAINT);
-        g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.data.kind." + kind.key + ".desc").getString(), x + w - ex - 8),
+        g.text(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.data.kind." + kind.key + ".desc").getString(), x + w - ex - 8),
                 ex, y + 78, Theme.MUTED, false);
         String text = draft != null ? draft : PendingChanges.data(selected.kind(), selected.id().toString()).map(t -> t.orElse(loadedText)).orElse(loadedText);
-        dev.drimoz.materialnexus.client.ui.Editor.jsonError(text).ifPresent(error -> g.drawString(font,
+        dev.drimoz.materialnexus.client.ui.Editor.jsonError(text).ifPresent(error -> g.text(font,
                 font.plainSubstrByWidth(Component.translatable("screen.materialnexus.data.invalid", error).getString(), x + w - ex - 8), ex, y + h - 36, Theme.BAD, false));
         // MNX-102: beside the editor when there is room, what this file is for and where it comes from.
         int hx = ex + 612;
         if (x + w - hx >= 160) {
             int hw = x + w - hx - 8;
             g.fill(hx, y + 92, hx + hw, y + h - 28, Theme.SURFACE);
-            g.drawString(font, Component.translatable("screen.materialnexus.data.help.title").withStyle(net.minecraft.ChatFormatting.BOLD), hx + 8, y + 100, Theme.TEXT, false);
+            g.text(font, Component.translatable("screen.materialnexus.data.help.title").withStyle(net.minecraft.ChatFormatting.BOLD), hx + 8, y + 100, Theme.TEXT, false);
             int hy = y + 116;
             for (String helpKey : new String[] {"screen.materialnexus.data.kind." + kind.key + ".desc", "screen.materialnexus.data.help.rules"}) {
                 for (var line : font.split(Component.translatable(helpKey), hw - 16)) {
-                    g.drawString(font, line, hx + 8, hy, Theme.MUTED, false);
+                    g.text(font, line, hx + 8, hy, Theme.MUTED, false);
                     hy += 10;
                 }
                 hy += 8;
             }
             for (var line : font.split(Component.translatable("screen.materialnexus.data.source", selected.source()), hw - 16)) {
-                g.drawString(font, line, hx + 8, hy, Theme.FAINT, false);
+                g.text(font, line, hx + 8, hy, Theme.FAINT, false);
                 hy += 10;
             }
         }
@@ -442,25 +442,25 @@ final class DataPanel {
         return edited ? 1 : 0;
     }
 
-    private void renderUntagged(GuiGraphics g, Font font) {
+    private void renderUntagged(GuiGraphicsExtractor g, Font font) {
         List<FormPatterns.Candidate> candidates = list.untagged();
         if (candidates.isEmpty()) {
-            g.drawString(font, Component.translatable("screen.materialnexus.data.untagged_none"), x + 12, y + 64, Theme.OK, false);
+            g.text(font, Component.translatable("screen.materialnexus.data.untagged_none"), x + 12, y + 64, Theme.OK, false);
             return;
         }
-        g.drawString(font, Component.translatable("screen.materialnexus.data.col.pattern"), x + 12, y + 62, Theme.FAINT, false);
-        g.drawString(font, Component.translatable("screen.materialnexus.data.col.form"), x + w - 258, y + 62, Theme.FAINT, false);
+        g.text(font, Component.translatable("screen.materialnexus.data.col.pattern"), x + 12, y + 62, Theme.FAINT, false);
+        g.text(font, Component.translatable("screen.materialnexus.data.col.form"), x + w - 258, y + 62, Theme.FAINT, false);
         int ry = y + 76;
         for (int i = untaggedPage * page(); i < Math.min(candidates.size(), (untaggedPage + 1) * page()); i++) {
             FormPatterns.Candidate c = candidates.get(i);
             g.fill(x + 8, ry + 22, x + w - 8, ry + 23, Theme.BORDER);
-            g.drawString(font, font.plainSubstrByWidth(c.pattern(), w - 290), x + 12, ry + 2, Theme.TEXT, false);
-            g.drawString(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.data.materials", c.materials().size(),
+            g.text(font, font.plainSubstrByWidth(c.pattern(), w - 290), x + 12, ry + 2, Theme.TEXT, false);
+            g.text(font, font.plainSubstrByWidth(Component.translatable("screen.materialnexus.data.materials", c.materials().size(),
                     String.join(", ", c.materials())).getString(), w - 290), x + 12, ry + 12, Theme.FAINT, false);
             ry += 24;
         }
         int pages = Math.max(1, (candidates.size() + page() - 1) / page());
-        g.drawString(font, (untaggedPage + 1) + " / " + pages, x + 60, y + h - 17, Theme.MUTED, false);
+        g.text(font, (untaggedPage + 1) + " / " + pages, x + 60, y + h - 17, Theme.MUTED, false);
     }
 
     // ---- untagged forms ------------------------------------------------------------------------------------

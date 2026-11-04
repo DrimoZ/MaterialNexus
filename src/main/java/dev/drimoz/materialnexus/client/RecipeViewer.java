@@ -1,8 +1,8 @@
 package dev.drimoz.materialnexus.client;
 
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.Optional;
 
@@ -28,7 +28,7 @@ public interface RecipeViewer {
         /** The viewer's name for the machine or kind of recipe ("Crushing", "Smelting"). */
         Component title();
 
-        void draw(GuiGraphics g, int x, int y, int mouseX, int mouseY);
+        void draw(GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY);
 
         /** True when the viewer paints its own panel behind the recipe (JEI); otherwise the screen gives it one. */
         default boolean framed() { return false; }
@@ -38,8 +38,8 @@ public interface RecipeViewer {
     String name();
 
     /** The layout of a recipe the game has loaded; empty when it is not loaded or the viewer cannot draw it here. */
-    Optional<Layout> layout(ResourceLocation recipe);
+    Optional<Layout> layout(Identifier recipe);
 
     /** Opens the viewer on the recipes that make {@code item}. */
-    void open(ResourceLocation item);
+    void open(Identifier item);
 }

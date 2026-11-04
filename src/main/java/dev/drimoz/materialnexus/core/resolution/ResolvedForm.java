@@ -2,7 +2,7 @@ package dev.drimoz.materialnexus.core.resolution;
 
 import dev.drimoz.materialnexus.core.discovery.DiscoveryEvidence.Confidence;
 import dev.drimoz.materialnexus.core.policy.PolicyPrecedence;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 
 import java.util.List;
 import java.util.Optional;
@@ -14,15 +14,15 @@ import java.util.Optional;
  * Reasons are translation keys plus arguments: every user-visible string lives in the lang files.
  */
 public record ResolvedForm(
-        Optional<ResourceLocation> canonical,
-        List<ResourceLocation> alternatives,
+        Optional<Identifier> canonical,
+        List<Identifier> alternatives,
         List<NotUnified> notUnified,
         PolicyPrecedence source,
         Confidence confidence,
         String reasonKey,
         List<String> reasonArgs,
-        Optional<ResourceLocation> ignoredOverride) {
-    public record NotUnified(ResourceLocation item, String reasonKey, List<String> reasonArgs) {
+        Optional<Identifier> ignoredOverride) {
+    public record NotUnified(Identifier item, String reasonKey, List<String> reasonArgs) {
         public NotUnified {
             reasonArgs = List.copyOf(reasonArgs);
         }

@@ -10,10 +10,10 @@ import dev.emi.emi.api.recipe.EmiRecipe;
 import dev.emi.emi.api.stack.EmiStack;
 import dev.emi.emi.api.widget.Widget;
 import dev.emi.emi.api.widget.WidgetHolder;
-import net.minecraft.client.gui.GuiGraphics;
+import net.minecraft.client.gui.GuiGraphicsExtractor;
 import net.minecraft.core.registries.BuiltInRegistries;
 import net.minecraft.network.chat.Component;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.ArrayList;
@@ -47,21 +47,21 @@ public final class MnxEmiPlugin implements EmiPlugin {
 
     /** EMI as the drawer of recipes (MNX-088): the widgets EMI builds for a recipe, drawn where the tab wants them. */
     private static final class Viewer implements RecipeViewer {
-        private final Map<ResourceLocation, Optional<Layout>> cache = new ConcurrentHashMap<>();
+        private final Map<Identifier, Optional<Layout>> cache = new ConcurrentHashMap<>();
 
         @Override
         public String name() { return "EMI"; }
 
         @Override
-        public Optional<Layout> layout(ResourceLocation recipe) {
+        public Optional<Layout> layout(Identifier recipe) {
             return cache.computeIfAbsent(recipe, Viewer::find);
         }
 
-        private static Optional<Layout> find(ResourceLocation id) {
+        private static Optional<Layout> find(Identifier id) {
             try {
                 EmiRecipe recipe = EmiApi.getRecipeManager().getRecipe(id);
                 // A mod with only a JEI plugin: EMI holds its recipes under jei:/<namespace>/<path>.
-                if (recipe == null) recipe = EmiApi.getRecipeManager().getRecipe(ResourceLocation.fromNamespaceAndPath("jei", "/" + id.getNamespace() + "/" + id.getPath()));
+                if (recipe == null) recipe = EmiApi.getRecipeManager().getRecipe(Identifier.fromNamespaceAndPath("jei", "/" + id.getNamespace() + "/" + id.getPath()));
                 if (recipe == null) return Optional.empty();
                 int width = recipe.getDisplayWidth();
                 int height = recipe.getDisplayHeight();
@@ -83,12 +83,12 @@ public final class MnxEmiPlugin implements EmiPlugin {
                     @Override public Component title() { return title; }
 
                     @Override
-                    public void draw(GuiGraphics g, int x, int y, int mouseX, int mouseY) {
-                        g.pose().pushPose();
-                        g.pose().translate(x, y, 0);
+                    public void draw(GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
+                        g.pose().pushMatrix();
+                        g.pose().translate(x, y);
                         // ponytail: slots highlight under the pointer but show no tooltip; add EMI's tooltip rendering if asked.
                         for (Widget widget : widgets) widget.render(g, mouseX - x, mouseY - y, 0f);
-                        g.pose().popPose();
+                        g.pose().popMatrix();
                     }
                 });
             } catch (RuntimeException e) {
@@ -98,7 +98,7 @@ public final class MnxEmiPlugin implements EmiPlugin {
         }
 
         @Override
-        public void open(ResourceLocation item) {
+        public void open(Identifier item) {
             BuiltInRegistries.ITEM.getOptional(item).ifPresent(i -> EmiApi.displayRecipes(EmiStack.of(i)));
         }
     }

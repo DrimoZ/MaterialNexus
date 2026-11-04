@@ -16,7 +16,7 @@ import dev.drimoz.materialnexus.integration.RecipeFormats;
 import dev.drimoz.materialnexus.registry.MnxItems;
 import net.minecraft.gametest.framework.GameTest;
 import net.minecraft.gametest.framework.GameTestHelper;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.item.ItemStack;
@@ -45,10 +45,10 @@ public final class MaterialNexusGameTests {
             return;
         }
         var conversions = java.util.Map.of(
-                ResourceLocation.fromNamespaceAndPath("create", "copper_sheet"), ResourceLocation.fromNamespaceAndPath("immersiveengineering", "plate_copper"),
-                ResourceLocation.fromNamespaceAndPath("mekanism", "dust_copper"), ResourceLocation.fromNamespaceAndPath("modern_industrialization", "copper_dust"),
-                ResourceLocation.fromNamespaceAndPath("immersiveengineering", "dust_copper"), ResourceLocation.fromNamespaceAndPath("modern_industrialization", "copper_dust"),
-                ResourceLocation.fromNamespaceAndPath("modern_industrialization", "copper_plate"), ResourceLocation.fromNamespaceAndPath("immersiveengineering", "plate_copper"));
+                Identifier.fromNamespaceAndPath("create", "copper_sheet"), Identifier.fromNamespaceAndPath("immersiveengineering", "plate_copper"),
+                Identifier.fromNamespaceAndPath("mekanism", "dust_copper"), Identifier.fromNamespaceAndPath("modern_industrialization", "copper_dust"),
+                Identifier.fromNamespaceAndPath("immersiveengineering", "dust_copper"), Identifier.fromNamespaceAndPath("modern_industrialization", "copper_dust"),
+                Identifier.fromNamespaceAndPath("modern_industrialization", "copper_plate"), Identifier.fromNamespaceAndPath("immersiveengineering", "plate_copper"));
         var formats = RecipeFormats.load(helper.getLevel().getServer().getResourceManager());
         var plan = RecipeRewrites.plan(RecipeSources.collect(helper.getLevel().getServer(), conversions, formats, java.util.List.of()), conversions, formats);
         var rewritten = plan.effects().stream().filter(e -> e.kind().equals(RecipeRewrites.REWRITE)).map(e -> e.target().getNamespace()).toList();
@@ -70,19 +70,19 @@ public final class MaterialNexusGameTests {
         var lapis = SnapshotManager.current().materials().get(new MaterialId("lapis"));
         helper.assertTrue(lapis != null, "lapis should be discovered");
         var gems = dev.drimoz.materialnexus.datapack.RecipeFamilies.family(server, lapis.forms().get(new FormId("gem")));
-        var off = gems.stream().filter(r -> r.recipe().equals(ResourceLocation.parse("minecraft:lapis_lazuli"))).findFirst();
+        var off = gems.stream().filter(r -> r.recipe().equals(Identifier.parse("minecraft:lapis_lazuli"))).findFirst();
         helper.assertTrue(off.isPresent() && off.get().status() == dev.drimoz.materialnexus.datapack.RecipeFamilies.Status.PACK_DISABLED
                 && off.get().editedBy().equals(java.util.Optional.of(pack)), "lapis_lazuli should be listed as switched off by the datapack, got " + off);
         var blocks = dev.drimoz.materialnexus.datapack.RecipeFamilies.family(server, lapis.forms().get(new FormId("block")));
-        var replaced = blocks.stream().filter(r -> r.recipe().equals(ResourceLocation.parse("minecraft:lapis_block"))).findFirst();
+        var replaced = blocks.stream().filter(r -> r.recipe().equals(Identifier.parse("minecraft:lapis_block"))).findFirst();
         helper.assertTrue(replaced.isPresent() && replaced.get().editedBy().equals(java.util.Optional.of(pack)),
                 "lapis_block should be listed as replaced by the datapack, got " + replaced);
         // MNX-120: only the fixture is a datapack of the pack: no mod jar or built-in pack is taken for one.
         var attributed = new java.util.TreeSet<>(dev.drimoz.materialnexus.datapack.PackEdits.of(server).recipes().values());
         helper.assertTrue(attributed.equals(java.util.Set.of(pack)), "only the fixture should be attributed recipes, got " + attributed);
-        var tag = dev.drimoz.materialnexus.datapack.PackEdits.of(server).tags().get(ResourceLocation.parse("c:gems/lapis"));
+        var tag = dev.drimoz.materialnexus.datapack.PackEdits.of(server).tags().get(Identifier.parse("c:gems/lapis"));
         helper.assertTrue(tag != null && tag.equals(java.util.List.of(new dev.drimoz.materialnexus.datapack.PackEdits.TagEdit(pack, false,
-                java.util.List.of(ResourceLocation.parse("minecraft:lapis_lazuli")), java.util.List.of(ResourceLocation.parse("minecraft:lapis_block"))))),
+                java.util.List.of(Identifier.parse("minecraft:lapis_lazuli")), java.util.List.of(Identifier.parse("minecraft:lapis_block"))))),
                 "the datapack's edit of c:gems/lapis should be read, got " + tag);
         helper.succeed();
     }
@@ -99,7 +99,7 @@ public final class MaterialNexusGameTests {
         helper.assertTrue(vanilla.isPresent() && vanilla.get().removal() == dev.drimoz.materialnexus.datapack.RecipeFamilies.Removal.ALLOWED,
                 "a vanilla copper ingot recipe should be removable, got " + vanilla);
         var removable = RecipeSources.removable(helper.getLevel().getServer(), java.util.List.of(vanilla.get().recipe(),
-                ResourceLocation.fromNamespaceAndPath("materialnexus", "nothing_here")), RecipeFormats.load(helper.getLevel().getServer().getResourceManager()));
+                Identifier.fromNamespaceAndPath("materialnexus", "nothing_here")), RecipeFormats.load(helper.getLevel().getServer().getResourceManager()));
         helper.assertTrue(removable.equals(java.util.Map.of(vanilla.get().recipe(), vanilla.get().output())),
                 "only the vanilla recipe should be removable, making its output, got " + removable);
         helper.succeed();
@@ -115,13 +115,13 @@ public final class MaterialNexusGameTests {
             helper.succeed();
             return;
         }
-        var kept = new java.util.HashMap<String, java.util.Optional<ResourceLocation>>();
+        var kept = new java.util.HashMap<String, java.util.Optional<Identifier>>();
         SnapshotManager.current().scriptDecisions().forEach(d -> kept.put(d.key().toString(), d.kept()));
         helper.assertTrue(kept.getOrDefault("tin/ingot", java.util.Optional.empty())
-                        .equals(java.util.Optional.of(ResourceLocation.fromNamespaceAndPath("modern_industrialization", "tin_ingot"))),
+                        .equals(java.util.Optional.of(Identifier.fromNamespaceAndPath("modern_industrialization", "tin_ingot"))),
                 "the script's replaceOutput should decide tin/ingot for MI, got " + kept);
         helper.assertTrue(kept.getOrDefault("tin/dust", java.util.Optional.empty())
-                        .equals(java.util.Optional.of(ResourceLocation.fromNamespaceAndPath("modern_industrialization", "tin_dust"))),
+                        .equals(java.util.Optional.of(Identifier.fromNamespaceAndPath("modern_industrialization", "tin_dust"))),
                 "the script's tag removal should decide tin/dust for MI, got " + kept);
         // MNX-077: and both are placed on the fixture's lines.
         var seen = new java.util.HashMap<String, java.util.List<String>>();
@@ -135,7 +135,7 @@ public final class MaterialNexusGameTests {
     @GameTest(template = "empty")
     public static void shippedPresetsAreLoaded(GameTestHelper helper) {
         var presets = dev.drimoz.materialnexus.datapack.Presets.all().keySet();
-        helper.assertTrue(presets.size() >= 5 && presets.contains(ResourceLocation.fromNamespaceAndPath("materialnexus", "tech_pack")),
+        helper.assertTrue(presets.size() >= 5 && presets.contains(Identifier.fromNamespaceAndPath("materialnexus", "tech_pack")),
                 "shipped presets should be loaded, got " + presets);
         helper.succeed();
     }
@@ -170,7 +170,7 @@ public final class MaterialNexusGameTests {
                 SnapshotManager.current().discovered(), new MaterialId("iron"));
         helper.assertTrue(missing.isEmpty(), "iron should have no missing conversion, got " + missing);
         // MNX-052: the per-item counts shown when choosing come from the same recipe pass.
-        var ingot = ResourceLocation.withDefaultNamespace("iron_ingot");
+        var ingot = Identifier.withDefaultNamespace("iron_ingot");
         var usage = dev.drimoz.materialnexus.datapack.RecipeEdges.usage(dev.drimoz.materialnexus.datapack.RecipeEdges.edges(helper.getLevel().getServer()), java.util.Set.of(ingot)).get(ingot);
         helper.assertTrue(usage.produced() > 0 && usage.used() > 0, "iron ingot should be made and used by recipes, got " + usage);
         helper.succeed();
@@ -179,12 +179,12 @@ public final class MaterialNexusGameTests {
     /** MNX-025: real recipes are read with their JSON from the resource stack and vanilla outputs are rewritten. */
     @GameTest(template = "empty")
     public static void vanillaRecipesProducingAnAlternativeAreRewritten(GameTestHelper helper) {
-        ResourceLocation copper = ResourceLocation.withDefaultNamespace("copper_ingot");
-        ResourceLocation iron = ResourceLocation.withDefaultNamespace("iron_ingot");
+        Identifier copper = Identifier.withDefaultNamespace("copper_ingot");
+        Identifier iron = Identifier.withDefaultNamespace("iron_ingot");
         var formats = RecipeFormats.load(helper.getLevel().getServer().getResourceManager());
         var sources = RecipeSources.collect(helper.getLevel().getServer(), java.util.Map.of(copper, iron), formats, java.util.List.of());
         var plan = RecipeRewrites.plan(sources, java.util.Map.of(copper, iron), formats);
-        var fromBlock = new PackContent.Effect(RecipeRewrites.REWRITE, ResourceLocation.withDefaultNamespace("copper_ingot"), iron);
+        var fromBlock = new PackContent.Effect(RecipeRewrites.REWRITE, Identifier.withDefaultNamespace("copper_ingot"), iron);
         helper.assertTrue(plan.effects().contains(fromBlock), "minecraft:copper_ingot should be rewritten, got " + plan.effects());
         helper.assertTrue(plan.files().get("data/minecraft/recipe/copper_ingot.json").toString().contains("\"id\":\"minecraft:iron_ingot\""),
                 "rewritten JSON must produce the canonical item");
@@ -199,12 +199,12 @@ public final class MaterialNexusGameTests {
     public static void processRulesGenerateLoadableRecipes(GameTestHelper helper) {
         var server = helper.getLevel().getServer();
         var nugget = new dev.drimoz.materialnexus.core.policy.ProcessRules.Route(
-                ResourceLocation.withDefaultNamespace("crafting_shapeless"), new FormId("ingot"), 1, 8);
+                Identifier.withDefaultNamespace("crafting_shapeless"), new FormId("ingot"), 1, 8);
         var rules = new java.util.HashMap<FormId, dev.drimoz.materialnexus.core.policy.ProcessRules.Rule>();
         rules.put(new FormId("nugget"), new dev.drimoz.materialnexus.core.policy.ProcessRules.Rule(java.util.List.of(nugget), false, true));
         if (ModList.get().isLoaded("immersiveengineering")) {
             rules.put(new FormId("rod"), new dev.drimoz.materialnexus.core.policy.ProcessRules.Rule(java.util.List.of(
-                    new dev.drimoz.materialnexus.core.policy.ProcessRules.Route(ResourceLocation.fromNamespaceAndPath("immersiveengineering", "metal_press"),
+                    new dev.drimoz.materialnexus.core.policy.ProcessRules.Route(Identifier.fromNamespaceAndPath("immersiveengineering", "metal_press"),
                             new FormId("ingot"), 1, 3)), false, true));
         }
         var policy = dev.drimoz.materialnexus.core.policy.ResolutionPolicy.NONE.withProcesses(rules);
@@ -214,7 +214,7 @@ public final class MaterialNexusGameTests {
 
         var ops = net.minecraft.resources.RegistryOps.create(com.mojang.serialization.JsonOps.INSTANCE, server.registryAccess());
         var generated = plan.effects().stream().filter(e -> e.kind().equals(dev.drimoz.materialnexus.datapack.ProcessPlanner.PROCESS)).toList();
-        helper.assertTrue(generated.stream().anyMatch(e -> e.item().equals(ResourceLocation.withDefaultNamespace("iron_nugget"))),
+        helper.assertTrue(generated.stream().anyMatch(e -> e.item().equals(Identifier.withDefaultNamespace("iron_nugget"))),
                 "iron nuggets 1 → 8 should be generated, got " + plan.effects());
         for (var e : generated) {
             var json = plan.files().get("data/materialnexus/recipe/" + e.target().getPath() + ".json").getAsJsonObject().deepCopy();
@@ -234,9 +234,9 @@ public final class MaterialNexusGameTests {
      */
     @GameTest(template = "empty")
     public static void createdItemIsRegisteredTaggedAndDiscovered(GameTestHelper helper) {
-        ResourceLocation id = ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "netherite_rod");
+        Identifier id = Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "netherite_rod");
         helper.assertTrue(net.minecraft.core.registries.BuiltInRegistries.ITEM.containsKey(id), "netherite_rod should be registered");
-        var tag = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, ResourceLocation.parse("c:rods/netherite"));
+        var tag = net.minecraft.tags.TagKey.create(net.minecraft.core.registries.Registries.ITEM, Identifier.parse("c:rods/netherite"));
         helper.assertTrue(new ItemStack(net.minecraft.core.registries.BuiltInRegistries.ITEM.get(id)).is(tag), "netherite_rod should be in #c:rods/netherite");
         var providers = SnapshotManager.current().discovered().providers(new MaterialId("netherite"), new FormId("rod"));
         helper.assertTrue(providers.stream().anyMatch(p -> p.resource().equals(id)), "discovery should see the netherite rod, got " + providers);
@@ -251,7 +251,7 @@ public final class MaterialNexusGameTests {
     public static void addonRecipesAreRewritten(GameTestHelper helper) {
         if (!ModList.get().isLoaded("createaddition")) { helper.succeed(); return; }
         var server = helper.getLevel().getServer();
-        var conversions = java.util.Map.of(ResourceLocation.parse("createaddition:electrum_wire"), ResourceLocation.parse("immersiveengineering:wire_electrum"));
+        var conversions = java.util.Map.of(Identifier.parse("createaddition:electrum_wire"), Identifier.parse("immersiveengineering:wire_electrum"));
         var formats = RecipeFormats.load(server.getResourceManager());
         var plan = RecipeRewrites.plan(RecipeSources.collect(server, conversions, formats, java.util.List.of()), conversions, formats);
         helper.assertTrue(plan.effects().stream().noneMatch(e -> e.kind().equals(RecipeRewrites.UNSUPPORTED) && e.target().getNamespace().equals("createaddition")),
@@ -270,14 +270,14 @@ public final class MaterialNexusGameTests {
         var server = helper.getLevel().getServer();
         var snapshot = SnapshotManager.current();
         long t0 = System.nanoTime();
-        var explicit = new java.util.HashMap<dev.drimoz.materialnexus.core.domain.MaterialForm, ResourceLocation>();
+        var explicit = new java.util.HashMap<dev.drimoz.materialnexus.core.domain.MaterialForm, Identifier>();
         dev.drimoz.materialnexus.network.SuggestionsPayload.of(snapshot).changes().forEach(c -> explicit.put(
                 new dev.drimoz.materialnexus.core.domain.MaterialForm(new MaterialId(c.material()), new FormId(c.form())), c.provider()));
         var ingot = new FormId("ingot");
         var rules = new java.util.HashMap<FormId, dev.drimoz.materialnexus.core.policy.ProcessRules.Rule>();
         for (String form : java.util.List.of("rod", "plate", "wire")) {
             rules.put(new FormId(form), new dev.drimoz.materialnexus.core.policy.ProcessRules.Rule(java.util.List.of(
-                    new dev.drimoz.materialnexus.core.policy.ProcessRules.Route(ResourceLocation.withDefaultNamespace("crafting_shapeless"), ingot, 1, 2)), true, true));
+                    new dev.drimoz.materialnexus.core.policy.ProcessRules.Route(Identifier.withDefaultNamespace("crafting_shapeless"), ingot, 1, 2)), true, true));
         }
         var policy = dev.drimoz.materialnexus.core.policy.ResolutionPolicy.NONE.withExplicit(explicit).withProcesses(rules);
         var resolved = dev.drimoz.materialnexus.core.resolution.CanonicalResolver.resolve(snapshot.discovered(), policy);
@@ -317,7 +317,7 @@ public final class MaterialNexusGameTests {
         }
         var server = helper.getLevel().getServer();
         var snapshot = SnapshotManager.current();
-        var explicit = new java.util.HashMap<dev.drimoz.materialnexus.core.domain.MaterialForm, ResourceLocation>();
+        var explicit = new java.util.HashMap<dev.drimoz.materialnexus.core.domain.MaterialForm, Identifier>();
         dev.drimoz.materialnexus.network.SuggestionsPayload.of(snapshot).changes().forEach(c -> explicit.put(
                 new dev.drimoz.materialnexus.core.domain.MaterialForm(new MaterialId(c.material()), new FormId(c.form())), c.provider()));
         var policy = dev.drimoz.materialnexus.core.policy.ResolutionPolicy.NONE.withExplicit(explicit);
@@ -364,7 +364,7 @@ public final class MaterialNexusGameTests {
     /** MNX-028: an applied alternative becomes the canonical item when it enters the world or a container is converted. */
     @GameTest(template = "empty")
     public static void unifiedItemsAreConvertedWhenTouched(GameTestHelper helper) {
-        ItemConversions.install(java.util.Map.of(ResourceLocation.withDefaultNamespace("copper_ingot"), ResourceLocation.withDefaultNamespace("iron_ingot")));
+        ItemConversions.install(java.util.Map.of(Identifier.withDefaultNamespace("copper_ingot"), Identifier.withDefaultNamespace("iron_ingot")));
         try {
             var stack = new ItemStack(Items.COPPER_INGOT, 7);
             var dropped = helper.spawnItem(Items.COPPER_INGOT, new net.minecraft.core.BlockPos(0, 1, 0));
@@ -403,15 +403,15 @@ public final class MaterialNexusGameTests {
         MaterialId copper = new MaterialId("copper");
 
         helper.assertTrue(discovered.providers(copper, new FormId("ingot")).stream()
-                .anyMatch(p -> p.resource().equals(ResourceLocation.withDefaultNamespace("copper_ingot"))),
+                .anyMatch(p -> p.resource().equals(Identifier.withDefaultNamespace("copper_ingot"))),
                 "copper/ingot should include minecraft:copper_ingot");
         helper.assertTrue(discovered.providers(copper, new FormId("raw_block")).stream()
-                .anyMatch(p -> p.resource().equals(ResourceLocation.withDefaultNamespace("raw_copper_block"))),
+                .anyMatch(p -> p.resource().equals(Identifier.withDefaultNamespace("raw_copper_block"))),
                 "c:storage_blocks/raw_copper should map to copper/raw_block");
         helper.assertFalse(discovered.materials().containsKey(new MaterialId("raw_copper")),
                 "raw_copper must not be discovered as its own material");
         // MNX-027: host-rock variants are separate forms, never duplicates of each other.
-        ResourceLocation deepslateOre = ResourceLocation.withDefaultNamespace("deepslate_copper_ore");
+        Identifier deepslateOre = Identifier.withDefaultNamespace("deepslate_copper_ore");
         helper.assertTrue(discovered.providers(copper, new FormId("deepslate_ore")).stream().anyMatch(p -> p.resource().equals(deepslateOre)),
                 "deepslate copper ore should be copper/deepslate_ore");
         helper.assertFalse(discovered.providers(copper, new FormId("ore")).stream().anyMatch(p -> p.resource().equals(deepslateOre)),
@@ -425,7 +425,7 @@ public final class MaterialNexusGameTests {
         // A fake player, not a mock: a mock "logs in", and installed mods (Jade, Mekanism) then try to sync to it.
         ServerPlayer player = FakePlayerFactory.getMinecraft(helper.getLevel());
         player.setItemInHand(InteractionHand.MAIN_HAND, new ItemStack(MnxItems.NEXUS_TERMINAL.get()));
-        helper.assertFalse(player.hasPermissions(MaterialsCommand.PERMISSION_LEVEL), "fake player should not be an operator");
+        helper.assertFalse(player.permissions().hasPermission(MaterialsCommand.PERMISSION), "fake player should not be an operator");
         helper.assertFalse(MaterialsCommand.tryOpen(player), "non-operator must be refused");
         helper.succeed();
     }
@@ -440,10 +440,10 @@ public final class MaterialNexusGameTests {
         if (!ModList.get().isLoaded("tensura") || !ModList.get().isLoaded("extendedae")) { helper.succeed(); return; }
         var server = helper.getLevel().getServer();
         var snapshot = SnapshotManager.current();
-        java.util.Map<ResourceLocation, ResourceLocation> conversions = new java.util.TreeMap<>();
+        java.util.Map<Identifier, Identifier> conversions = new java.util.TreeMap<>();
         java.util.List<RecipeRewrites.UnifiedForm> forms = new java.util.ArrayList<>();
         snapshot.discovered().materials().forEach((material, byForm) -> {
-            java.util.Set<ResourceLocation> materialItems = new java.util.HashSet<>();
+            java.util.Set<Identifier> materialItems = new java.util.HashSet<>();
             byForm.values().forEach(ps -> ps.forEach(p -> materialItems.add(p.resource())));
             byForm.forEach((form, ps) -> {
                 var items = ps.stream().map(p -> p.resource()).sorted().toList();
@@ -486,7 +486,7 @@ public final class MaterialNexusGameTests {
         plan.files().forEach((path, json) -> {
             String[] parts = path.split("/", 4);
             if (parts.length < 4 || !json.isJsonObject() || !json.getAsJsonObject().has("type")) return;
-            var id = ResourceLocation.fromNamespaceAndPath(parts[1], parts[3].substring(0, parts[3].length() - ".json".length()));
+            var id = Identifier.fromNamespaceAndPath(parts[1], parts[3].substring(0, parts[3].length() - ".json".length()));
             boolean before = RecipeSources.originalJson(server, id).map(o -> decoder.decode(o).isPresent()).orElse(false);
             if (before && decoder.decode(json.getAsJsonObject()).isEmpty()) broken.add(id.toString());
         });

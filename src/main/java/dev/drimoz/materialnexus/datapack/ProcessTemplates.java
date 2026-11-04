@@ -11,13 +11,13 @@ import com.mojang.serialization.JsonOps;
 import com.mojang.serialization.codecs.RecordCodecBuilder;
 import dev.drimoz.materialnexus.MaterialNexus;
 import dev.drimoz.materialnexus.core.domain.FormId;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.packs.resources.ResourceManager;
 import net.minecraft.server.packs.resources.SimpleJsonResourceReloadListener;
 import net.minecraft.util.profiling.ProfilerFiller;
 import net.neoforged.bus.api.SubscribeEvent;
 import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.neoforge.event.AddReloadListenerEvent;
+import net.neoforged.neoforge.event.AddServerReloadListenersEvent;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
@@ -42,20 +42,20 @@ import java.util.TreeMap;
  * replaced as text: {@code ${material}}, {@code ${form}}, {@code ${output_item}}, {@code ${output_tag}}, form variables.
  */
 @EventBusSubscriber(modid = MaterialNexus.MOD_ID)
-public final class ProcessTemplates extends SimpleJsonResourceReloadListener {
+public final class ProcessTemplates extends SimpleJsonResourceReloadListener<JsonElement> {
     public static final String DIRECTORY = "material_nexus/process_templates";
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    public record Template(ResourceLocation machine, boolean prefer, Map<FormId, Map<String, String>> forms,
+    public record Template(Identifier machine, boolean prefer, Map<FormId, Map<String, String>> forms,
                            Map<String, List<String>> patterns, JsonObject recipe) {
         public boolean appliesTo(FormId form) {
             return forms.isEmpty() || forms.containsKey(form);
         }
     }
 
-    private record Head(ResourceLocation machine, boolean prefer, Map<FormId, Map<String, String>> forms, Map<String, List<String>> patterns) {
+    private record Head(Identifier machine, boolean prefer, Map<FormId, Map<String, String>> forms, Map<String, List<String>> patterns) {
         static final Codec<Head> CODEC = RecordCodecBuilder.create(i -> i.group(
-                ResourceLocation.CODEC.fieldOf("machine").forGetter(Head::machine),
+                Identifier.CODEC.fieldOf("machine").forGetter(Head::machine),
                 Codec.BOOL.optionalFieldOf("prefer", false).forGetter(Head::prefer),
                 Codec.unboundedMap(FormId.CODEC, Codec.unboundedMap(Codec.STRING, Codec.STRING)).optionalFieldOf("forms", Map.of()).forGetter(Head::forms),
                 Codec.unboundedMap(Codec.STRING, Codec.STRING.listOf()).optionalFieldOf("patterns", Map.of()).forGetter(Head::patterns)
@@ -68,12 +68,12 @@ public final class ProcessTemplates extends SimpleJsonResourceReloadListener {
     private static volatile List<Template> templates = List.of();
 
     private ProcessTemplates() {
-        super(new Gson(), DIRECTORY);
+        super(net.minecraft.util.ExtraCodecs.JSON, net.minecraft.resources.FileToIdConverter.json(DIRECTORY));
     }
 
     @SubscribeEvent
-    public static void register(AddReloadListenerEvent event) {
-        event.addListener(new ProcessTemplates());
+    public static void register(AddServerReloadListenersEvent event) {
+        event.addListener(Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "process_templates"), new ProcessTemplates());
     }
 
     public static List<Template> templates() {
@@ -81,7 +81,7 @@ public final class ProcessTemplates extends SimpleJsonResourceReloadListener {
     }
 
     @Override
-    protected void apply(Map<ResourceLocation, JsonElement> files, ResourceManager resources, ProfilerFiller profiler) {
+    protected void apply(Map<Identifier, JsonElement> files, ResourceManager resources, ProfilerFiller profiler) {
         List<Template> loaded = new ArrayList<>();
         new TreeMap<>(files).forEach((file, json) -> parse(json)
                 .ifPresentOrElse(loaded::add, () -> LOGGER.warn("Ignoring invalid process template {}", file)));

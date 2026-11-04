@@ -8,7 +8,7 @@ import dev.drimoz.materialnexus.core.policy.PolicyPrecedence;
 import dev.drimoz.materialnexus.core.policy.ResolutionPolicy;
 import dev.drimoz.materialnexus.core.resolution.CanonicalResolver;
 import dev.drimoz.materialnexus.core.resolution.ResolvedForm;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
@@ -21,19 +21,19 @@ import static org.junit.jupiter.api.Assertions.*;
 class CanonicalResolverTest {
     private static final MaterialId COPPER = new MaterialId("copper");
     private static final MaterialForm COPPER_PLATE = new MaterialForm(COPPER, new FormId("plate"));
-    private static final ResourceLocation PLATES_COPPER = ResourceLocation.fromNamespaceAndPath("c", "plates/copper");
-    private static final ResourceLocation A = ResourceLocation.fromNamespaceAndPath("moda", "copper_plate");
-    private static final ResourceLocation B = ResourceLocation.fromNamespaceAndPath("modb", "copper_plate");
-    private static final ResourceLocation C = ResourceLocation.fromNamespaceAndPath("modc", "copper_plate");
+    private static final Identifier PLATES_COPPER = Identifier.fromNamespaceAndPath("c", "plates/copper");
+    private static final Identifier A = Identifier.fromNamespaceAndPath("moda", "copper_plate");
+    private static final Identifier B = Identifier.fromNamespaceAndPath("modb", "copper_plate");
+    private static final Identifier C = Identifier.fromNamespaceAndPath("modc", "copper_plate");
 
-    private static ResolvedForm resolve(List<ResourceLocation> members, ResolutionPolicy policy) {
+    private static ResolvedForm resolve(List<Identifier> members, ResolutionPolicy policy) {
         var discovered = TagDiscovery.discover(Map.of(PLATES_COPPER, members));
         return CanonicalResolver.resolve(discovered, policy).get(COPPER).forms().get(COPPER_PLATE.form());
     }
 
     @Test
     void eachPrecedenceLevelOverridesTheOneBelow() {
-        List<ResourceLocation> members = List.of(A, B, C);
+        List<Identifier> members = List.of(A, B, C);
         assertEquals(A, resolve(members, ResolutionPolicy.NONE).canonical().orElseThrow());
 
         var global = new ResolutionPolicy(List.of("modc"), Map.of(), Map.of(), Map.of());
@@ -52,10 +52,10 @@ class CanonicalResolverTest {
 
         // An explicit override naming an undiscovered item falls through instead of inventing a provider.
         var unknown = new ResolutionPolicy(List.of(), Map.of(), Map.of(COPPER_PLATE, List.of("modc")),
-                Map.of(COPPER_PLATE, ResourceLocation.fromNamespaceAndPath("ghost", "plate")));
+                Map.of(COPPER_PLATE, Identifier.fromNamespaceAndPath("ghost", "plate")));
         ResolvedForm fallback = resolve(members, unknown);
         assertResolved(C, PolicyPrecedence.FORM, fallback);
-        assertEquals(ResourceLocation.fromNamespaceAndPath("ghost", "plate"), fallback.ignoredOverride().orElseThrow());
+        assertEquals(Identifier.fromNamespaceAndPath("ghost", "plate"), fallback.ignoredOverride().orElseThrow());
     }
 
     @Test
@@ -67,19 +67,19 @@ class CanonicalResolverTest {
     /** MNX-027: the false duplicates found in a real pack are sorted out, listed, and never dropped. */
     @Test
     void falseDuplicatesAreSortedOutNotRemoved() {
-        ResourceLocation stick = ResourceLocation.withDefaultNamespace("stick");
-        ResourceLocation treated = ResourceLocation.fromNamespaceAndPath("immersiveengineering", "stick_treated");
-        ResourceLocation certus = ResourceLocation.fromNamespaceAndPath("ae2", "certus_quartz_crystal");
-        ResourceLocation charged = ResourceLocation.fromNamespaceAndPath("ae2", "charged_certus_quartz_crystal");
-        ResourceLocation createZinc = ResourceLocation.fromNamespaceAndPath("create", "zinc_ore");
-        ResourceLocation createDeepZinc = ResourceLocation.fromNamespaceAndPath("create", "deepslate_zinc_ore");
-        ResourceLocation otherDeepZinc = ResourceLocation.fromNamespaceAndPath("othermod", "deepslate_zinc_ore");
+        Identifier stick = Identifier.withDefaultNamespace("stick");
+        Identifier treated = Identifier.fromNamespaceAndPath("immersiveengineering", "stick_treated");
+        Identifier certus = Identifier.fromNamespaceAndPath("ae2", "certus_quartz_crystal");
+        Identifier charged = Identifier.fromNamespaceAndPath("ae2", "charged_certus_quartz_crystal");
+        Identifier createZinc = Identifier.fromNamespaceAndPath("create", "zinc_ore");
+        Identifier createDeepZinc = Identifier.fromNamespaceAndPath("create", "deepslate_zinc_ore");
+        Identifier otherDeepZinc = Identifier.fromNamespaceAndPath("othermod", "deepslate_zinc_ore");
         var discovered = TagDiscovery.discover(Map.of(
-                ResourceLocation.fromNamespaceAndPath("c", "rods/wooden"), List.of(stick, treated),
-                ResourceLocation.fromNamespaceAndPath("c", "rods/treated_wood"), List.of(treated),
-                ResourceLocation.fromNamespaceAndPath("c", "gems/certus_quartz"), List.of(certus, charged),
-                ResourceLocation.fromNamespaceAndPath("c", "ores/zinc"), List.of(createZinc, createDeepZinc, otherDeepZinc),
-                ResourceLocation.fromNamespaceAndPath("c", "ores_in_ground/deepslate"), List.of(createDeepZinc)));
+                Identifier.fromNamespaceAndPath("c", "rods/wooden"), List.of(stick, treated),
+                Identifier.fromNamespaceAndPath("c", "rods/treated_wood"), List.of(treated),
+                Identifier.fromNamespaceAndPath("c", "gems/certus_quartz"), List.of(certus, charged),
+                Identifier.fromNamespaceAndPath("c", "ores/zinc"), List.of(createZinc, createDeepZinc, otherDeepZinc),
+                Identifier.fromNamespaceAndPath("c", "ores_in_ground/deepslate"), List.of(createDeepZinc)));
         var resolved = CanonicalResolver.resolve(discovered, ResolutionPolicy.NONE);
         ResolvedForm wooden = resolved.get(new MaterialId("wooden")).forms().get(new FormId("rod"));
         ResolvedForm gem = resolved.get(new MaterialId("certus_quartz")).forms().get(new FormId("gem"));
@@ -109,8 +109,8 @@ class CanonicalResolverTest {
     /** MNX-047, from a real pack: mods tag other items under a material; the names give them away. */
     @Test
     void namesTellVariantsFromDuplicates() {
-        var rl = (java.util.function.Function<String, ResourceLocation>) ResourceLocation::parse;
-        Map<ResourceLocation, List<ResourceLocation>> tags = Map.of(
+        var rl = (java.util.function.Function<String, Identifier>) Identifier::parse;
+        Map<Identifier, List<Identifier>> tags = Map.of(
                 rl.apply("c:gems/amethyst"), List.of(rl.apply("minecraft:amethyst_shard"), rl.apply("remin:yellow_amethyst")),
                 rl.apply("c:gems/quartz"), List.of(rl.apply("minecraft:quartz")),
                 rl.apply("c:gems/milky_quartz"), List.of(rl.apply("minecraft:quartz"), rl.apply("remin:milky_quartz")),
@@ -149,8 +149,8 @@ class CanonicalResolverTest {
     /** MNX-086, from a real pack: an alloy ingot named after its base metal is not that metal; and the player has the last word on a guess. */
     @Test
     void aGuessNeedsMembershipAndThePlayerCanOverruleIt() {
-        var rl = (java.util.function.Function<String, ResourceLocation>) ResourceLocation::parse;
-        Map<ResourceLocation, List<ResourceLocation>> tags = Map.of(
+        var rl = (java.util.function.Function<String, Identifier>) Identifier::parse;
+        Map<Identifier, List<Identifier>> tags = Map.of(
                 rl.apply("c:dusts/electrotine"), List.of(rl.apply("projectred_core:electrotine_dust")),
                 rl.apply("c:ingots/electrotine_alloy"), List.of(rl.apply("projectred_core:electrotine_ingot"), rl.apply("koynification:electrotine_alloy_ingot")),
                 rl.apply("c:gems/amethyst"), List.of(rl.apply("minecraft:amethyst_shard"), rl.apply("remin:yellow_amethyst")));
@@ -166,7 +166,7 @@ class CanonicalResolverTest {
         assertTrue(gem.notUnified().isEmpty());
     }
 
-    private static void assertResolved(ResourceLocation expected, PolicyPrecedence source, ResolvedForm actual) {
+    private static void assertResolved(Identifier expected, PolicyPrecedence source, ResolvedForm actual) {
         assertEquals(expected, actual.canonical().orElseThrow(), actual.reasonKey());
         assertEquals(source, actual.source(), actual.reasonKey());
     }

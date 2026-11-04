@@ -22,7 +22,7 @@ public record ResolvedSnapshot(
         SortedMap<MaterialId, ResolvedMaterial> materials,
         ScriptChanges scripts,
         List<ScriptDecisions.Decision> scriptDecisions,
-        java.util.Map<net.minecraft.resources.ResourceLocation, java.util.Set<net.minecraft.resources.ResourceLocation>> conventionTags) {
+        java.util.Map<net.minecraft.resources.Identifier, java.util.Set<net.minecraft.resources.Identifier>> conventionTags) {
     public ResolvedSnapshot {
         scriptDecisions = List.copyOf(scriptDecisions);
         conventionTags = java.util.Map.copyOf(conventionTags);

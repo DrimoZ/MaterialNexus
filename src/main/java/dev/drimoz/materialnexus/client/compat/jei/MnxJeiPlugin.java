@@ -8,7 +8,7 @@ import mezz.jei.api.JeiPlugin;
 import mezz.jei.api.constants.VanillaTypes;
 import mezz.jei.api.runtime.IJeiRuntime;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.world.item.ItemStack;
 
 import java.util.HashSet;
@@ -21,16 +21,16 @@ import java.util.Set;
  */
 @JeiPlugin
 public final class MnxJeiPlugin implements IModPlugin {
-    private static final ResourceLocation UID = ResourceLocation.fromNamespaceAndPath(MaterialNexus.MOD_ID, "jei");
+    private static final Identifier UID = Identifier.fromNamespaceAndPath(MaterialNexus.MOD_ID, "jei");
 
     private IJeiRuntime runtime;
     /** What this runtime currently hides; a new runtime (JEI restarts on reload) starts with nothing hidden. */
-    private final Set<ResourceLocation> hidden = new HashSet<>();
+    private final Set<Identifier> hidden = new HashSet<>();
     private boolean subscribed;
     private Viewer viewer;
 
     @Override
-    public ResourceLocation getPluginUid() {
+    public Identifier getPluginUid() {
         return UID;
     }
 
@@ -57,11 +57,11 @@ public final class MnxJeiPlugin implements IModPlugin {
         hidden.clear();
     }
 
-    private void apply(Set<ResourceLocation> alternatives) {
+    private void apply(Set<Identifier> alternatives) {
         if (runtime == null) return;
-        Set<ResourceLocation> show = new HashSet<>(hidden);
+        Set<Identifier> show = new HashSet<>(hidden);
         show.removeAll(alternatives);
-        Set<ResourceLocation> hide = new HashSet<>(alternatives);
+        Set<Identifier> hide = new HashSet<>(alternatives);
         hide.removeAll(hidden);
         if (!show.isEmpty()) runtime.getIngredientManager().addIngredientsAtRuntime(VanillaTypes.ITEM_STACK, stacks(show));
         if (!hide.isEmpty()) runtime.getIngredientManager().removeIngredientsAtRuntime(VanillaTypes.ITEM_STACK, stacks(hide));
@@ -69,14 +69,14 @@ public final class MnxJeiPlugin implements IModPlugin {
         hidden.addAll(hide);
     }
 
-    private static List<ItemStack> stacks(Set<ResourceLocation> ids) {
+    private static List<ItemStack> stacks(Set<Identifier> ids) {
         return ids.stream().flatMap(id -> BuiltInRegistries.ITEM.getOptional(id).stream()).map(ItemStack::new).toList();
     }
 
     /** JEI as the drawer of recipes (MNX-088): the layout of a loaded recipe, found in the category that holds it. */
     private static final class Viewer implements RecipeViewer {
         private final IJeiRuntime runtime;
-        private final java.util.Map<ResourceLocation, java.util.Optional<Layout>> cache = new java.util.HashMap<>();
+        private final java.util.Map<Identifier, java.util.Optional<Layout>> cache = new java.util.HashMap<>();
 
         Viewer(IJeiRuntime runtime) {
             this.runtime = runtime;
@@ -86,11 +86,11 @@ public final class MnxJeiPlugin implements IModPlugin {
         public String name() { return "JEI"; }
 
         @Override
-        public java.util.Optional<Layout> layout(ResourceLocation recipe) {
+        public java.util.Optional<Layout> layout(Identifier recipe) {
             return cache.computeIfAbsent(recipe, this::find);
         }
 
-        private java.util.Optional<Layout> find(ResourceLocation id) {
+        private java.util.Optional<Layout> find(Identifier id) {
             var level = net.minecraft.client.Minecraft.getInstance().level;
             if (level == null) return java.util.Optional.empty();
             var holder = level.getRecipeManager().byKey(id);
@@ -120,7 +120,7 @@ public final class MnxJeiPlugin implements IModPlugin {
                     @Override public boolean framed() { return true; }
 
                     @Override
-                    public void draw(net.minecraft.client.gui.GuiGraphics g, int x, int y, int mouseX, int mouseY) {
+                    public void draw(net.minecraft.client.gui.GuiGraphicsExtractor g, int x, int y, int mouseX, int mouseY) {
                         drawable.setPosition(x, y);
                         drawable.drawRecipe(g, mouseX, mouseY);
                         drawable.drawOverlays(g, mouseX, mouseY);
@@ -133,7 +133,7 @@ public final class MnxJeiPlugin implements IModPlugin {
         }
 
         @Override
-        public void open(ResourceLocation item) {
+        public void open(Identifier item) {
             BuiltInRegistries.ITEM.getOptional(item).ifPresent(i -> runtime.getRecipesGui().show(runtime.getJeiHelpers().getFocusFactory()
                     .createFocus(mezz.jei.api.recipe.RecipeIngredientRole.OUTPUT, VanillaTypes.ITEM_STACK, new ItemStack(i))));
         }

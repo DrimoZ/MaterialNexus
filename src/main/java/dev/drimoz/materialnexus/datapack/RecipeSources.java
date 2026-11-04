@@ -9,7 +9,7 @@ import dev.drimoz.materialnexus.core.resolution.ResolvedMaterial;
 import dev.drimoz.materialnexus.core.resolution.SnapshotManager;
 import dev.drimoz.materialnexus.integration.RecipeFormats;
 import net.minecraft.core.registries.BuiltInRegistries;
-import net.minecraft.resources.ResourceLocation;
+import net.minecraft.resources.Identifier;
 import net.minecraft.server.MinecraftServer;
 import net.minecraft.server.packs.resources.Resource;
 import net.minecraft.server.packs.resources.ResourceManager;
@@ -38,23 +38,23 @@ public final class RecipeSources {
     private RecipeSources() { }
 
     /** Every quoted namespaced id in a recipe's JSON text (MNX-076: what a script edit took out or put in). */
-    public static Set<ResourceLocation> ids(String text) {
-        Set<ResourceLocation> ids = new HashSet<>();
+    public static Set<Identifier> ids(String text) {
+        Set<Identifier> ids = new HashSet<>();
         var m = QUOTED_ID.matcher(text);
         while (m.find()) {
-            ResourceLocation id = ResourceLocation.tryParse(m.group(1));
+            Identifier id = Identifier.tryParse(m.group(1));
             if (id != null) ids.add(id);
         }
         return ids;
     }
 
     /** Any string value naming one of {@code ids}, in one walk of the tree (MNX-044: 178 alternatives × 13k recipes). */
-    private static boolean mentions(JsonElement element, Set<ResourceLocation> ids) {
+    private static boolean mentions(JsonElement element, Set<Identifier> ids) {
         if (element.isJsonPrimitive()) {
             if (!element.getAsJsonPrimitive().isString()) return false;
             String text = element.getAsString();
             // Namespaced only: a bare word ("misc") would parse as minecraft:misc.
-            ResourceLocation id = text.indexOf(':') > 0 ? ResourceLocation.tryParse(text) : null;
+            Identifier id = text.indexOf(':') > 0 ? Identifier.tryParse(text) : null;
             return id != null && ids.contains(id);
         }
         if (element.isJsonArray()) {
@@ -65,8 +65,8 @@ public final class RecipeSources {
         return false;
     }
 
-    public static List<RecipeRewrites.Source> collect(MinecraftServer server, Map<ResourceLocation, ResourceLocation> conversions, RecipeFormats formats,
-                                                      Collection<ResourceLocation> overridden) {
+    public static List<RecipeRewrites.Source> collect(MinecraftServer server, Map<Identifier, Identifier> conversions, RecipeFormats formats,
+                                                      Collection<Identifier> overridden) {
         return collect(server, conversions, formats, overridden, known(server, formats, overridden));
     }
 
@@ -76,25 +76,25 @@ public final class RecipeSources {
      * producing an alternative, to be listed as unsupported. {@code conversions} maps alternative to canonical.
      * {@code known} is {@link #known} for the same {@code overridden}: read once, shared with process rules (MNX-111).
      */
-    public static List<RecipeRewrites.Source> collect(MinecraftServer server, Map<ResourceLocation, ResourceLocation> conversions, RecipeFormats formats,
-                                                      Collection<ResourceLocation> overridden, List<RecipeRewrites.Source> known) {
-        Set<ResourceLocation> ours = new HashSet<>(overridden);
-        Set<ResourceLocation> items = new HashSet<>(conversions.keySet());
+    public static List<RecipeRewrites.Source> collect(MinecraftServer server, Map<Identifier, Identifier> conversions, RecipeFormats formats,
+                                                      Collection<Identifier> overridden, List<RecipeRewrites.Source> known) {
+        Set<Identifier> ours = new HashSet<>(overridden);
+        Set<Identifier> items = new HashSet<>(conversions.keySet());
         items.addAll(conversions.values());
-        Set<ResourceLocation> read = new HashSet<>();
+        Set<Identifier> read = new HashSet<>();
         List<RecipeRewrites.Source> sources = new ArrayList<>();
 
         for (RecipeRewrites.Source s : known) {
             read.add(s.id());
             JsonObject json = s.json().orElseThrow();
-            List<ResourceLocation> outputs = RecipeRewrites.outputIds(json, formats);
+            List<Identifier> outputs = RecipeRewrites.outputIds(json, formats);
             // Recipes we rewrote or disabled are judged by their original JSON, not by what we made of them.
             boolean touches = ours.contains(s.id()) || outputs.stream().anyMatch(items::contains) || mentions(json, conversions.keySet());
             if (touches) sources.add(new RecipeRewrites.Source(s.id(), s.json(), firstOrSelf(outputs, s.id())));
         }
         // ADR-025: any other type naming an alternative, read from its file and rewritten by its keys. A recipe with no
         // file (added in memory by a script, e.g. KubeJS) has no JSON we may rewrite: it is reported, not skipped.
-        Map<ResourceLocation, String> files = texts(server);
+        Map<Identifier, String> files = texts(server);
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
             if (ours.contains(holder.id()) || read.contains(holder.id())) continue;
             Optional<JsonObject> json = parse(files.get(file(holder.id()))).filter(j -> mentions(j, conversions.keySet()));
@@ -103,7 +103,7 @@ public final class RecipeSources {
                 continue;
             }
             ItemStack out = holder.value().getResultItem(server.registryAccess());
-            ResourceLocation result = out.isEmpty() ? null : BuiltInRegistries.ITEM.getKey(out.getItem());
+            Identifier result = out.isEmpty() ? null : BuiltInRegistries.ITEM.getKey(out.getItem());
             if (result != null && conversions.containsKey(result)) {
                 sources.add(new RecipeRewrites.Source(holder.id(), Optional.empty(), result));
             }
@@ -113,22 +113,22 @@ public final class RecipeSources {
     }
 
     /** Every known-format recipe with its pre-MNX JSON, for {@link #collect} and process rules (MNX-036). Preview / apply only. */
-    public static List<RecipeRewrites.Source> known(MinecraftServer server, RecipeFormats formats, Collection<ResourceLocation> overridden) {
-        Set<ResourceLocation> ids = new java.util.TreeSet<>(overridden);
+    public static List<RecipeRewrites.Source> known(MinecraftServer server, RecipeFormats formats, Collection<Identifier> overridden) {
+        Set<Identifier> ids = new java.util.TreeSet<>(overridden);
         for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
-            ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
+            Identifier type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
             if (type != null && formats.forType(type).isPresent()) ids.add(holder.id());
         }
         // Parsed in parallel (independent texts), in id order. Our own generated recipes have no file beneath the
         // generated pack: never read back here.
-        Map<ResourceLocation, String> files = texts(server);
+        Map<Identifier, String> files = texts(server);
         return ids.parallelStream()
                 .flatMap(id -> parse(files.get(file(id))).stream().map(json -> new RecipeRewrites.Source(id, Optional.of(json), id)))
                 .toList();
     }
 
     /** The text cache of one resource manager; the game makes a new one on every reload, Apply included. */
-    private record Texts(java.lang.ref.WeakReference<ResourceManager> owner, Map<ResourceLocation, String> files) { }
+    private record Texts(java.lang.ref.WeakReference<ResourceManager> owner, Map<Identifier, String> files) { }
 
     private static Texts texts;
 
@@ -138,23 +138,23 @@ public final class RecipeSources {
      * what previews read: loaded recipes of a known format, plus those the generated pack overrides (a disabled one is
      * not loaded). Any other recipe is read from its file when asked ({@link #originalJson}). Dropped when the server stops.
      */
-    private static synchronized Map<ResourceLocation, String> texts(MinecraftServer server) {
+    private static synchronized Map<Identifier, String> texts(MinecraftServer server) {
         ResourceManager resources = server.getResourceManager();
         if (texts == null || texts.owner().get() != resources) {
             long start = System.nanoTime();
             RecipeFormats formats = RecipeFormats.load(resources);
-            Set<ResourceLocation> kept = new HashSet<>();
+            Set<Identifier> kept = new HashSet<>();
             for (RecipeHolder<?> holder : server.getRecipeManager().getRecipes()) {
-                ResourceLocation type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
+                Identifier type = BuiltInRegistries.RECIPE_SERIALIZER.getKey(holder.value().getSerializer());
                 if (type != null && formats.forType(type).isPresent()) kept.add(file(holder.id()));
             }
             // ADR-025: of the other types, only the files naming an item that could become an alternative (a form with
             // two items or more): rewritten by their keys once a unification makes it one.
-            Set<ResourceLocation> shared = new HashSet<>();
+            Set<Identifier> shared = new HashSet<>();
             SnapshotManager.current().discovered().materials().values().forEach(forms -> forms.values().forEach(providers -> {
                 if (providers.size() > 1) providers.forEach(p -> shared.add(p.resource()));
             }));
-            Map<ResourceLocation, String> files = resources.listResourceStacks("recipe", path -> path.getPath().endsWith(".json"))
+            Map<Identifier, String> files = resources.listResourceStacks("recipe", path -> path.getPath().endsWith(".json"))
                     .entrySet().parallelStream()
                     .flatMap(e -> {
                         boolean known = kept.contains(e.getKey()) || e.getValue().stream().anyMatch(r -> r.sourcePackId().equals(GeneratedPack.PACK_ID));
@@ -176,11 +176,11 @@ public final class RecipeSources {
     }
 
     /** ADR-025: for each unified form, the tag its inputs may become, from the current snapshot (tags as they are without Material Nexus). */
-    public static Map<ResourceLocation, ResourceLocation> inputTags(java.util.SortedMap<MaterialId, ResolvedMaterial> resolved) {
+    public static Map<Identifier, Identifier> inputTags(java.util.SortedMap<MaterialId, ResolvedMaterial> resolved) {
         var snapshot = SnapshotManager.current();
         List<RecipeRewrites.UnifiedForm> forms = new ArrayList<>();
         resolved.forEach((material, rm) -> {
-            Set<ResourceLocation> materialItems = new HashSet<>();
+            Set<Identifier> materialItems = new HashSet<>();
             snapshot.discovered().materials().getOrDefault(material, java.util.Collections.emptySortedMap())
                     .values().forEach(providers -> providers.forEach(p -> materialItems.add(p.resource())));
             rm.forms().forEach((form, f) -> {
@@ -205,8 +205,8 @@ public final class RecipeSources {
                 var ingredients = decoded.get().getIngredients();
                 return Optional.of(new RecipeRewrites.Decoded() {
                     public boolean exposed() { return !result.isEmpty() || !ingredients.isEmpty(); }
-                    public boolean produces(ResourceLocation item) { return !result.isEmpty() && BuiltInRegistries.ITEM.getKey(result.getItem()).equals(item); }
-                    public boolean consumes(ResourceLocation item) {
+                    public boolean produces(Identifier item) { return !result.isEmpty() && BuiltInRegistries.ITEM.getKey(result.getItem()).equals(item); }
+                    public boolean consumes(Identifier item) {
                         ItemStack stack = new ItemStack(BuiltInRegistries.ITEM.get(item));
                         return ingredients.stream().anyMatch(i -> i.test(stack));
                     }
@@ -218,16 +218,16 @@ public final class RecipeSources {
         };
     }
 
-    private static ResourceLocation firstOrSelf(List<ResourceLocation> outputs, ResourceLocation recipe) {
+    private static Identifier firstOrSelf(List<Identifier> outputs, Identifier recipe) {
         return outputs.isEmpty() ? recipe : outputs.getFirst();
     }
 
-    private static ResourceLocation file(ResourceLocation id) {
-        return ResourceLocation.fromNamespaceAndPath(id.getNamespace(), "recipe/" + id.getPath() + ".json");
+    private static Identifier file(Identifier id) {
+        return Identifier.fromNamespaceAndPath(id.getNamespace(), "recipe/" + id.getPath() + ".json");
     }
 
     /** MNX-117: the packs providing a recipe's file, lowest first, the generated pack included; empty for a recipe made in memory. */
-    public static List<String> packs(MinecraftServer server, ResourceLocation id) {
+    public static List<String> packs(MinecraftServer server, Identifier id) {
         return server.getResourceManager().getResourceStack(file(id)).stream().map(Resource::sourcePackId).toList();
     }
 
@@ -237,9 +237,9 @@ public final class RecipeSources {
     }
 
     /** MNX-117: of these recipe ids, those the generated pack can switch off, with what each made (the recipe itself when unknown). */
-    public static Map<ResourceLocation, ResourceLocation> removable(MinecraftServer server, Collection<ResourceLocation> ids, RecipeFormats formats) {
-        Map<ResourceLocation, ResourceLocation> out = new java.util.TreeMap<>();
-        for (ResourceLocation id : ids) {
+    public static Map<Identifier, Identifier> removable(MinecraftServer server, Collection<Identifier> ids, RecipeFormats formats) {
+        Map<Identifier, Identifier> out = new java.util.TreeMap<>();
+        for (Identifier id : ids) {
             if (!removable(packs(server, id))) continue;
             out.put(id, firstOrSelf(originalJson(server, id).map(json -> RecipeRewrites.outputIds(json, formats)).orElse(List.of()), id));
         }
@@ -247,7 +247,7 @@ public final class RecipeSources {
     }
 
     /** The highest-priority definition of a recipe, skipping the Material Nexus generated pack. */
-    public static Optional<JsonObject> originalJson(MinecraftServer server, ResourceLocation id) {
+    public static Optional<JsonObject> originalJson(MinecraftServer server, Identifier id) {
         String text = texts(server).get(file(id));
         // Outside the cache (another format, only /materials report asks): read from the file, not kept.
         return parse(text != null ? text : originalText(server.getResourceManager().getResourceStack(file(id))).orElse(null));
