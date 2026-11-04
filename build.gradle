@@ -203,7 +203,7 @@ tasks.matching { it.name == 'runUiShots' }.configureEach {
     doFirst {
         delete 'run-ui/screenshots'
         // MNX-139: -Pflow=after keeps the world and config of the last -Pflow=fresh run, to see them after a restart.
-        if (project.findProperty('flow') == 'after') return
+        if (project.findProperty('flow') in ['after', 'more']) return
         if (project.findProperty('flow') == 'fresh') {
             // A world the game makes now, no config from the dev runs, and one created item with its own colour (tint check).
             delete 'run-ui/saves', 'run-ui/config'
