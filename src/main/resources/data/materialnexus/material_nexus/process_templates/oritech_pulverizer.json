@@ -2,10 +2,10 @@
   "machine": "oritech:pulverizer",
   "recipe": {
     "type": "oritech:pulverizer",
-    "ingredients": [
-      "${input}"
+    "itemInputs": [
+      "${ingredient}"
     ],
-    "results": [
+    "itemResults": [
       {
         "count": "${out}",
         "id": "${output_item}"

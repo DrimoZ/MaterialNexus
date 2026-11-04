@@ -33,14 +33,18 @@ public final class RecipeFormats {
     public static final String DIRECTORY = "material_nexus/recipe_formats";
     private static final Logger LOGGER = LogUtils.getLogger();
 
-    /** One format file: the recipe types it covers and the JSON keys holding their outputs. */
-    public record Format(Identifier source, List<Identifier> types, List<String> outputKeys) { }
+    /**
+     * One format file: the recipe types it covers, the JSON keys holding their outputs and (MNX-139) the keys where a bare id
+     * ({@code "ns:id"}, {@code "#tag"}, 1.21.2+ spelling) is an ingredient: the file's {@code inputs}, else the known input keys.
+     */
+    public record Format(Identifier source, List<Identifier> types, List<String> outputKeys, List<String> inputKeys) { }
 
     /** {@code skip}: recipe types never rewritten, by format or by their keys (MNX-125); a file may only skip. */
-    private record FormatJson(List<Identifier> types, List<String> outputs, List<Identifier> skip) {
+    private record FormatJson(List<Identifier> types, List<String> outputs, List<String> inputs, List<Identifier> skip) {
         static final Codec<FormatJson> CODEC = RecordCodecBuilder.<FormatJson>create(i -> i.group(
                 Identifier.CODEC.listOf().optionalFieldOf("types", List.of()).forGetter(FormatJson::types),
                 Codec.STRING.listOf().optionalFieldOf("outputs", List.of()).forGetter(FormatJson::outputs),
+                Codec.STRING.listOf().optionalFieldOf("inputs", List.of()).forGetter(FormatJson::inputs),
                 Identifier.CODEC.listOf().optionalFieldOf("skip", List.of()).forGetter(FormatJson::skip)
         ).apply(i, FormatJson::new)).validate(f -> {
             if (f.types().isEmpty() != f.outputs().isEmpty()) return DataResult.error(() -> "\"types\" and \"outputs\" go together");
@@ -87,7 +91,8 @@ public final class RecipeFormats {
         new TreeMap<>(files).forEach((file, json) -> FormatJson.CODEC.parse(JsonOps.INSTANCE, json)
                 .resultOrPartial(error -> LOGGER.warn("Ignoring invalid recipe format {}: {}", file, error))
                 .ifPresent(f -> {
-                    Format format = new Format(file, List.copyOf(f.types()), List.copyOf(f.outputs()));
+                    Format format = new Format(file, List.copyOf(f.types()), List.copyOf(f.outputs()),
+                            f.inputs().isEmpty() ? dev.drimoz.materialnexus.datapack.RecipeRewrites.INPUT_KEYS : List.copyOf(f.inputs()));
                     f.types().forEach(type -> byType.put(type, format));
                     skipped.addAll(f.skip());
                 }));

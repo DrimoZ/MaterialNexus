@@ -2,8 +2,8 @@
   "machine": "oritech:assembler",
   "recipe": {
     "type": "oritech:assembler",
-    "ingredients": "${inputs}",
-    "results": [
+    "itemInputs": "${ingredients}",
+    "itemResults": [
       {
         "count": "${out}",
         "id": "${output_item}"
