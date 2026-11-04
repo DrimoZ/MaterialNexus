@@ -77,6 +77,30 @@ public final class GeneratedPack {
      * item and logs no warning. A resource pack above this one can replace any of these models.
      * MNX-091: a texture dropped as {@code config/materialnexus/textures/<material>_<form>.png} is used with nothing declared.
      */
+    /**
+     * MNX-137: 26.1 draws an item from its definition. A template is tinted on layer 1 with the material colour (the
+     * {@code materialnexus:material} tint, client side); an item with its own texture keeps its colours.
+     */
+    private static JsonObject itemDefinition(net.minecraft.resources.Identifier id, boolean ownTexture) {
+        JsonObject model = new JsonObject();
+        model.addProperty("type", "minecraft:model");
+        model.addProperty("model", id.getNamespace() + ":item/" + id.getPath());
+        if (!ownTexture) {
+            JsonArray tints = new JsonArray();
+            JsonObject untinted = new JsonObject();
+            untinted.addProperty("type", "minecraft:constant");
+            untinted.addProperty("value", -1);
+            tints.add(untinted);
+            JsonObject material = new JsonObject();
+            material.addProperty("type", "materialnexus:material");
+            tints.add(material);
+            model.add("tints", tints);
+        }
+        JsonObject definition = new JsonObject();
+        definition.add("model", model);
+        return definition;
+    }
+
     private static Map<String, JsonElement> createdItemFiles() {
         Map<String, JsonObject> files = new java.util.TreeMap<>();
         for (var item : dev.drimoz.materialnexus.registry.MnxItems.CREATED) {
@@ -98,6 +122,8 @@ public final class GeneratedPack {
                 model.addProperty("parent", "materialnexus:item/template_" + entry.form().name());
             }
             files.put("assets/" + item.getId().getNamespace() + "/models/item/" + item.getId().getPath() + ".json", model);
+            files.put("assets/" + item.getId().getNamespace() + "/items/" + item.getId().getPath() + ".json",
+                    itemDefinition(item.getId(), model.has("textures")));
         }
         for (var item : dev.drimoz.materialnexus.registry.MnxItems.CREATED) {
             var tag = item.get().entry().tag();
