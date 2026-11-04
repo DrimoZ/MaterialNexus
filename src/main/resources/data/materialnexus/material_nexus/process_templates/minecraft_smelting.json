@@ -3,7 +3,7 @@
   "recipe": {
     "type": "minecraft:smelting",
     "category": "misc",
-    "ingredient": "${input}",
+    "ingredient": "${ingredient}",
     "result": {
       "count": "${out}",
       "id": "${output_item}"

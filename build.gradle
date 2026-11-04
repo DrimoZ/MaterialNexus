@@ -38,6 +38,8 @@ neoForge {
             type = 'gameTestServer'
             gameDirectory = project.file('run-gametest')
             systemProperty 'neoforge.enableGameTest', 'true'
+            // MNX-141: the 26.1 test server resets its world at start; --packs copies the fixture datapacks into it.
+            programArguments.addAll '--packs', file('src/gametest-fixtures/datapacks').absolutePath
         }
         data {
             data()
