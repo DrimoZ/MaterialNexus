@@ -106,7 +106,7 @@ class ProcessPlannerTest {
 
         JsonObject rod = file(content, new MaterialForm(ALUMINUM, ROD), shaped);
         assertEquals(3, rod.getAsJsonArray("pattern").size());
-        assertEquals("c:ingots/aluminum", rod.getAsJsonObject("key").getAsJsonObject("#").get("tag").getAsString());
+        assertEquals("#c:ingots/aluminum", rod.getAsJsonObject("key").get("#").getAsString(), "26.1 spelling (MNX-141)");
         assertEquals(4, rod.getAsJsonObject("result").get("count").getAsInt());
 
         JsonObject press = file(content, new MaterialForm(ALUMINUM, new FormId("gear")), gear);

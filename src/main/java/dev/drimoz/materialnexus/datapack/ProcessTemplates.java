@@ -40,6 +40,8 @@ import java.util.TreeMap;
  * {@code ${in}}/{@code ${out}} numbers, {@code ${pattern}} the pattern for {@code in}. An object key {@code "${input}"}
  * merges the ingredient's fields into that object (MI and Mekanism stacks). Other placeholders inside strings are
  * replaced as text: {@code ${material}}, {@code ${form}}, {@code ${output_item}}, {@code ${output_tag}}, form variables.
+ * MNX-141: {@code ${ingredient}} and {@code ${ingredients}} are the same ingredient in the 1.21.2+ spelling vanilla reads on
+ * 26.1, {@code "#tag"} or {@code "ns:id"}.
  */
 @EventBusSubscriber(modid = MaterialNexus.MOD_ID)
 public final class ProcessTemplates extends SimpleJsonResourceReloadListener<JsonElement> {
@@ -108,6 +110,11 @@ public final class ProcessTemplates extends SimpleJsonResourceReloadListener<Jso
         }
     }
 
+    /** {@code {"tag": t}} as {@code "#t"}, {@code {"item": i}} as {@code "i"}. */
+    private static JsonPrimitive bare(JsonObject ingredient) {
+        return new JsonPrimitive(ingredient.has("tag") ? "#" + ingredient.get("tag").getAsString() : ingredient.get("item").getAsString());
+    }
+
     private static final class MissingValue extends RuntimeException {
         MissingValue() { super(null, null, false, false); }
     }
@@ -130,6 +137,12 @@ public final class ProcessTemplates extends SimpleJsonResourceReloadListener<Jso
         String s = p.getAsString();
         switch (s) {
             case "${input}" -> { return v.ingredient().deepCopy(); }
+            case "${ingredient}" -> { return bare(v.ingredient()); }
+            case "${ingredients}" -> {
+                JsonArray list = new JsonArray();
+                for (int i = 0; i < v.in(); i++) list.add(bare(v.ingredient()));
+                return list;
+            }
             case "${inputs}" -> {
                 JsonArray list = new JsonArray();
                 for (int i = 0; i < v.in(); i++) list.add(v.ingredient().deepCopy());

@@ -283,10 +283,10 @@ public final class ProcessPlanner {
                 // Shaped crafting: each key ingredient is used once per occurrence of its symbol in the pattern.
                 for (var k : e.getValue().getAsJsonObject().entrySet()) {
                     int uses = (int) pattern.asList().stream().mapToLong(row -> row.getAsString().chars().filter(c -> k.getKey().equals(String.valueOf((char) c))).count()).sum();
-                    walk(k.getValue(), e.getValue().getAsJsonObject(), k.getKey(), null, -1, false, false, uses, recipe, index, all);
+                    walk(k.getValue(), e.getValue().getAsJsonObject(), k.getKey(), null, -1, false, false, true, uses, recipe, index, all);
                 }
             } else {
-                walk(e.getValue(), recipe, e.getKey(), null, -1, output, condition, 1, recipe, index, all);
+                walk(e.getValue(), recipe, e.getKey(), null, -1, output, condition, !output && RecipeRewrites.INPUT_KEYS.contains(e.getKey()), 1, recipe, index, all);
             }
         }
         List<Ref> inputs = all.stream().filter(r -> !r.output() && !r.condition()).toList();
@@ -295,9 +295,12 @@ public final class ProcessPlanner {
                 materials.size() == 1 ? Optional.of(materials.getFirst()) : Optional.empty());
     }
 
-    /** {@code element} is {@code owner.ownerKey}, or {@code list[index]} when {@code list} is set. */
+    /**
+     * {@code element} is {@code owner.ownerKey}, or {@code list[index]} when {@code list} is set. {@code spot}: an ingredient
+     * spot, where a bare id is an input (MNX-141, as in {@link RecipeRewrites}): an input key's value, its lists, a grid symbol.
+     */
     private static void walk(JsonElement element, JsonObject owner, String ownerKey, JsonArray list, int index,
-                             boolean output, boolean condition, int uses, JsonObject root, Index idx, List<Ref> refs) {
+                             boolean output, boolean condition, boolean spot, int uses, JsonObject root, Index idx, List<Ref> refs) {
         if (element.isJsonObject()) {
             JsonObject o = element.getAsJsonObject();
             JsonObject wrapper = list == null && owner != root ? owner : null;
@@ -308,7 +311,7 @@ public final class ProcessPlanner {
                 }
             }
             for (var e : o.entrySet()) {
-                if (!e.getValue().isJsonPrimitive()) walk(e.getValue(), o, e.getKey(), null, -1, output, condition, uses, root, idx, refs);
+                if (!e.getValue().isJsonPrimitive()) walk(e.getValue(), o, e.getKey(), null, -1, output, condition, false, uses, root, idx, refs);
             }
         } else if (element.isJsonArray()) {
             JsonArray a = element.getAsJsonArray();
@@ -316,13 +319,16 @@ public final class ProcessPlanner {
                 JsonElement child = a.get(i);
                 if (child instanceof JsonPrimitive p && p.isString()) {
                     if (output) ref(p.getAsString(), false, true, false, null, null, null, a, i, 1, idx, refs);
+                    else if (spot) ref(p.getAsString(), false, false, false, null, null, null, a, i, uses, idx, refs);
                 } else {
-                    walk(child, owner, ownerKey, a, i, output, condition, uses, root, idx, refs);
+                    walk(child, owner, ownerKey, a, i, output, condition, spot, uses, root, idx, refs);
                 }
             }
         } else if (output && list == null && element instanceof JsonPrimitive p && p.isString()) {
             // A bare id as the whole output: "result": "mod:item".
             ref(p.getAsString(), false, true, false, owner, ownerKey, null, null, -1, 1, idx, refs);
+        } else if (spot && list == null && element instanceof JsonPrimitive p && p.isString()) {
+            ref(p.getAsString(), false, false, false, owner, ownerKey, null, null, -1, uses, idx, refs);
         }
     }
 
@@ -361,7 +367,20 @@ public final class ProcessPlanner {
     private static void setInput(List<Ref> refs, int n) {
         if (refs.isEmpty()) return;
         Ref first = refs.getFirst();
-        if (first.node() == null) return;
+        if (first.node() == null) {
+            // MNX-141, 1.21.2+ spelling: bare ids in a list (shapeless), repeated n times where the first stood.
+            JsonArray list = first.list();
+            if (list == null || refs.stream().anyMatch(r -> r.list() != list || r.node() != null)) return;
+            var at = refs.stream().map(Ref::index).collect(java.util.stream.Collectors.toSet());
+            List<JsonElement> rebuilt = new ArrayList<>();
+            for (int i = 0; i < list.size(); i++) {
+                if (!at.contains(i)) rebuilt.add(list.get(i));
+                else if (i == first.index()) for (int c = 0; c < n; c++) rebuilt.add(list.get(i).deepCopy());
+            }
+            while (!list.isEmpty()) list.remove(0);
+            rebuilt.forEach(list::add);
+            return;
+        }
         boolean counted = first.list() == null || COUNT_KEYS.stream().anyMatch(k -> first.node().has(k));
         if (refs.size() == 1 && counted && first.uses() == 1) {
             setCount(first, n, false);

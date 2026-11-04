@@ -2,7 +2,7 @@
   "machine": "minecraft:stonecutting",
   "recipe": {
     "type": "minecraft:stonecutting",
-    "ingredient": "${input}",
+    "ingredient": "${ingredient}",
     "result": {
       "count": "${out}",
       "id": "${output_item}"
