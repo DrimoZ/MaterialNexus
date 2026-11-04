@@ -127,7 +127,7 @@ class PackContentTest {
         assertEquals(List.of(new PackContent.Effect(PackContent.PLAYER_DISABLE, press, MEK),
                 new PackContent.Effect(PackContent.PLAYER_DISABLE_INVALID, scripted, scripted)), content.effects());
         assertEquals(Set.of(file), content.files().keySet());
-        assertEquals("neoforge:false", content.files().get(file).getAsJsonObject().getAsJsonArray("neoforge:conditions").get(0).getAsJsonObject().get("type").getAsString());
+        assertEquals("neoforge:never", content.files().get(file).getAsJsonObject().getAsJsonArray("neoforge:conditions").get(0).getAsJsonObject().get("type").getAsString());
         assertEquals(List.of(press), dev.drimoz.materialnexus.datapack.RecipeRewrites.overridden(content.effects()));
     }
 }

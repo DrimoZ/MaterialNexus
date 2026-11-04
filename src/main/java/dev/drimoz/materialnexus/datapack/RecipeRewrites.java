@@ -401,9 +401,10 @@ public final class RecipeRewrites {
         return copy;
     }
 
-    static JsonObject disabled() {
+    public static JsonObject disabled() {
         JsonObject condition = new JsonObject();
-        condition.addProperty("type", "neoforge:false");
+        // MNX-143: "neoforge:false" became "neoforge:never" on 26.1.
+        condition.addProperty("type", "neoforge:never");
         JsonArray conditions = new JsonArray();
         conditions.add(condition);
         JsonObject recipe = new JsonObject();

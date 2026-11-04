@@ -169,8 +169,9 @@ public final class PackContent {
                     ? recipe.getAsJsonArray("neoforge:conditions") : new com.google.gson.JsonArray();
             for (String id : items) {
                 JsonObject condition = new JsonObject();
-                condition.addProperty("type", "neoforge:item_exists");
-                condition.addProperty("item", id);
+                // MNX-143: NeoForge 26.1 names it "registered" (item registry by default); "item_exists" no longer loads.
+                condition.addProperty("type", "neoforge:registered");
+                condition.addProperty("value", id);
                 conditions.add(condition);
             }
             recipe.add("neoforge:conditions", conditions);

@@ -44,7 +44,24 @@ public final class UiShots {
             new Step(305, "click", "295,95", ""),
             new Step(340, "", "", "flow_8_silver_forms"),
             new Step(345, "quit", "", ""));
-    private static final List<Step> STEPS = FLOW.equals("fresh") ? FRESH : FLOW.equals("after") ? AFTER : List.of(
+    // MNX-143, -Pflow=more on the same world: the copper dust recipes after Apply, the JSON editor, Revert, then Restore.
+    private static final List<Step> MORE = List.of(
+            new Step(60, "open", "", ""),
+            new Step(100, "material", "copper", ""),
+            new Step(240, "recipes", "dust", ""),
+            new Step(400, "", "", "flow_9_copper_dust_recipes"),
+            new Step(405, "data", "", ""),
+            new Step(460, "click", "153,125", ""),
+            new Step(560, "", "", "flow_10_editor"),
+            new Step(565, "home", "", ""),
+            new Step(600, "revert", "", ""),
+            new Step(1300, "open", "", ""),
+            new Step(1400, "", "", "flow_11_reverted"),
+            new Step(1405, "restore", "", ""),
+            new Step(2100, "open", "", ""),
+            new Step(2200, "", "", "flow_12_restored"),
+            new Step(2205, "quit", "", ""));
+    private static final List<Step> STEPS = FLOW.equals("fresh") ? FRESH : FLOW.equals("after") ? AFTER : FLOW.equals("more") ? MORE : List.of(
             new Step(60, "open", "", ""),
             new Step(100, "priority", "", ""),
             new Step(110, "", "", "mnx_1_home"),
