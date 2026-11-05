@@ -202,6 +202,7 @@ public final class NexusScreen extends Screen {
             }
             case "process" -> { tab = Tab.PROCESS; requestProcess(); rebuildWidgets(); }
             case "forms_tab" -> { tab = Tab.FORMS; rebuildWidgets(); }
+            case "missing" -> { tab = Tab.MISSING; rebuildWidgets(); }
             case "triage" -> { PendingChanges.clear(); startTriage(); }
             case "home" -> go(View.HOME);
             case "presets" -> go(View.PRESETS);

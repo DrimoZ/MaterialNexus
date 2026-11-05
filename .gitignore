@@ -9,5 +9,7 @@ repo/
 *.iml
 .DS_Store
 run-ui/
+run-mp/
+run-ui-mp/
 # graphify: the graph is built locally (graphify update .), never committed
 graphify-out/
