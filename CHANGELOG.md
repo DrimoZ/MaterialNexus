@@ -1,5 +1,17 @@
 # Changelog
 
+## 0.6.0-beta.1 (Minecraft 26.1.2)
+
+First build for Minecraft 26.1.2 and NeoForge 26.1.2 (Java 25). A beta: the 1.21.1 line stays the stable one.
+
+- Checked in play on a world made in 26.1.2 with the content mods that have a NeoForge 26.1.2 build: Occultism, Oritech 2.0, Silent Gear, Ex Deorum, JAOPCA, Mystical Agriculture, Extended Crafting, Applied Energistics 2, Powah, Cyclic and Ender IO, with JEI and KubeJS 8. Mekanism, Create, Immersive Engineering, Modern Industrialization, Thermal and Almost Unified have no 26.1.2 build yet: their recipe formats are shipped but not checked on 26.1.2.
+- Recipes written the 26.1.2 way (`"ingredient": "mod:item"`, `"#c:ingots/tin"`) are unified like the older spelling, at the places the game reads an ingredient; a tag is written `"#tag"`.
+- Oritech 2.0's recipes (`itemInputs`, `itemResults`) are rewritten; its grinder template is gone, as the machine is. A recipe format can now name its input keys (`"inputs": [...]`).
+- A pack applied on 1.21.1 is rewritten for 26.1.2 when the server starts, from the same choices: nothing new is decided. Its old metadata, which 26.1.2 refuses, is replaced.
+- Created items are drawn from 26.1.2 item definitions, still tinted with their material's colour.
+- On a dedicated server the screen stays read-only; editing is done in singleplayer or on LAN, as before.
+- Not supported in this beta: EMI (no official 26.1.2 build). Not tested yet: LAN with a second player.
+
 ## 0.5.0
 
 - Recipe formats shipped for the NeoForge 1.21.1 mods that have recipe types of their own: Tensura, Extended AE, Energized Power (all its machines), Ars Nouveau, Productive Metalworks, and the missing Mekanism painting and Modern Industrialization quarry and coke oven types. Chosen from the 295 most downloaded technology, magic and equipment mods for 1.21.1; a format only acts where its mod is installed.
