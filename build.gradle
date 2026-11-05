@@ -29,6 +29,20 @@ neoForge {
             if (project.hasProperty('flow')) systemProperty 'materialnexus.uishots.flow', project.property('flow')
             programArguments.addAll "--quickPlaySingleplayer", "New World", "--width", "2000", "--height", "1070"
         }
+        // MNX-144: multiplayer check. A dedicated server of its own (run-mp, offline, port 25599) and a client that joins it,
+        // walking the screen as an operator (-Pflow=mpop) or not (-Pflow=mpguest).
+        mpServer {
+            server()
+            gameDirectory = project.file('run-mp')
+            programArgument '--nogui'
+        }
+        uiShotsMp {
+            client()
+            gameDirectory = project.file("run-ui-mp")
+            systemProperty "materialnexus.uishots", "true"
+            if (project.hasProperty('flow')) systemProperty 'materialnexus.uishots.flow', project.property('flow')
+            programArguments.addAll "--quickPlayMultiplayer", "localhost:25599", "--width", "2000", "--height", "1070"
+        }
         server {
             server()
             gameDirectory = project.file('run')
@@ -203,7 +217,7 @@ tasks.matching { it.name == 'runUiShots' }.configureEach {
     doFirst {
         delete 'run-ui/screenshots'
         // MNX-139: -Pflow=after keeps the world and config of the last -Pflow=fresh run, to see them after a restart.
-        if (project.findProperty('flow') in ['after', 'more']) return
+        if (project.findProperty('flow') in ['after', 'more', 'views']) return
         if (project.findProperty('flow') == 'fresh') {
             // A world the game makes now, no config from the dev runs, and one created item with its own colour (tint check).
             delete 'run-ui/saves', 'run-ui/config'
@@ -283,4 +297,20 @@ sourceSets.main.java.exclude 'dev/drimoz/materialnexus/client/compat/emi/**'
 // MNX-138: tests run inside the mod module on 26.1, where a resource folder cannot be listed; this one is passed by path.
 tasks.named('test') {
     systemProperty 'mnx.recipeFormats', file('src/main/resources/data/materialnexus/material_nexus/recipe_formats').absolutePath
+}
+
+// MNX-144: the multiplayer server accepts the EULA for its own test folder, runs offline on 25599, and -Pop makes the
+// dev player (offline UUID of "Dev") an operator; without it the player is a guest.
+tasks.matching { it.name == 'runMpServer' }.configureEach {
+    doFirst {
+        file('run-mp').mkdirs()
+        file('run-mp/eula.txt').text = 'eula=true\n'
+        file('run-mp/server.properties').text = 'online-mode=false\nserver-port=25599\nspawn-protection=0\n'
+        def uuid = UUID.nameUUIDFromBytes('OfflinePlayer:Dev'.getBytes('UTF-8'))
+        file('run-mp/ops.json').text = project.hasProperty('op')
+                ? "[{\"uuid\":\"${uuid}\",\"name\":\"Dev\",\"level\":2,\"bypassesPlayerLimit\":false}]" : '[]'
+    }
+}
+tasks.matching { it.name == 'runUiShotsMp' }.configureEach {
+    doFirst { delete 'run-ui-mp/screenshots'; copy { from 'run'; into 'run-ui-mp'; include 'options.txt' } }
 }

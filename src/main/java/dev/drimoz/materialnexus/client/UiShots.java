@@ -61,7 +61,43 @@ public final class UiShots {
             new Step(2100, "open", "", ""),
             new Step(2200, "", "", "flow_12_restored"),
             new Step(2205, "quit", "", ""));
-    private static final List<Step> STEPS = FLOW.equals("fresh") ? FRESH : FLOW.equals("after") ? AFTER : FLOW.equals("more") ? MORE : List.of(
+    // MNX-144, uiShotsMp on a dedicated server: an operator sees it read-only and is refused Apply; a guest has no command
+    // and a raw Apply of theirs is ignored.
+    private static final List<Step> MP_OP = List.of(
+            new Step(100, "open", "", ""),
+            new Step(260, "", "", "mp_1_op_open"),
+            new Step(265, "material", "copper", ""),
+            new Step(420, "", "", "mp_2_op_copper"),
+            new Step(425, "pending", "", ""),
+            new Step(430, "apply", "", ""),
+            new Step(470, "close", "", ""),
+            new Step(480, "", "", "mp_3_op_apply_refused"),
+            new Step(485, "quit", "", ""));
+    private static final List<Step> MP_GUEST = List.of(
+            new Step(100, "open", "", ""),
+            new Step(120, "", "", "mp_4_guest_command"),
+            new Step(125, "rawapply", "", ""),
+            new Step(200, "", "", "mp_5_guest_raw_apply"),
+            new Step(205, "quit", "", ""));
+    // MNX-144, -Pflow=views on the same world: the views the journey does not cross.
+    private static final List<Step> VIEWS = List.of(
+            new Step(60, "open", "", ""),
+            new Step(100, "material", "copper", ""),
+            new Step(240, "missing", "", ""),
+            new Step(300, "", "", "views_1_missing"),
+            new Step(305, "form", "dust", ""),
+            new Step(450, "process", "", ""),
+            new Step(600, "", "", "views_2_process"),
+            new Step(605, "triage", "", ""),
+            new Step(760, "", "", "views_3_triage"),
+            new Step(765, "presets", "", ""),
+            new Step(820, "", "", "views_4_presets"),
+            new Step(825, "scripts", "", ""),
+            new Step(880, "", "", "views_5_scripts"),
+            new Step(885, "settings", "", ""),
+            new Step(920, "", "", "views_6_settings"),
+            new Step(925, "quit", "", ""));
+    private static final List<Step> STEPS = FLOW.equals("fresh") ? FRESH : FLOW.equals("after") ? AFTER : FLOW.equals("more") ? MORE : FLOW.equals("mpop") ? MP_OP : FLOW.equals("mpguest") ? MP_GUEST : FLOW.equals("views") ? VIEWS : List.of(
             new Step(60, "open", "", ""),
             new Step(100, "priority", "", ""),
             new Step(110, "", "", "mnx_1_home"),
@@ -153,7 +189,9 @@ public final class UiShots {
             return;
         }
         switch (step.view()) {
+            // MNX-144: on a dedicated server, the way a player opens it.
             case "open" -> {
+                if (mc.getSingleplayerServer() == null) { mc.player.connection.sendCommand("materials"); return; }
                 // Through the server, as the command does, so presets and global.json are the real ones.
                 var server = mc.getSingleplayerServer();
                 var player = server.getPlayerList().getPlayer(mc.player.getUUID());
@@ -161,6 +199,11 @@ public final class UiShots {
                         dev.drimoz.materialnexus.network.OpenNexusPayload.forPlayer(player)));
             }
             case "quit" -> mc.stop();
+            case "close" -> mc.setScreen(null);
+            // An Apply sent without the screen, as a modified client could: the server must ignore it for a guest.
+            case "rawapply" -> net.neoforged.neoforge.client.network.ClientPacketDistributor.sendToServer(
+                    new dev.drimoz.materialnexus.network.PreviewRequest(java.util.List.of(), true, java.util.Optional.empty(), java.util.Map.of(),
+                            java.util.List.of(), java.util.Map.of(), java.util.Optional.of("{\"mod_priority\":[\"cyclic\"]}")));
             default -> { if (mc.screen instanceof NexusScreen screen) screen.devShow(step.view(), step.arg()); }
         }
     }
